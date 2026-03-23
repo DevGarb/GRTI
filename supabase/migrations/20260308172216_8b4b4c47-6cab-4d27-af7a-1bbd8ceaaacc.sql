@@ -1,0 +1,1 @@
+ALTER TABLE public.tickets ADD COLUMN category_id uuid REFERENCES public.categories(id) DEFAULT NULL;

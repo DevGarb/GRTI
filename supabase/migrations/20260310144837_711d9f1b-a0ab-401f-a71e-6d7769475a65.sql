@@ -1,0 +1,1 @@
+ALTER TABLE public.tickets ADD COLUMN sector text DEFAULT NULL;

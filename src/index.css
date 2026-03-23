@@ -1,0 +1,168 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+
+@layer base {
+  :root {
+    --background: 210 22% 97%;
+    --foreground: 180 30% 10%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 180 30% 10%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 180 30% 10%;
+
+    --primary: 180 67% 18%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 210 22% 95%;
+    --secondary-foreground: 180 30% 10%;
+
+    --muted: 210 18% 93%;
+    --muted-foreground: 210 10% 46%;
+
+    --accent: 180 67% 18%;
+    --accent-foreground: 0 0% 100%;
+
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 210 18% 90%;
+    --input: 210 18% 90%;
+    --ring: 180 67% 18%;
+
+    --radius: 0.75rem;
+
+    --sidebar-background: 180 67% 18%;
+    --sidebar-foreground: 180 20% 90%;
+    --sidebar-primary: 0 0% 100%;
+    --sidebar-primary-foreground: 180 67% 18%;
+    --sidebar-accent: 180 50% 22%;
+    --sidebar-accent-foreground: 0 0% 100%;
+    --sidebar-border: 180 40% 24%;
+    --sidebar-ring: 0 0% 100%;
+    --sidebar-muted: 180 20% 70%;
+
+    /* Status colors */
+    --status-open: 0 72% 51%;
+    --status-open-bg: 0 72% 95%;
+    --status-waiting: 35 92% 50%;
+    --status-waiting-bg: 35 92% 95%;
+    --status-closed: 142 70% 40%;
+    --status-closed-bg: 142 70% 95%;
+
+    /* Priority colors */
+    --priority-urgent: 0 72% 51%;
+    --priority-high: 25 95% 53%;
+    --priority-medium: 45 93% 47%;
+    --priority-low: 210 10% 46%;
+
+    /* Chart */
+    --chart-1: 180 67% 18%;
+    --chart-2: 180 40% 35%;
+    --chart-3: 142 70% 40%;
+    --chart-4: 35 92% 50%;
+    --chart-5: 0 72% 51%;
+  }
+
+  .dark {
+    --background: 220 20% 8%;
+    --foreground: 210 20% 92%;
+
+    --card: 220 18% 12%;
+    --card-foreground: 210 20% 92%;
+
+    --popover: 220 18% 12%;
+    --popover-foreground: 210 20% 92%;
+
+    --primary: 174 55% 40%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 220 16% 16%;
+    --secondary-foreground: 210 20% 88%;
+
+    --muted: 220 14% 18%;
+    --muted-foreground: 210 12% 55%;
+
+    --accent: 174 55% 40%;
+    --accent-foreground: 0 0% 100%;
+
+    --destructive: 0 62% 45%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 220 14% 18%;
+    --input: 220 14% 20%;
+    --ring: 174 55% 40%;
+
+    --sidebar-background: 220 20% 8%;
+    --sidebar-foreground: 210 15% 75%;
+    --sidebar-primary: 174 55% 45%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 220 16% 14%;
+    --sidebar-accent-foreground: 210 20% 92%;
+    --sidebar-border: 220 14% 18%;
+    --sidebar-ring: 174 55% 40%;
+    --sidebar-muted: 210 10% 45%;
+
+    --status-open: 0 62% 55%;
+    --status-open-bg: 0 62% 15%;
+    --status-waiting: 35 80% 45%;
+    --status-waiting-bg: 35 80% 15%;
+    --status-closed: 142 60% 40%;
+    --status-closed-bg: 142 60% 15%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground font-sans antialiased;
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  }
+}
+
+@layer utilities {
+  .scrollbar-thin {
+    scrollbar-width: thin;
+    scrollbar-color: hsl(var(--sidebar-border)) transparent;
+  }
+  .scrollbar-thin::-webkit-scrollbar {
+    width: 4px;
+  }
+  .scrollbar-thin::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .scrollbar-thin::-webkit-scrollbar-thumb {
+    background-color: hsl(var(--sidebar-border));
+    border-radius: 9999px;
+  }
+
+  .card-elevated {
+    @apply bg-card rounded-xl border border-border shadow-sm;
+  }
+
+  .status-badge {
+    @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium;
+  }
+
+  .status-open {
+    background-color: hsl(var(--status-open-bg));
+    color: hsl(var(--status-open));
+  }
+
+  .status-waiting {
+    background-color: hsl(var(--status-waiting-bg));
+    color: hsl(var(--status-waiting));
+  }
+
+  .status-closed {
+    background-color: hsl(var(--status-closed-bg));
+    color: hsl(var(--status-closed));
+  }
+}
