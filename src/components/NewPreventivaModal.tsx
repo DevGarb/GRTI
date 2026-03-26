@@ -2,6 +2,7 @@ import { useState, useRef } from "react";
 import { X, Camera, Upload } from "lucide-react";
 import { useCreatePreventiva } from "@/hooks/usePreventivas";
 import { useSectors } from "@/hooks/useSectors";
+import { useTechnicianProfiles } from "@/hooks/useTickets";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -28,6 +29,7 @@ const checklistItems = [
 export default function NewPreventivaModal({ onClose }: Props) {
   const { profile } = useAuth();
   const { data: sectors = [] } = useSectors(profile?.organization_id || null);
+  const { data: technicians = [] } = useTechnicianProfiles();
   const [checklist, setChecklist] = useState<Record<string, boolean>>({});
   const [equipmentType, setEquipmentType] = useState("");
   const [assetTag, setAssetTag] = useState("");
@@ -174,13 +176,17 @@ export default function NewPreventivaModal({ onClose }: Props) {
               </select>
             </div>
             <div>
-              <label className="text-sm font-medium text-foreground">Responsável</label>
-              <input
+              <label className="text-sm font-medium text-foreground">Técnico Responsável</label>
+              <select
                 value={responsible}
                 onChange={(e) => setResponsible(e.target.value)}
-                placeholder="Nome do responsável..."
-                className="mt-1.5 w-full px-3 py-2.5 rounded-lg border border-input bg-background text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring/20"
-              />
+                className="mt-1.5 w-full px-3 py-2.5 rounded-lg border border-input bg-background text-sm text-foreground"
+              >
+                <option value="">Selecione o técnico...</option>
+                {technicians.map((t) => (
+                  <option key={t.user_id} value={t.full_name}>{t.full_name}</option>
+                ))}
+              </select>
             </div>
           </div>
 

@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { X, Ticket, Upload } from "lucide-react";
-import { useCreateTicket, useProfiles } from "@/hooks/useTickets";
+import { useCreateTicket, useTechnicianProfiles } from "@/hooks/useTickets";
 import { useSectors } from "@/hooks/useSectors";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -19,7 +19,7 @@ export default function NewTicketModal({ onClose }: Props) {
   const [assignedTo, setAssignedTo] = useState("");
   const [sector, setSector] = useState("");
   const createTicket = useCreateTicket();
-  const { data: profiles = [] } = useProfiles();
+  const { data: profiles = [] } = useTechnicianProfiles();
 
   const handleSubmit = () => {
     console.log("[NewTicketModal] handleSubmit called", { title, description, priority, type, assignedTo });
