@@ -491,13 +491,16 @@ export default function Dashboard() {
         )}
       </div>
 
-      {selectedTicketId && (
-        <TicketDetailModal
-          ticketId={selectedTicketId}
-          open={!!selectedTicketId}
-          onOpenChange={(open) => { if (!open) setSelectedTicketId(null); }}
-        />
-      )}
+      {selectedTicketId && (() => {
+        const ticket = tickets.find(t => t.id === selectedTicketId);
+        if (!ticket) return null;
+        return (
+          <TicketDetailModal
+            ticket={ticket}
+            onClose={() => setSelectedTicketId(null)}
+          />
+        );
+      })()}
     </div>
   );
 }
