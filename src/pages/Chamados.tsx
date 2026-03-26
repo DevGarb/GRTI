@@ -14,6 +14,7 @@ const statusBadgeColors: Record<string, string> = {
   "Aguardando Aprovação": "bg-blue-500 text-white",
   "Aprovado": "bg-emerald-500 text-white",
   "Fechado": "bg-primary text-primary-foreground",
+  "Disponível": "bg-red-600 text-white",
 };
 function TicketTable({ tickets, onSelect }: { tickets: Ticket[]; onSelect: (t: Ticket) => void }) {
   return (
