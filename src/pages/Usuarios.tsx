@@ -113,7 +113,7 @@ export default function Usuarios() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin-users"] });
       setShowCreateModal(false);
-      setCreateForm({ full_name: "", username: "", password: "", role: "solicitante" });
+      setCreateForm({ full_name: "", username: "", password: "", role: "solicitante", phone: "" });
       toast.success("Usuário criado com sucesso!");
     },
     onError: (e: Error) => toast.error("Erro ao criar: " + e.message),
