@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
+import TicketDetailModal from "@/components/TicketDetailModal";
 import {
   Ticket,
   Clock,
@@ -48,6 +49,7 @@ export default function Dashboard() {
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState<DashTab>("meus");
   const [period, setPeriod] = useState<PeriodFilter>("all");
+  const [selectedTicketId, setSelectedTicketId] = useState<string | null>(null);
 
   const periodDays: Record<PeriodFilter, number | null> = {
     "7d": 7, "30d": 30, "90d": 90, "all": null,
@@ -220,7 +222,7 @@ export default function Dashboard() {
           </div>
           <div className="space-y-1">
             {openTickets.slice(0, 8).map((t) => (
-              <div key={t.id} className="flex items-center gap-3 text-[12px] py-1.5 border-b border-border last:border-0">
+              <div key={t.id} onClick={() => setSelectedTicketId(t.id)} className="flex items-center gap-3 text-[12px] py-1.5 border-b border-border last:border-0 cursor-pointer hover:bg-muted/30 transition-colors">
                 <PriorityBadge priority={t.priority} />
                 <span className="font-medium text-foreground truncate flex-1">{t.title}</span>
                 <span className="text-muted-foreground hidden sm:block">{t.creatorProfile?.full_name}</span>
@@ -469,6 +471,7 @@ export default function Dashboard() {
                 initial="hidden"
                 animate="show"
                 custom={i}
+                onClick={() => setSelectedTicketId(ticket.id)}
               >
                 <div className="flex items-start justify-between gap-4">
                   <div className="flex-1 min-w-0">
@@ -487,6 +490,17 @@ export default function Dashboard() {
           </div>
         )}
       </div>
+
+      {selectedTicketId && (() => {
+        const ticket = tickets.find(t => t.id === selectedTicketId);
+        if (!ticket) return null;
+        return (
+          <TicketDetailModal
+            ticket={ticket}
+            onClose={() => setSelectedTicketId(null)}
+          />
+        );
+      })()}
     </div>
   );
 }
