@@ -399,6 +399,7 @@ export default function Usuarios() {
                     role: editForm.role,
                     fullName: editForm.full_name,
                     password: editForm.password || undefined,
+                    phone: editForm.phone || undefined,
                   })
                 }
                 disabled={updateRole.isPending}
