@@ -50,36 +50,69 @@ Deno.serve(async (req) => {
     const requester = profileMap.get(ticket.created_by);
     const technician = ticket.assigned_to ? profileMap.get(ticket.assigned_to) : null;
 
-    // Get rework count
-    const { count: reworkCount } = await supabase
-      .from("ticket_history")
-      .select("*", { count: "exact", head: true })
-      .eq("ticket_id", ticket_id)
-      .eq("action", "rework");
+    // Build payload based on event type
+    let payload: Record<string, any>;
 
-    // Build payload matching the exact format requested
-    const payload = {
-      event_type,
-      timestamp: new Date().toISOString(),
-      ticket_id: ticket.id,
-      titulo: ticket.title,
-      descricao: ticket.description || "",
-      prioridade: ticket.priority?.toLowerCase() || "media",
-      tipo: ticket.type?.toLowerCase() || "software",
-      status: ticket.status,
-      setor: ticket.sector || "",
-      category_id: ticket.category_id,
-      data_abertura: ticket.created_at,
-      data_atualizacao: ticket.updated_at,
-      retrabalho_count: reworkCount || 0,
-      tecnico_id: ticket.assigned_to || null,
-      tecnico_nome: technician?.full_name || null,
-      tecnico_telefone: technician?.phone || null,
-      solicitante_id: ticket.created_by,
-      solicitante_nome: requester?.full_name || null,
-      solicitante_telefone: requester?.phone || null,
-      ...(extra ? { extra } : {}),
-    };
+    if (event_type === "ticket_created") {
+      // Payload for new ticket creation
+      payload = {
+        event_type,
+        ticket_id: ticket.id,
+        titulo: ticket.title,
+        descricao: ticket.description || "",
+        prioridade: ticket.priority?.toLowerCase() || "media",
+        tipo: ticket.type?.toLowerCase() || "hardware",
+        tecnico_id: ticket.assigned_to || null,
+        tecnico_nome: technician?.full_name || null,
+        tecnico_telefone: technician?.phone || null,
+        solicitante_id: ticket.created_by,
+        solicitante_nome: requester?.full_name || null,
+        solicitante_telefone: requester?.phone || null,
+        data_abertura: ticket.created_at,
+      };
+    } else if (event_type === "ticket_finished") {
+      // Payload for ticket resolved by technician
+      const now = new Date();
+      const createdAt = new Date(ticket.created_at);
+      const tempoResolucaoMinutos = Math.round((now.getTime() - createdAt.getTime()) / 60000);
+
+      payload = {
+        event_type,
+        ticket_id: ticket.id,
+        titulo: ticket.title,
+        descricao: ticket.description || "",
+        tecnico_id: ticket.assigned_to || null,
+        tecnico_nome: technician?.full_name || null,
+        solicitante_id: ticket.created_by,
+        solicitante_nome: requester?.full_name || null,
+        telefone_whatsapp: requester?.phone || null,
+        data_resolvido_tecnico: now.toISOString(),
+        tempo_resolucao_minutos: tempoResolucaoMinutos,
+      };
+    } else {
+      // Generic payload for other events
+      payload = {
+        event_type,
+        timestamp: new Date().toISOString(),
+        ticket_id: ticket.id,
+        titulo: ticket.title,
+        descricao: ticket.description || "",
+        prioridade: ticket.priority?.toLowerCase() || "media",
+        tipo: ticket.type?.toLowerCase() || "hardware",
+        status: ticket.status,
+        setor: ticket.sector || "",
+        category_id: ticket.category_id,
+        data_abertura: ticket.created_at,
+        data_atualizacao: ticket.updated_at,
+        tecnico_id: ticket.assigned_to || null,
+        tecnico_nome: technician?.full_name || null,
+        tecnico_telefone: technician?.phone || null,
+        solicitante_id: ticket.created_by,
+        solicitante_nome: requester?.full_name || null,
+        solicitante_telefone: requester?.phone || null,
+        ...(extra ? { extra } : {}),
+      };
+    }
 
     // Get active webhooks for this org that subscribe to this event
     const { data: webhooks } = await supabase
