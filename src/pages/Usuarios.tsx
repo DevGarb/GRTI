@@ -11,6 +11,7 @@ interface ProfileWithRoles {
   full_name: string;
   email: string | null;
   username: string | null;
+  phone: string | null;
   avatar_url: string | null;
   created_at: string;
   roles: string[];
@@ -60,10 +61,10 @@ export default function Usuarios() {
   const [search, setSearch] = useState("");
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set(roleGroupOrder));
   const [editingUser, setEditingUser] = useState<ProfileWithRoles | null>(null);
-  const [editForm, setEditForm] = useState({ full_name: "", role: "solicitante", password: "" });
+  const [editForm, setEditForm] = useState({ full_name: "", role: "solicitante", password: "", phone: "" });
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showImportModal, setShowImportModal] = useState(false);
-  const [createForm, setCreateForm] = useState({ full_name: "", username: "", password: "", role: "solicitante" });
+  const [createForm, setCreateForm] = useState({ full_name: "", username: "", password: "", role: "solicitante", phone: "" });
   const { hasRole, isSuperAdmin } = useAuth();
   const queryClient = useQueryClient();
   const isAdmin = hasRole("admin");
@@ -73,7 +74,7 @@ export default function Usuarios() {
     queryFn: async () => {
       const { data: profiles, error } = await supabase
         .from("profiles")
-        .select("user_id, full_name, email, avatar_url, created_at, username")
+        .select("user_id, full_name, email, phone, avatar_url, created_at, username")
         .order("full_name");
       if (error) throw error;
 
@@ -103,7 +104,7 @@ export default function Usuarios() {
       if (!session) throw new Error("Não autenticado");
       
       const res = await supabase.functions.invoke("create-user", {
-        body: { username: form.username, password: form.password, full_name: form.full_name, role: form.role },
+        body: { username: form.username, password: form.password, full_name: form.full_name, role: form.role, phone: form.phone },
       });
       if (res.error) throw new Error(res.error.message);
       if (res.data?.error) throw new Error(res.data.error);
@@ -112,15 +113,15 @@ export default function Usuarios() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin-users"] });
       setShowCreateModal(false);
-      setCreateForm({ full_name: "", username: "", password: "", role: "solicitante" });
+      setCreateForm({ full_name: "", username: "", password: "", role: "solicitante", phone: "" });
       toast.success("Usuário criado com sucesso!");
     },
     onError: (e: Error) => toast.error("Erro ao criar: " + e.message),
   });
 
   const updateRole = useMutation({
-    mutationFn: async ({ userId, role, fullName, password }: { userId: string; role: string; fullName: string; password?: string }) => {
-      await supabase.from("profiles").update({ full_name: fullName }).eq("user_id", userId);
+    mutationFn: async ({ userId, role, fullName, password, phone }: { userId: string; role: string; fullName: string; password?: string; phone?: string }) => {
+      await supabase.from("profiles").update({ full_name: fullName, phone: phone || null }).eq("user_id", userId);
       await supabase.from("user_roles").delete().eq("user_id", userId).neq("role", "super_admin");
       if (role !== "super_admin") {
         const { error } = await supabase.from("user_roles").insert({ user_id: userId, role: role as any });
@@ -183,7 +184,7 @@ export default function Usuarios() {
       return;
     }
     setEditingUser(user);
-    setEditForm({ full_name: user.full_name, role: user.roles[0] || "solicitante", password: "" });
+    setEditForm({ full_name: user.full_name, role: user.roles[0] || "solicitante", password: "", phone: user.phone || "" });
   };
 
   const handleFullNameChange = (name: string) => {
@@ -357,6 +358,16 @@ export default function Usuarios() {
                 </select>
               </div>
               <div>
+                <label className="text-sm font-medium text-foreground">Telefone</label>
+                <input
+                  value={editForm.phone}
+                  onChange={(e) => setEditForm({ ...editForm, phone: e.target.value })}
+                  placeholder="5585999999999"
+                  className="mt-1.5 w-full px-3 py-2.5 rounded-lg border border-input bg-background text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring/20"
+                />
+                <p className="text-[11px] text-muted-foreground mt-1">Formato: DDI+DDD+Número (ex: 5585999999999)</p>
+              </div>
+              <div>
                 <label className="text-sm font-medium text-foreground">Nova Senha (deixe vazio para manter)</label>
                 <input
                   type="password"
@@ -388,6 +399,7 @@ export default function Usuarios() {
                     role: editForm.role,
                     fullName: editForm.full_name,
                     password: editForm.password || undefined,
+                    phone: editForm.phone || undefined,
                   })
                 }
                 disabled={updateRole.isPending}
@@ -443,6 +455,16 @@ export default function Usuarios() {
                   placeholder="Mínimo 6 caracteres"
                   className="mt-1.5 w-full px-3 py-2.5 rounded-lg border border-input bg-background text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring/20"
                 />
+              </div>
+              <div>
+                <label className="text-sm font-medium text-foreground">Telefone</label>
+                <input
+                  value={createForm.phone}
+                  onChange={(e) => setCreateForm({ ...createForm, phone: e.target.value })}
+                  placeholder="5585999999999"
+                  className="mt-1.5 w-full px-3 py-2.5 rounded-lg border border-input bg-background text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring/20"
+                />
+                <p className="text-[11px] text-muted-foreground mt-1">Formato: DDI+DDD+Número (ex: 5585999999999)</p>
               </div>
               <div>
                 <label className="text-sm font-medium text-foreground">Tipo de acesso *</label>

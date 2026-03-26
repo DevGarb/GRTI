@@ -39,7 +39,7 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Get profiles for technician and requester
+    // Get profiles for technician and requester (including phone)
     const userIds = [ticket.created_by, ticket.assigned_to].filter(Boolean);
     const { data: profiles } = await supabase
       .from("profiles")
@@ -57,33 +57,27 @@ Deno.serve(async (req) => {
       .eq("ticket_id", ticket_id)
       .eq("action", "rework");
 
-    // Build payload
+    // Build payload matching the exact format requested
     const payload = {
       event_type,
       timestamp: new Date().toISOString(),
-      ticket: {
-        id: ticket.id,
-        title: ticket.title,
-        description: ticket.description,
-        status: ticket.status,
-        priority: ticket.priority,
-        type: ticket.type,
-        sector: ticket.sector,
-        category_id: ticket.category_id,
-        created_at: ticket.created_at,
-        updated_at: ticket.updated_at,
-        rework_count: reworkCount || 0,
-      },
-      requester: requester ? {
-        name: requester.full_name,
-        email: requester.email,
-        phone: requester.phone,
-      } : null,
-      technician: technician ? {
-        name: technician.full_name,
-        email: technician.email,
-        phone: technician.phone,
-      } : null,
+      ticket_id: ticket.id,
+      titulo: ticket.title,
+      descricao: ticket.description || "",
+      prioridade: ticket.priority?.toLowerCase() || "media",
+      tipo: ticket.type?.toLowerCase() || "software",
+      status: ticket.status,
+      setor: ticket.sector || "",
+      category_id: ticket.category_id,
+      data_abertura: ticket.created_at,
+      data_atualizacao: ticket.updated_at,
+      retrabalho_count: reworkCount || 0,
+      tecnico_id: ticket.assigned_to || null,
+      tecnico_nome: technician?.full_name || null,
+      tecnico_telefone: technician?.phone || null,
+      solicitante_id: ticket.created_by,
+      solicitante_nome: requester?.full_name || null,
+      solicitante_telefone: requester?.phone || null,
       ...(extra ? { extra } : {}),
     };
 
