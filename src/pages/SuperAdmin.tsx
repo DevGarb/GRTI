@@ -704,13 +704,14 @@ function UsuariosTab() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             <div>
               <label className="text-sm font-medium text-foreground">Nome completo *</label>
-              <input value={createName} onChange={(e) => setCreateName(e.target.value)} placeholder="Nome do usuário" maxLength={100}
+              <input value={createName} onChange={(e) => handleFullNameChange(e.target.value)} placeholder="Gabriel Porto da Silva" maxLength={100}
                 className="mt-1.5 w-full px-3 py-2.5 rounded-lg border border-input bg-background text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring/20" />
             </div>
             <div>
-              <label className="text-sm font-medium text-foreground">Email *</label>
-              <input value={createEmail} onChange={(e) => setCreateEmail(e.target.value)} placeholder="email@exemplo.com" type="email" maxLength={255}
-                className="mt-1.5 w-full px-3 py-2.5 rounded-lg border border-input bg-background text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring/20" />
+              <label className="text-sm font-medium text-foreground">Login *</label>
+              <input value={createUsername} onChange={(e) => setCreateUsername(e.target.value.toLowerCase().replace(/[^a-z.]/g, ""))} placeholder="gabriel.porto"
+                className="mt-1.5 w-full px-3 py-2.5 rounded-lg border border-input bg-background text-sm text-foreground uppercase focus:outline-none focus:ring-2 focus:ring-ring/20" />
+              <p className="text-[11px] text-muted-foreground mt-1">Formato: nome.sobrenome (gerado automaticamente)</p>
             </div>
             <div>
               <label className="text-sm font-medium text-foreground">Senha *</label>
@@ -718,12 +719,19 @@ function UsuariosTab() {
                 className="mt-1.5 w-full px-3 py-2.5 rounded-lg border border-input bg-background text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring/20" />
             </div>
             <div>
-              <label className="text-sm font-medium text-foreground">Perfil</label>
+              <label className="text-sm font-medium text-foreground">Telefone</label>
+              <input value={createPhone} onChange={(e) => setCreatePhone(e.target.value)} placeholder="5585999999999"
+                className="mt-1.5 w-full px-3 py-2.5 rounded-lg border border-input bg-background text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring/20" />
+              <p className="text-[11px] text-muted-foreground mt-1">Formato: DDI+DDD+Número (ex: 5585999999999)</p>
+            </div>
+            <div>
+              <label className="text-sm font-medium text-foreground">Tipo de acesso *</label>
               <select value={createRole} onChange={(e) => setCreateRole(e.target.value)}
                 className="mt-1.5 w-full px-3 py-2.5 rounded-lg border border-input bg-background text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring/20">
-                {ROLES.map((r) => (
-                  <option key={r} value={r}>{ROLE_LABELS[r]}</option>
-                ))}
+                <option value="solicitante">Colaborador</option>
+                <option value="tecnico">Técnico (Hardware)</option>
+                <option value="desenvolvedor">Desenvolvedor (Software)</option>
+                <option value="admin">Administrador</option>
               </select>
             </div>
             <div>
