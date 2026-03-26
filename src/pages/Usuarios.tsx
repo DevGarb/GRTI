@@ -11,6 +11,7 @@ interface ProfileWithRoles {
   full_name: string;
   email: string | null;
   username: string | null;
+  phone: string | null;
   avatar_url: string | null;
   created_at: string;
   roles: string[];
