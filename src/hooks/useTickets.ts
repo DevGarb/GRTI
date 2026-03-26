@@ -17,6 +17,10 @@ export interface Ticket {
   updated_at: string;
   organization_id: string | null;
   category_id: string | null;
+  sla_deadline: string | null;
+  started_at: string | null;
+  picked_at: string | null;
+  original_assigned_to: string | null;
   reworkCount?: number;
   // joined
   assignedProfile?: { full_name: string } | null;
