@@ -74,7 +74,7 @@ export default function Usuarios() {
     queryFn: async () => {
       const { data: profiles, error } = await supabase
         .from("profiles")
-        .select("user_id, full_name, email, avatar_url, created_at, username")
+        .select("user_id, full_name, email, phone, avatar_url, created_at, username")
         .order("full_name");
       if (error) throw error;
 
