@@ -738,7 +738,7 @@ export default function Migracao() {
       </CollapsibleSection>
 
       <p className="text-center text-xs text-muted-foreground py-4">
-        Powered by <strong className="text-foreground">INCEPTUM</strong>
+        Powered by <strong className="text-foreground">GRTI</strong>
       </p>
     </div>
   );
