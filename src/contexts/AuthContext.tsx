@@ -2,7 +2,7 @@ import { createContext, useContext, useEffect, useState, ReactNode } from "react
 import { supabase } from "@/integrations/supabase/client";
 import type { User, Session } from "@supabase/supabase-js";
 
-type AppRole = "super_admin" | "admin" | "tecnico" | "solicitante" | "auditor";
+type AppRole = "super_admin" | "admin" | "tecnico" | "solicitante" | "auditor" | "desenvolvedor";
 
 interface Profile {
   id: string;
@@ -11,6 +11,7 @@ interface Profile {
   email: string | null;
   avatar_url: string | null;
   organization_id: string | null;
+  username: string | null;
 }
 
 interface AuthContextType {
@@ -19,8 +20,7 @@ interface AuthContextType {
   profile: Profile | null;
   roles: AppRole[];
   loading: boolean;
-  signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
-  signUp: (email: string, password: string, fullName: string) => Promise<{ error: Error | null }>;
+  signIn: (username: string, password: string) => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
   hasRole: (role: AppRole) => boolean;
   isSuperAdmin: boolean;
@@ -83,20 +83,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => subscription.unsubscribe();
   }, []);
 
-  const signIn = async (email: string, password: string) => {
+  const signIn = async (username: string, password: string) => {
+    // Convert username to internal email format
+    const email = `${username.toLowerCase().trim()}@grti.local`;
     const { error } = await supabase.auth.signInWithPassword({ email, password });
-    return { error: error as Error | null };
-  };
-
-  const signUp = async (email: string, password: string, fullName: string) => {
-    const { error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        data: { full_name: fullName },
-        emailRedirectTo: window.location.origin,
-      },
-    });
     return { error: error as Error | null };
   };
 
@@ -106,12 +96,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const isSuperAdmin = roles.includes("super_admin");
   const hasRole = (role: AppRole) => {
-    if (isSuperAdmin) return true; // super_admin has all permissions
+    if (isSuperAdmin) return true;
     return roles.includes(role);
   };
 
   return (
-    <AuthContext.Provider value={{ user, session, profile, roles, loading, signIn, signUp, signOut, hasRole, isSuperAdmin }}>
+    <AuthContext.Provider value={{ user, session, profile, roles, loading, signIn, signOut, hasRole, isSuperAdmin }}>
       {children}
     </AuthContext.Provider>
   );

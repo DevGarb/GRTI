@@ -22,7 +22,6 @@ Deno.serve(async (req) => {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
-    // Verify caller is admin
     const callerClient = createClient(supabaseUrl, Deno.env.get("SUPABASE_ANON_KEY")!, {
       global: { headers: { Authorization: authHeader } },
     });
@@ -36,7 +35,6 @@ Deno.serve(async (req) => {
 
     const adminClient = createClient(supabaseUrl, serviceRoleKey);
 
-    // Check caller has admin role
     const { data: callerRoles } = await adminClient
       .from("user_roles")
       .select("role")
@@ -53,7 +51,7 @@ Deno.serve(async (req) => {
     const callerIsSuperAdmin = callerRoles.some((r) => r.role === "super_admin");
 
     const body = await req.json();
-    const email = body.email;
+    const username = body.username; // e.g. "gabriel.porto"
     const password = body.password;
     const full_name = body.full_name;
     const userRole = body.role;
@@ -66,19 +64,44 @@ Deno.serve(async (req) => {
       });
     }
 
-    if (!email || !password || !full_name) {
-      return new Response(JSON.stringify({ error: "email, password and full_name are required" }), {
+    if (!username || !password || !full_name) {
+      return new Response(JSON.stringify({ error: "username, password e full_name são obrigatórios" }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    // Create user via admin API (auto-confirms email)
+    // Validate username format (nome.sobrenome)
+    const usernameClean = username.toLowerCase().trim();
+    if (!/^[a-z]+\.[a-z]+$/.test(usernameClean)) {
+      return new Response(JSON.stringify({ error: "Login deve seguir o formato nome.sobrenome (ex: gabriel.porto)" }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // Check if username already exists
+    const { data: existingProfile } = await adminClient
+      .from("profiles")
+      .select("id")
+      .eq("username", usernameClean)
+      .maybeSingle();
+
+    if (existingProfile) {
+      return new Response(JSON.stringify({ error: "Este login já está em uso." }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // Create user with fake email (username@grti.local)
+    const fakeEmail = `${usernameClean}@grti.local`;
+
     const { data: newUser, error: createError } = await adminClient.auth.admin.createUser({
-      email,
+      email: fakeEmail,
       password,
       email_confirm: true,
-      user_metadata: { full_name },
+      user_metadata: { full_name, username: usernameClean },
     });
 
     if (createError) {
@@ -88,8 +111,13 @@ Deno.serve(async (req) => {
       });
     }
 
-    // The handle_new_user trigger creates profile + default role.
-    // Now update role if not solicitante
+    // Update profile with username
+    await adminClient
+      .from("profiles")
+      .update({ username: usernameClean })
+      .eq("user_id", newUser.user!.id);
+
+    // Update role if not solicitante
     if (userRole && userRole !== "solicitante") {
       await adminClient.from("user_roles").delete().eq("user_id", newUser.user!.id);
       await adminClient.from("user_roles").insert({ user_id: newUser.user!.id, role: userRole });
