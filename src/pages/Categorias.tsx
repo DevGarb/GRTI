@@ -119,144 +119,196 @@ export default function Categorias() {
     const isExpanded = expanded.has(cat.id);
     const childLevel = cat.level === "macro" ? "sistema" : "item";
 
-    return (
-      <div key={cat.id} style={{ marginLeft: depth * 24 }}>
-        <div className="flex items-center gap-3 p-3 border border-border rounded-lg mb-2 bg-card hover:shadow-sm transition-shadow">
-          {children.length > 0 || isAdmin ? (
-            <button onClick={() => toggleExpand(cat.id)} className="text-muted-foreground">
-              {isExpanded ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
-            </button>
-          ) : (
-            <div className="w-4" />
-          )}
+    const isMacro = cat.level === "macro";
+    const isSistema = cat.level === "sistema";
 
-          <LayoutList className="h-4 w-4 text-muted-foreground" />
+    // Macro categories get a full card wrapper; children render inside
+    if (isMacro) {
+      return (
+        <div key={cat.id} className="border border-border rounded-lg bg-card mb-3 overflow-hidden">
+          {/* Macro header */}
+          <div className="flex items-center gap-3 p-3 bg-muted/30 border-b border-border">
+            {(children.length > 0 || isAdmin) ? (
+              <button onClick={() => toggleExpand(cat.id)} className="text-muted-foreground">
+                {isExpanded ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+              </button>
+            ) : (
+              <div className="w-4" />
+            )}
+            <LayoutList className="h-4 w-4 text-muted-foreground" />
+            {renderNameOrEdit(cat)}
+            {renderActions(cat)}
+          </div>
 
-          {editingId === cat.id ? (
-            <div className="flex items-center gap-2 flex-1 flex-wrap">
-              <input
-                value={editName}
-                onChange={(e) => setEditName(e.target.value)}
-                className="flex-1 min-w-[120px] px-2 py-1 rounded border border-input bg-background text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring/20"
-                autoFocus
-              />
-              {cat.level === "item" && (
-                <div className="flex items-center gap-1.5">
-                  <Award className="h-3.5 w-3.5 text-amber-500" />
-                  <input
-                    type="number"
-                    min={0}
-                    value={editScore}
-                    onChange={(e) => setEditScore(Number(e.target.value))}
-                    className="w-16 px-2 py-1 rounded border border-input bg-background text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring/20"
-                    placeholder="Pts"
-                  />
-                  <span className="text-xs text-muted-foreground">pts</span>
-                </div>
-              )}
-              <button
-                onClick={() => saveEdit(cat)}
-                className="p-1 text-primary hover:bg-primary/10 rounded"
-              >
-                <Check className="h-4 w-4" />
-              </button>
-              <button onClick={() => setEditingId(null)} className="p-1 text-muted-foreground hover:bg-muted rounded">
-                <X className="h-4 w-4" />
-              </button>
+          {isExpanded && (
+            <div className="p-3 space-y-2">
+              {children.map((child) => renderCategory(child, depth + 1))}
+              {isAdmin && renderAddButton(cat.id, childLevel)}
             </div>
-          ) : (
-            <>
-              <span className={`text-sm font-medium ${!cat.is_active ? "line-through text-muted-foreground" : "text-foreground"}`}>
-                {cat.name}
-              </span>
-              <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${levelColors[cat.level]}`}>
-                {levelLabels[cat.level]}
-              </span>
-              {cat.level === "item" && cat.score != null && cat.score > 0 && (
-                <span className="inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full font-semibold bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">
-                  <Award className="h-3 w-3" />
-                  {cat.score} pts
-                </span>
-              )}
-            </>
           )}
-
-          <div className="ml-auto flex items-center gap-2">
-            {isAdmin && editingId !== cat.id && (
-              <button
-                onClick={() => startEdit(cat)}
-                className="p-1 text-muted-foreground hover:text-foreground hover:bg-muted rounded transition-colors"
-              >
-                <Pencil className="h-3.5 w-3.5" />
-              </button>
-            )}
-            {isAdmin && (
-              <button
-                onClick={() =>
-                  updateCategory.mutate({ id: cat.id, updates: { is_active: !cat.is_active } })
-                }
-                className={`relative w-10 h-5 rounded-full transition-colors ${cat.is_active ? "bg-primary" : "bg-muted"}`}
-              >
-                <div
-                  className={`absolute top-0.5 h-4 w-4 rounded-full bg-card shadow transition-transform ${
-                    cat.is_active ? "translate-x-5" : "translate-x-0.5"
-                  }`}
-                />
-              </button>
-            )}
-          </div>
         </div>
+      );
+    }
 
-        {isExpanded && (
-          <div>
-            {children.map((child) => renderCategory(child, depth + 1))}
-            {isAdmin && cat.level !== "item" && (
-              <>
-                {addingTo === cat.id ? (
-                  <div className="flex items-center gap-2 mb-2 flex-wrap" style={{ marginLeft: 24 }}>
-                    <input
-                      value={newName}
-                      onChange={(e) => setNewName(e.target.value)}
-                      placeholder="Nome..."
-                      className="flex-1 min-w-[120px] px-3 py-2 rounded-lg border border-input bg-background text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring/20"
-                      autoFocus
-                      onKeyDown={(e) => e.key === "Enter" && handleAdd(cat.id, childLevel)}
-                    />
-                    {childLevel === "item" && (
-                      <div className="flex items-center gap-1.5">
-                        <Award className="h-3.5 w-3.5 text-amber-500" />
-                        <input
-                          type="number"
-                          min={0}
-                          value={newScore}
-                          onChange={(e) => setNewScore(Number(e.target.value))}
-                          className="w-16 px-2 py-2 rounded-lg border border-input bg-background text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring/20"
-                          placeholder="Pts"
-                        />
-                        <span className="text-xs text-muted-foreground">pts</span>
-                      </div>
-                    )}
-                    <button onClick={() => handleAdd(cat.id, childLevel)} className="p-1.5 text-primary hover:bg-primary/10 rounded">
-                      <Check className="h-4 w-4" />
-                    </button>
-                    <button onClick={() => { setAddingTo(null); setNewName(""); setNewScore(0); }} className="p-1.5 text-muted-foreground hover:bg-muted rounded">
-                      <X className="h-4 w-4" />
-                    </button>
-                  </div>
-                ) : (
-                  <button
-                    onClick={() => setAddingTo(cat.id)}
-                    className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground ml-6 mb-2 transition-colors"
-                  >
-                    <Plus className="h-3.5 w-3.5" />
-                    Novo {levelLabels[childLevel]}
-                  </button>
-                )}
-              </>
+    if (isSistema) {
+      return (
+        <div key={cat.id} className="border border-border rounded-md bg-background overflow-hidden">
+          {/* Sistema header */}
+          <div className="flex items-center gap-3 p-2.5 bg-primary/5 border-b border-border">
+            {(children.length > 0 || isAdmin) ? (
+              <button onClick={() => toggleExpand(cat.id)} className="text-muted-foreground">
+                {isExpanded ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+              </button>
+            ) : (
+              <div className="w-4" />
             )}
+            <LayoutList className="h-4 w-4 text-muted-foreground" />
+            {renderNameOrEdit(cat)}
+            {renderActions(cat)}
           </div>
-        )}
+
+          {isExpanded && (
+            <div className="p-2.5 pl-6 space-y-1.5">
+              {children.map((child) => renderCategory(child, depth + 1))}
+              {isAdmin && renderAddButton(cat.id, childLevel)}
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    // Item level — simple row, no nesting
+    return (
+      <div key={cat.id} className="flex items-center gap-3 p-2 rounded-md hover:bg-muted/40 transition-colors">
+        <div className="w-4" />
+        <LayoutList className="h-3.5 w-3.5 text-muted-foreground" />
+        {renderNameOrEdit(cat)}
+        {renderActions(cat)}
       </div>
+    );
+  };
+
+  const renderNameOrEdit = (cat: Category) => {
+    if (editingId === cat.id) {
+      return (
+        <div className="flex items-center gap-2 flex-1 flex-wrap">
+          <input
+            value={editName}
+            onChange={(e) => setEditName(e.target.value)}
+            className="flex-1 min-w-[120px] px-2 py-1 rounded border border-input bg-background text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring/20"
+            autoFocus
+          />
+          {cat.level === "item" && (
+            <div className="flex items-center gap-1.5">
+              <Award className="h-3.5 w-3.5 text-amber-500" />
+              <input
+                type="number"
+                min={0}
+                value={editScore}
+                onChange={(e) => setEditScore(Number(e.target.value))}
+                className="w-16 px-2 py-1 rounded border border-input bg-background text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring/20"
+                placeholder="Pts"
+              />
+              <span className="text-xs text-muted-foreground">pts</span>
+            </div>
+          )}
+          <button onClick={() => saveEdit(cat)} className="p-1 text-primary hover:bg-primary/10 rounded">
+            <Check className="h-4 w-4" />
+          </button>
+          <button onClick={() => setEditingId(null)} className="p-1 text-muted-foreground hover:bg-muted rounded">
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+      );
+    }
+
+    return (
+      <>
+        <span className={`text-sm font-medium ${!cat.is_active ? "line-through text-muted-foreground" : "text-foreground"}`}>
+          {cat.name}
+        </span>
+        <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${levelColors[cat.level]}`}>
+          {levelLabels[cat.level]}
+        </span>
+        {cat.level === "item" && cat.score != null && cat.score > 0 && (
+          <span className="inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full font-semibold bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">
+            <Award className="h-3 w-3" />
+            {cat.score} pts
+          </span>
+        )}
+      </>
+    );
+  };
+
+  const renderActions = (cat: Category) => (
+    <div className="ml-auto flex items-center gap-2">
+      {isAdmin && editingId !== cat.id && (
+        <button
+          onClick={() => startEdit(cat)}
+          className="p-1 text-muted-foreground hover:text-foreground hover:bg-muted rounded transition-colors"
+        >
+          <Pencil className="h-3.5 w-3.5" />
+        </button>
+      )}
+      {isAdmin && (
+        <button
+          onClick={() => updateCategory.mutate({ id: cat.id, updates: { is_active: !cat.is_active } })}
+          className={`relative w-10 h-5 rounded-full transition-colors ${cat.is_active ? "bg-primary" : "bg-muted"}`}
+        >
+          <div
+            className={`absolute top-0.5 h-4 w-4 rounded-full bg-card shadow transition-transform ${
+              cat.is_active ? "translate-x-5" : "translate-x-0.5"
+            }`}
+          />
+        </button>
+      )}
+    </div>
+  );
+
+  const renderAddButton = (parentId: string, childLevel: string) => {
+    if (addingTo === parentId) {
+      return (
+        <div className="flex items-center gap-2 flex-wrap">
+          <input
+            value={newName}
+            onChange={(e) => setNewName(e.target.value)}
+            placeholder="Nome..."
+            className="flex-1 min-w-[120px] px-3 py-2 rounded-lg border border-input bg-background text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring/20"
+            autoFocus
+            onKeyDown={(e) => e.key === "Enter" && handleAdd(parentId, childLevel)}
+          />
+          {childLevel === "item" && (
+            <div className="flex items-center gap-1.5">
+              <Award className="h-3.5 w-3.5 text-amber-500" />
+              <input
+                type="number"
+                min={0}
+                value={newScore}
+                onChange={(e) => setNewScore(Number(e.target.value))}
+                className="w-16 px-2 py-2 rounded-lg border border-input bg-background text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring/20"
+                placeholder="Pts"
+              />
+              <span className="text-xs text-muted-foreground">pts</span>
+            </div>
+          )}
+          <button onClick={() => handleAdd(parentId, childLevel)} className="p-1.5 text-primary hover:bg-primary/10 rounded">
+            <Check className="h-4 w-4" />
+          </button>
+          <button onClick={() => { setAddingTo(null); setNewName(""); setNewScore(0); }} className="p-1.5 text-muted-foreground hover:bg-muted rounded">
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+      );
+    }
+
+    return (
+      <button
+        onClick={() => setAddingTo(parentId)}
+        className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
+      >
+        <Plus className="h-3.5 w-3.5" />
+        Novo {levelLabels[childLevel]}
+      </button>
     );
   };
 
