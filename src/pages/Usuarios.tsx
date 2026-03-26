@@ -104,7 +104,7 @@ export default function Usuarios() {
       if (!session) throw new Error("Não autenticado");
       
       const res = await supabase.functions.invoke("create-user", {
-        body: { username: form.username, password: form.password, full_name: form.full_name, role: form.role },
+        body: { username: form.username, password: form.password, full_name: form.full_name, role: form.role, phone: form.phone },
       });
       if (res.error) throw new Error(res.error.message);
       if (res.data?.error) throw new Error(res.data.error);
