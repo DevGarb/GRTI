@@ -457,6 +457,16 @@ export default function Usuarios() {
                 />
               </div>
               <div>
+                <label className="text-sm font-medium text-foreground">Telefone</label>
+                <input
+                  value={createForm.phone}
+                  onChange={(e) => setCreateForm({ ...createForm, phone: e.target.value })}
+                  placeholder="5585999999999"
+                  className="mt-1.5 w-full px-3 py-2.5 rounded-lg border border-input bg-background text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring/20"
+                />
+                <p className="text-[11px] text-muted-foreground mt-1">Formato: DDI+DDD+Número (ex: 5585999999999)</p>
+              </div>
+              <div>
                 <label className="text-sm font-medium text-foreground">Tipo de acesso *</label>
                 <select
                   value={createForm.role}

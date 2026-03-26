@@ -112,10 +112,10 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Update profile with username
+    // Update profile with username and phone
     await adminClient
       .from("profiles")
-      .update({ username: usernameClean })
+      .update({ username: usernameClean, phone })
       .eq("user_id", newUser.user!.id);
 
     // Update role if not solicitante
