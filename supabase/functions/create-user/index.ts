@@ -50,6 +50,13 @@ Deno.serve(async (req) => {
 
     const callerIsSuperAdmin = callerRoles.some((r) => r.role === "super_admin");
 
+    // Fetch caller's organization_id to assign to new user
+    const { data: callerProfile } = await adminClient
+      .from("profiles")
+      .select("organization_id")
+      .eq("user_id", caller.id)
+      .single();
+
     const body = await req.json();
     const username = body.username; // e.g. "gabriel.porto"
     const password = body.password;
@@ -115,11 +122,12 @@ Deno.serve(async (req) => {
     // Wait briefly for the trigger to create the profile
     await new Promise((resolve) => setTimeout(resolve, 500));
 
-    // Upsert profile with username and phone
+    // Upsert profile with username, phone and organization
+    const organizationId = body.organization_id || callerProfile?.organization_id || null;
     await adminClient
       .from("profiles")
       .upsert(
-        { user_id: newUser.user!.id, username: usernameClean, phone, full_name, email: fakeEmail },
+        { user_id: newUser.user!.id, username: usernameClean, phone, full_name, email: fakeEmail, organization_id: organizationId },
         { onConflict: "user_id" }
       );
 
