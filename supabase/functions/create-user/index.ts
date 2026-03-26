@@ -112,11 +112,16 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Update profile with username and phone
+    // Wait briefly for the trigger to create the profile
+    await new Promise((resolve) => setTimeout(resolve, 500));
+
+    // Upsert profile with username and phone
     await adminClient
       .from("profiles")
-      .update({ username: usernameClean, phone })
-      .eq("user_id", newUser.user!.id);
+      .upsert(
+        { user_id: newUser.user!.id, username: usernameClean, phone, full_name, email: fakeEmail },
+        { onConflict: "user_id" }
+      );
 
     // Update role if not solicitante
     if (userRole && userRole !== "solicitante") {
