@@ -50,6 +50,13 @@ Deno.serve(async (req) => {
 
     const callerIsSuperAdmin = callerRoles.some((r) => r.role === "super_admin");
 
+    // Fetch caller's organization_id to assign to new user
+    const { data: callerProfile } = await adminClient
+      .from("profiles")
+      .select("organization_id")
+      .eq("user_id", caller.id)
+      .single();
+
     const body = await req.json();
     const username = body.username; // e.g. "gabriel.porto"
     const password = body.password;
