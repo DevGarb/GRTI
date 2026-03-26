@@ -49,6 +49,7 @@ export default function Dashboard() {
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState<DashTab>("meus");
   const [period, setPeriod] = useState<PeriodFilter>("all");
+  const [selectedTicketId, setSelectedTicketId] = useState<string | null>(null);
 
   const periodDays: Record<PeriodFilter, number | null> = {
     "7d": 7, "30d": 30, "90d": 90, "all": null,
