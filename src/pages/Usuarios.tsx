@@ -120,8 +120,8 @@ export default function Usuarios() {
   });
 
   const updateRole = useMutation({
-    mutationFn: async ({ userId, role, fullName, password }: { userId: string; role: string; fullName: string; password?: string }) => {
-      await supabase.from("profiles").update({ full_name: fullName }).eq("user_id", userId);
+    mutationFn: async ({ userId, role, fullName, password, phone }: { userId: string; role: string; fullName: string; password?: string; phone?: string }) => {
+      await supabase.from("profiles").update({ full_name: fullName, phone: phone || null }).eq("user_id", userId);
       await supabase.from("user_roles").delete().eq("user_id", userId).neq("role", "super_admin");
       if (role !== "super_admin") {
         const { error } = await supabase.from("user_roles").insert({ user_id: userId, role: role as any });
