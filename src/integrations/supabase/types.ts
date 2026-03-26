@@ -751,8 +751,12 @@ export type Database = {
           description: string | null
           id: string
           organization_id: string | null
+          original_assigned_to: string | null
+          picked_at: string | null
           priority: string
           sector: string | null
+          sla_deadline: string | null
+          started_at: string | null
           status: string
           title: string
           type: string
@@ -766,8 +770,12 @@ export type Database = {
           description?: string | null
           id?: string
           organization_id?: string | null
+          original_assigned_to?: string | null
+          picked_at?: string | null
           priority?: string
           sector?: string | null
+          sla_deadline?: string | null
+          started_at?: string | null
           status?: string
           title: string
           type?: string
@@ -781,8 +789,12 @@ export type Database = {
           description?: string | null
           id?: string
           organization_id?: string | null
+          original_assigned_to?: string | null
+          picked_at?: string | null
           priority?: string
           sector?: string | null
+          sla_deadline?: string | null
+          started_at?: string | null
           status?: string
           title?: string
           type?: string
