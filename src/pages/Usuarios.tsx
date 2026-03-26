@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Users, Shield, Search, UserPlus, ChevronDown, ChevronRight, Pencil, X, User, Crown, FileUp, Download } from "lucide-react";
+import { Users, Shield, Search, UserPlus, ChevronDown, ChevronRight, Pencil, X, User, Crown, FileUp, Download, Code } from "lucide-react";
 import ImportUsersModal from "@/components/usuarios/ImportUsersModal";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -10,6 +10,7 @@ interface ProfileWithRoles {
   user_id: string;
   full_name: string;
   email: string | null;
+  username: string | null;
   avatar_url: string | null;
   created_at: string;
   roles: string[];
@@ -18,7 +19,8 @@ interface ProfileWithRoles {
 const roleLabels: Record<string, string> = {
   super_admin: "Super Admin",
   admin: "Administrador",
-  tecnico: "Técnico",
+  tecnico: "Técnico (Hardware)",
+  desenvolvedor: "Desenvolvedor (Software)",
   solicitante: "Colaborador",
 };
 
@@ -26,22 +28,33 @@ const roleColors: Record<string, string> = {
   super_admin: "bg-amber-500 text-white",
   admin: "bg-red-500 text-white",
   tecnico: "bg-primary text-primary-foreground",
+  desenvolvedor: "bg-blue-500 text-white",
   solicitante: "text-muted-foreground",
 };
 
-const roleGroupOrder = ["super_admin", "admin", "tecnico", "solicitante"];
+const roleGroupOrder = ["super_admin", "admin", "tecnico", "desenvolvedor", "solicitante"];
 const roleGroupLabels: Record<string, string> = {
   super_admin: "Super Administrador",
   admin: "Administradores",
   tecnico: "Técnicos (Hardware)",
+  desenvolvedor: "Desenvolvedores (Software)",
   solicitante: "Colaboradores",
 };
 const roleGroupIcons: Record<string, typeof Users> = {
   super_admin: Crown,
   admin: Shield,
   tecnico: Users,
+  desenvolvedor: Code,
   solicitante: User,
 };
+
+function generateUsername(fullName: string): string {
+  const parts = fullName.trim().toLowerCase().split(/\s+/);
+  if (parts.length < 2) return parts[0] || "";
+  const first = parts[0].normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+  const last = parts[parts.length - 1].normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+  return `${first}.${last}`;
+}
 
 export default function Usuarios() {
   const [search, setSearch] = useState("");
@@ -50,7 +63,7 @@ export default function Usuarios() {
   const [editForm, setEditForm] = useState({ full_name: "", role: "solicitante", password: "" });
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showImportModal, setShowImportModal] = useState(false);
-  const [createForm, setCreateForm] = useState({ full_name: "", email: "", password: "", role: "solicitante" });
+  const [createForm, setCreateForm] = useState({ full_name: "", username: "", password: "", role: "solicitante" });
   const { hasRole, isSuperAdmin } = useAuth();
   const queryClient = useQueryClient();
   const isAdmin = hasRole("admin");
@@ -60,7 +73,7 @@ export default function Usuarios() {
     queryFn: async () => {
       const { data: profiles, error } = await supabase
         .from("profiles")
-        .select("user_id, full_name, email, avatar_url, created_at")
+        .select("user_id, full_name, email, avatar_url, created_at, username")
         .order("full_name");
       if (error) throw error;
 
@@ -90,7 +103,7 @@ export default function Usuarios() {
       if (!session) throw new Error("Não autenticado");
       
       const res = await supabase.functions.invoke("create-user", {
-        body: { email: form.email, password: form.password, full_name: form.full_name, role: form.role },
+        body: { username: form.username, password: form.password, full_name: form.full_name, role: form.role },
       });
       if (res.error) throw new Error(res.error.message);
       if (res.data?.error) throw new Error(res.data.error);
@@ -99,7 +112,7 @@ export default function Usuarios() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin-users"] });
       setShowCreateModal(false);
-      setCreateForm({ full_name: "", email: "", password: "", role: "solicitante" });
+      setCreateForm({ full_name: "", username: "", password: "", role: "solicitante" });
       toast.success("Usuário criado com sucesso!");
     },
     onError: (e: Error) => toast.error("Erro ao criar: " + e.message),
@@ -108,7 +121,6 @@ export default function Usuarios() {
   const updateRole = useMutation({
     mutationFn: async ({ userId, role, fullName, password }: { userId: string; role: string; fullName: string; password?: string }) => {
       await supabase.from("profiles").update({ full_name: fullName }).eq("user_id", userId);
-      // Don't delete super_admin roles
       await supabase.from("user_roles").delete().eq("user_id", userId).neq("role", "super_admin");
       if (role !== "super_admin") {
         const { error } = await supabase.from("user_roles").insert({ user_id: userId, role: role as any });
@@ -126,7 +138,7 @@ export default function Usuarios() {
   const filtered = users.filter(
     (u) =>
       u.full_name.toLowerCase().includes(search.toLowerCase()) ||
-      (u.email || "").toLowerCase().includes(search.toLowerCase())
+      (u.username || "").toLowerCase().includes(search.toLowerCase())
   );
 
   const grouped = roleGroupOrder.reduce<Record<string, ProfileWithRoles[]>>((acc, role) => {
@@ -148,11 +160,11 @@ export default function Usuarios() {
   const isSuperAdminUser = (user: ProfileWithRoles) => user.roles.includes("super_admin");
 
   const exportCSV = () => {
-    const header = "Nome,Email,Tipo,Criado em\n";
+    const header = "Nome,Login,Tipo,Criado em\n";
     const rows = users.map((u) => {
       const role = roleLabels[u.roles[0]] || u.roles[0] || "Colaborador";
       const date = new Date(u.created_at).toLocaleDateString("pt-BR");
-      return `"${u.full_name}","${u.email || ""}","${role}","${date}"`;
+      return `"${u.full_name}","${u.username || "—"}","${role}","${date}"`;
     });
     const csv = header + rows.join("\n");
     const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8;" });
@@ -172,6 +184,14 @@ export default function Usuarios() {
     }
     setEditingUser(user);
     setEditForm({ full_name: user.full_name, role: user.roles[0] || "solicitante", password: "" });
+  };
+
+  const handleFullNameChange = (name: string) => {
+    setCreateForm((prev) => ({
+      ...prev,
+      full_name: name,
+      username: generateUsername(name),
+    }));
   };
 
   return (
@@ -209,7 +229,7 @@ export default function Usuarios() {
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
         <input
           type="text"
-          placeholder="Buscar por nome ou e-mail..."
+          placeholder="Buscar por nome ou login..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           className="w-full pl-9 pr-3 py-2.5 rounded-lg border border-input bg-background text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring/20"
@@ -267,7 +287,9 @@ export default function Usuarios() {
                               </span>
                             )}
                           </span>
-                          <span className="text-[11px] text-muted-foreground">{user.email || "—"}</span>
+                          <span className="text-[11px] text-muted-foreground">
+                            {user.username ? user.username.toUpperCase() : "—"}
+                          </span>
                         </div>
                         <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-medium ${roleColors[role]}`}>
                           {roleLabels[role]}
@@ -328,9 +350,10 @@ export default function Usuarios() {
                   onChange={(e) => setEditForm({ ...editForm, role: e.target.value })}
                   className="mt-1.5 w-full px-3 py-2.5 rounded-lg border border-input bg-background text-sm text-foreground"
                 >
-                  <option value="admin">Administrador</option>
-                  <option value="tecnico">Técnico</option>
                   <option value="solicitante">Colaborador</option>
+                  <option value="tecnico">Técnico (Hardware)</option>
+                  <option value="desenvolvedor">Desenvolvedor (Software)</option>
+                  <option value="admin">Administrador</option>
                 </select>
               </div>
               <div>
@@ -345,8 +368,8 @@ export default function Usuarios() {
               </div>
               <div>
                 <label className="text-sm font-medium text-foreground">Login</label>
-                <div className="mt-1.5 px-3 py-2.5 rounded-lg border border-input bg-muted text-sm text-muted-foreground">
-                  {editingUser.email || "—"}
+                <div className="mt-1.5 px-3 py-2.5 rounded-lg border border-input bg-muted text-sm text-muted-foreground uppercase">
+                  {editingUser.username || "—"}
                 </div>
               </div>
             </div>
@@ -396,20 +419,20 @@ export default function Usuarios() {
                 <label className="text-sm font-medium text-foreground">Nome completo *</label>
                 <input
                   value={createForm.full_name}
-                  onChange={(e) => setCreateForm({ ...createForm, full_name: e.target.value })}
-                  placeholder="Nome do usuário"
+                  onChange={(e) => handleFullNameChange(e.target.value)}
+                  placeholder="Gabriel Porto da Silva"
                   className="mt-1.5 w-full px-3 py-2.5 rounded-lg border border-input bg-background text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring/20"
                 />
               </div>
               <div>
-                <label className="text-sm font-medium text-foreground">E-mail *</label>
+                <label className="text-sm font-medium text-foreground">Login *</label>
                 <input
-                  type="email"
-                  value={createForm.email}
-                  onChange={(e) => setCreateForm({ ...createForm, email: e.target.value })}
-                  placeholder="usuario@exemplo.com"
-                  className="mt-1.5 w-full px-3 py-2.5 rounded-lg border border-input bg-background text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring/20"
+                  value={createForm.username}
+                  onChange={(e) => setCreateForm({ ...createForm, username: e.target.value.toLowerCase().replace(/[^a-z.]/g, "") })}
+                  placeholder="gabriel.porto"
+                  className="mt-1.5 w-full px-3 py-2.5 rounded-lg border border-input bg-background text-sm text-foreground uppercase focus:outline-none focus:ring-2 focus:ring-ring/20"
                 />
+                <p className="text-[11px] text-muted-foreground mt-1">Formato: nome.sobrenome (gerado automaticamente)</p>
               </div>
               <div>
                 <label className="text-sm font-medium text-foreground">Senha *</label>
@@ -422,15 +445,16 @@ export default function Usuarios() {
                 />
               </div>
               <div>
-                <label className="text-sm font-medium text-foreground">Tipo de acesso</label>
+                <label className="text-sm font-medium text-foreground">Tipo de acesso *</label>
                 <select
                   value={createForm.role}
                   onChange={(e) => setCreateForm({ ...createForm, role: e.target.value })}
                   className="mt-1.5 w-full px-3 py-2.5 rounded-lg border border-input bg-background text-sm text-foreground"
                 >
-                  <option value="admin">Administrador</option>
-                  <option value="tecnico">Técnico</option>
                   <option value="solicitante">Colaborador</option>
+                  <option value="tecnico">Técnico (Hardware)</option>
+                  <option value="desenvolvedor">Desenvolvedor (Software)</option>
+                  <option value="admin">Administrador</option>
                 </select>
               </div>
             </div>
@@ -444,7 +468,7 @@ export default function Usuarios() {
               </button>
               <button
                 onClick={() => createUser.mutate(createForm)}
-                disabled={createUser.isPending || !createForm.email || !createForm.password || !createForm.full_name}
+                disabled={createUser.isPending || !createForm.username || !createForm.password || !createForm.full_name}
                 className="px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 transition-opacity disabled:opacity-50"
               >
                 {createUser.isPending ? "Criando..." : "Criar Usuário"}

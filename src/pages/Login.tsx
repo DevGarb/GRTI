@@ -5,32 +5,21 @@ import { motion } from "framer-motion";
 import { toast } from "sonner";
 
 export default function Login() {
-  const { signIn, signUp } = useAuth();
+  const { signIn } = useAuth();
   const navigate = useNavigate();
-  const [isRegister, setIsRegister] = useState(false);
-  const [email, setEmail] = useState("");
+  const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
-  const [fullName, setFullName] = useState("");
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
 
-    if (isRegister) {
-      const { error } = await signUp(email, password, fullName);
-      if (error) {
-        toast.error(error.message);
-      } else {
-        toast.success("Conta criada! Verifique seu e-mail para confirmar.");
-      }
+    const { error } = await signIn(username.toLowerCase().trim(), password);
+    if (error) {
+      toast.error("Login ou senha inválidos.");
     } else {
-      const { error } = await signIn(email, password);
-      if (error) {
-        toast.error("E-mail ou senha inválidos.");
-      } else {
-        navigate("/");
-      }
+      navigate("/");
     }
     setLoading(false);
   };
@@ -47,35 +36,21 @@ export default function Login() {
             <span className="text-primary-foreground font-bold text-lg">GR</span>
           </div>
           <h1 className="text-xl font-bold text-foreground">GRTI</h1>
-          <p className="text-sm text-muted-foreground mt-1">
-            {isRegister ? "Criar uma nova conta" : "Acesse sua conta"}
-          </p>
+          <p className="text-sm text-muted-foreground mt-1">Acesse sua conta</p>
         </div>
 
         <form onSubmit={handleSubmit} className="card-elevated p-6 space-y-4">
-          {isRegister && (
-            <div>
-              <label className="text-sm font-medium text-foreground">Nome Completo</label>
-              <input
-                type="text"
-                value={fullName}
-                onChange={(e) => setFullName(e.target.value)}
-                required
-                className="mt-1.5 w-full px-3 py-2.5 rounded-lg border border-input bg-background text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring/20"
-                placeholder="Seu nome completo"
-              />
-            </div>
-          )}
-
           <div>
-            <label className="text-sm font-medium text-foreground">E-mail</label>
+            <label className="text-sm font-medium text-foreground">Login</label>
             <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              type="text"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
               required
-              className="mt-1.5 w-full px-3 py-2.5 rounded-lg border border-input bg-background text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring/20"
-              placeholder="seu@email.com"
+              className="mt-1.5 w-full px-3 py-2.5 rounded-lg border border-input bg-background text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring/20 uppercase"
+              placeholder="NOME.SOBRENOME"
+              autoCapitalize="none"
+              autoCorrect="off"
             />
           </div>
 
@@ -97,19 +72,8 @@ export default function Login() {
             disabled={loading}
             className="w-full py-2.5 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 transition-opacity disabled:opacity-50"
           >
-            {loading ? "Carregando..." : isRegister ? "Criar Conta" : "Entrar"}
+            {loading ? "Carregando..." : "Entrar"}
           </button>
-
-          <p className="text-center text-sm text-muted-foreground">
-            {isRegister ? "Já tem conta?" : "Não tem conta?"}{" "}
-            <button
-              type="button"
-              onClick={() => setIsRegister(!isRegister)}
-              className="text-primary font-medium hover:underline"
-            >
-              {isRegister ? "Entrar" : "Criar conta"}
-            </button>
-          </p>
         </form>
       </motion.div>
     </div>

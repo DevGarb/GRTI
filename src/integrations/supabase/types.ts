@@ -483,6 +483,7 @@ export type Database = {
           phone: string | null
           updated_at: string
           user_id: string
+          username: string | null
         }
         Insert: {
           avatar_url?: string | null
@@ -494,6 +495,7 @@ export type Database = {
           phone?: string | null
           updated_at?: string
           user_id: string
+          username?: string | null
         }
         Update: {
           avatar_url?: string | null
@@ -505,6 +507,7 @@ export type Database = {
           phone?: string | null
           updated_at?: string
           user_id?: string
+          username?: string | null
         }
         Relationships: [
           {
@@ -876,7 +879,13 @@ export type Database = {
       is_super_admin: { Args: { _user_id: string }; Returns: boolean }
     }
     Enums: {
-      app_role: "admin" | "tecnico" | "solicitante" | "super_admin" | "auditor"
+      app_role:
+        | "admin"
+        | "tecnico"
+        | "solicitante"
+        | "super_admin"
+        | "auditor"
+        | "desenvolvedor"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1004,7 +1013,14 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["admin", "tecnico", "solicitante", "super_admin", "auditor"],
+      app_role: [
+        "admin",
+        "tecnico",
+        "solicitante",
+        "super_admin",
+        "auditor",
+        "desenvolvedor",
+      ],
     },
   },
 } as const
