@@ -233,13 +233,17 @@ export default function Chamados() {
           })}
         </div>
       ) : (
-        /* Non-admin: split into assigned to me vs created by me */
+        /* Non-admin: split into available, assigned to me, created by me */
         (() => {
           const userId = user?.id;
-          const assignedToMe = filtered.filter(t => t.assigned_to === userId);
-          const createdByMe = filtered.filter(t => t.created_by === userId && t.assigned_to !== userId);
+          const availableTickets = filtered.filter(t => t.status === "Disponível");
+          const assignedToMe = filtered.filter(t => t.assigned_to === userId && t.status !== "Disponível");
+          const createdByMe = filtered.filter(t => t.created_by === userId && t.assigned_to !== userId && t.status !== "Disponível");
           return (
             <div className="space-y-4">
+              {availableTickets.length > 0 && (
+                <AvailableTicketsSection tickets={availableTickets} onSelect={setSelectedTicket} />
+              )}
               {assignedToMe.length > 0 && (
                 <div className="card-elevated overflow-hidden">
                   <div className="px-4 py-3 border-b border-border bg-muted/30 flex items-center gap-2">
@@ -264,7 +268,7 @@ export default function Chamados() {
                   <TicketTable tickets={createdByMe} onSelect={setSelectedTicket} />
                 </div>
               )}
-              {assignedToMe.length === 0 && createdByMe.length === 0 && (
+              {availableTickets.length === 0 && assignedToMe.length === 0 && createdByMe.length === 0 && (
                 <div className="card-elevated p-12 flex items-center justify-center">
                   <p className="text-sm text-muted-foreground">Nenhum chamado encontrado.</p>
                 </div>
