@@ -471,6 +471,7 @@ export default function Dashboard() {
                 initial="hidden"
                 animate="show"
                 custom={i}
+                onClick={() => setSelectedTicketId(ticket.id)}
               >
                 <div className="flex items-start justify-between gap-4">
                   <div className="flex-1 min-w-0">
