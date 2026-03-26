@@ -404,7 +404,45 @@ export default function TicketDetailModal({ ticket, onClose }: Props) {
             </div>
           )}
 
+          {/* SLA Info */}
+          {(isOpen || isDisponivel) && slaDeadline && (
+            <div className={`flex items-center gap-2 p-3 rounded-lg border ${
+              slaExpired || isDisponivel
+                ? "bg-red-50 dark:bg-red-950/20 border-red-300 dark:border-red-700"
+                : "bg-amber-50 dark:bg-amber-950/20 border-amber-200 dark:border-amber-800"
+            }`}>
+              {slaExpired || isDisponivel ? (
+                <AlertTriangle className="h-4 w-4 text-red-600 dark:text-red-400" />
+              ) : (
+                <Clock className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+              )}
+              <div>
+                <p className="text-[11px] text-muted-foreground uppercase tracking-wider">SLA de Início</p>
+                <p className={`text-sm font-medium ${
+                  slaExpired || isDisponivel ? "text-red-700 dark:text-red-400" : "text-foreground"
+                }`}>
+                  {slaExpired || isDisponivel
+                    ? "SLA Expirado — chamado disponível para reatribuição"
+                    : `${slaRemainingHours}h ${slaRemainingMinutes}min restantes`
+                  }
+                </p>
+              </div>
+            </div>
+          )}
+
           {/* === ACTION BUTTONS === */}
+
+          {/* Technician: Pick available ticket */}
+          {isTecnico && isDisponivel && (
+            <button
+              onClick={handlePickTicket}
+              disabled={pickTicket.isPending}
+              className="w-full py-3 rounded-lg bg-emerald-600 text-white text-sm font-semibold hover:bg-emerald-700 transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
+            >
+              <HandMetal className="h-4 w-4" />
+              Pegar para mim
+            </button>
+          )}
 
           {/* Technician: Iniciar Atendimento (when ticket is Open and assigned) */}
           {isTecnico && isOpen && (isAssigned || isAdmin) && (
