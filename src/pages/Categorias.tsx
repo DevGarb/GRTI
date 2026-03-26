@@ -51,15 +51,16 @@ export default function Categorias() {
   });
 
   const createCategory = useMutation({
-    mutationFn: async ({ name, parentId, level }: { name: string; parentId: string | null; level: string }) => {
+    mutationFn: async ({ name, parentId, level, score }: { name: string; parentId: string | null; level: string; score?: number }) => {
       const { error } = await supabase
         .from("categories")
-        .insert({ name, parent_id: parentId, level });
+        .insert({ name, parent_id: parentId, level, score: level === "item" ? (score ?? 0) : null });
       if (error) throw error;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["categories"] });
       setNewName("");
+      setNewScore(0);
       setAddingTo(null);
       toast.success("Categoria criada!");
     },
