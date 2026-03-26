@@ -78,7 +78,7 @@ interface CreatePreventivaInput {
 
 export function useCreatePreventiva() {
   const queryClient = useQueryClient();
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
 
   return useMutation({
     mutationFn: async (input: CreatePreventivaInput) => {
@@ -87,6 +87,7 @@ export function useCreatePreventiva() {
         .insert({
           ...input,
           created_by: user!.id,
+          organization_id: profile?.organization_id || null,
           notes: input.notes || null,
         })
         .select()
