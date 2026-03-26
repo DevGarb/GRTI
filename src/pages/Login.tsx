@@ -44,7 +44,7 @@ export default function Login() {
       >
         <div className="text-center mb-8">
           <div className="h-12 w-12 rounded-xl bg-primary flex items-center justify-center mx-auto mb-4">
-            <span className="text-primary-foreground font-bold text-lg">IN</span>
+            <span className="text-primary-foreground font-bold text-lg">GR</span>
           </div>
           <h1 className="text-xl font-bold text-foreground">GRTI</h1>
           <p className="text-sm text-muted-foreground mt-1">
