@@ -519,8 +519,9 @@ function UsuariosTab() {
   // Create user form
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [createName, setCreateName] = useState("");
-  const [createEmail, setCreateEmail] = useState("");
+  const [createUsername, setCreateUsername] = useState("");
   const [createPassword, setCreatePassword] = useState("");
+  const [createPhone, setCreatePhone] = useState("");
   const [createRole, setCreateRole] = useState<string>("admin");
   const [createOrgId, setCreateOrgId] = useState("");
   const [creating, setCreating] = useState(false);
