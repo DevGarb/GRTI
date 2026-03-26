@@ -184,7 +184,7 @@ export default function Usuarios() {
       return;
     }
     setEditingUser(user);
-    setEditForm({ full_name: user.full_name, role: user.roles[0] || "solicitante", password: "" });
+    setEditForm({ full_name: user.full_name, role: user.roles[0] || "solicitante", password: "", phone: user.phone || "" });
   };
 
   const handleFullNameChange = (name: string) => {
