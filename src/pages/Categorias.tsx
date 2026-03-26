@@ -97,7 +97,7 @@ export default function Categorias() {
 
   const handleAdd = (parentId: string | null, level: string) => {
     if (!newName.trim()) return;
-    createCategory.mutate({ name: newName.trim(), parentId, level });
+    createCategory.mutate({ name: newName.trim(), parentId, level, score: level === "item" ? newScore : undefined });
   };
 
   const startEdit = (cat: Category) => {
