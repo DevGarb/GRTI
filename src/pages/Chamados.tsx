@@ -1,12 +1,12 @@
 import { useState } from "react";
-import { Search, Filter, ChevronDown, ChevronRight, Plus, User, RefreshCw, Inbox, SendHorizonal } from "lucide-react";
+import { Search, Filter, ChevronDown, ChevronRight, Plus, User, RefreshCw, Inbox, SendHorizonal, HandMetal, AlertTriangle, Clock } from "lucide-react";
 import { StatusBadge, PriorityBadge } from "@/components/StatusBadge";
-import { useTickets, Ticket } from "@/hooks/useTickets";
+import { useTickets, Ticket, usePickTicket } from "@/hooks/useTickets";
 import { useAuth } from "@/contexts/AuthContext";
 import NewTicketModal from "@/components/NewTicketModal";
 import TicketDetailModal from "@/components/TicketDetailModal";
 
-const allStatuses = ["Aberto", "Em Andamento", "Aguardando Aprovação", "Aprovado", "Fechado"];
+const allStatuses = ["Aberto", "Em Andamento", "Aguardando Aprovação", "Aprovado", "Fechado", "Disponível"];
 
 const statusBadgeColors: Record<string, string> = {
   "Aberto": "bg-red-500 text-white",
