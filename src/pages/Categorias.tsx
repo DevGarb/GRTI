@@ -213,19 +213,33 @@ export default function Categorias() {
             {isAdmin && cat.level !== "item" && (
               <>
                 {addingTo === cat.id ? (
-                  <div className="flex items-center gap-2 mb-2" style={{ marginLeft: 24 }}>
+                  <div className="flex items-center gap-2 mb-2 flex-wrap" style={{ marginLeft: 24 }}>
                     <input
                       value={newName}
                       onChange={(e) => setNewName(e.target.value)}
                       placeholder="Nome..."
-                      className="flex-1 px-3 py-2 rounded-lg border border-input bg-background text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring/20"
+                      className="flex-1 min-w-[120px] px-3 py-2 rounded-lg border border-input bg-background text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring/20"
                       autoFocus
                       onKeyDown={(e) => e.key === "Enter" && handleAdd(cat.id, childLevel)}
                     />
+                    {childLevel === "item" && (
+                      <div className="flex items-center gap-1.5">
+                        <Award className="h-3.5 w-3.5 text-amber-500" />
+                        <input
+                          type="number"
+                          min={0}
+                          value={newScore}
+                          onChange={(e) => setNewScore(Number(e.target.value))}
+                          className="w-16 px-2 py-2 rounded-lg border border-input bg-background text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring/20"
+                          placeholder="Pts"
+                        />
+                        <span className="text-xs text-muted-foreground">pts</span>
+                      </div>
+                    )}
                     <button onClick={() => handleAdd(cat.id, childLevel)} className="p-1.5 text-primary hover:bg-primary/10 rounded">
                       <Check className="h-4 w-4" />
                     </button>
-                    <button onClick={() => { setAddingTo(null); setNewName(""); }} className="p-1.5 text-muted-foreground hover:bg-muted rounded">
+                    <button onClick={() => { setAddingTo(null); setNewName(""); setNewScore(0); }} className="p-1.5 text-muted-foreground hover:bg-muted rounded">
                       <X className="h-4 w-4" />
                     </button>
                   </div>
