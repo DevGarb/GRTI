@@ -11,7 +11,7 @@ import { toast } from "sonner";
 import TicketComments from "@/components/ticket-detail/TicketComments";
 import TicketHistory from "@/components/ticket-detail/TicketHistory";
 
-const allStatuses = ["Aberto", "Em Andamento", "Aguardando Aprovação", "Aprovado", "Fechado"];
+const allStatuses = ["Aberto", "Em Andamento", "Aguardando Aprovação", "Aprovado", "Fechado", "Disponível"];
 
 interface Category {
   id: string;
