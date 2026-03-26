@@ -222,7 +222,7 @@ export default function Dashboard() {
           </div>
           <div className="space-y-1">
             {openTickets.slice(0, 8).map((t) => (
-              <div key={t.id} className="flex items-center gap-3 text-[12px] py-1.5 border-b border-border last:border-0">
+              <div key={t.id} onClick={() => setSelectedTicketId(t.id)} className="flex items-center gap-3 text-[12px] py-1.5 border-b border-border last:border-0 cursor-pointer hover:bg-muted/30 transition-colors">
                 <PriorityBadge priority={t.priority} />
                 <span className="font-medium text-foreground truncate flex-1">{t.title}</span>
                 <span className="text-muted-foreground hidden sm:block">{t.creatorProfile?.full_name}</span>
