@@ -60,10 +60,10 @@ export default function Usuarios() {
   const [search, setSearch] = useState("");
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set(roleGroupOrder));
   const [editingUser, setEditingUser] = useState<ProfileWithRoles | null>(null);
-  const [editForm, setEditForm] = useState({ full_name: "", role: "solicitante", password: "" });
+  const [editForm, setEditForm] = useState({ full_name: "", role: "solicitante", password: "", phone: "" });
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showImportModal, setShowImportModal] = useState(false);
-  const [createForm, setCreateForm] = useState({ full_name: "", username: "", password: "", role: "solicitante" });
+  const [createForm, setCreateForm] = useState({ full_name: "", username: "", password: "", role: "solicitante", phone: "" });
   const { hasRole, isSuperAdmin } = useAuth();
   const queryClient = useQueryClient();
   const isAdmin = hasRole("admin");
