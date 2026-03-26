@@ -490,6 +490,14 @@ export default function Dashboard() {
           </div>
         )}
       </div>
+
+      {selectedTicketId && (
+        <TicketDetailModal
+          ticketId={selectedTicketId}
+          open={!!selectedTicketId}
+          onOpenChange={(open) => { if (!open) setSelectedTicketId(null); }}
+        />
+      )}
     </div>
   );
 }
