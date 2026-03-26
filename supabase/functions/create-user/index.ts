@@ -55,6 +55,7 @@ Deno.serve(async (req) => {
     const password = body.password;
     const full_name = body.full_name;
     const userRole = body.role;
+    const phone = body.phone || null;
 
     // Only super_admin can create admin users
     if (userRole === "admin" && !callerIsSuperAdmin) {
