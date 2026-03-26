@@ -108,6 +108,7 @@ export default function TicketDetailModal({ ticket, onClose }: Props) {
   const isTecnico = hasRole("tecnico");
   const canChangeStatus = isAdmin || isTecnico;
   const updateTicket = useUpdateTicket();
+  const pickTicket = usePickTicket();
   const queryClient = useQueryClient();
   const [status, setStatus] = useState(ticket.status);
   const [showEvaluation, setShowEvaluation] = useState(false);
