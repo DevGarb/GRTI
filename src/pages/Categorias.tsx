@@ -29,6 +29,7 @@ const levelColors: Record<string, string> = {
 export default function Categorias() {
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
   const [newName, setNewName] = useState("");
+  const [newScore, setNewScore] = useState<number>(0);
   const [addingTo, setAddingTo] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editName, setEditName] = useState("");
