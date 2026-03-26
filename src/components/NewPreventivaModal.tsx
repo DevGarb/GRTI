@@ -29,6 +29,7 @@ const checklistItems = [
 export default function NewPreventivaModal({ onClose }: Props) {
   const { profile } = useAuth();
   const { data: sectors = [] } = useSectors(profile?.organization_id || null);
+  const { data: technicians = [] } = useTechnicianProfiles();
   const [checklist, setChecklist] = useState<Record<string, boolean>>({});
   const [equipmentType, setEquipmentType] = useState("");
   const [assetTag, setAssetTag] = useState("");
