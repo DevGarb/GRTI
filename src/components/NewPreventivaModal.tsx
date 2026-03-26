@@ -176,13 +176,17 @@ export default function NewPreventivaModal({ onClose }: Props) {
               </select>
             </div>
             <div>
-              <label className="text-sm font-medium text-foreground">Responsável</label>
-              <input
+              <label className="text-sm font-medium text-foreground">Técnico Responsável</label>
+              <select
                 value={responsible}
                 onChange={(e) => setResponsible(e.target.value)}
-                placeholder="Nome do responsável..."
-                className="mt-1.5 w-full px-3 py-2.5 rounded-lg border border-input bg-background text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring/20"
-              />
+                className="mt-1.5 w-full px-3 py-2.5 rounded-lg border border-input bg-background text-sm text-foreground"
+              >
+                <option value="">Selecione o técnico...</option>
+                {technicians.map((t) => (
+                  <option key={t.user_id} value={t.full_name}>{t.full_name}</option>
+                ))}
+              </select>
             </div>
           </div>
 

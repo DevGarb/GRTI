@@ -214,3 +214,27 @@ export function useProfiles() {
     },
   });
 }
+
+export function useTechnicianProfiles() {
+  return useQuery({
+    queryKey: ["technician-profiles"],
+    queryFn: async () => {
+      // Get user_ids with tecnico or desenvolvedor roles
+      const { data: roles, error: rolesError } = await supabase
+        .from("user_roles")
+        .select("user_id, role")
+        .in("role", ["tecnico", "desenvolvedor"]);
+      if (rolesError) throw rolesError;
+
+      const userIds = [...new Set((roles || []).map((r) => r.user_id))];
+      if (userIds.length === 0) return [];
+
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("*")
+        .in("user_id", userIds);
+      if (error) throw error;
+      return data;
+    },
+  });
+}

@@ -19,7 +19,7 @@ export default function NewTicketModal({ onClose }: Props) {
   const [assignedTo, setAssignedTo] = useState("");
   const [sector, setSector] = useState("");
   const createTicket = useCreateTicket();
-  const { data: profiles = [] } = useProfiles();
+  const { data: profiles = [] } = useTechnicianProfiles();
 
   const handleSubmit = () => {
     console.log("[NewTicketModal] handleSubmit called", { title, description, priority, type, assignedTo });
