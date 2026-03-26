@@ -2,6 +2,7 @@ import { useState, useRef } from "react";
 import { X, Camera, Upload } from "lucide-react";
 import { useCreatePreventiva } from "@/hooks/usePreventivas";
 import { useSectors } from "@/hooks/useSectors";
+import { useTechnicianProfiles } from "@/hooks/useTickets";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
