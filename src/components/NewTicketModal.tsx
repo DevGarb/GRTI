@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { X, Ticket, Upload } from "lucide-react";
-import { useCreateTicket, useProfiles } from "@/hooks/useTickets";
+import { useCreateTicket, useTechnicianProfiles } from "@/hooks/useTickets";
 import { useSectors } from "@/hooks/useSectors";
 import { useAuth } from "@/contexts/AuthContext";
 
