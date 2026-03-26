@@ -294,10 +294,24 @@ export default function TicketDetailModal({ ticket, onClose }: Props) {
   const isAwaitingApproval = status === "Aguardando Aprovação";
   const isApproved = status === "Aprovado";
   const isClosed = status === "Fechado";
+  const isDisponivel = status === "Disponível";
   const isSolicitante = ticket.created_by === user?.id;
 
   // Technician assigned to this ticket
   const isAssigned = ticket.assigned_to === user?.id;
+
+  // SLA info
+  const slaDeadline = ticket.sla_deadline ? new Date(ticket.sla_deadline) : null;
+  const now = new Date();
+  const slaExpired = slaDeadline ? now > slaDeadline : false;
+  const slaRemainingMs = slaDeadline ? slaDeadline.getTime() - now.getTime() : 0;
+  const slaRemainingHours = Math.max(0, Math.floor(slaRemainingMs / (1000 * 60 * 60)));
+  const slaRemainingMinutes = Math.max(0, Math.floor((slaRemainingMs % (1000 * 60 * 60)) / (1000 * 60)));
+
+  const handlePickTicket = async () => {
+    pickTicket.mutate(ticket.id);
+    setStatus("Em Andamento");
+  };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={onClose}>
