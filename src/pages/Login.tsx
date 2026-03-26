@@ -46,7 +46,7 @@ export default function Login() {
           <div className="h-12 w-12 rounded-xl bg-primary flex items-center justify-center mx-auto mb-4">
             <span className="text-primary-foreground font-bold text-lg">IN</span>
           </div>
-          <h1 className="text-xl font-bold text-foreground">In Demands</h1>
+          <h1 className="text-xl font-bold text-foreground">GRTI</h1>
           <p className="text-sm text-muted-foreground mt-1">
             {isRegister ? "Criar uma nova conta" : "Acesse sua conta"}
           </p>

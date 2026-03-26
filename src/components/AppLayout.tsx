@@ -208,7 +208,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
           )}
           {!orgData?.logo_url && (
             <span className="text-sidebar-primary font-semibold text-sm leading-tight text-center">
-              {orgData?.name || "In Demands"}
+              {orgData?.name || "GRTI"}
             </span>
           )}
           <span className="text-sidebar-muted text-[11px] text-center truncate max-w-full">{profile?.full_name || "Carregando..."}</span>
