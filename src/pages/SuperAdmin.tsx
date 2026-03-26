@@ -613,33 +613,45 @@ function UsuariosTab() {
     return matchSearch && matchOrg;
   });
 
+  const generateUsername = (fullName: string): string => {
+    const parts = fullName.trim().toLowerCase().split(/\s+/);
+    if (parts.length < 2) return parts[0] || "";
+    const first = parts[0].normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+    const last = parts[parts.length - 1].normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+    return `${first}.${last}`;
+  };
+
+  const handleFullNameChange = (name: string) => {
+    setCreateName(name);
+    setCreateUsername(generateUsername(name));
+  };
+
   const handleCreateUser = async () => {
-    if (!createName.trim() || !createEmail.trim() || !createPassword.trim()) {
-      toast.error("Nome, email e senha são obrigatórios."); return;
+    if (!createName.trim() || !createUsername.trim() || !createPassword.trim()) {
+      toast.error("Nome, login e senha são obrigatórios."); return;
     }
     if (createPassword.length < 6) { toast.error("Senha deve ter ao menos 6 caracteres."); return; }
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(createEmail.trim())) { toast.error("Email inválido."); return; }
 
     setCreating(true);
     const { data, error } = await supabase.functions.invoke("create-user", {
       body: {
-        email: createEmail.trim(),
+        username: createUsername.trim(),
         password: createPassword,
         full_name: createName.trim(),
         role: createRole,
+        phone: createPhone.trim() || null,
       },
     });
 
     if (error || data?.error) {
       toast.error(data?.error || error?.message || "Erro ao criar usuário.");
     } else {
-      // If org selected, update profile
       if (createOrgId && data?.user?.id) {
         await supabase.from("profiles").update({ organization_id: createOrgId }).eq("user_id", data.user.id);
       }
       toast.success("Usuário criado com sucesso!");
       setShowCreateForm(false);
-      setCreateName(""); setCreateEmail(""); setCreatePassword(""); setCreateRole("admin"); setCreateOrgId("");
+      setCreateName(""); setCreateUsername(""); setCreatePassword(""); setCreatePhone(""); setCreateRole("admin"); setCreateOrgId("");
       fetchData();
     }
     setCreating(false);
@@ -647,7 +659,7 @@ function UsuariosTab() {
 
   const resetCreateForm = () => {
     setShowCreateForm(false);
-    setCreateName(""); setCreateEmail(""); setCreatePassword(""); setCreateRole("admin"); setCreateOrgId("");
+    setCreateName(""); setCreateUsername(""); setCreatePassword(""); setCreatePhone(""); setCreateRole("admin"); setCreateOrgId("");
   };
 
   const roleColors: Record<string, string> = {
