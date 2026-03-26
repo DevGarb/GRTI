@@ -17,6 +17,10 @@ export interface Ticket {
   updated_at: string;
   organization_id: string | null;
   category_id: string | null;
+  sla_deadline: string | null;
+  started_at: string | null;
+  picked_at: string | null;
+  original_assigned_to: string | null;
   reworkCount?: number;
   // joined
   assignedProfile?: { full_name: string } | null;
@@ -138,6 +142,46 @@ export function useUpdateTicket() {
     },
     onError: (e: Error) => {
       toast.error("Erro ao atualizar: " + e.message);
+    },
+  });
+}
+
+export function usePickTicket() {
+  const queryClient = useQueryClient();
+  const { user } = useAuth();
+
+  return useMutation({
+    mutationFn: async (ticketId: string) => {
+      const { data, error } = await supabase
+        .from("tickets")
+        .update({
+          assigned_to: user!.id,
+          status: "Em Andamento",
+          picked_at: new Date().toISOString(),
+          started_at: new Date().toISOString(),
+        })
+        .eq("id", ticketId)
+        .select()
+        .single();
+      if (error) throw error;
+
+      // Record history
+      await supabase.from("ticket_history").insert({
+        ticket_id: ticketId,
+        user_id: user!.id,
+        action: "picked",
+        old_value: "Disponível",
+        new_value: "Em Andamento",
+      });
+
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["tickets"] });
+      toast.success("Chamado assumido com sucesso!");
+    },
+    onError: (e: Error) => {
+      toast.error("Erro ao assumir chamado: " + e.message);
     },
   });
 }

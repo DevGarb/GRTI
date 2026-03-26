@@ -1,8 +1,8 @@
 import { useState, useMemo } from "react";
-import { X, User, Tag, Paperclip, Star, ChevronDown, ChevronRight, LayoutList, Play, CheckCircle2, RotateCcw, ThumbsUp, ThumbsDown, RefreshCw } from "lucide-react";
+import { X, User, Tag, Paperclip, Star, ChevronDown, ChevronRight, LayoutList, Play, CheckCircle2, RotateCcw, ThumbsUp, ThumbsDown, RefreshCw, HandMetal, AlertTriangle, Clock } from "lucide-react";
 import { StatusBadge, PriorityBadge } from "@/components/StatusBadge";
 import type { Ticket } from "@/hooks/useTickets";
-import { useUpdateTicket } from "@/hooks/useTickets";
+import { useUpdateTicket, usePickTicket } from "@/hooks/useTickets";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { dispatchWebhookEvent } from "@/hooks/useWebhooks";
@@ -11,7 +11,7 @@ import { toast } from "sonner";
 import TicketComments from "@/components/ticket-detail/TicketComments";
 import TicketHistory from "@/components/ticket-detail/TicketHistory";
 
-const allStatuses = ["Aberto", "Em Andamento", "Aguardando Aprovação", "Aprovado", "Fechado"];
+const allStatuses = ["Aberto", "Em Andamento", "Aguardando Aprovação", "Aprovado", "Fechado", "Disponível"];
 
 interface Category {
   id: string;
@@ -108,6 +108,7 @@ export default function TicketDetailModal({ ticket, onClose }: Props) {
   const isTecnico = hasRole("tecnico");
   const canChangeStatus = isAdmin || isTecnico;
   const updateTicket = useUpdateTicket();
+  const pickTicket = usePickTicket();
   const queryClient = useQueryClient();
   const [status, setStatus] = useState(ticket.status);
   const [showEvaluation, setShowEvaluation] = useState(false);
@@ -243,6 +244,8 @@ export default function TicketDetailModal({ ticket, onClose }: Props) {
 
   // Technician starts working
   const handleStartService = async () => {
+    // Update started_at when technician begins
+    await supabase.from("tickets").update({ started_at: new Date().toISOString() }).eq("id", ticket.id);
     await handleStatusChange("Em Andamento");
     await addHistory("started");
     dispatchWebhookEvent(ticket.id, "ticket_started");
@@ -293,10 +296,24 @@ export default function TicketDetailModal({ ticket, onClose }: Props) {
   const isAwaitingApproval = status === "Aguardando Aprovação";
   const isApproved = status === "Aprovado";
   const isClosed = status === "Fechado";
+  const isDisponivel = status === "Disponível";
   const isSolicitante = ticket.created_by === user?.id;
 
   // Technician assigned to this ticket
   const isAssigned = ticket.assigned_to === user?.id;
+
+  // SLA info
+  const slaDeadline = ticket.sla_deadline ? new Date(ticket.sla_deadline) : null;
+  const now = new Date();
+  const slaExpired = slaDeadline ? now > slaDeadline : false;
+  const slaRemainingMs = slaDeadline ? slaDeadline.getTime() - now.getTime() : 0;
+  const slaRemainingHours = Math.max(0, Math.floor(slaRemainingMs / (1000 * 60 * 60)));
+  const slaRemainingMinutes = Math.max(0, Math.floor((slaRemainingMs % (1000 * 60 * 60)) / (1000 * 60)));
+
+  const handlePickTicket = async () => {
+    pickTicket.mutate(ticket.id);
+    setStatus("Em Andamento");
+  };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={onClose}>
@@ -389,7 +406,45 @@ export default function TicketDetailModal({ ticket, onClose }: Props) {
             </div>
           )}
 
+          {/* SLA Info */}
+          {(isOpen || isDisponivel) && slaDeadline && (
+            <div className={`flex items-center gap-2 p-3 rounded-lg border ${
+              slaExpired || isDisponivel
+                ? "bg-red-50 dark:bg-red-950/20 border-red-300 dark:border-red-700"
+                : "bg-amber-50 dark:bg-amber-950/20 border-amber-200 dark:border-amber-800"
+            }`}>
+              {slaExpired || isDisponivel ? (
+                <AlertTriangle className="h-4 w-4 text-red-600 dark:text-red-400" />
+              ) : (
+                <Clock className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+              )}
+              <div>
+                <p className="text-[11px] text-muted-foreground uppercase tracking-wider">SLA de Início</p>
+                <p className={`text-sm font-medium ${
+                  slaExpired || isDisponivel ? "text-red-700 dark:text-red-400" : "text-foreground"
+                }`}>
+                  {slaExpired || isDisponivel
+                    ? "SLA Expirado — chamado disponível para reatribuição"
+                    : `${slaRemainingHours}h ${slaRemainingMinutes}min restantes`
+                  }
+                </p>
+              </div>
+            </div>
+          )}
+
           {/* === ACTION BUTTONS === */}
+
+          {/* Technician: Pick available ticket */}
+          {isTecnico && isDisponivel && (
+            <button
+              onClick={handlePickTicket}
+              disabled={pickTicket.isPending}
+              className="w-full py-3 rounded-lg bg-emerald-600 text-white text-sm font-semibold hover:bg-emerald-700 transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
+            >
+              <HandMetal className="h-4 w-4" />
+              Pegar para mim
+            </button>
+          )}
 
           {/* Technician: Iniciar Atendimento (when ticket is Open and assigned) */}
           {isTecnico && isOpen && (isAssigned || isAdmin) && (

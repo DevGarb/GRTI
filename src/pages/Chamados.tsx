@@ -1,12 +1,12 @@
 import { useState } from "react";
-import { Search, Filter, ChevronDown, ChevronRight, Plus, User, RefreshCw, Inbox, SendHorizonal } from "lucide-react";
+import { Search, Filter, ChevronDown, ChevronRight, Plus, User, RefreshCw, Inbox, SendHorizonal, HandMetal, AlertTriangle, Clock } from "lucide-react";
 import { StatusBadge, PriorityBadge } from "@/components/StatusBadge";
-import { useTickets, Ticket } from "@/hooks/useTickets";
+import { useTickets, Ticket, usePickTicket } from "@/hooks/useTickets";
 import { useAuth } from "@/contexts/AuthContext";
 import NewTicketModal from "@/components/NewTicketModal";
 import TicketDetailModal from "@/components/TicketDetailModal";
 
-const allStatuses = ["Aberto", "Em Andamento", "Aguardando Aprovação", "Aprovado", "Fechado"];
+const allStatuses = ["Aberto", "Em Andamento", "Aguardando Aprovação", "Aprovado", "Fechado", "Disponível"];
 
 const statusBadgeColors: Record<string, string> = {
   "Aberto": "bg-red-500 text-white",
@@ -14,6 +14,7 @@ const statusBadgeColors: Record<string, string> = {
   "Aguardando Aprovação": "bg-blue-500 text-white",
   "Aprovado": "bg-emerald-500 text-white",
   "Fechado": "bg-primary text-primary-foreground",
+  "Disponível": "bg-red-600 text-white",
 };
 function TicketTable({ tickets, onSelect }: { tickets: Ticket[]; onSelect: (t: Ticket) => void }) {
   return (
@@ -66,6 +67,49 @@ function TicketTable({ tickets, onSelect }: { tickets: Ticket[]; onSelect: (t: T
           ))}
         </tbody>
       </table>
+    </div>
+  );
+}
+
+function AvailableTicketsSection({ tickets, onSelect }: { tickets: Ticket[]; onSelect: (t: Ticket) => void }) {
+  const pickTicket = usePickTicket();
+
+  return (
+    <div className="card-elevated overflow-hidden border-2 border-red-300 dark:border-red-700">
+      <div className="px-4 py-3 border-b border-border bg-red-50 dark:bg-red-950/30 flex items-center gap-2">
+        <AlertTriangle className="h-4 w-4 text-red-600 dark:text-red-400" />
+        <div className="flex-1">
+          <h2 className="text-sm font-semibold text-red-700 dark:text-red-400">Disponíveis para assumir</h2>
+          <p className="text-xs text-red-600/70 dark:text-red-400/70">{tickets.length} chamado{tickets.length !== 1 ? 's' : ''} com SLA expirado</p>
+        </div>
+      </div>
+      <div className="divide-y divide-border">
+        {tickets.map((ticket) => (
+          <div
+            key={ticket.id}
+            className="flex items-center gap-3 px-4 py-3 hover:bg-muted/30 transition-colors"
+          >
+            <div className="flex-1 min-w-0 cursor-pointer" onClick={() => onSelect(ticket)}>
+              <p className="text-sm font-medium text-foreground truncate">{ticket.title}</p>
+              <div className="flex items-center gap-2 mt-1">
+                <StatusBadge status={ticket.status} />
+                <PriorityBadge priority={ticket.priority} />
+                <span className="text-xs text-muted-foreground">
+                  {ticket.creatorProfile?.full_name || "—"}
+                </span>
+              </div>
+            </div>
+            <button
+              onClick={() => pickTicket.mutate(ticket.id)}
+              disabled={pickTicket.isPending}
+              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-emerald-600 text-white text-sm font-semibold hover:bg-emerald-700 transition-colors disabled:opacity-50 shrink-0"
+            >
+              <HandMetal className="h-4 w-4" />
+              Pegar para mim
+            </button>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
@@ -232,13 +276,17 @@ export default function Chamados() {
           })}
         </div>
       ) : (
-        /* Non-admin: split into assigned to me vs created by me */
+        /* Non-admin: split into available, assigned to me, created by me */
         (() => {
           const userId = user?.id;
-          const assignedToMe = filtered.filter(t => t.assigned_to === userId);
-          const createdByMe = filtered.filter(t => t.created_by === userId && t.assigned_to !== userId);
+          const availableTickets = filtered.filter(t => t.status === "Disponível");
+          const assignedToMe = filtered.filter(t => t.assigned_to === userId && t.status !== "Disponível");
+          const createdByMe = filtered.filter(t => t.created_by === userId && t.assigned_to !== userId && t.status !== "Disponível");
           return (
             <div className="space-y-4">
+              {availableTickets.length > 0 && (
+                <AvailableTicketsSection tickets={availableTickets} onSelect={setSelectedTicket} />
+              )}
               {assignedToMe.length > 0 && (
                 <div className="card-elevated overflow-hidden">
                   <div className="px-4 py-3 border-b border-border bg-muted/30 flex items-center gap-2">
@@ -263,7 +311,7 @@ export default function Chamados() {
                   <TicketTable tickets={createdByMe} onSelect={setSelectedTicket} />
                 </div>
               )}
-              {assignedToMe.length === 0 && createdByMe.length === 0 && (
+              {availableTickets.length === 0 && assignedToMe.length === 0 && createdByMe.length === 0 && (
                 <div className="card-elevated p-12 flex items-center justify-center">
                   <p className="text-sm text-muted-foreground">Nenhum chamado encontrado.</p>
                 </div>
