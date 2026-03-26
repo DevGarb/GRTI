@@ -519,8 +519,9 @@ function UsuariosTab() {
   // Create user form
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [createName, setCreateName] = useState("");
-  const [createEmail, setCreateEmail] = useState("");
+  const [createUsername, setCreateUsername] = useState("");
   const [createPassword, setCreatePassword] = useState("");
+  const [createPhone, setCreatePhone] = useState("");
   const [createRole, setCreateRole] = useState<string>("admin");
   const [createOrgId, setCreateOrgId] = useState("");
   const [creating, setCreating] = useState(false);
@@ -612,33 +613,45 @@ function UsuariosTab() {
     return matchSearch && matchOrg;
   });
 
+  const generateUsername = (fullName: string): string => {
+    const parts = fullName.trim().toLowerCase().split(/\s+/);
+    if (parts.length < 2) return parts[0] || "";
+    const first = parts[0].normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+    const last = parts[parts.length - 1].normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+    return `${first}.${last}`;
+  };
+
+  const handleFullNameChange = (name: string) => {
+    setCreateName(name);
+    setCreateUsername(generateUsername(name));
+  };
+
   const handleCreateUser = async () => {
-    if (!createName.trim() || !createEmail.trim() || !createPassword.trim()) {
-      toast.error("Nome, email e senha são obrigatórios."); return;
+    if (!createName.trim() || !createUsername.trim() || !createPassword.trim()) {
+      toast.error("Nome, login e senha são obrigatórios."); return;
     }
     if (createPassword.length < 6) { toast.error("Senha deve ter ao menos 6 caracteres."); return; }
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(createEmail.trim())) { toast.error("Email inválido."); return; }
 
     setCreating(true);
     const { data, error } = await supabase.functions.invoke("create-user", {
       body: {
-        email: createEmail.trim(),
+        username: createUsername.trim(),
         password: createPassword,
         full_name: createName.trim(),
         role: createRole,
+        phone: createPhone.trim() || null,
       },
     });
 
     if (error || data?.error) {
       toast.error(data?.error || error?.message || "Erro ao criar usuário.");
     } else {
-      // If org selected, update profile
       if (createOrgId && data?.user?.id) {
         await supabase.from("profiles").update({ organization_id: createOrgId }).eq("user_id", data.user.id);
       }
       toast.success("Usuário criado com sucesso!");
       setShowCreateForm(false);
-      setCreateName(""); setCreateEmail(""); setCreatePassword(""); setCreateRole("admin"); setCreateOrgId("");
+      setCreateName(""); setCreateUsername(""); setCreatePassword(""); setCreatePhone(""); setCreateRole("admin"); setCreateOrgId("");
       fetchData();
     }
     setCreating(false);
@@ -646,7 +659,7 @@ function UsuariosTab() {
 
   const resetCreateForm = () => {
     setShowCreateForm(false);
-    setCreateName(""); setCreateEmail(""); setCreatePassword(""); setCreateRole("admin"); setCreateOrgId("");
+    setCreateName(""); setCreateUsername(""); setCreatePassword(""); setCreatePhone(""); setCreateRole("admin"); setCreateOrgId("");
   };
 
   const roleColors: Record<string, string> = {
@@ -691,13 +704,14 @@ function UsuariosTab() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             <div>
               <label className="text-sm font-medium text-foreground">Nome completo *</label>
-              <input value={createName} onChange={(e) => setCreateName(e.target.value)} placeholder="Nome do usuário" maxLength={100}
+              <input value={createName} onChange={(e) => handleFullNameChange(e.target.value)} placeholder="Gabriel Porto da Silva" maxLength={100}
                 className="mt-1.5 w-full px-3 py-2.5 rounded-lg border border-input bg-background text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring/20" />
             </div>
             <div>
-              <label className="text-sm font-medium text-foreground">Email *</label>
-              <input value={createEmail} onChange={(e) => setCreateEmail(e.target.value)} placeholder="email@exemplo.com" type="email" maxLength={255}
-                className="mt-1.5 w-full px-3 py-2.5 rounded-lg border border-input bg-background text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring/20" />
+              <label className="text-sm font-medium text-foreground">Login *</label>
+              <input value={createUsername} onChange={(e) => setCreateUsername(e.target.value.toLowerCase().replace(/[^a-z.]/g, ""))} placeholder="gabriel.porto"
+                className="mt-1.5 w-full px-3 py-2.5 rounded-lg border border-input bg-background text-sm text-foreground uppercase focus:outline-none focus:ring-2 focus:ring-ring/20" />
+              <p className="text-[11px] text-muted-foreground mt-1">Formato: nome.sobrenome (gerado automaticamente)</p>
             </div>
             <div>
               <label className="text-sm font-medium text-foreground">Senha *</label>
@@ -705,12 +719,19 @@ function UsuariosTab() {
                 className="mt-1.5 w-full px-3 py-2.5 rounded-lg border border-input bg-background text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring/20" />
             </div>
             <div>
-              <label className="text-sm font-medium text-foreground">Perfil</label>
+              <label className="text-sm font-medium text-foreground">Telefone</label>
+              <input value={createPhone} onChange={(e) => setCreatePhone(e.target.value)} placeholder="5585999999999"
+                className="mt-1.5 w-full px-3 py-2.5 rounded-lg border border-input bg-background text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring/20" />
+              <p className="text-[11px] text-muted-foreground mt-1">Formato: DDI+DDD+Número (ex: 5585999999999)</p>
+            </div>
+            <div>
+              <label className="text-sm font-medium text-foreground">Tipo de acesso *</label>
               <select value={createRole} onChange={(e) => setCreateRole(e.target.value)}
                 className="mt-1.5 w-full px-3 py-2.5 rounded-lg border border-input bg-background text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring/20">
-                {ROLES.map((r) => (
-                  <option key={r} value={r}>{ROLE_LABELS[r]}</option>
-                ))}
+                <option value="solicitante">Colaborador</option>
+                <option value="tecnico">Técnico (Hardware)</option>
+                <option value="desenvolvedor">Desenvolvedor (Software)</option>
+                <option value="admin">Administrador</option>
               </select>
             </div>
             <div>
