@@ -417,21 +417,7 @@ export default function TicketDetailModal({ ticket, onClose }: Props) {
             <PriorityBadge priority={ticket.priority} />
           </div>
 
-          {/* Status selector for admin */}
-          {isAdmin && (
-            <div className="flex items-center gap-3">
-              <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider w-24">Status</span>
-              <select
-                value={status}
-                onChange={(e) => handleStatusChange(e.target.value)}
-                className="px-3 py-2 rounded-lg border border-input bg-background text-sm text-foreground"
-              >
-                {allStatuses.map((s) => (
-                  <option key={s}>{s}</option>
-                ))}
-              </select>
-            </div>
-          )}
+          {/* Status is controlled by workflow actions only */}
 
           {/* Selected category display */}
           {selectedCategoryName && !showEvaluation && (
