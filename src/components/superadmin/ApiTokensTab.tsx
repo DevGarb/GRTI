@@ -66,6 +66,10 @@ export default function ApiTokensTab() {
       toast.error("Informe um nome para o token.");
       return;
     }
+    if (!orgId) {
+      toast.error("Selecione uma organização. O token deve ser vinculado a uma organização.");
+      return;
+    }
     setSaving(true);
     const token = crypto.randomUUID() + "-" + crypto.randomUUID();
     const {
