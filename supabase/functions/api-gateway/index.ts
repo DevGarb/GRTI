@@ -55,8 +55,15 @@ Deno.serve(async (req) => {
 
     const url = new URL(req.url);
     const resource = url.searchParams.get("resource");
-    const orgId = tokenData.organization_id || url.searchParams.get("org_id");
+    const orgId = tokenData.organization_id;
     const id = url.searchParams.get("id");
+
+    if (!orgId) {
+      return new Response(JSON.stringify({ error: "Token must be linked to an organization" }), {
+        status: 403,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
     const limit = parseInt(url.searchParams.get("limit") || "50");
     const offset = parseInt(url.searchParams.get("offset") || "0");
 
@@ -81,12 +88,12 @@ Deno.serve(async (req) => {
     if (req.method === "GET") {
       let query = supabaseAdmin.from(resource).select("*");
 
-      // Filter by org if token is org-scoped
-      if (orgId && resource !== "organizations") {
+      // Always filter by org - token is org-scoped
+      if (resource !== "organizations") {
         query = query.eq("organization_id", orgId);
+      } else {
+        query = query.eq("id", orgId);
       }
-
-      if (id) {
         query = query.eq("id", id).single();
       } else {
         query = query.range(offset, offset + limit - 1).order("created_at", { ascending: false });
@@ -108,7 +115,7 @@ Deno.serve(async (req) => {
     // Handle POST (create)
     if (req.method === "POST") {
       const body = await req.json();
-      if (orgId && resource !== "organizations") {
+      if (resource !== "organizations") {
         body.organization_id = orgId;
       }
 

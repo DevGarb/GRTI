@@ -66,6 +66,10 @@ export default function ApiTokensTab() {
       toast.error("Informe um nome para o token.");
       return;
     }
+    if (!orgId) {
+      toast.error("Selecione uma organização. O token deve ser vinculado a uma organização.");
+      return;
+    }
     setSaving(true);
     const token = crypto.randomUUID() + "-" + crypto.randomUUID();
     const {
@@ -176,8 +180,8 @@ export default function ApiTokensTab() {
             <div className="mt-1 px-3 py-2 rounded-lg bg-muted text-sm font-mono text-foreground space-y-1">
               <p>?resource=tickets — Recurso a acessar</p>
               <p>?id=uuid — Buscar registro específico</p>
-              <p>?org_id=uuid — Filtrar por organização</p>
               <p>?limit=50&offset=0 — Paginação</p>
+              <p className="text-muted-foreground italic text-xs mt-1">* A organização é definida automaticamente pelo token</p>
             </div>
           </div>
         </div>
@@ -305,13 +309,13 @@ const created = await fetch(\`\${API_URL}?resource=tickets\`, {
               />
             </div>
             <div>
-              <label className="text-sm font-medium text-foreground">Organização (opcional)</label>
+              <label className="text-sm font-medium text-foreground">Organização *</label>
               <select
                 value={orgId}
                 onChange={(e) => setOrgId(e.target.value)}
                 className="mt-1.5 w-full px-3 py-2.5 rounded-lg border border-input bg-background text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring/20"
               >
-                <option value="">Todas (global)</option>
+                <option value="">Selecione uma organização</option>
                 {orgs.map((o) => (
                   <option key={o.id} value={o.id}>{o.name}</option>
                 ))}
