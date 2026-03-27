@@ -366,11 +366,48 @@ export default function TicketDetailModal({ ticket, onClose }: Props) {
           <div className="space-y-2">
             <div className="flex items-center gap-3">
               <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider w-24">Solicitante</span>
-              <span className="text-sm font-medium text-foreground">{ticket.creatorProfile?.full_name || "—"}</span>
+              {canEditPeople ? (
+                <select
+                  defaultValue={ticket.created_by}
+                  onChange={async (e) => {
+                    const newUserId = e.target.value;
+                    const oldName = ticket.creatorProfile?.full_name || "—";
+                    const newProfile = allProfiles.find(p => p.user_id === newUserId);
+                    updateTicket.mutate({ id: ticket.id, created_by: newUserId } as any);
+                    await addHistory("creator_change", oldName, newProfile?.full_name || "—");
+                  }}
+                  className="px-3 py-2 rounded-lg border border-input bg-background text-sm text-foreground"
+                >
+                  {allProfiles.map((p) => (
+                    <option key={p.user_id} value={p.user_id}>{p.full_name}</option>
+                  ))}
+                </select>
+              ) : (
+                <span className="text-sm font-medium text-foreground">{ticket.creatorProfile?.full_name || "—"}</span>
+              )}
             </div>
             <div className="flex items-center gap-3">
               <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider w-24">Técnico Responsável</span>
-              <span className="text-sm font-medium text-foreground">{ticket.assignedProfile?.full_name || "Não atribuído"}</span>
+              {canEditPeople ? (
+                <select
+                  defaultValue={ticket.assigned_to || ""}
+                  onChange={async (e) => {
+                    const newUserId = e.target.value || null;
+                    const oldName = ticket.assignedProfile?.full_name || "Não atribuído";
+                    const newProfile = techProfiles.find(p => p.user_id === newUserId);
+                    updateTicket.mutate({ id: ticket.id, assigned_to: newUserId });
+                    await addHistory("assigned_change", oldName, newProfile?.full_name || "Não atribuído");
+                  }}
+                  className="px-3 py-2 rounded-lg border border-input bg-background text-sm text-foreground"
+                >
+                  <option value="">Não atribuído</option>
+                  {techProfiles.map((p) => (
+                    <option key={p.user_id} value={p.user_id}>{p.full_name}</option>
+                  ))}
+                </select>
+              ) : (
+                <span className="text-sm font-medium text-foreground">{ticket.assignedProfile?.full_name || "Não atribuído"}</span>
+              )}
             </div>
           </div>
 
