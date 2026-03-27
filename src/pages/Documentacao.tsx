@@ -11,6 +11,7 @@ const guides = [
   { key: "admin", label: "Administrador", icon: Shield, file: "/docs/GUIA_ADMIN.md" },
   { key: "tecnico", label: "Técnico", icon: Wrench, file: "/docs/GUIA_TECNICO.md" },
   { key: "solicitante", label: "Solicitante", icon: User, file: "/docs/GUIA_SOLICITANTE.md" },
+  { key: "api", label: "Rotas de API", icon: Code, file: "/docs/API_ROUTES.md" },
 ];
 
 function highlightText(text: string, query: string): string {
