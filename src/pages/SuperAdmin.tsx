@@ -97,6 +97,7 @@ export default function SuperAdmin() {
           { id: "organizacoes" as Tab, label: "Organizações", icon: Building2 },
           { id: "usuarios" as Tab, label: "Usuários", icon: Users },
           { id: "planos" as Tab, label: "Planos", icon: CreditCard },
+          { id: "api" as Tab, label: "API", icon: Key },
         ].map((t) => (
           <button
             key={t.id}
