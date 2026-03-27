@@ -4,7 +4,7 @@ import ReactMarkdown from "react-markdown";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Input } from "@/components/ui/input";
-import { BookOpen, Shield, Wrench, User, Search, X } from "lucide-react";
+import { BookOpen, Shield, Wrench, User, Search, X, Code } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 
 const guides = [
