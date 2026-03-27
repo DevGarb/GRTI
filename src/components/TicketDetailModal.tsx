@@ -2,7 +2,7 @@ import { useState, useMemo } from "react";
 import { X, User, Tag, Paperclip, Star, ChevronDown, ChevronRight, LayoutList, Play, CheckCircle2, RotateCcw, ThumbsUp, ThumbsDown, RefreshCw, HandMetal, AlertTriangle, Clock } from "lucide-react";
 import { StatusBadge, PriorityBadge } from "@/components/StatusBadge";
 import type { Ticket } from "@/hooks/useTickets";
-import { useUpdateTicket, usePickTicket } from "@/hooks/useTickets";
+import { useUpdateTicket, usePickTicket, useTechnicianProfiles, useProfiles } from "@/hooks/useTickets";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { dispatchWebhookEvent } from "@/hooks/useWebhooks";
@@ -105,6 +105,8 @@ function CategoryTreePicker({
 export default function TicketDetailModal({ ticket, onClose }: Props) {
   const { hasRole, user } = useAuth();
   const isAdmin = hasRole("admin");
+  const isSuperAdmin = hasRole("super_admin");
+  const canEditPeople = isAdmin || isSuperAdmin;
   const isTecnico = hasRole("tecnico");
   const canChangeStatus = isAdmin || isTecnico;
   const updateTicket = useUpdateTicket();
@@ -172,6 +174,10 @@ export default function TicketDetailModal({ ticket, onClose }: Props) {
       return data as Category[];
     },
   });
+
+  // Profiles for admin dropdowns
+  const { data: allProfiles = [] } = useProfiles();
+  const { data: techProfiles = [] } = useTechnicianProfiles();
 
   const selectedCategoryName = useMemo(() => {
     if (!selectedCategoryId) return null;
@@ -360,11 +366,48 @@ export default function TicketDetailModal({ ticket, onClose }: Props) {
           <div className="space-y-2">
             <div className="flex items-center gap-3">
               <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider w-24">Solicitante</span>
-              <span className="text-sm font-medium text-foreground">{ticket.creatorProfile?.full_name || "—"}</span>
+              {canEditPeople ? (
+                <select
+                  defaultValue={ticket.created_by}
+                  onChange={async (e) => {
+                    const newUserId = e.target.value;
+                    const oldName = ticket.creatorProfile?.full_name || "—";
+                    const newProfile = allProfiles.find(p => p.user_id === newUserId);
+                    updateTicket.mutate({ id: ticket.id, created_by: newUserId } as any);
+                    await addHistory("creator_change", oldName, newProfile?.full_name || "—");
+                  }}
+                  className="px-3 py-2 rounded-lg border border-input bg-background text-sm text-foreground"
+                >
+                  {allProfiles.map((p) => (
+                    <option key={p.user_id} value={p.user_id}>{p.full_name}</option>
+                  ))}
+                </select>
+              ) : (
+                <span className="text-sm font-medium text-foreground">{ticket.creatorProfile?.full_name || "—"}</span>
+              )}
             </div>
             <div className="flex items-center gap-3">
               <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider w-24">Técnico Responsável</span>
-              <span className="text-sm font-medium text-foreground">{ticket.assignedProfile?.full_name || "Não atribuído"}</span>
+              {canEditPeople ? (
+                <select
+                  defaultValue={ticket.assigned_to || ""}
+                  onChange={async (e) => {
+                    const newUserId = e.target.value || null;
+                    const oldName = ticket.assignedProfile?.full_name || "Não atribuído";
+                    const newProfile = techProfiles.find(p => p.user_id === newUserId);
+                    updateTicket.mutate({ id: ticket.id, assigned_to: newUserId });
+                    await addHistory("assigned_change", oldName, newProfile?.full_name || "Não atribuído");
+                  }}
+                  className="px-3 py-2 rounded-lg border border-input bg-background text-sm text-foreground"
+                >
+                  <option value="">Não atribuído</option>
+                  {techProfiles.map((p) => (
+                    <option key={p.user_id} value={p.user_id}>{p.full_name}</option>
+                  ))}
+                </select>
+              ) : (
+                <span className="text-sm font-medium text-foreground">{ticket.assignedProfile?.full_name || "Não atribuído"}</span>
+              )}
             </div>
           </div>
 
