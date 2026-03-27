@@ -115,7 +115,7 @@ Deno.serve(async (req) => {
     // Handle POST (create)
     if (req.method === "POST") {
       const body = await req.json();
-      if (orgId && resource !== "organizations") {
+      if (resource !== "organizations") {
         body.organization_id = orgId;
       }
 

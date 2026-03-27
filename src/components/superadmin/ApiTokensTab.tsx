@@ -180,8 +180,8 @@ export default function ApiTokensTab() {
             <div className="mt-1 px-3 py-2 rounded-lg bg-muted text-sm font-mono text-foreground space-y-1">
               <p>?resource=tickets — Recurso a acessar</p>
               <p>?id=uuid — Buscar registro específico</p>
-              <p>?org_id=uuid — Filtrar por organização</p>
               <p>?limit=50&offset=0 — Paginação</p>
+              <p className="text-muted-foreground italic text-xs mt-1">* A organização é definida automaticamente pelo token</p>
             </div>
           </div>
         </div>
