@@ -179,7 +179,7 @@ export default function TicketDetailModal({ ticket, onClose }: Props) {
   const { data: allProfiles = [] } = useProfiles();
   const { data: techProfiles = [] } = useTechnicianProfiles();
 
-
+  const selectedCategoryName = useMemo(() => {
     if (!selectedCategoryId) return null;
     const cat = categories.find((c) => c.id === selectedCategoryId);
     if (!cat) return null;
