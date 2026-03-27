@@ -309,13 +309,13 @@ const created = await fetch(\`\${API_URL}?resource=tickets\`, {
               />
             </div>
             <div>
-              <label className="text-sm font-medium text-foreground">Organização (opcional)</label>
+              <label className="text-sm font-medium text-foreground">Organização *</label>
               <select
                 value={orgId}
                 onChange={(e) => setOrgId(e.target.value)}
                 className="mt-1.5 w-full px-3 py-2.5 rounded-lg border border-input bg-background text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring/20"
               >
-                <option value="">Todas (global)</option>
+                <option value="">Selecione uma organização</option>
                 {orgs.map((o) => (
                   <option key={o.id} value={o.id}>{o.name}</option>
                 ))}

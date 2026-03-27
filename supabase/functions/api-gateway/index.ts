@@ -55,8 +55,15 @@ Deno.serve(async (req) => {
 
     const url = new URL(req.url);
     const resource = url.searchParams.get("resource");
-    const orgId = tokenData.organization_id || url.searchParams.get("org_id");
+    const orgId = tokenData.organization_id;
     const id = url.searchParams.get("id");
+
+    if (!orgId) {
+      return new Response(JSON.stringify({ error: "Token must be linked to an organization" }), {
+        status: 403,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
     const limit = parseInt(url.searchParams.get("limit") || "50");
     const offset = parseInt(url.searchParams.get("offset") || "0");
 
