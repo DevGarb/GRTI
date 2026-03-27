@@ -16,7 +16,9 @@ import {
   Ticket,
   TrendingUp,
   Activity,
+  Key,
 } from "lucide-react";
+import ApiTokensTab from "@/components/superadmin/ApiTokensTab";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
