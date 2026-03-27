@@ -105,6 +105,8 @@ function CategoryTreePicker({
 export default function TicketDetailModal({ ticket, onClose }: Props) {
   const { hasRole, user } = useAuth();
   const isAdmin = hasRole("admin");
+  const isSuperAdmin = hasRole("super_admin");
+  const canEditPeople = isAdmin || isSuperAdmin;
   const isTecnico = hasRole("tecnico");
   const canChangeStatus = isAdmin || isTecnico;
   const updateTicket = useUpdateTicket();
