@@ -88,12 +88,12 @@ Deno.serve(async (req) => {
     if (req.method === "GET") {
       let query = supabaseAdmin.from(resource).select("*");
 
-      // Filter by org if token is org-scoped
-      if (orgId && resource !== "organizations") {
+      // Always filter by org - token is org-scoped
+      if (resource !== "organizations") {
         query = query.eq("organization_id", orgId);
+      } else {
+        query = query.eq("id", orgId);
       }
-
-      if (id) {
         query = query.eq("id", id).single();
       } else {
         query = query.range(offset, offset + limit - 1).order("created_at", { ascending: false });
