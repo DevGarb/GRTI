@@ -118,6 +118,7 @@ export default function SuperAdmin() {
       {tab === "organizacoes" && <OrganizacoesTab />}
       {tab === "usuarios" && <UsuariosTab />}
       {tab === "planos" && <PlanosTab />}
+      {tab === "api" && <ApiTokensTab />}
     </div>
   );
 }
