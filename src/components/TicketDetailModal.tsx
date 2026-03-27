@@ -175,7 +175,11 @@ export default function TicketDetailModal({ ticket, onClose }: Props) {
     },
   });
 
-  const selectedCategoryName = useMemo(() => {
+  // Profiles for admin dropdowns
+  const { data: allProfiles = [] } = useProfiles();
+  const { data: techProfiles = [] } = useTechnicianProfiles();
+
+
     if (!selectedCategoryId) return null;
     const cat = categories.find((c) => c.id === selectedCategoryId);
     if (!cat) return null;
