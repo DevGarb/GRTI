@@ -94,6 +94,8 @@ Deno.serve(async (req) => {
       } else {
         query = query.eq("id", orgId);
       }
+
+      if (id) {
         query = query.eq("id", id).single();
       } else {
         query = query.range(offset, offset + limit - 1).order("created_at", { ascending: false });
