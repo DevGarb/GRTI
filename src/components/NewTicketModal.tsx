@@ -23,8 +23,8 @@ export default function NewTicketModal({ onClose }: Props) {
 
   const handleSubmit = () => {
     console.log("[NewTicketModal] handleSubmit called", { title, description, priority, type, assignedTo });
-    if (!title.trim()) {
-      console.log("[NewTicketModal] title is empty, aborting");
+    if (!title.trim() || !assignedTo) {
+      console.log("[NewTicketModal] title or assignedTo is empty, aborting");
       return;
     }
     createTicket.mutate(
@@ -129,7 +129,7 @@ export default function NewTicketModal({ onClose }: Props) {
               </select>
             </div>
             <div>
-              <label className="text-sm font-medium text-foreground">Técnico Responsável</label>
+              <label className="text-sm font-medium text-foreground">Técnico Responsável *</label>
               <select
                 value={assignedTo}
                 onChange={(e) => setAssignedTo(e.target.value)}
@@ -172,7 +172,7 @@ export default function NewTicketModal({ onClose }: Props) {
           </button>
           <button
             onClick={handleSubmit}
-            disabled={createTicket.isPending || !title.trim()}
+            disabled={createTicket.isPending || !title.trim() || !assignedTo}
             className="px-4 py-2.5 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 transition-opacity disabled:opacity-50"
           >
             {createTicket.isPending ? "Criando..." : "Criar Chamado"}
