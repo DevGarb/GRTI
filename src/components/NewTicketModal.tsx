@@ -129,7 +129,7 @@ export default function NewTicketModal({ onClose }: Props) {
               </select>
             </div>
             <div>
-              <label className="text-sm font-medium text-foreground">Técnico Responsável</label>
+              <label className="text-sm font-medium text-foreground">Técnico Responsável *</label>
               <select
                 value={assignedTo}
                 onChange={(e) => setAssignedTo(e.target.value)}
