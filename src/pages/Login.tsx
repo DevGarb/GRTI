@@ -20,7 +20,19 @@ export default function Login() {
     if (error) {
       toast.error("Login ou senha inválidos.");
     } else {
-      navigate("/");
+      // Check roles to determine redirect
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.user) {
+        const { data: userRoles } = await supabase
+          .from("user_roles")
+          .select("role")
+          .eq("user_id", session.user.id);
+        const roles = (userRoles || []).map(r => r.role);
+        const isAdmin = roles.includes("admin") || roles.includes("super_admin");
+        navigate(isAdmin ? "/" : "/chamados");
+      } else {
+        navigate("/chamados");
+      }
     }
     setLoading(false);
   };

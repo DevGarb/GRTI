@@ -80,26 +80,26 @@ const App = () => (
                 <ProtectedRoute>
                   <AppLayout>
                     <Routes>
-                      <Route path="/" element={<Dashboard />} />
+                      <Route path="/" element={<AdminRoute><Dashboard /></AdminRoute>} />
                       <Route path="/chamados" element={<Chamados />} />
-                      <Route path="/usuarios" element={<Usuarios />} />
-                      <Route path="/avaliacoes" element={<Avaliacoes />} />
-                      <Route path="/metas" element={<MetasTecnicos />} />
-                      <Route path="/historico" element={<Historico />} />
-                      <Route path="/auditoria" element={<Auditoria />} />
-                      <Route path="/categorias" element={<Categorias />} />
-                      <Route path="/webhook-logs" element={<WebhookLogs />} />
-                      <Route path="/preventivas" element={<Preventivas />} />
-                      <Route path="/patrimonio" element={<Patrimonio />} />
-                      <Route path="/projetos" element={<Projetos />} />
+                      <Route path="/usuarios" element={<AdminRoute><Usuarios /></AdminRoute>} />
+                      <Route path="/avaliacoes" element={<AdminRoute><Avaliacoes /></AdminRoute>} />
+                      <Route path="/metas" element={<AdminRoute><MetasTecnicos /></AdminRoute>} />
+                      <Route path="/historico" element={<AdminRoute><Historico /></AdminRoute>} />
+                      <Route path="/auditoria" element={<AdminRoute><Auditoria /></AdminRoute>} />
+                      <Route path="/categorias" element={<AdminRoute><Categorias /></AdminRoute>} />
+                      <Route path="/webhook-logs" element={<AdminRoute><WebhookLogs /></AdminRoute>} />
+                      <Route path="/preventivas" element={<AdminRoute><Preventivas /></AdminRoute>} />
+                      <Route path="/patrimonio" element={<AdminRoute><Patrimonio /></AdminRoute>} />
+                      <Route path="/projetos" element={<AdminRoute><Projetos /></AdminRoute>} />
                       <Route path="/configuracoes" element={<Configuracoes />} />
-                      <Route path="/white-label" element={<WhiteLabel />} />
-                      <Route path="/integracoes" element={<Integracoes />} />
-                      <Route path="/planos" element={<Planos />} />
-                      <Route path="/super-admin" element={<SuperAdmin />} />
-                      <Route path="/migracao" element={<Migracao />} />
-                      <Route path="/documentacao" element={<Documentacao />} />
-                      <Route path="/setores" element={<Setores />} />
+                      <Route path="/white-label" element={<AdminRoute><WhiteLabel /></AdminRoute>} />
+                      <Route path="/integracoes" element={<AdminRoute><Integracoes /></AdminRoute>} />
+                      <Route path="/planos" element={<AdminRoute><Planos /></AdminRoute>} />
+                      <Route path="/super-admin" element={<AdminRoute><SuperAdmin /></AdminRoute>} />
+                      <Route path="/migracao" element={<AdminRoute><Migracao /></AdminRoute>} />
+                      <Route path="/documentacao" element={<AdminRoute><Documentacao /></AdminRoute>} />
+                      <Route path="/setores" element={<AdminRoute><Setores /></AdminRoute>} />
                       <Route path="*" element={<NotFound />} />
                     </Routes>
                   </AppLayout>
