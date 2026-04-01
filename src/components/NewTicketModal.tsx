@@ -23,8 +23,8 @@ export default function NewTicketModal({ onClose }: Props) {
 
   const handleSubmit = () => {
     console.log("[NewTicketModal] handleSubmit called", { title, description, priority, type, assignedTo });
-    if (!title.trim()) {
-      console.log("[NewTicketModal] title is empty, aborting");
+    if (!title.trim() || !assignedTo) {
+      console.log("[NewTicketModal] title or assignedTo is empty, aborting");
       return;
     }
     createTicket.mutate(
