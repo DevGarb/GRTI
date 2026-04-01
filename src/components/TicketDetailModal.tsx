@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { X, User, Tag, Paperclip, Star, ChevronDown, ChevronRight, LayoutList, Play, CheckCircle2, RotateCcw, ThumbsUp, ThumbsDown, RefreshCw, HandMetal, AlertTriangle, Clock } from "lucide-react";
+import { X, User, Tag, Paperclip, Star, ChevronDown, ChevronRight, LayoutList, Play, CheckCircle2, RotateCcw, ThumbsUp, ThumbsDown, RefreshCw, HandMetal, AlertTriangle, Clock, Trash2 } from "lucide-react";
 import { StatusBadge, PriorityBadge } from "@/components/StatusBadge";
 import type { Ticket } from "@/hooks/useTickets";
 import { useUpdateTicket, usePickTicket, useTechnicianProfiles, useProfiles } from "@/hooks/useTickets";
@@ -728,7 +728,37 @@ export default function TicketDetailModal({ ticket, onClose }: Props) {
         </div>
 
         {/* Footer */}
-        <div className="flex justify-end p-4 border-t border-border">
+        <div className="flex items-center justify-between p-4 border-t border-border">
+          <div>
+            {isAdmin && (
+              <button
+                onClick={async () => {
+                  if (!confirm("Tem certeza que deseja excluir este chamado? Essa ação não pode ser desfeita.")) return;
+                  try {
+                    const { error } = await supabase.from("tickets").delete().eq("id", ticket.id);
+                    if (error) throw error;
+                    // Audit log
+                    await supabase.from("audit_logs").insert({
+                      user_id: user!.id,
+                      entity_type: "ticket",
+                      entity_id: ticket.id,
+                      action: "delete",
+                      details: { title: ticket.title, status: ticket.status },
+                    });
+                    queryClient.invalidateQueries({ queryKey: ["tickets"] });
+                    toast.success("Chamado excluído com sucesso");
+                    onClose();
+                  } catch (e: any) {
+                    toast.error("Erro ao excluir chamado: " + e.message);
+                  }
+                }}
+                className="px-4 py-2 rounded-lg bg-destructive text-destructive-foreground text-sm font-medium hover:opacity-90 transition-opacity flex items-center gap-2"
+              >
+                <Trash2 className="h-4 w-4" />
+                Excluir Chamado
+              </button>
+            )}
+          </div>
           <button
             onClick={onClose}
             className="px-6 py-2 rounded-lg border border-input text-sm font-medium text-foreground hover:bg-muted transition-colors"
