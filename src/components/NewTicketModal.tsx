@@ -172,7 +172,7 @@ export default function NewTicketModal({ onClose }: Props) {
           </button>
           <button
             onClick={handleSubmit}
-            disabled={createTicket.isPending || !title.trim()}
+            disabled={createTicket.isPending || !title.trim() || !assignedTo}
             className="px-4 py-2.5 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 transition-opacity disabled:opacity-50"
           >
             {createTicket.isPending ? "Criando..." : "Criar Chamado"}
