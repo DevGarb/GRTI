@@ -56,7 +56,7 @@ export default function KanbanBoard({ tickets, onSelect }: KanbanBoardProps) {
     const oldStatus = ticket.status;
 
     // Check allowed transitions
-    const transitions = isAdmin ? ADMIN_TRANSITIONS : TECH_TRANSITIONS;
+    const transitions = isAdmin ? ADMIN_TRANSITIONS : isTecnico ? TECH_TRANSITIONS : {};
     const allowed = transitions[oldStatus] || [];
     if (!allowed.includes(newStatus)) {
       toast.error("Transição não permitida.");
