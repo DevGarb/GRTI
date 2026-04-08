@@ -131,12 +131,13 @@ export default function Chamados() {
   const [expandedUser, setExpandedUser] = useState<string | null>(null);
   const [searchText, setSearchText] = useState("");
   const [statusFilter, setStatusFilter] = useState("Todos Status");
-  const [dateFrom, setDateFrom] = useState("");
-  const [dateTo, setDateTo] = useState("");
+  const [selectedMonth, setSelectedMonth] = useState(getCurrentMonthValue());
   const [reworkFilter, setReworkFilter] = useState(false);
   const { data: tickets = [], isLoading } = useTickets();
   const { hasRole, roles, user } = useAuth();
   const isAdmin = roles.includes("admin") || roles.includes("super_admin");
+
+  const { from: monthFrom, to: monthTo } = getMonthDateRange(selectedMonth);
 
   const filtered = tickets.filter((t) => {
     const matchSearch =
@@ -144,10 +145,10 @@ export default function Chamados() {
       (t.description || "").toLowerCase().includes(searchText.toLowerCase()) ||
       (t.creatorProfile?.full_name || "").toLowerCase().includes(searchText.toLowerCase());
     const matchStatus = statusFilter === "Todos Status" || t.status === statusFilter;
-    const matchDateFrom = !dateFrom || t.created_at >= dateFrom;
-    const matchDateTo = !dateTo || t.created_at <= dateTo + "T23:59:59";
+    const d = new Date(t.created_at);
+    const matchMonth = d >= monthFrom && d <= monthTo;
     const matchRework = !reworkFilter || (t.reworkCount || 0) > 0;
-    return matchSearch && matchStatus && matchDateFrom && matchDateTo && matchRework;
+    return matchSearch && matchStatus && matchMonth && matchRework;
   });
 
   // Group by assigned technician (or creator if not assigned)
