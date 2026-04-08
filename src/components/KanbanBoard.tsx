@@ -7,11 +7,11 @@ import { toast } from "sonner";
 
 const COLUMNS = [
   { id: "Aberto", label: "Aberto", color: "bg-red-500" },
-  { id: "Em Andamento", label: "Em Andamento", color: "bg-amber-500" },
-  { id: "Aguardando Aprovação", label: "Aguardando Aprovação", color: "bg-blue-500" },
-  { id: "Aprovado", label: "Aprovado", color: "bg-emerald-500" },
+  { id: "Em Andamento", label: "Em Andamento", color: "bg-yellow-500" },
+  { id: "Aguardando Aprovação", label: "Aguardando Aprovação", color: "bg-purple-500" },
+  { id: "Aprovado", label: "Aprovado", color: "bg-blue-500" },
   { id: "Disponível", label: "Disponível", color: "bg-red-600" },
-  { id: "Fechado", label: "Fechado", color: "bg-primary" },
+  { id: "Fechado", label: "Fechado", color: "bg-gray-400" },
 ];
 
 // Allowed transitions per role
