@@ -277,6 +277,8 @@ export default function Chamados() {
         <div className="card-elevated p-12 flex items-center justify-center">
           <p className="text-sm text-muted-foreground">Nenhum chamado encontrado.</p>
         </div>
+      ) : viewMode === "kanban" ? (
+        <KanbanBoard tickets={filtered} onSelect={setSelectedTicket} />
       ) : isAdmin ? (
         /* Admin: grouped by user */
         <div className="space-y-3">
