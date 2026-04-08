@@ -28,19 +28,36 @@ export interface Ticket {
 }
 
 export function useTickets() {
-  const { profile } = useAuth();
+  const { profile, user, roles, hasRole } = useAuth();
   const orgId = profile?.organization_id;
+  const userId = user?.id;
+
+  const isAdmin = hasRole("admin") || hasRole("super_admin");
+  const isTechnician = hasRole("tecnico") || hasRole("desenvolvedor");
 
   return useQuery({
-    queryKey: ["tickets", orgId],
+    queryKey: ["tickets", orgId, userId, roles],
     queryFn: async () => {
+      if (!userId) return [];
+
       let query = supabase
         .from("tickets")
         .select("*")
         .order("created_at", { ascending: false });
-      if (orgId) {
-        query = query.eq("organization_id", orgId);
+
+      if (isAdmin) {
+        // Admin vê todos da organização
+        if (orgId) {
+          query = query.eq("organization_id", orgId);
+        }
+      } else if (isTechnician) {
+        // Técnico vê seus chamados + chamados disponíveis (SLA expirado)
+        query = query.or(`assigned_to.eq.${userId},status.eq.Disponível`);
+      } else {
+        // Colaborador vê apenas chamados que criou
+        query = query.eq("created_by", userId);
       }
+
       const { data, error } = await query;
       if (error) throw error;
       
