@@ -48,19 +48,16 @@ export default function Dashboard() {
   const { data: metrics_data } = useDashboardMetrics();
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState<DashTab>("todos");
-  const [dateFrom, setDateFrom] = useState<Date | undefined>(startOfMonth(new Date()));
-  const [dateTo, setDateTo] = useState<Date | undefined>(endOfMonth(new Date()));
+  const [selectedMonth, setSelectedMonth] = useState(getCurrentMonthValue());
   const [selectedTicketId, setSelectedTicketId] = useState<string | null>(null);
+
+  const { from: dateFrom, to: dateTo } = getMonthDateRange(selectedMonth);
 
   // Apply date range filter
   const periodTickets = tickets.filter((t) => {
     const d = new Date(t.created_at);
-    if (dateFrom && d < dateFrom) return false;
-    if (dateTo) {
-      const end = new Date(dateTo);
-      end.setHours(23, 59, 59, 999);
-      if (d > end) return false;
-    }
+    if (d < dateFrom) return false;
+    if (d > dateTo) return false;
     return true;
   });
 
