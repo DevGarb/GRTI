@@ -51,8 +51,8 @@ export function useTickets() {
           query = query.eq("organization_id", orgId);
         }
       } else if (isTechnician) {
-        // Técnico vê seus chamados + chamados disponíveis (SLA expirado)
-        query = query.or(`assigned_to.eq.${userId},status.eq.Disponível`);
+        // Técnico vê seus chamados + chamados disponíveis (SLA expirado) + chamados abertos
+        query = query.or(`assigned_to.eq.${userId},status.eq.Disponível,status.eq.Aberto`);
       } else {
         // Colaborador vê apenas chamados que criou
         query = query.eq("created_by", userId);
