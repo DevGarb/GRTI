@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import {
   LayoutDashboard,
   Ticket,
+  Clock,
   Wrench,
   FolderKanban,
   Settings,
