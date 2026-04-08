@@ -1,4 +1,4 @@
-import { ShieldCheck, Search, Filter, Download, Calendar } from "lucide-react";
+import { ShieldCheck, Search, Filter, Download, Calendar, FileSpreadsheet } from "lucide-react";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -6,6 +6,8 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Navigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { calcBusinessMinutes } from "@/lib/businessHours";
+import { toast } from "sonner";
 
 const actionLabels: Record<string, string> = {
   create: "Criação",
