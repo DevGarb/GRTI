@@ -110,6 +110,115 @@ export default function Auditoria() {
     URL.revokeObjectURL(url);
   };
 
+  const [exportingReport, setExportingReport] = useState(false);
+
+  const exportTicketReport = async () => {
+    setExportingReport(true);
+    try {
+      // Fetch all closed tickets
+      const { data: tickets } = await supabase
+        .from("tickets")
+        .select("id, title, status, created_at, updated_at, assigned_to, category_id")
+        .eq("status", "Fechado");
+
+      if (!tickets || tickets.length === 0) {
+        toast.error("Nenhum chamado fechado encontrado.");
+        setExportingReport(false);
+        return;
+      }
+
+      // Get technician profiles
+      const techIds = [...new Set(tickets.map(t => t.assigned_to).filter(Boolean))] as string[];
+      let techMap = new Map<string, string>();
+      if (techIds.length > 0) {
+        const { data: profiles } = await supabase
+          .from("profiles")
+          .select("user_id, full_name")
+          .in("user_id", techIds);
+        techMap = new Map((profiles || []).map(p => [p.user_id, p.full_name || "Sem nome"]));
+      }
+
+      // Get evaluations (CSAT, 0-5)
+      const ticketIds = tickets.map(t => t.id);
+      const { data: evals } = await supabase
+        .from("evaluations")
+        .select("ticket_id, score, type")
+        .in("ticket_id", ticketIds)
+        .eq("type", "satisfaction");
+      const evalMap = new Map((evals || []).map(e => [e.ticket_id, e.score]));
+
+      // Get categories (subcategories with scores)
+      const catIds = [...new Set(tickets.map(t => t.category_id).filter(Boolean))] as string[];
+      let catMap = new Map<string, { name: string; score: number | null }>();
+      if (catIds.length > 0) {
+        const { data: cats } = await supabase
+          .from("categories")
+          .select("id, name, score")
+          .in("id", catIds);
+        (cats || []).forEach(c => catMap.set(c.id, { name: c.name, score: c.score }));
+      }
+
+      // Build rows grouped by technician
+      const grouped = new Map<string, typeof tickets>();
+      tickets.forEach(t => {
+        const techName = t.assigned_to ? (techMap.get(t.assigned_to) || "Sem nome") : "Não atribuído";
+        if (!grouped.has(techName)) grouped.set(techName, []);
+        grouped.get(techName)!.push(t);
+      });
+
+      // Sort technicians alphabetically
+      const sortedTechs = [...grouped.keys()].sort();
+
+      const formatMinutes = (mins: number): string => {
+        if (mins <= 0) return "0m";
+        const h = Math.floor(mins / 60);
+        const m = Math.round(mins % 60);
+        if (h === 0) return `${m}m`;
+        return `${h}h${m.toString().padStart(2, "0")}m`;
+      };
+
+      const headers = ["Técnico", "Chamado", "Tempo (horário comercial)", "CSAT (0-5)", "Pontuação Subcategoria", "Subcategoria"];
+      const rows: string[][] = [];
+
+      sortedTechs.forEach(techName => {
+        const techTickets = grouped.get(techName)!;
+        techTickets.forEach(t => {
+          const mins = calcBusinessMinutes(new Date(t.created_at), new Date(t.updated_at));
+          const csat = evalMap.get(t.id);
+          const cat = t.category_id ? catMap.get(t.category_id) : undefined;
+          rows.push([
+            techName,
+            t.title,
+            formatMinutes(mins),
+            csat !== undefined ? String(csat) : "—",
+            cat?.score !== undefined && cat?.score !== null ? String(cat.score) : "—",
+            cat?.name || "—",
+          ]);
+        });
+      });
+
+      const csvContent = [
+        headers.join(";"),
+        ...rows.map(r => r.map(cell => `"${cell.replace(/"/g, '""')}"`).join(";")),
+      ].join("\n");
+
+      const bom = "\uFEFF";
+      const blob = new Blob([bom + csvContent], { type: "text/csv;charset=utf-8;" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `relatorio_chamados_${new Date().toISOString().slice(0, 10)}.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+      toast.success("Relatório exportado com sucesso!");
+    } catch (err) {
+      console.error(err);
+      toast.error("Erro ao exportar relatório.");
+    } finally {
+      setExportingReport(false);
+    }
+  };
+
   if (!canAccess) return <Navigate to="/" replace />;
 
   return (
