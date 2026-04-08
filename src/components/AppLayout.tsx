@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import {
   LayoutDashboard,
   Ticket,
+  Clock,
   Wrench,
   FolderKanban,
   Settings,
@@ -34,6 +35,7 @@ import { useAuth } from "@/contexts/AuthContext";
 const navItems = [
   { label: "Dashboard", icon: LayoutDashboard, path: "/", adminOnly: true, tooltip: "Visão geral com métricas e indicadores" },
   { label: "Chamados", icon: Ticket, path: "/chamados", tooltip: "Abrir e gerenciar chamados técnicos" },
+  { label: "Chamados Abertos", icon: Clock, path: "/chamados-abertos", techAllowed: true, tooltip: "Ver todos os chamados em aberto e atribuir para si" },
   { label: "Usuários", icon: Users, path: "/usuarios", adminOnly: true, tooltip: "Gerenciar usuários da organização" },
   { label: "Avaliações", icon: Star, path: "/avaliacoes", adminOnly: true, tooltip: "Avaliações de atendimento dos chamados" },
   { label: "Metas", icon: Target, path: "/metas", adminOnly: true, tooltip: "Metas de desempenho dos técnicos" },
