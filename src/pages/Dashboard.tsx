@@ -48,35 +48,27 @@ const anim = {
 };
 
 type DashTab = "meus" | "tecnicos" | "todos" | "categorias";
-type PeriodFilter = "7d" | "30d" | "90d" | "all";
 
 export default function Dashboard() {
   const { data: tickets = [], isLoading } = useTickets();
   const { data: metrics_data } = useDashboardMetrics();
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState<DashTab>("meus");
-  const [period, setPeriod] = useState<PeriodFilter>("all");
+  const [dateFrom, setDateFrom] = useState<Date | undefined>(startOfMonth(new Date()));
+  const [dateTo, setDateTo] = useState<Date | undefined>(endOfMonth(new Date()));
   const [selectedTicketId, setSelectedTicketId] = useState<string | null>(null);
 
-  const periodDays: Record<PeriodFilter, number | null> = {
-    "7d": 7, "30d": 30, "90d": 90, "all": null,
-  };
-
-  const periodLabels: { key: PeriodFilter; label: string }[] = [
-    { key: "7d", label: "7 dias" },
-    { key: "30d", label: "30 dias" },
-    { key: "90d", label: "90 dias" },
-    { key: "all", label: "Todos" },
-  ];
-
-  const cutoffDate = periodDays[period]
-    ? new Date(Date.now() - periodDays[period]! * 86400000)
-    : null;
-
-  // Apply period filter first
-  const periodTickets = cutoffDate
-    ? tickets.filter((t) => new Date(t.created_at) >= cutoffDate)
-    : tickets;
+  // Apply date range filter
+  const periodTickets = tickets.filter((t) => {
+    const d = new Date(t.created_at);
+    if (dateFrom && d < dateFrom) return false;
+    if (dateTo) {
+      const end = new Date(dateTo);
+      end.setHours(23, 59, 59, 999);
+      if (d > end) return false;
+    }
+    return true;
+  });
 
   // Filter tickets based on active tab
   const filteredTickets = periodTickets.filter((t) => {
