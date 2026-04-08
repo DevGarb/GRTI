@@ -300,12 +300,28 @@ export default function Chamados() {
         (() => {
           const userId = user?.id;
           const availableTickets = filtered.filter(t => t.status === "Disponível");
+          const openTickets = filtered.filter(t => t.status === "Aberto" && t.assigned_to !== userId);
           const assignedToMe = filtered.filter(t => t.assigned_to === userId && t.status !== "Disponível");
-          const createdByMe = filtered.filter(t => t.created_by === userId && t.assigned_to !== userId && t.status !== "Disponível");
+          const createdByMe = filtered.filter(t => t.created_by === userId && t.assigned_to !== userId && t.status !== "Disponível" && t.status !== "Aberto");
           return (
             <div className="space-y-4">
+              {openTickets.length > 0 && (
+                <AvailableTicketsSection
+                  tickets={openTickets}
+                  onSelect={setSelectedTicket}
+                  title="Chamados em Aberto"
+                  description={`${openTickets.length} chamado${openTickets.length !== 1 ? 's' : ''} aguardando atendimento`}
+                  variant="open"
+                />
+              )}
               {availableTickets.length > 0 && (
-                <AvailableTicketsSection tickets={availableTickets} onSelect={setSelectedTicket} />
+                <AvailableTicketsSection
+                  tickets={availableTickets}
+                  onSelect={setSelectedTicket}
+                  title="Disponíveis para assumir"
+                  description={`${availableTickets.length} chamado${availableTickets.length !== 1 ? 's' : ''} com SLA expirado`}
+                  variant="expired"
+                />
               )}
               {assignedToMe.length > 0 && (
                 <div className="card-elevated overflow-hidden">
@@ -331,7 +347,7 @@ export default function Chamados() {
                   <TicketTable tickets={createdByMe} onSelect={setSelectedTicket} />
                 </div>
               )}
-              {availableTickets.length === 0 && assignedToMe.length === 0 && createdByMe.length === 0 && (
+              {openTickets.length === 0 && availableTickets.length === 0 && assignedToMe.length === 0 && createdByMe.length === 0 && (
                 <div className="card-elevated p-12 flex items-center justify-center">
                   <p className="text-sm text-muted-foreground">Nenhum chamado encontrado.</p>
                 </div>
