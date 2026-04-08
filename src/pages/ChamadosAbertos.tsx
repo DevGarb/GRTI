@@ -52,12 +52,19 @@ export default function ChamadosAbertos() {
     },
   });
 
-  const filtered = tickets.filter(t =>
-    t.title.toLowerCase().includes(searchText.toLowerCase()) ||
-    (t.description || "").toLowerCase().includes(searchText.toLowerCase()) ||
-    (t.creatorProfile?.full_name || "").toLowerCase().includes(searchText.toLowerCase()) ||
-    (t.assignedProfile?.full_name || "").toLowerCase().includes(searchText.toLowerCase())
-  );
+  const filtered = tickets
+    .filter(t =>
+      t.title.toLowerCase().includes(searchText.toLowerCase()) ||
+      (t.description || "").toLowerCase().includes(searchText.toLowerCase()) ||
+      (t.creatorProfile?.full_name || "").toLowerCase().includes(searchText.toLowerCase()) ||
+      (t.assignedProfile?.full_name || "").toLowerCase().includes(searchText.toLowerCase())
+    )
+    .sort((a, b) => {
+      const aExpired = a.status === "Disponível" ? 0 : 1;
+      const bExpired = b.status === "Disponível" ? 0 : 1;
+      if (aExpired !== bExpired) return aExpired - bExpired;
+      return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+    });
 
   return (
     <div className="space-y-6 max-w-7xl">
