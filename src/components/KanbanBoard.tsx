@@ -38,6 +38,7 @@ export default function KanbanBoard({ tickets, onSelect }: KanbanBoardProps) {
   const updateTicket = useUpdateTicket();
   const { user, hasRole } = useAuth();
   const isAdmin = hasRole("admin") || hasRole("super_admin");
+  const isTecnico = hasRole("tecnico") || hasRole("desenvolvedor");
 
   const grouped = COLUMNS.map((col) => ({
     ...col,
