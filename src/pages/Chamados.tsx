@@ -12,10 +12,10 @@ const allStatuses = ["Aberto", "Em Andamento", "Aguardando Aprovação", "Aprova
 
 const statusBadgeColors: Record<string, string> = {
   "Aberto": "bg-red-500 text-white",
-  "Em Andamento": "bg-amber-500 text-white",
-  "Aguardando Aprovação": "bg-blue-500 text-white",
-  "Aprovado": "bg-emerald-500 text-white",
-  "Fechado": "bg-primary text-primary-foreground",
+  "Em Andamento": "bg-yellow-500 text-white",
+  "Aguardando Aprovação": "bg-purple-500 text-white",
+  "Aprovado": "bg-blue-500 text-white",
+  "Fechado": "bg-gray-300 text-gray-700 dark:bg-gray-600 dark:text-gray-200",
   "Disponível": "bg-red-600 text-white",
 };
 function TicketTable({ tickets, onSelect }: { tickets: Ticket[]; onSelect: (t: Ticket) => void }) {

@@ -96,10 +96,10 @@ export default function Dashboard() {
 
   const statusColors: Record<string, string> = {
     "Aberto": "hsl(0, 72%, 51%)",
-    "Em Andamento": "hsl(35, 92%, 50%)",
-    "Aguardando Aprovação": "hsl(210, 70%, 50%)",
-    "Aprovado": "hsl(142, 70%, 40%)",
-    "Fechado": "hsl(180, 67%, 18%)",
+    "Em Andamento": "hsl(48, 96%, 53%)",
+    "Aguardando Aprovação": "hsl(270, 60%, 55%)",
+    "Aprovado": "hsl(210, 70%, 50%)",
+    "Fechado": "hsl(0, 0%, 75%)",
   };
 
   // Technician performance
