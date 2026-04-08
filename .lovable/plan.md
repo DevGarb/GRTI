@@ -1,24 +1,17 @@
 
 
-# Plano: Mostrar chamados com SLA expirado de todos os tecnicos
+# Plano: Remover seção "Chamados em Aberto" da página Chamados
 
-## Problema
-A pagina "Chamados Abertos" filtra apenas por `status = "Aberto"`. Quando o SLA expira, o sistema muda o status para `"Disponível"` e remove o tecnico atribuido. Esses chamados nao aparecem na pagina.
+## Resumo
+A seção de chamados em aberto dentro da página `/chamados` é redundante com a página dedicada `/chamados-abertos`. Vamos removê-la.
 
-## Mudanca
+## Mudanças em `src/pages/Chamados.tsx`
 
-### Editar `src/pages/ChamadosAbertos.tsx`
+1. **Remover a seção "Chamados em Aberto"** (linhas 316-323) — o bloco que renderiza `AvailableTicketsSection` com `variant="open"` e título "Chamados em Aberto"
 
-Alterar a query para buscar chamados com status `"Aberto"` **ou** `"Disponível"`:
+2. **Remover a variável `openTickets`** (linha 311) — `const openTickets = filtered.filter(t => t.status === "Aberto" && t.assigned_to !== userId)`
 
-```typescript
-// Linha 24: trocar .eq("status", "Aberto") por:
-.in("status", ["Aberto", "Disponível"])
-```
+3. **Remover o componente `AvailableTicketsSection`** por completo (linhas 74-122) caso a seção de "Disponíveis para assumir" (SLA expirado) também seja considerada redundante. Se quiser manter a seção de SLA expirado na página de chamados, mantemos o componente e removemos apenas o bloco "open".
 
-Adicionar indicacao visual para diferenciar chamados com SLA expirado (status "Disponível") dos chamados abertos normais — por exemplo, um badge vermelho "SLA Expirado" ao lado do status.
-
-### Detalhes tecnicos
-- Apenas 1 linha de query alterada + badge condicional
-- Sem mudancas no backend
+4. **Limpar imports** não utilizados (`Clock` se não for mais usado)
 
