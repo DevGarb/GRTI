@@ -233,10 +233,16 @@ export default function Auditoria() {
             </p>
           </div>
         </div>
-        <Button variant="outline" size="sm" onClick={exportCSV} className="gap-2">
-          <Download className="h-4 w-4" />
-          Exportar CSV
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="outline" size="sm" onClick={exportTicketReport} disabled={exportingReport} className="gap-2">
+            <FileSpreadsheet className="h-4 w-4" />
+            {exportingReport ? "Exportando..." : "Relatório Chamados"}
+          </Button>
+          <Button variant="outline" size="sm" onClick={exportCSV} className="gap-2">
+            <Download className="h-4 w-4" />
+            Exportar Auditoria
+          </Button>
+        </div>
       </div>
 
       {/* Filters */}
