@@ -7,6 +7,7 @@ import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import AppLayout from "@/components/AppLayout";
 import Dashboard from "@/pages/Dashboard";
 import Chamados from "@/pages/Chamados";
+import ChamadosAbertos from "@/pages/ChamadosAbertos";
 import Preventivas from "@/pages/Preventivas";
 import Patrimonio from "@/pages/Patrimonio";
 import Projetos from "@/pages/Projetos";
@@ -82,6 +83,7 @@ const App = () => (
                     <Routes>
                       <Route path="/" element={<AdminRoute><Dashboard /></AdminRoute>} />
                       <Route path="/chamados" element={<Chamados />} />
+                      <Route path="/chamados-abertos" element={<ChamadosAbertos />} />
                       <Route path="/usuarios" element={<AdminRoute><Usuarios /></AdminRoute>} />
                       <Route path="/avaliacoes" element={<AdminRoute><Avaliacoes /></AdminRoute>} />
                       <Route path="/metas" element={<AdminRoute><MetasTecnicos /></AdminRoute>} />
