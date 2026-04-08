@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Search, Filter, ChevronDown, ChevronRight, Plus, User, RefreshCw, Inbox, SendHorizonal, HandMetal, AlertTriangle, Clock } from "lucide-react";
+import { Search, Filter, ChevronDown, ChevronRight, Plus, User, RefreshCw, Inbox, SendHorizonal, HandMetal, AlertTriangle, Clock, TicketCheck, CircleDot, Loader2, CheckCircle2 } from "lucide-react";
 import { StatusBadge, PriorityBadge } from "@/components/StatusBadge";
 import { useTickets, Ticket, usePickTicket } from "@/hooks/useTickets";
 import { useAuth } from "@/contexts/AuthContext";
@@ -160,6 +160,26 @@ export default function Chamados() {
           <Plus className="h-4 w-4" />
           Novo Chamado
         </button>
+      </div>
+
+      {/* Mini-dashboard de contadores */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        {[
+          { label: "Total", count: filtered.length, icon: TicketCheck, color: "text-blue-600 dark:text-blue-400", bg: "bg-blue-100 dark:bg-blue-900/30" },
+          { label: "Abertos", count: filtered.filter(t => t.status === "Aberto").length, icon: CircleDot, color: "text-red-600 dark:text-red-400", bg: "bg-red-100 dark:bg-red-900/30" },
+          { label: "Em Andamento", count: filtered.filter(t => t.status === "Em Andamento").length, icon: Loader2, color: "text-amber-600 dark:text-amber-400", bg: "bg-amber-100 dark:bg-amber-900/30" },
+          { label: "Fechados", count: filtered.filter(t => t.status === "Fechado").length, icon: CheckCircle2, color: "text-emerald-600 dark:text-emerald-400", bg: "bg-emerald-100 dark:bg-emerald-900/30" },
+        ].map(({ label, count, icon: Icon, color, bg }) => (
+          <div key={label} className="card-elevated p-4 flex items-center gap-3">
+            <div className={`h-10 w-10 rounded-lg ${bg} flex items-center justify-center`}>
+              <Icon className={`h-5 w-5 ${color}`} />
+            </div>
+            <div>
+              <p className="text-xs text-muted-foreground">{label}</p>
+              <p className={`text-2xl font-bold ${color}`}>{count}</p>
+            </div>
+          </div>
+        ))}
       </div>
 
       <div className="card-elevated p-4 space-y-3">
