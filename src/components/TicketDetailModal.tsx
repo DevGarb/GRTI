@@ -123,6 +123,10 @@ export default function TicketDetailModal({ ticket, onClose }: Props) {
   const [selectedCategoryScore, setSelectedCategoryScore] = useState<number | null>(null);
   const [showRejectForm, setShowRejectForm] = useState(false);
   const [rejectReason, setRejectReason] = useState("");
+  const [showApprovalModal, setShowApprovalModal] = useState(false);
+  const [approvalScore, setApprovalScore] = useState(0);
+  const [approvalHover, setApprovalHover] = useState(0);
+  const [approvalComment, setApprovalComment] = useState("");
 
   const { data: attachments = [] } = useQuery({
     queryKey: ["ticket-attachments", ticket.id],
@@ -270,12 +274,40 @@ export default function TicketDetailModal({ ticket, onClose }: Props) {
     dispatchWebhookEvent(ticket.id, "ticket_approved");
   };
 
-  // Solicitante approves the resolution
-  const handleSolicitanteApprove = async () => {
+  // Solicitante opens approval modal
+  const handleSolicitanteApproveClick = () => {
+    setShowApprovalModal(true);
+  };
+
+  // Solicitante confirms approval with rating
+  const handleSolicitanteApproveConfirm = async () => {
+    if (approvalScore === 0) {
+      toast.error("Por favor, informe uma nota de 1 a 5.");
+      return;
+    }
     await handleStatusChange("Aprovado");
-    await addHistory("approved", undefined, "Solicitante aprovou");
+
+    // Save satisfaction evaluation
+    const { error } = await supabase.from("evaluations").insert({
+      ticket_id: ticket.id,
+      evaluator_id: user!.id,
+      score: approvalScore,
+      comment: approvalComment || null,
+      type: "satisfaction",
+    } as any);
+    if (error) {
+      toast.error("Erro ao salvar avaliação: " + error.message);
+      return;
+    }
+
+    await addHistory("approved", undefined, `Solicitante aprovou — Nota: ${approvalScore}/5`);
+    queryClient.invalidateQueries({ queryKey: ["ticket-evaluation", ticket.id] });
+    queryClient.invalidateQueries({ queryKey: ["tickets"] });
     dispatchWebhookEvent(ticket.id, "ticket_approved");
-    toast.success("Chamado aprovado! Aguardando avaliação do administrador.");
+    toast.success("Chamado aprovado com sucesso!");
+    setShowApprovalModal(false);
+    setApprovalScore(0);
+    setApprovalComment("");
   };
 
   // Solicitante rejects - sends back for rework
