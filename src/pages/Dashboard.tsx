@@ -47,13 +47,13 @@ const anim = {
   }),
 };
 
-type DashTab = "meus" | "tecnicos" | "todos" | "categorias";
+type DashTab = "todos" | "categorias";
 
 export default function Dashboard() {
   const { data: tickets = [], isLoading } = useTickets();
   const { data: metrics_data } = useDashboardMetrics();
   const { user } = useAuth();
-  const [activeTab, setActiveTab] = useState<DashTab>("meus");
+  const [activeTab, setActiveTab] = useState<DashTab>("todos");
   const [dateFrom, setDateFrom] = useState<Date | undefined>(startOfMonth(new Date()));
   const [dateTo, setDateTo] = useState<Date | undefined>(endOfMonth(new Date()));
   const [selectedTicketId, setSelectedTicketId] = useState<string | null>(null);
@@ -73,10 +73,6 @@ export default function Dashboard() {
   // Filter tickets based on active tab
   const filteredTickets = periodTickets.filter((t) => {
     switch (activeTab) {
-      case "meus":
-        return t.created_by === user?.id || t.assigned_to === user?.id;
-      case "tecnicos":
-        return t.assigned_to !== null;
       case "todos":
         return true;
       case "categorias":
@@ -142,8 +138,6 @@ export default function Dashboard() {
   ];
 
   const tabs: { key: DashTab; label: string }[] = [
-    { key: "meus", label: "Meus" },
-    { key: "tecnicos", label: "Técnicos" },
     { key: "todos", label: "Todos" },
     { key: "categorias", label: "Categorias" },
   ];
@@ -464,9 +458,7 @@ export default function Dashboard() {
       {/* All Tickets */}
       <div>
         <h2 className="text-lg font-semibold text-foreground mb-3">
-          {activeTab === "meus" ? "Meus Chamados" : 
-           activeTab === "tecnicos" ? "Chamados dos Técnicos" : 
-           activeTab === "categorias" ? "Chamados por Categoria" : 
+          {activeTab === "categorias" ? "Chamados por Categoria" : 
            "Todos os Chamados"}
         </h2>
         {isLoading ? (
