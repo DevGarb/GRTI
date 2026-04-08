@@ -345,7 +345,7 @@ export default function Chamados() {
                   <TicketTable tickets={createdByMe} onSelect={setSelectedTicket} />
                 </div>
               )}
-              {openTickets.length === 0 && availableTickets.length === 0 && assignedToMe.length === 0 && createdByMe.length === 0 && (
+              {availableTickets.length === 0 && assignedToMe.length === 0 && createdByMe.length === 0 && (
                 <div className="card-elevated p-12 flex items-center justify-center">
                   <p className="text-sm text-muted-foreground">Nenhum chamado encontrado.</p>
                 </div>
