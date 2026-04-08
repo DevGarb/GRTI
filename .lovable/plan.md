@@ -1,42 +1,41 @@
 
 
-# Plano: Aba de Tokens de API no Super Admin
+# Plano: Filtro de chamados por perfil de usuario
 
-## Objetivo
-Adicionar uma nova aba "API" no painel Super Admin onde ele pode gerar tokens de autenticacao e visualizar as credenciais necessarias para conexao externa via API.
+## Resumo
+- **Admin/Super Admin**: ve todos os chamados da organizacao
+- **Tecnico/Desenvolvedor**: ve apenas chamados atribuidos a ele + chamados com status "Disponivel" (SLA expirado) que podem ser reatribuidos
+- **Colaborador (solicitante)**: ve apenas chamados que ele criou
 
 ## Mudancas
 
-### 1. Criar tabela `api_tokens` no banco
-Nova tabela para armazenar tokens gerados pelo super admin:
-- `id` (uuid, PK)
-- `name` (text) - nome descritivo do token
-- `token` (text, unique) - token gerado (UUID ou hash)
-- `created_by` (uuid) - user_id do super admin que criou
-- `organization_id` (uuid, nullable) - organizacao vinculada (opcional)
-- `is_active` (boolean, default true)
-- `last_used_at` (timestamptz, nullable)
-- `expires_at` (timestamptz, nullable)
-- `created_at` (timestamptz, default now())
+### 1. Atualizar RLS da tabela `tickets` (SELECT)
+A politica atual ja cobre parcialmente isso, mas precisa ser ajustada para garantir que tecnicos vejam chamados "Disponivel" independente de atribuicao:
 
-RLS: somente super_admin pode SELECT, INSERT, UPDATE e DELETE.
+A politica atual ja esta correta:
+```sql
+(created_by = auth.uid()) OR (assigned_to = auth.uid()) OR 
+has_role(auth.uid(), 'admin') OR 
+((status = 'Disponível') AND has_role(auth.uid(), 'tecnico'))
+```
+Nenhuma mudanca necessaria no RLS.
 
-### 2. Criar edge function `api-gateway`
-Endpoint que valida o token recebido no header `X-API-Token`, verifica se esta ativo e nao expirado, e encaminha a requisicao para os dados solicitados (tickets, patrimonio, preventivas, etc.). Retorna 401 se token invalido.
+### 2. Atualizar `useTickets` hook (`src/hooks/useTickets.ts`)
+Adicionar filtragem baseada no role do usuario:
+- Se admin/super_admin: query sem filtro de usuario (apenas org)
+- Se tecnico/desenvolvedor: filtrar por `assigned_to = user.id` OR `status = 'Disponivel'`
+- Se colaborador: filtrar por `created_by = user.id`
 
-### 3. Atualizar `src/pages/SuperAdmin.tsx`
-- Adicionar `"api"` ao tipo `Tab`
-- Adicionar aba "API" com icone `Key` no tab bar
-- Criar componente `ApiTokensTab` com:
-  - Card com informacoes de conexao: Base URL, headers necessarios (X-API-Token, Content-Type)
-  - Formulario para criar token (nome, organizacao opcional, data de expiracao opcional)
-  - Lista de tokens existentes com acoes: copiar, ativar/desativar, excluir
-  - O token completo so e exibido uma vez apos criacao (depois fica mascarado)
-  - Exemplos de uso com curl/JS para facilitar integracao
+Receber `roles` e `user` do AuthContext e aplicar filtros condicionais na query do Supabase.
+
+### 3. Atualizar pagina Chamados (`src/pages/Chamados.tsx`)
+- Manter secao "Disponiveis para assumir" visivel apenas para tecnicos
+- Separar visualmente os chamados do tecnico dos disponiveis
+- Nenhuma mudanca estrutural grande necessaria, a filtragem ja vem do hook
 
 ### Detalhes tecnicos
-- Token gerado com `crypto.randomUUID()` no client, armazenado no banco
-- Edge function `api-gateway` consulta a tabela `api_tokens` para validar
-- Apenas super_admin tem acesso a aba e aos dados da tabela via RLS
-- A edge function expoe endpoints como `/api-gateway?resource=tickets&org_id=xxx`
+- O filtro principal acontece no hook `useTickets` via query Supabase
+- O RLS serve como camada de seguranca adicional (ja esta correto)
+- Para tecnicos, usar `.or()` do Supabase: `assigned_to.eq.{userId},status.eq.Disponível`
+- Para colaboradores: `.eq("created_by", userId)`
 
