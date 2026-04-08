@@ -89,7 +89,7 @@ const App = () => (
                       <Route path="/auditoria" element={<AdminRoute><Auditoria /></AdminRoute>} />
                       <Route path="/categorias" element={<AdminRoute><Categorias /></AdminRoute>} />
                       <Route path="/webhook-logs" element={<AdminRoute><WebhookLogs /></AdminRoute>} />
-                      <Route path="/preventivas" element={<AdminRoute><Preventivas /></AdminRoute>} />
+                      <Route path="/preventivas" element={<Preventivas />} />
                       <Route path="/patrimonio" element={<AdminRoute><Patrimonio /></AdminRoute>} />
                       <Route path="/projetos" element={<AdminRoute><Projetos /></AdminRoute>} />
                       <Route path="/configuracoes" element={<Configuracoes />} />
