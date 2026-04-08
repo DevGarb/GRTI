@@ -124,7 +124,7 @@ function AvailableTicketsSection({ tickets, onSelect, title, description, varian
 }
 
 export default function Chamados() {
-  const [showModal, setShowModal] = useState(false);
+  const [viewMode, setViewMode] = useState<"list" | "kanban">("list");
   const [selectedTicket, setSelectedTicket] = useState<Ticket | null>(null);
   const [expandedUser, setExpandedUser] = useState<string | null>(null);
   const [searchText, setSearchText] = useState("");
@@ -162,13 +162,35 @@ export default function Chamados() {
     <div className="space-y-6 max-w-7xl">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold text-foreground">Chamados</h1>
-        <button
-          onClick={() => setShowModal(true)}
-          className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 transition-opacity"
-        >
-          <Plus className="h-4 w-4" />
-          Novo Chamado
-        </button>
+        <div className="flex items-center gap-2">
+          <div className="flex items-center rounded-lg border border-input bg-background p-0.5">
+            <button
+              onClick={() => setViewMode("list")}
+              className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
+                viewMode === "list" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              <List className="h-4 w-4" />
+              Lista
+            </button>
+            <button
+              onClick={() => setViewMode("kanban")}
+              className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
+                viewMode === "kanban" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              <LayoutGrid className="h-4 w-4" />
+              Kanban
+            </button>
+          </div>
+          <button
+            onClick={() => setShowModal(true)}
+            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 transition-opacity"
+          >
+            <Plus className="h-4 w-4" />
+            Novo Chamado
+          </button>
+        </div>
       </div>
 
       {/* Mini-dashboard de contadores */}
