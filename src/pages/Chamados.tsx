@@ -124,6 +124,7 @@ function AvailableTicketsSection({ tickets, onSelect, title, description, varian
 }
 
 export default function Chamados() {
+  const [showModal, setShowModal] = useState(false);
   const [viewMode, setViewMode] = useState<"list" | "kanban">("list");
   const [selectedTicket, setSelectedTicket] = useState<Ticket | null>(null);
   const [expandedUser, setExpandedUser] = useState<string | null>(null);
