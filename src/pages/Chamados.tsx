@@ -71,16 +71,24 @@ function TicketTable({ tickets, onSelect }: { tickets: Ticket[]; onSelect: (t: T
   );
 }
 
-function AvailableTicketsSection({ tickets, onSelect }: { tickets: Ticket[]; onSelect: (t: Ticket) => void }) {
+function AvailableTicketsSection({ tickets, onSelect, title, description, variant = "expired" }: { tickets: Ticket[]; onSelect: (t: Ticket) => void; title?: string; description?: string; variant?: "expired" | "open" }) {
   const pickTicket = usePickTicket();
 
+  const isExpired = variant === "expired";
+  const borderColor = isExpired ? "border-red-300 dark:border-red-700" : "border-amber-300 dark:border-amber-700";
+  const headerBg = isExpired ? "bg-red-50 dark:bg-red-950/30" : "bg-amber-50 dark:bg-amber-950/30";
+  const iconColor = isExpired ? "text-red-600 dark:text-red-400" : "text-amber-600 dark:text-amber-400";
+  const titleColor = isExpired ? "text-red-700 dark:text-red-400" : "text-amber-700 dark:text-amber-400";
+  const descColor = isExpired ? "text-red-600/70 dark:text-red-400/70" : "text-amber-600/70 dark:text-amber-400/70";
+  const HeaderIcon = isExpired ? AlertTriangle : Clock;
+
   return (
-    <div className="card-elevated overflow-hidden border-2 border-red-300 dark:border-red-700">
-      <div className="px-4 py-3 border-b border-border bg-red-50 dark:bg-red-950/30 flex items-center gap-2">
-        <AlertTriangle className="h-4 w-4 text-red-600 dark:text-red-400" />
+    <div className={`card-elevated overflow-hidden border-2 ${borderColor}`}>
+      <div className={`px-4 py-3 border-b border-border ${headerBg} flex items-center gap-2`}>
+        <HeaderIcon className={`h-4 w-4 ${iconColor}`} />
         <div className="flex-1">
-          <h2 className="text-sm font-semibold text-red-700 dark:text-red-400">Disponíveis para assumir</h2>
-          <p className="text-xs text-red-600/70 dark:text-red-400/70">{tickets.length} chamado{tickets.length !== 1 ? 's' : ''} com SLA expirado</p>
+          <h2 className={`text-sm font-semibold ${titleColor}`}>{title || "Disponíveis para assumir"}</h2>
+          <p className={`text-xs ${descColor}`}>{description || `${tickets.length} chamado${tickets.length !== 1 ? 's' : ''} com SLA expirado`}</p>
         </div>
       </div>
       <div className="divide-y divide-border">
