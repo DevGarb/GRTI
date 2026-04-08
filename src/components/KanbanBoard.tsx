@@ -1,5 +1,5 @@
 import { DragDropContext, Droppable, Draggable, DropResult } from "@hello-pangea/dnd";
-import { StatusBadge, PriorityBadge } from "@/components/StatusBadge";
+import { PriorityBadge } from "@/components/StatusBadge";
 import { useUpdateTicket, Ticket } from "@/hooks/useTickets";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -14,6 +14,21 @@ const COLUMNS = [
   { id: "Fechado", label: "Fechado", color: "bg-primary" },
 ];
 
+// Allowed transitions per role
+const TECH_TRANSITIONS: Record<string, string[]> = {
+  "Aberto": ["Em Andamento"],
+  "Em Andamento": ["Aguardando Aprovação"],
+};
+
+const ADMIN_TRANSITIONS: Record<string, string[]> = {
+  "Aberto": ["Em Andamento", "Fechado"],
+  "Em Andamento": ["Aguardando Aprovação", "Aberto", "Fechado"],
+  "Aguardando Aprovação": ["Aprovado", "Em Andamento", "Aberto"],
+  "Aprovado": ["Fechado", "Em Andamento"],
+  "Disponível": ["Em Andamento", "Aberto", "Fechado"],
+  "Fechado": ["Aberto"],
+};
+
 interface KanbanBoardProps {
   tickets: Ticket[];
   onSelect: (ticket: Ticket) => void;
@@ -21,7 +36,8 @@ interface KanbanBoardProps {
 
 export default function KanbanBoard({ tickets, onSelect }: KanbanBoardProps) {
   const updateTicket = useUpdateTicket();
-  const { user } = useAuth();
+  const { user, hasRole } = useAuth();
+  const isAdmin = hasRole("admin") || hasRole("super_admin");
 
   const grouped = COLUMNS.map((col) => ({
     ...col,
@@ -38,15 +54,36 @@ export default function KanbanBoard({ tickets, onSelect }: KanbanBoardProps) {
 
     const oldStatus = ticket.status;
 
+    // Check allowed transitions
+    const transitions = isAdmin ? ADMIN_TRANSITIONS : TECH_TRANSITIONS;
+    const allowed = transitions[oldStatus] || [];
+    if (!allowed.includes(newStatus)) {
+      toast.error("Transição não permitida.");
+      return;
+    }
+
+    // Build update payload based on transition
+    const updatePayload: Record<string, unknown> = { id: draggableId, status: newStatus };
+
+    if (oldStatus === "Aberto" && newStatus === "Em Andamento") {
+      // Technician picking / starting the ticket
+      updatePayload.assigned_to = user!.id;
+      updatePayload.picked_at = new Date().toISOString();
+      updatePayload.started_at = new Date().toISOString();
+    }
+
     updateTicket.mutate(
-      { id: draggableId, status: newStatus },
+      updatePayload as any,
       {
         onSuccess: async () => {
           if (user?.id) {
+            const action = oldStatus === "Aberto" && newStatus === "Em Andamento"
+              ? "picked"
+              : "status_change";
             await supabase.from("ticket_history").insert({
               ticket_id: draggableId,
               user_id: user.id,
-              action: "status_change",
+              action,
               old_value: oldStatus,
               new_value: newStatus,
             });
