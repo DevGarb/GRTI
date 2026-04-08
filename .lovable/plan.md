@@ -1,34 +1,26 @@
 
 
-# Plano: Mini-dashboard de contadores na pagina de Chamados (tecnicos e colaboradores)
+# Plano: Calcular tempo de chamados apenas em horário comercial (8h-18h)
 
 ## Resumo
-Adicionar 4 cards de resumo no topo da pagina de Chamados mostrando: Total de chamados, Abertos, Em Andamento e Fechados. Visivel para tecnicos e colaboradores (e tambem admin, pois nao prejudica).
+Criar uma função utilitária que calcula minutos entre duas datas considerando apenas horário comercial (08:00-18:00, seg-sex). Usar essa função em todos os cálculos de tempo de resolução no `useDashboardMetrics`.
 
-## Mudancas
+## Mudanças
 
-### 1. Editar `src/pages/Chamados.tsx`
+### 1. Criar `src/lib/businessHours.ts`
+Função `calcBusinessMinutes(start: Date, end: Date): number` que:
+- Considera apenas dias úteis (seg-sex)
+- Conta apenas minutos entre 08:00 e 18:00 (10h/dia)
+- Se o chamado abriu às 16h, conta 2h naquele dia
+- Se fechou às 09h no dia seguinte, conta +1h nesse dia
+- Total = soma dos minutos comerciais de cada dia no intervalo
 
-Adicionar um componente de 4 cards entre o titulo/botao e os filtros:
+### 2. Atualizar `src/hooks/useDashboardMetrics.ts`
+Substituir os 2 cálculos de diferença de tempo (linhas 61 e 182) pela nova função:
+- `const diff = calcBusinessMinutes(new Date(t.created_at), new Date(t.updated_at))`
 
-- **Total**: `filtered.length`
-- **Abertos**: chamados com status `"Aberto"`
-- **Em Andamento**: chamados com status `"Em Andamento"`
-- **Fechados**: chamados com status `"Fechado"`
-
-Cada card tera:
-- Icone representativo
-- Label descritivo
-- Numero grande em destaque
-- Cores distintas por status (vermelho para abertos, amarelo para andamento, verde para fechados, azul para total)
-
-Os contadores serao calculados a partir da lista `filtered` (ja filtrada por busca/status/data), refletindo os filtros ativos.
-
-Layout: grid responsivo com 4 colunas em desktop, 2 em mobile.
-
-### Detalhes tecnicos
-- Sem novas dependencias
-- Sem mudancas no backend ou banco de dados
-- Apenas alteracao visual no componente da pagina Chamados
-- Usar classes Tailwind existentes e o padrao `card-elevated` do projeto
+### Detalhes técnicos
+- A função itera dia a dia no intervalo, para cada dia calcula o overlap entre [08:00-18:00] e [start-end]
+- Finais de semana (sáb/dom) são ignorados (0 minutos)
+- Sem dependências externas, apenas lógica de Date nativa
 
