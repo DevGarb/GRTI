@@ -42,7 +42,7 @@ const navItems = [
   { label: "Categorias", icon: LayoutList, path: "/categorias", adminOnly: true, tooltip: "Categorias hierárquicas de serviço" },
   { label: "Setores", icon: Building2, path: "/setores", adminOnly: true, tooltip: "Gerenciar setores da organização" },
   { label: "Webhook Logs", icon: Webhook, path: "/webhook-logs", adminOnly: true, tooltip: "Monitorar webhooks enviados" },
-  { label: "Preventivas", icon: Wrench, path: "/preventivas", adminOnly: true, tooltip: "Manutenções preventivas programadas" },
+  { label: "Preventivas", icon: Wrench, path: "/preventivas", techAllowed: true, tooltip: "Manutenções preventivas programadas" },
   { label: "Patrimônio", icon: Package, path: "/patrimonio", adminOnly: true, tooltip: "Cadastro e histórico de equipamentos" },
   { label: "Projetos", icon: FolderKanban, path: "/projetos", adminOnly: true, tooltip: "Gestão de projetos da organização" },
   { label: "Painel Admin", icon: Shield, path: "/super-admin", superAdminOnly: true, subtitle: "Organizações, Usuários e Planos", tooltip: "Gestão global de organizações, usuários e planos" },
@@ -166,9 +166,11 @@ export default function AppLayout({ children }: AppLayoutProps) {
   };
 
 
+  const isTech = roles.includes("tecnico") || roles.includes("desenvolvedor");
   const visibleNavItems = navItems.filter((item) => {
     if ((item as any).superAdminOnly) return isSuperAdmin;
     if ((item as any).auditorOnly) return isAdmin || roles.includes("auditor" as any);
+    if ((item as any).techAllowed) return isAdmin || isTech;
     if ((item as any).adminOnly) return isAdmin;
     return true;
   });

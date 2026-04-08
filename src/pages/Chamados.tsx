@@ -105,7 +105,7 @@ function AvailableTicketsSection({ tickets, onSelect }: { tickets: Ticket[]; onS
               className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-emerald-600 text-white text-sm font-semibold hover:bg-emerald-700 transition-colors disabled:opacity-50 shrink-0"
             >
               <HandMetal className="h-4 w-4" />
-              Pegar para mim
+              Atribuir para mim
             </button>
           </div>
         ))}
