@@ -1,12 +1,7 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { format, startOfMonth, endOfMonth } from "date-fns";
-import { ptBR } from "date-fns/locale";
 import TicketDetailModal from "@/components/TicketDetailModal";
-import { Calendar } from "@/components/ui/calendar";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
+import MonthSelector, { getCurrentMonthValue, getMonthDateRange } from "@/components/MonthSelector";
 import {
   Ticket,
   Clock,
@@ -16,7 +11,6 @@ import {
   AlertCircle,
   TrendingUp,
   RefreshCw,
-  CalendarIcon,
 } from "lucide-react";
 import { StatusBadge, PriorityBadge } from "@/components/StatusBadge";
 import { useTickets } from "@/hooks/useTickets";
@@ -54,19 +48,16 @@ export default function Dashboard() {
   const { data: metrics_data } = useDashboardMetrics();
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState<DashTab>("todos");
-  const [dateFrom, setDateFrom] = useState<Date | undefined>(startOfMonth(new Date()));
-  const [dateTo, setDateTo] = useState<Date | undefined>(endOfMonth(new Date()));
+  const [selectedMonth, setSelectedMonth] = useState(getCurrentMonthValue());
   const [selectedTicketId, setSelectedTicketId] = useState<string | null>(null);
+
+  const { from: dateFrom, to: dateTo } = getMonthDateRange(selectedMonth);
 
   // Apply date range filter
   const periodTickets = tickets.filter((t) => {
     const d = new Date(t.created_at);
-    if (dateFrom && d < dateFrom) return false;
-    if (dateTo) {
-      const end = new Date(dateTo);
-      end.setHours(23, 59, 59, 999);
-      if (d > end) return false;
-    }
+    if (d < dateFrom) return false;
+    if (d > dateTo) return false;
     return true;
   });
 
@@ -166,36 +157,7 @@ export default function Dashboard() {
             </button>
           ))}
         </div>
-        <div className="flex items-center gap-2 pb-2 sm:pb-0">
-          <Popover>
-            <PopoverTrigger asChild>
-              <Button variant="outline" size="sm" className={cn("justify-start text-left font-normal", !dateFrom && "text-muted-foreground")}>
-                <CalendarIcon className="mr-2 h-4 w-4" />
-                {dateFrom ? format(dateFrom, "dd/MM/yyyy") : "Data início"}
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-auto p-0" align="start">
-              <Calendar mode="single" selected={dateFrom} onSelect={setDateFrom} locale={ptBR} initialFocus className="p-3 pointer-events-auto" />
-            </PopoverContent>
-          </Popover>
-          <span className="text-sm text-muted-foreground">até</span>
-          <Popover>
-            <PopoverTrigger asChild>
-              <Button variant="outline" size="sm" className={cn("justify-start text-left font-normal", !dateTo && "text-muted-foreground")}>
-                <CalendarIcon className="mr-2 h-4 w-4" />
-                {dateTo ? format(dateTo, "dd/MM/yyyy") : "Data fim"}
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-auto p-0" align="start">
-              <Calendar mode="single" selected={dateTo} onSelect={setDateTo} locale={ptBR} initialFocus className="p-3 pointer-events-auto" />
-            </PopoverContent>
-          </Popover>
-          {(dateFrom || dateTo) && (
-            <Button variant="ghost" size="sm" onClick={() => { setDateFrom(undefined); setDateTo(undefined); }} className="text-xs">
-              Limpar
-            </Button>
-          )}
-        </div>
+        <MonthSelector value={selectedMonth} onChange={setSelectedMonth} />
       </div>
 
       {/* Metrics */}

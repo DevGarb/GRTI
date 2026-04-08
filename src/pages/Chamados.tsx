@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Search, Filter, ChevronDown, ChevronRight, Plus, User, RefreshCw, Inbox, SendHorizonal, HandMetal, AlertTriangle, Clock, TicketCheck, CircleDot, Loader2, CheckCircle2, LayoutGrid, List } from "lucide-react";
 import KanbanBoard from "@/components/KanbanBoard";
+import MonthSelector, { getCurrentMonthValue, getMonthDateRange } from "@/components/MonthSelector";
 import { StatusBadge, PriorityBadge } from "@/components/StatusBadge";
 import { useTickets, Ticket, usePickTicket } from "@/hooks/useTickets";
 import { useAuth } from "@/contexts/AuthContext";
@@ -130,12 +131,13 @@ export default function Chamados() {
   const [expandedUser, setExpandedUser] = useState<string | null>(null);
   const [searchText, setSearchText] = useState("");
   const [statusFilter, setStatusFilter] = useState("Todos Status");
-  const [dateFrom, setDateFrom] = useState("");
-  const [dateTo, setDateTo] = useState("");
+  const [selectedMonth, setSelectedMonth] = useState(getCurrentMonthValue());
   const [reworkFilter, setReworkFilter] = useState(false);
   const { data: tickets = [], isLoading } = useTickets();
   const { hasRole, roles, user } = useAuth();
   const isAdmin = roles.includes("admin") || roles.includes("super_admin");
+
+  const { from: monthFrom, to: monthTo } = getMonthDateRange(selectedMonth);
 
   const filtered = tickets.filter((t) => {
     const matchSearch =
@@ -143,10 +145,10 @@ export default function Chamados() {
       (t.description || "").toLowerCase().includes(searchText.toLowerCase()) ||
       (t.creatorProfile?.full_name || "").toLowerCase().includes(searchText.toLowerCase());
     const matchStatus = statusFilter === "Todos Status" || t.status === statusFilter;
-    const matchDateFrom = !dateFrom || t.created_at >= dateFrom;
-    const matchDateTo = !dateTo || t.created_at <= dateTo + "T23:59:59";
+    const d = new Date(t.created_at);
+    const matchMonth = d >= monthFrom && d <= monthTo;
     const matchRework = !reworkFilter || (t.reworkCount || 0) > 0;
-    return matchSearch && matchStatus && matchDateFrom && matchDateTo && matchRework;
+    return matchSearch && matchStatus && matchMonth && matchRework;
   });
 
   // Group by assigned technician (or creator if not assigned)
@@ -240,21 +242,7 @@ export default function Chamados() {
               <option key={s}>{s}</option>
             ))}
           </select>
-          <div className="flex items-center gap-2">
-            <input
-              type="date"
-              value={dateFrom}
-              onChange={(e) => setDateFrom(e.target.value)}
-              className="px-3 py-2.5 rounded-lg border border-input bg-background text-sm text-foreground"
-            />
-            <span className="text-sm text-muted-foreground">até</span>
-            <input
-              type="date"
-              value={dateTo}
-              onChange={(e) => setDateTo(e.target.value)}
-              className="px-3 py-2.5 rounded-lg border border-input bg-background text-sm text-foreground"
-            />
-          </div>
+          <MonthSelector value={selectedMonth} onChange={setSelectedMonth} />
           <button
             onClick={() => setReworkFilter(!reworkFilter)}
             className={`inline-flex items-center gap-1.5 px-3 py-2.5 rounded-lg border text-sm font-medium transition-colors ${
