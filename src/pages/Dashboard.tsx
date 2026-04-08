@@ -1,12 +1,7 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { format, startOfMonth, endOfMonth } from "date-fns";
-import { ptBR } from "date-fns/locale";
 import TicketDetailModal from "@/components/TicketDetailModal";
-import { Calendar } from "@/components/ui/calendar";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
+import MonthSelector, { getCurrentMonthValue, getMonthDateRange } from "@/components/MonthSelector";
 import {
   Ticket,
   Clock,
@@ -16,7 +11,6 @@ import {
   AlertCircle,
   TrendingUp,
   RefreshCw,
-  CalendarIcon,
 } from "lucide-react";
 import { StatusBadge, PriorityBadge } from "@/components/StatusBadge";
 import { useTickets } from "@/hooks/useTickets";
