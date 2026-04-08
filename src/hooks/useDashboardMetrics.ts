@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { calcBusinessMinutes } from "@/lib/businessHours";
 
 export interface TechNpsData {
   name: string;
@@ -58,8 +59,7 @@ export function useDashboardMetrics() {
       let avgResolutionMinutes = 0;
       if (closedTickets.length > 0) {
         const totalMinutes = closedTickets.reduce((sum, t) => {
-          const diff = new Date(t.updated_at).getTime() - new Date(t.created_at).getTime();
-          return sum + diff / 60000;
+          return sum + calcBusinessMinutes(new Date(t.created_at), new Date(t.updated_at));
         }, 0);
         avgResolutionMinutes = totalMinutes / closedTickets.length;
       }
@@ -179,7 +179,7 @@ export function useDashboardMetrics() {
         });
         const avgMin = monthClosed.length > 0
           ? Math.round(monthClosed.reduce((sum, t) => {
-              return sum + (new Date(t.updated_at).getTime() - new Date(t.created_at).getTime()) / 60000;
+              return sum + calcBusinessMinutes(new Date(t.created_at), new Date(t.updated_at));
             }, 0) / monthClosed.length)
           : 0;
         monthlyAvgTime.push({ month: label, value: avgMin });
