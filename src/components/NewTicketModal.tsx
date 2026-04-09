@@ -29,12 +29,17 @@ export default function NewTicketModal({ onClose }: Props) {
   const [pendingFiles, setPendingFiles] = useState<PendingFile[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const pendingFilesRef = useRef<PendingFile[]>([]);
   const createTicket = useCreateTicket();
   const { data: profiles = [] } = useTechnicianProfiles();
 
   useEffect(() => {
-    return () => revokePendingFiles(pendingFiles);
+    pendingFilesRef.current = pendingFiles;
   }, [pendingFiles]);
+
+  useEffect(() => {
+    return () => revokePendingFiles(pendingFilesRef.current);
+  }, []);
 
   const addFiles = (files: FileList | File[]) => {
     const newFiles: PendingFile[] = Array.from(files).map(createPendingFile);
@@ -120,6 +125,9 @@ export default function NewTicketModal({ onClose }: Props) {
       } else {
         toast.success("Chamado criado com sucesso!");
       }
+
+      revokePendingFiles(pendingFilesRef.current);
+      pendingFilesRef.current = [];
       onClose();
     } catch (err) {
       console.error("Error creating ticket:", err);

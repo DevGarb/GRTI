@@ -23,10 +23,15 @@ export default function TicketComments({ ticketId }: Props) {
   const [pendingFiles, setPendingFiles] = useState<PendingFile[]>([]);
   const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const pendingFilesRef = useRef<PendingFile[]>([]);
 
   useEffect(() => {
-    return () => revokePendingFiles(pendingFiles);
+    pendingFilesRef.current = pendingFiles;
   }, [pendingFiles]);
+
+  useEffect(() => {
+    return () => revokePendingFiles(pendingFilesRef.current);
+  }, []);
 
   const { data: comments = [] } = useQuery({
     queryKey: ["ticket-comments", ticketId],
@@ -117,6 +122,8 @@ export default function TicketComments({ ticketId }: Props) {
 
       queryClient.invalidateQueries({ queryKey: ["ticket-comments", ticketId] });
       setContent("");
+      revokePendingFiles(pendingFilesRef.current);
+      pendingFilesRef.current = [];
       setPendingFiles([]);
 
       if (failedUploads.length > 0) {
