@@ -59,7 +59,7 @@ export default function Integracoes() {
 
   const handleSave = async () => {
     if (!orgId) { toast.error("Você precisa estar vinculado a uma organização."); return; }
-    if (!apiUrl.trim() || !apiToken.trim() || !instanceId.trim()) { toast.error("Preencha URL, Token e ID da Instância."); return; }
+    
     setSaving(true);
     const payload = {
       organization_id: orgId,
@@ -370,15 +370,15 @@ export default function Integracoes() {
         <div className="card-elevated p-5 space-y-4">
           <h3 className="text-base font-semibold text-foreground">Credenciais UAZAPI</h3>
           <div>
-            <label className="text-sm font-medium text-foreground">URL da API *</label>
+            <label className="text-sm font-medium text-foreground">URL da API</label>
             <input value={apiUrl} onChange={(e) => setApiUrl(e.target.value)} placeholder="https://api.uazapi.com" className="mt-1.5 w-full px-3 py-2.5 rounded-lg border border-input bg-background text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring/20" />
           </div>
           <div>
-            <label className="text-sm font-medium text-foreground">Token de Autenticação *</label>
+            <label className="text-sm font-medium text-foreground">Token de Autenticação</label>
             <input type="password" value={apiToken} onChange={(e) => setApiToken(e.target.value)} placeholder="Seu token UAZAPI" className="mt-1.5 w-full px-3 py-2.5 rounded-lg border border-input bg-background text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring/20" />
           </div>
           <div>
-            <label className="text-sm font-medium text-foreground">ID da Instância *</label>
+            <label className="text-sm font-medium text-foreground">ID da Instância</label>
             <input value={instanceId} onChange={(e) => setInstanceId(e.target.value)} placeholder="ID da sua instância UAZAPI" className="mt-1.5 w-full px-3 py-2.5 rounded-lg border border-input bg-background text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring/20" />
           </div>
         </div>
