@@ -1,10 +1,11 @@
-import { useState, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { X, Ticket, Upload, Trash2, Image } from "lucide-react";
 import { useCreateTicket, useTechnicianProfiles } from "@/hooks/useTickets";
 import { useSectors } from "@/hooks/useSectors";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { buildStorageFileName, createPendingFile, getAttachmentDisplayName, getClipboardImageFiles, revokePendingFiles } from "@/lib/attachments";
 
 interface Props {
   onClose: () => void;
@@ -16,7 +17,7 @@ interface PendingFile {
 }
 
 export default function NewTicketModal({ onClose }: Props) {
-  const { profile, user } = useAuth();
+  const { profile } = useAuth();
   const { data: sectors = [] } = useSectors(profile?.organization_id || null);
   const [dragOver, setDragOver] = useState(false);
   const [title, setTitle] = useState("");
@@ -31,11 +32,12 @@ export default function NewTicketModal({ onClose }: Props) {
   const createTicket = useCreateTicket();
   const { data: profiles = [] } = useTechnicianProfiles();
 
+  useEffect(() => {
+    return () => revokePendingFiles(pendingFiles);
+  }, [pendingFiles]);
+
   const addFiles = (files: FileList | File[]) => {
-    const newFiles: PendingFile[] = Array.from(files).map((file) => ({
-      file,
-      preview: file.type.startsWith("image/") ? URL.createObjectURL(file) : "",
-    }));
+    const newFiles: PendingFile[] = Array.from(files).map(createPendingFile);
     setPendingFiles((prev) => [...prev, ...newFiles]);
   };
 
@@ -50,15 +52,10 @@ export default function NewTicketModal({ onClose }: Props) {
   const handlePaste = (e: React.ClipboardEvent) => {
     const items = e.clipboardData?.items;
     if (!items) return;
-    const imageFiles: File[] = [];
-    for (const item of Array.from(items)) {
-      if (item.type.startsWith("image/")) {
-        e.preventDefault();
-        const file = item.getAsFile();
-        if (file) imageFiles.push(file);
-      }
-    }
+
+    const imageFiles = getClipboardImageFiles(items);
     if (imageFiles.length) addFiles(imageFiles);
+    if (imageFiles.length) e.preventDefault();
   };
 
   const handleDrop = (e: React.DragEvent) => {
@@ -82,32 +79,47 @@ export default function NewTicketModal({ onClose }: Props) {
       const ticketId = ticketData?.id || ticketData?.[0]?.id;
 
       // Upload attachments
+      const failedUploads: string[] = [];
       if (ticketId && pendingFiles.length > 0) {
         for (const pf of pendingFiles) {
-          const ext = pf.file.name.split(".").pop() || "bin";
-          const fileName = `${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
+          const fileName = buildStorageFileName(pf.file);
           const path = `tickets/${ticketId}/${fileName}`;
+          const displayName = getAttachmentDisplayName(pf.file);
 
           const { data, error } = await supabase.storage
             .from("attachments")
-            .upload(path, pf.file);
+            .upload(path, pf.file, {
+              cacheControl: "3600",
+              upsert: false,
+              contentType: pf.file.type || undefined,
+            });
 
           if (error) {
             console.error("Upload error:", error);
+            failedUploads.push(displayName);
             continue;
           }
 
           const { data: urlData } = supabase.storage.from("attachments").getPublicUrl(data.path);
 
-          await supabase.from("ticket_attachments").insert({
+          const { error: attachmentError } = await supabase.from("ticket_attachments").insert({
             ticket_id: ticketId,
             file_url: urlData.publicUrl,
-            file_name: pf.file.name,
+            file_name: displayName,
           });
+
+          if (attachmentError) {
+            console.error("Attachment register error:", attachmentError);
+            failedUploads.push(displayName);
+          }
         }
       }
 
-      toast.success("Chamado criado com sucesso!");
+      if (failedUploads.length > 0) {
+        toast.warning(`Chamado criado, mas ${failedUploads.length} imagem(ns)/arquivo(s) não foram anexados.`);
+      } else {
+        toast.success("Chamado criado com sucesso!");
+      }
       onClose();
     } catch (err) {
       console.error("Error creating ticket:", err);
@@ -120,7 +132,7 @@ export default function NewTicketModal({ onClose }: Props) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
       <div className="absolute inset-0 bg-foreground/20 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative bg-card rounded-xl shadow-xl border border-border w-full max-w-lg mx-4 max-h-[90vh] overflow-auto animate-fade-in">
+      <div onPasteCapture={handlePaste} className="relative bg-card rounded-xl shadow-xl border border-border w-full max-w-lg mx-4 max-h-[90vh] overflow-auto animate-fade-in">
         <div className="flex items-center justify-between p-5 border-b border-border">
           <div className="flex items-center gap-2">
             <Ticket className="h-5 w-5 text-primary" />
@@ -150,7 +162,6 @@ export default function NewTicketModal({ onClose }: Props) {
             <textarea
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              onPaste={handlePaste}
               rows={4}
               placeholder="Descreva detalhadamente..."
               className="mt-1.5 w-full px-3 py-2.5 rounded-lg border border-input bg-background text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring/20 resize-y"

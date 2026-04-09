@@ -1,9 +1,10 @@
-import { useState, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { MessageSquare, Send, Paperclip, Eye, EyeOff, Trash2, Image } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
+import { buildStorageFileName, createPendingFile, getAttachmentDisplayName, getClipboardImageFiles, isImageFile, revokePendingFiles } from "@/lib/attachments";
 
 interface Props {
   ticketId: string;
@@ -22,6 +23,10 @@ export default function TicketComments({ ticketId }: Props) {
   const [pendingFiles, setPendingFiles] = useState<PendingFile[]>([]);
   const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    return () => revokePendingFiles(pendingFiles);
+  }, [pendingFiles]);
 
   const { data: comments = [] } = useQuery({
     queryKey: ["ticket-comments", ticketId],
@@ -48,10 +53,7 @@ export default function TicketComments({ ticketId }: Props) {
   });
 
   const addFiles = (files: FileList | File[]) => {
-    const newFiles: PendingFile[] = Array.from(files).map((file) => ({
-      file,
-      preview: file.type.startsWith("image/") ? URL.createObjectURL(file) : "",
-    }));
+    const newFiles: PendingFile[] = Array.from(files).map(createPendingFile);
     setPendingFiles((prev) => [...prev, ...newFiles]);
   };
 
@@ -69,29 +71,34 @@ export default function TicketComments({ ticketId }: Props) {
 
     try {
       let finalContent = content;
+      const failedUploads: string[] = [];
 
       // Upload files and append URLs to content
       for (const pf of pendingFiles) {
-        const ext = pf.file.name.split(".").pop() || "bin";
-        const fileName = `${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
+        const fileName = buildStorageFileName(pf.file);
         const path = `comments/${ticketId}/${fileName}`;
+        const displayName = getAttachmentDisplayName(pf.file);
 
         const { data, error } = await supabase.storage
           .from("attachments")
-          .upload(path, pf.file);
+          .upload(path, pf.file, {
+            cacheControl: "3600",
+            upsert: false,
+            contentType: pf.file.type || undefined,
+          });
 
         if (error) {
           console.error("Upload error:", error);
-          toast.error(`Erro ao enviar ${pf.file.name}`);
+          failedUploads.push(displayName);
           continue;
         }
 
         const { data: urlData } = supabase.storage.from("attachments").getPublicUrl(data.path);
 
-        if (pf.file.type.startsWith("image/")) {
-          finalContent += `\n![${pf.file.name}](${urlData.publicUrl})`;
+        if (isImageFile(pf.file)) {
+          finalContent += `\n![${displayName}](${urlData.publicUrl})`;
         } else {
-          finalContent += `\n[${pf.file.name}](${urlData.publicUrl})`;
+          finalContent += `\n[${displayName}](${urlData.publicUrl})`;
         }
       }
 
@@ -111,7 +118,12 @@ export default function TicketComments({ ticketId }: Props) {
       queryClient.invalidateQueries({ queryKey: ["ticket-comments", ticketId] });
       setContent("");
       setPendingFiles([]);
-      toast.success("Comentário adicionado!");
+
+      if (failedUploads.length > 0) {
+        toast.warning(`Comentário enviado, mas ${failedUploads.length} imagem(ns)/arquivo(s) falharam.`);
+      } else {
+        toast.success("Comentário adicionado!");
+      }
     } catch (e: any) {
       toast.error(e.message || "Erro ao adicionar comentário");
     } finally {
@@ -122,13 +134,10 @@ export default function TicketComments({ ticketId }: Props) {
   const handlePaste = (e: React.ClipboardEvent) => {
     const items = e.clipboardData?.items;
     if (!items) return;
-    for (const item of Array.from(items)) {
-      if (item.type.startsWith("image/")) {
-        e.preventDefault();
-        const file = item.getAsFile();
-        if (file) addFiles([file]);
-      }
-    }
+
+    const imageFiles = getClipboardImageFiles(items);
+    if (imageFiles.length) addFiles(imageFiles);
+    if (imageFiles.length) e.preventDefault();
   };
 
   const canSeePrivate = hasRole("admin") || hasRole("tecnico");
@@ -198,7 +207,7 @@ export default function TicketComments({ ticketId }: Props) {
       )}
 
       {/* Input */}
-      <div className="space-y-2">
+      <div className="space-y-2" onPasteCapture={handlePaste}>
         <input
           ref={fileInputRef}
           type="file"
@@ -213,7 +222,6 @@ export default function TicketComments({ ticketId }: Props) {
         <textarea
           value={content}
           onChange={(e) => setContent(e.target.value)}
-          onPaste={handlePaste}
           placeholder="Escreva um comentário ou cole uma imagem (Ctrl+V)..."
           rows={3}
           className="w-full px-3 py-2.5 rounded-lg border border-input bg-background text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring/20 resize-none"
