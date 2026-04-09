@@ -124,7 +124,7 @@ export default function Dashboard() {
     { label: "Retrabalhos", value: String(totalReworks), icon: RefreshCw },
     { label: "Tempo Médio", value: metrics_data?.avgResolutionFormatted || "0m", icon: Clock },
     { label: "Pontuação Total", value: String(metrics_data?.totalScore || 0), icon: Trophy },
-    { label: "NPS Geral", value: String(metrics_data?.npsScore || 0), icon: Star },
+    { label: "CSAT Geral", value: `${metrics_data?.csatScore || 0}%`, icon: Star },
     { label: "Preventivas", value: `${metrics_data?.preventivePercent || 0}%`, icon: Wrench },
   ];
 
@@ -277,15 +277,15 @@ export default function Dashboard() {
           </div>
         </div>
         <div className="card-elevated p-5">
-          <h3 className="text-sm font-semibold text-foreground mb-4">Evolução NPS Mensal</h3>
+          <h3 className="text-sm font-semibold text-foreground mb-4">Evolução CSAT Mensal</h3>
           <div className="h-48">
-            {(metrics_data?.monthlyNps || []).some(d => d.value !== 0) ? (
+            {(metrics_data?.monthlyCsat || []).some(d => d.value !== 0) ? (
               <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={metrics_data?.monthlyNps || []}>
+                <LineChart data={metrics_data?.monthlyCsat || []}>
                   <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                   <XAxis dataKey="month" tick={{ fontSize: 10 }} />
-                  <YAxis tick={{ fontSize: 10 }} domain={[-100, 100]} />
-                  <Tooltip />
+                  <YAxis tick={{ fontSize: 10 }} domain={[0, 100]} />
+                  <Tooltip formatter={(value: number) => [`${value}%`, "CSAT"]} />
                   <Line type="monotone" dataKey="value" stroke="hsl(142, 70%, 40%)" strokeWidth={2} dot={{ fill: "hsl(142, 70%, 40%)", r: 3 }} />
                 </LineChart>
               </ResponsiveContainer>
@@ -317,18 +317,18 @@ export default function Dashboard() {
           </div>
         </div>
         <div className="card-elevated p-5">
-          <h3 className="text-sm font-semibold text-foreground mb-4">Ranking - NPS por Técnico</h3>
+          <h3 className="text-sm font-semibold text-foreground mb-4">Ranking - CSAT por Técnico</h3>
           <div className="h-48">
-            {(metrics_data?.techNps || []).length > 0 ? (
+            {(metrics_data?.techCsat || []).length > 0 ? (
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={metrics_data?.techNps?.slice(0, 5) || []}>
+                <BarChart data={metrics_data?.techCsat?.slice(0, 5) || []}>
                   <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                   <XAxis dataKey="name" tick={{ fontSize: 8 }} />
-                  <YAxis tick={{ fontSize: 10 }} domain={[-100, 100]} />
-                  <Tooltip formatter={(value: number) => [`${value}`, "NPS"]} />
-                  <Bar dataKey="nps" radius={[4, 4, 0, 0]}>
-                    {(metrics_data?.techNps?.slice(0, 5) || []).map((entry, i) => (
-                      <Cell key={i} fill={entry.nps >= 50 ? "hsl(142, 70%, 40%)" : entry.nps >= 0 ? "hsl(35, 92%, 50%)" : "hsl(0, 72%, 51%)"} />
+                  <YAxis tick={{ fontSize: 10 }} domain={[0, 100]} />
+                  <Tooltip formatter={(value: number) => [`${value}%`, "CSAT"]} />
+                  <Bar dataKey="csat" radius={[4, 4, 0, 0]}>
+                    {(metrics_data?.techCsat?.slice(0, 5) || []).map((entry, i) => (
+                      <Cell key={i} fill={entry.csat >= 80 ? "hsl(142, 70%, 40%)" : entry.csat >= 50 ? "hsl(35, 92%, 50%)" : "hsl(0, 72%, 51%)"} />
                     ))}
                   </Bar>
                 </BarChart>
@@ -392,7 +392,7 @@ export default function Dashboard() {
                 <th className="text-left text-xs font-semibold text-muted-foreground px-3 py-2">Técnico</th>
                 <th className="text-center text-xs font-semibold text-muted-foreground px-3 py-2">Chamados</th>
                 <th className="text-center text-xs font-semibold text-muted-foreground px-3 py-2">Pts</th>
-                <th className="text-center text-xs font-semibold text-muted-foreground px-3 py-2">NPS</th>
+                <th className="text-center text-xs font-semibold text-muted-foreground px-3 py-2">CSAT</th>
                 <th className="text-center text-xs font-semibold text-muted-foreground px-3 py-2">%Resolv.</th>
                 <th className="text-center text-xs font-semibold text-muted-foreground px-3 py-2">Retrab.</th>
               </tr>
