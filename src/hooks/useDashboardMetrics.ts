@@ -3,9 +3,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { calcBusinessMinutes } from "@/lib/businessHours";
 
-export interface TechNpsData {
+export interface TechCsatData {
   name: string;
-  nps: number;
+  csat: number;
   total: number;
 }
 
@@ -13,12 +13,12 @@ export interface DashboardMetrics {
   avgResolutionMinutes: number;
   avgResolutionFormatted: string;
   totalScore: number;
-  npsScore: number;
+  csatScore: number;
   preventivePercent: number;
-  npsDistribution: { promoters: number; passives: number; detractors: number };
-  monthlyNps: { month: string; value: number }[];
+  csatDistribution: { satisfied: number; neutral: number; unsatisfied: number };
+  monthlyCsat: { month: string; value: number }[];
   monthlyAvgTime: { month: string; value: number }[];
-  techNps: TechNpsData[];
+  techCsat: TechCsatData[];
 }
 
 function formatMinutes(mins: number): string {
@@ -64,7 +64,7 @@ export function useDashboardMetrics() {
         avgResolutionMinutes = totalMinutes / closedTickets.length;
       }
 
-      // Fetch only satisfaction evaluations (1-10 scale) for NPS
+      // Fetch satisfaction evaluations (CSAT 1-5 scale)
       const { data: evaluations } = await (supabase
         .from("evaluations")
         .select("score, created_at, ticket_id") as any)
@@ -72,7 +72,7 @@ export function useDashboardMetrics() {
 
       const rawEvals = (evaluations || []) as { score: number; created_at: string; ticket_id: string }[];
 
-      // Fetch rework counts for evaluated tickets to penalize NPS
+      // Fetch rework counts for evaluated tickets to penalize CSAT
       const evalTicketIds = [...new Set(rawEvals.map(e => e.ticket_id).filter(Boolean))] as string[];
       let reworkMap = new Map<string, number>();
       if (evalTicketIds.length > 0) {
@@ -91,7 +91,7 @@ export function useDashboardMetrics() {
       // Apply rework penalty: each rework reduces effective score by 1 (min 1)
       const allEvals = rawEvals.map(e => ({
         ...e,
-        effectiveScore: Math.max(1, e.score - (reworkMap.get(e.ticket_id) || 0)),
+        effectiveScore: Math.max(1, Math.min(5, e.score) - (reworkMap.get(e.ticket_id) || 0)),
       }));
 
       // Fetch tickets to map evaluations to technicians
@@ -121,16 +121,18 @@ export function useDashboardMetrics() {
 
       const totalScore = allEvals.reduce((sum, e) => sum + e.effectiveScore, 0);
 
-      // NPS calculation using effectiveScore (rework-adjusted)
-      let promoters = 0, passives = 0, detractors = 0;
+      // CSAT calculation (1-5 scale)
+      // Satisfied: 4-5, Neutral: 3, Unsatisfied: 1-2
+      let satisfied = 0, neutral = 0, unsatisfied = 0;
       allEvals.forEach((e) => {
-        if (e.effectiveScore >= 9) promoters++;
-        else if (e.effectiveScore >= 7) passives++;
-        else detractors++;
+        if (e.effectiveScore >= 4) satisfied++;
+        else if (e.effectiveScore === 3) neutral++;
+        else unsatisfied++;
       });
       const totalEvals = allEvals.length;
-      const npsScore = totalEvals > 0
-        ? Math.round(((promoters - detractors) / totalEvals) * 100)
+      // CSAT = % of satisfied (score 4-5)
+      const csatScore = totalEvals > 0
+        ? Math.round((satisfied / totalEvals) * 100)
         : 0;
 
       // Preventive percentage
@@ -147,9 +149,9 @@ export function useDashboardMetrics() {
         ? Math.round(((preventiveCount || 0) / totalAll) * 100)
         : 0;
 
-      // Monthly NPS (last 6 months)
+      // Monthly CSAT (last 6 months)
       const now = new Date();
-      const monthlyNps: { month: string; value: number }[] = [];
+      const monthlyCsat: { month: string; value: number }[] = [];
       const monthlyAvgTime: { month: string; value: number }[] = [];
 
       for (let i = 5; i >= 0; i--) {
@@ -157,20 +159,16 @@ export function useDashboardMetrics() {
         const nextMonth = new Date(d.getFullYear(), d.getMonth() + 1, 1);
         const label = getMonthLabel(d);
 
-        // NPS for this month (using rework-adjusted effectiveScore)
+        // CSAT for this month
         const monthEvals = allEvals.filter((e) => {
           const ed = new Date(e.created_at);
           return ed >= d && ed < nextMonth;
         });
-        let mPromoters = 0, mDetractors = 0;
-        monthEvals.forEach((e) => {
-          if (e.effectiveScore >= 9) mPromoters++;
-          else if (e.effectiveScore < 7) mDetractors++;
-        });
-        const mNps = monthEvals.length > 0
-          ? Math.round(((mPromoters - mDetractors) / monthEvals.length) * 100)
+        const mSatisfied = monthEvals.filter(e => e.effectiveScore >= 4).length;
+        const mCsat = monthEvals.length > 0
+          ? Math.round((mSatisfied / monthEvals.length) * 100)
           : 0;
-        monthlyNps.push({ month: label, value: mNps });
+        monthlyCsat.push({ month: label, value: mCsat });
 
         // Avg time for this month (closed tickets)
         const monthClosed = closedTickets.filter((t) => {
@@ -185,7 +183,7 @@ export function useDashboardMetrics() {
         monthlyAvgTime.push({ month: label, value: avgMin });
       }
 
-      // Tech NPS - group evaluations by technician (using effectiveScore)
+      // Tech CSAT - group evaluations by technician
       const techEvalMap = new Map<string, number[]>();
       allEvals.forEach((e) => {
         const techName = ticketTechMap.get(e.ticket_id);
@@ -194,26 +192,25 @@ export function useDashboardMetrics() {
           techEvalMap.get(techName)!.push(e.effectiveScore);
         }
       });
-      const techNps: TechNpsData[] = [...techEvalMap.entries()].map(([name, scores]) => {
-        const p = scores.filter(s => s >= 9).length;
-        const d = scores.filter(s => s < 7).length;
-        return { name, nps: Math.round(((p - d) / scores.length) * 100), total: scores.length };
-      }).sort((a, b) => b.nps - a.nps);
+      const techCsat: TechCsatData[] = [...techEvalMap.entries()].map(([name, scores]) => {
+        const s = scores.filter(sc => sc >= 4).length;
+        return { name, csat: Math.round((s / scores.length) * 100), total: scores.length };
+      }).sort((a, b) => b.csat - a.csat);
 
       return {
         avgResolutionMinutes,
         avgResolutionFormatted: formatMinutes(avgResolutionMinutes),
         totalScore,
-        npsScore,
+        csatScore,
         preventivePercent,
-        npsDistribution: {
-          promoters: totalEvals > 0 ? Math.round((promoters / totalEvals) * 100) : 0,
-          passives: totalEvals > 0 ? Math.round((passives / totalEvals) * 100) : 0,
-          detractors: totalEvals > 0 ? Math.round((detractors / totalEvals) * 100) : 0,
+        csatDistribution: {
+          satisfied: totalEvals > 0 ? Math.round((satisfied / totalEvals) * 100) : 0,
+          neutral: totalEvals > 0 ? Math.round((neutral / totalEvals) * 100) : 0,
+          unsatisfied: totalEvals > 0 ? Math.round((unsatisfied / totalEvals) * 100) : 0,
         },
-        monthlyNps,
+        monthlyCsat,
         monthlyAvgTime,
-        techNps,
+        techCsat,
       } as DashboardMetrics;
     },
     enabled: !!user,
