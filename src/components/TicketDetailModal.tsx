@@ -148,6 +148,7 @@ export default function TicketDetailModal({ ticket, onClose }: Props) {
         .from("evaluations")
         .select("*")
         .eq("ticket_id", ticket.id)
+        .eq("type", "meta")
         .maybeSingle();
       if (error) throw error;
       return data;
