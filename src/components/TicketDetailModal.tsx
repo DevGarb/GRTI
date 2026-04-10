@@ -596,8 +596,29 @@ export default function TicketDetailModal({ ticket, onClose }: Props) {
             </div>
           )}
 
-          {/* Admin: Evaluate closed/approved tickets without evaluation */}
-          {isAdmin && !existingEvaluation && !showEvaluation && (isApproved || isClosed) && (
+          {/* Admin: Approved ticket needs mandatory evaluation to close */}
+          {isAdmin && !existingEvaluation && isApproved && !showEvaluation && (
+            <div className="p-4 rounded-lg border-2 border-primary bg-primary/5 space-y-3">
+              <div className="text-center">
+                <p className="text-sm font-semibold text-foreground">
+                  Chamado aprovado pelo solicitante!
+                </p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Pontue o técnico e categorize a demanda para finalizar o chamado.
+                </p>
+              </div>
+              <button
+                onClick={() => setShowEvaluation(true)}
+                className="w-full py-3 rounded-lg bg-primary text-primary-foreground text-sm font-semibold hover:opacity-90 transition-opacity flex items-center justify-center gap-2"
+              >
+                <Star className="h-4 w-4" />
+                Pontuar e Finalizar Chamado
+              </button>
+            </div>
+          )}
+
+          {/* Admin: Evaluate already closed tickets without evaluation */}
+          {isAdmin && !existingEvaluation && !showEvaluation && isClosed && (
             <button
               onClick={() => setShowEvaluation(true)}
               className="w-full py-2.5 rounded-lg border border-input bg-muted/50 text-sm font-medium text-foreground hover:bg-muted transition-colors flex items-center justify-center gap-2"
