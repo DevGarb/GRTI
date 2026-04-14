@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { Search, Filter, ChevronDown, ChevronRight, Plus, User, RefreshCw, Inbox, SendHorizonal, HandMetal, AlertTriangle, Clock, TicketCheck, CircleDot, Loader2, CheckCircle2, LayoutGrid, List } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import { Search, Filter, ChevronDown, ChevronRight, Plus, User, RefreshCw, Inbox, SendHorizonal, HandMetal, AlertTriangle, Clock, TicketCheck, CircleDot, Loader2, CheckCircle2, LayoutGrid, List, Trophy } from "lucide-react";
 import KanbanBoard from "@/components/KanbanBoard";
 import MonthSelector, { getCurrentMonthValue, getMonthDateRange } from "@/components/MonthSelector";
 import { StatusBadge, PriorityBadge } from "@/components/StatusBadge";
@@ -7,6 +8,7 @@ import { useTickets, Ticket, usePickTicket } from "@/hooks/useTickets";
 import { useAuth } from "@/contexts/AuthContext";
 import NewTicketModal from "@/components/NewTicketModal";
 import TicketDetailModal from "@/components/TicketDetailModal";
+import { supabase } from "@/integrations/supabase/client";
 
 const allStatuses = ["Aberto", "Em Andamento", "Aguardando Aprovação", "Aprovado", "Fechado", "Disponível"];
 
@@ -138,6 +140,28 @@ export default function Chamados() {
   const isAdmin = roles.includes("admin") || roles.includes("super_admin");
 
   const { from: monthFrom, to: monthTo } = getMonthDateRange(selectedMonth);
+
+  const { data: myScore = 0 } = useQuery({
+    queryKey: ["my-score", user?.id, selectedMonth],
+    queryFn: async () => {
+      if (!user?.id) return 0;
+      const { data: myTickets } = await supabase
+        .from("tickets")
+        .select("id")
+        .eq("assigned_to", user.id)
+        .gte("created_at", monthFrom.toISOString())
+        .lte("created_at", monthTo.toISOString());
+      if (!myTickets?.length) return 0;
+      const ticketIds = myTickets.map((t: any) => t.id);
+      const { data: evals } = await supabase
+        .from("evaluations")
+        .select("score")
+        .eq("type", "meta")
+        .in("ticket_id", ticketIds);
+      return (evals || []).reduce((sum: number, e: any) => sum + (e.score || 0), 0);
+    },
+    enabled: !!user?.id && !isAdmin,
+  });
 
   const filtered = tickets.filter((t) => {
     const matchSearch =
@@ -326,8 +350,23 @@ export default function Chamados() {
           const availableTickets = filtered.filter(t => t.status === "Disponível");
               const assignedToMe = filtered.filter(t => t.assigned_to === userId && t.status !== "Disponível");
               const createdByMe = filtered.filter(t => t.created_by === userId && t.assigned_to !== userId && t.status !== "Disponível");
+              const closedByMe = tickets.filter(t => t.assigned_to === userId && t.status === "Fechado");
               return (
                 <div className="space-y-4">
+                  {/* Pontuação do técnico */}
+                  <div className="card-elevated p-4 flex items-center gap-4 border-2 border-amber-200 dark:border-amber-800 bg-amber-50/50 dark:bg-amber-950/20">
+                    <div className="h-12 w-12 rounded-xl bg-amber-100 dark:bg-amber-900/40 flex items-center justify-center shrink-0">
+                      <Trophy className="h-6 w-6 text-amber-600 dark:text-amber-400" />
+                    </div>
+                    <div className="flex-1">
+                      <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Minha Pontuação — {selectedMonth}</p>
+                      <p className="text-3xl font-bold text-amber-600 dark:text-amber-400 leading-tight">{myScore} <span className="text-base font-semibold">pts</span></p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-xs text-muted-foreground">Chamados fechados</p>
+                      <p className="text-2xl font-bold text-foreground">{closedByMe.length}</p>
+                    </div>
+                  </div>
                   {availableTickets.length > 0 && (
                 <AvailableTicketsSection
                   tickets={availableTickets}
