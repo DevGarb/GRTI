@@ -155,6 +155,20 @@ export default function TicketDetailModal({ ticket, onClose }: Props) {
     },
   });
 
+  const { data: satisfactionEvaluation } = useQuery({
+    queryKey: ["ticket-satisfaction", ticket.id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("evaluations")
+        .select("*")
+        .eq("ticket_id", ticket.id)
+        .eq("type", "satisfaction")
+        .maybeSingle();
+      if (error) throw error;
+      return data;
+    },
+  });
+
   const { data: reworkCount = 0 } = useQuery({
     queryKey: ["ticket-rework-count", ticket.id],
     queryFn: async () => {
@@ -733,8 +747,8 @@ export default function TicketDetailModal({ ticket, onClose }: Props) {
             </div>
           )}
 
-          {/* Existing evaluation */}
-          {existingEvaluation && (
+          {/* Existing satisfaction evaluation (solicitante star rating) */}
+          {satisfactionEvaluation && (
             <div className="space-y-2 p-4 rounded-lg border border-border bg-muted/20">
               <div className="flex items-center gap-2 text-xs font-medium text-muted-foreground uppercase tracking-wider">
                 <Star className="h-3.5 w-3.5" />
@@ -744,13 +758,13 @@ export default function TicketDetailModal({ ticket, onClose }: Props) {
                 {[1, 2, 3, 4, 5].map((star) => (
                   <Star
                     key={star}
-                    className={`h-5 w-5 ${star <= existingEvaluation.score ? "text-amber-400 fill-amber-400" : "text-muted-foreground/30"}`}
+                    className={`h-5 w-5 ${star <= satisfactionEvaluation.score ? "text-amber-400 fill-amber-400" : "text-muted-foreground/30"}`}
                   />
                 ))}
-                <span className="ml-2 text-sm font-medium text-foreground">{existingEvaluation.score}/5</span>
+                <span className="ml-2 text-sm font-medium text-foreground">{satisfactionEvaluation.score}/5</span>
               </div>
-              {existingEvaluation.comment && (
-                <p className="text-sm text-muted-foreground">{existingEvaluation.comment}</p>
+              {satisfactionEvaluation.comment && (
+                <p className="text-sm text-muted-foreground">{satisfactionEvaluation.comment}</p>
               )}
             </div>
           )}
