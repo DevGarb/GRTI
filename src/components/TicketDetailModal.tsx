@@ -221,17 +221,20 @@ export default function TicketDetailModal({ ticket, onClose }: Props) {
         .eq("id", ticket.id);
       if (updateError) throw updateError;
 
+      // If admin is not the requester, use category score; otherwise use evalScore
+      const finalScore = ticket.created_by === user!.id ? evalScore : (selectedCategoryScore ?? 0);
+
       const { error } = await supabase.from("evaluations").insert({
         ticket_id: ticket.id,
         evaluator_id: user!.id,
-        score: evalScore,
+        score: finalScore,
         comment: evalComment || null,
         type: "meta",
       } as any);
       if (error) throw error;
 
       await addHistory("status_change", status, "Fechado");
-      await addHistory("evaluated", undefined, `${evalScore}/5`);
+      await addHistory("evaluated", undefined, `Pontuação: ${selectedCategoryScore ?? 0} pts`);
     },
     onSuccess: () => {
       setStatus("Fechado");
