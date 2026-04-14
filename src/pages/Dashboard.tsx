@@ -45,13 +45,13 @@ type DashTab = "todos" | "categorias";
 
 export default function Dashboard() {
   const { data: tickets = [], isLoading } = useTickets();
-  const { from: dateFrom, to: dateTo } = getMonthDateRange(selectedMonth);
-  const { data: metrics_data } = useDashboardMetrics(dateFrom, dateTo);
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState<DashTab>("todos");
   const [selectedMonth, setSelectedMonth] = useState(getCurrentMonthValue());
   const [selectedTicketId, setSelectedTicketId] = useState<string | null>(null);
 
+  const { from: dateFrom, to: dateTo } = getMonthDateRange(selectedMonth);
+  const { data: metrics_data } = useDashboardMetrics(dateFrom, dateTo);
 
 
   // Apply date range filter
