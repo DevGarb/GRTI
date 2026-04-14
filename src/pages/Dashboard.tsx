@@ -45,13 +45,14 @@ type DashTab = "todos" | "categorias";
 
 export default function Dashboard() {
   const { data: tickets = [], isLoading } = useTickets();
-  const { data: metrics_data } = useDashboardMetrics();
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState<DashTab>("todos");
   const [selectedMonth, setSelectedMonth] = useState(getCurrentMonthValue());
   const [selectedTicketId, setSelectedTicketId] = useState<string | null>(null);
 
   const { from: dateFrom, to: dateTo } = getMonthDateRange(selectedMonth);
+  const { data: metrics_data } = useDashboardMetrics(dateFrom, dateTo);
+
 
   // Apply date range filter
   const periodTickets = tickets.filter((t) => {
@@ -121,7 +122,7 @@ export default function Dashboard() {
 
   const metrics = [
     { label: "Total Chamados", value: String(totalTickets), icon: Ticket },
-    { label: "Retrabalhos", value: String(totalReworks), icon: RefreshCw },
+    { label: "Retrabalhos", value: String(metrics_data?.reworkCount || 0), icon: RefreshCw },
     { label: "Tempo Médio", value: metrics_data?.avgResolutionFormatted || "0m", icon: Clock },
     { label: "Pontuação Total", value: String(metrics_data?.totalScore || 0), icon: Trophy },
     { label: "CSAT Geral", value: `${metrics_data?.csatScore || 0}%`, icon: Star },

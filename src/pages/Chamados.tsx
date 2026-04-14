@@ -147,8 +147,10 @@ export default function Chamados() {
     const matchStatus = statusFilter === "Todos Status" || t.status === statusFilter;
     const d = new Date(t.created_at);
     const matchMonth = d >= monthFrom && d <= monthTo;
+    // Disponível tickets should always be visible regardless of month filter
+    const isDisponivel = t.status === "Disponível";
     const matchRework = !reworkFilter || (t.reworkCount || 0) > 0;
-    return matchSearch && matchStatus && matchMonth && matchRework;
+    return matchSearch && matchStatus && (matchMonth || isDisponivel) && matchRework;
   });
 
   // Group by assigned technician (or creator if not assigned)
