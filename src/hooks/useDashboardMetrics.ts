@@ -15,6 +15,7 @@ export interface DashboardMetrics {
   totalScore: number;
   csatScore: number;
   preventivePercent: number;
+  reworkCount: number;
   csatDistribution: { satisfied: number; neutral: number; unsatisfied: number };
   monthlyCsat: { month: string; value: number }[];
   monthlyAvgTime: { month: string; value: number }[];
@@ -35,24 +36,29 @@ function getMonthLabel(date: Date): string {
   return `${months[date.getMonth()]}. ${y}`;
 }
 
-export function useDashboardMetrics() {
+export function useDashboardMetrics(dateFrom?: Date, dateTo?: Date) {
   const { user, profile } = useAuth();
   const orgId = profile?.organization_id;
 
   return useQuery({
-    queryKey: ["dashboard-metrics", user?.id, orgId],
+    queryKey: ["dashboard-metrics", user?.id, orgId, dateFrom?.toISOString(), dateTo?.toISOString()],
     queryFn: async () => {
-      // Fetch closed tickets for avg resolution time
+      // Fetch tickets
       let ticketQuery = supabase
         .from("tickets")
-        .select("id, status, created_at, updated_at, type")
+        .select("id, status, created_at, updated_at, type, assigned_to")
         .order("created_at", { ascending: false });
       if (orgId) {
         ticketQuery = ticketQuery.eq("organization_id", orgId);
       }
       const { data: tickets } = await ticketQuery;
 
-      const allTickets = tickets || [];
+      const allTickets = (tickets || []).filter((t) => {
+        if (!dateFrom || !dateTo) return true;
+        const d = new Date(t.created_at);
+        return d >= dateFrom && d <= dateTo;
+      });
+
       const closedTickets = allTickets.filter((t) => t.status === "Fechado");
 
       // Avg resolution time
@@ -64,11 +70,27 @@ export function useDashboardMetrics() {
         avgResolutionMinutes = totalMinutes / closedTickets.length;
       }
 
-      // Fetch satisfaction evaluations (CSAT 1-5 scale)
-      const { data: evaluations } = await (supabase
+      // Fetch rework counts for the period tickets
+      const allTicketIds = allTickets.map(t => t.id);
+      let reworkCount = 0;
+      if (allTicketIds.length > 0) {
+        const { count } = await supabase
+          .from("ticket_history")
+          .select("*", { count: "exact", head: true })
+          .in("ticket_id", allTicketIds)
+          .eq("action", "rework");
+        reworkCount = count || 0;
+      }
+
+      // Fetch satisfaction evaluations (CSAT 1-5 scale) for period
+      let evalQuery = supabase
         .from("evaluations")
-        .select("score, created_at, ticket_id") as any)
+        .select("score, created_at, ticket_id")
         .eq("type", "satisfaction");
+      if (dateFrom && dateTo) {
+        evalQuery = evalQuery.gte("created_at", dateFrom.toISOString()).lte("created_at", dateTo.toISOString());
+      }
+      const { data: evaluations } = await (evalQuery as any);
 
       const rawEvals = (evaluations || []) as { score: number; created_at: string; ticket_id: string }[];
 
@@ -88,7 +110,7 @@ export function useDashboardMetrics() {
         }
       }
 
-      // Apply rework penalty: each rework reduces effective score by 1 (min 1)
+      // Apply rework penalty
       const allEvals = rawEvals.map(e => ({
         ...e,
         effectiveScore: Math.max(1, Math.min(5, e.score) - (reworkMap.get(e.ticket_id) || 0)),
@@ -119,10 +141,21 @@ export function useDashboardMetrics() {
         });
       }
 
-      const totalScore = allEvals.reduce((sum, e) => sum + e.effectiveScore, 0);
+      // Fetch meta evaluations (admin scoring) for total score in the period
+      let metaQuery = supabase
+        .from("evaluations")
+        .select("score, ticket_id")
+        .eq("type", "meta");
+      if (dateFrom && dateTo) {
+        metaQuery = metaQuery.gte("created_at", dateFrom.toISOString()).lte("created_at", dateTo.toISOString());
+      }
+      const { data: metaEvals } = await (metaQuery as any);
+      const metaEvalsList = (metaEvals || []) as { score: number; ticket_id: string }[];
 
-      // CSAT calculation (1-5 scale)
-      // Satisfied: 4-5, Neutral: 3, Unsatisfied: 1-2
+      // Total score = sum of meta evaluation scores (admin scoring)
+      const totalScore = metaEvalsList.reduce((sum, e) => sum + e.score, 0);
+
+      // CSAT calculation (1-5 scale) from satisfaction evaluations
       let satisfied = 0, neutral = 0, unsatisfied = 0;
       allEvals.forEach((e) => {
         if (e.effectiveScore >= 4) satisfied++;
@@ -130,7 +163,6 @@ export function useDashboardMetrics() {
         else unsatisfied++;
       });
       const totalEvals = allEvals.length;
-      // CSAT = % of satisfied (score 4-5)
       const csatScore = totalEvals > 0
         ? Math.round((satisfied / totalEvals) * 100)
         : 0;
@@ -142,6 +174,9 @@ export function useDashboardMetrics() {
       if (orgId) {
         prevQuery = prevQuery.eq("organization_id", orgId);
       }
+      if (dateFrom && dateTo) {
+        prevQuery = prevQuery.gte("created_at", dateFrom.toISOString()).lte("created_at", dateTo.toISOString());
+      }
       const { count: preventiveCount } = await prevQuery;
 
       const totalAll = allTickets.length + (preventiveCount || 0);
@@ -149,18 +184,32 @@ export function useDashboardMetrics() {
         ? Math.round(((preventiveCount || 0) / totalAll) * 100)
         : 0;
 
-      // Monthly CSAT (last 6 months)
+      // Monthly CSAT (last 6 months) - always show last 6 regardless of filter
       const now = new Date();
       const monthlyCsat: { month: string; value: number }[] = [];
       const monthlyAvgTime: { month: string; value: number }[] = [];
+
+      // For monthly charts, use ALL tickets (unfiltered by period)
+      const allTicketsUnfiltered = tickets || [];
+      const closedUnfiltered = allTicketsUnfiltered.filter((t) => t.status === "Fechado");
+
+      // Fetch ALL evaluations for monthly chart
+      const { data: allEvalsForChart } = await (supabase
+        .from("evaluations")
+        .select("score, created_at, ticket_id")
+        .eq("type", "satisfaction") as any);
+      const chartEvals = (allEvalsForChart || []) as { score: number; created_at: string; ticket_id: string }[];
+      const chartEvalsWithPenalty = chartEvals.map(e => ({
+        ...e,
+        effectiveScore: Math.max(1, Math.min(5, e.score) - (reworkMap.get(e.ticket_id) || 0)),
+      }));
 
       for (let i = 5; i >= 0; i--) {
         const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
         const nextMonth = new Date(d.getFullYear(), d.getMonth() + 1, 1);
         const label = getMonthLabel(d);
 
-        // CSAT for this month
-        const monthEvals = allEvals.filter((e) => {
+        const monthEvals = chartEvalsWithPenalty.filter((e) => {
           const ed = new Date(e.created_at);
           return ed >= d && ed < nextMonth;
         });
@@ -170,8 +219,7 @@ export function useDashboardMetrics() {
           : 0;
         monthlyCsat.push({ month: label, value: mCsat });
 
-        // Avg time for this month (closed tickets)
-        const monthClosed = closedTickets.filter((t) => {
+        const monthClosed = closedUnfiltered.filter((t) => {
           const cd = new Date(t.updated_at);
           return cd >= d && cd < nextMonth;
         });
@@ -203,6 +251,7 @@ export function useDashboardMetrics() {
         totalScore,
         csatScore,
         preventivePercent,
+        reworkCount,
         csatDistribution: {
           satisfied: totalEvals > 0 ? Math.round((satisfied / totalEvals) * 100) : 0,
           neutral: totalEvals > 0 ? Math.round((neutral / totalEvals) * 100) : 0,
