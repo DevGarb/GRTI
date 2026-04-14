@@ -720,7 +720,7 @@ export default function TicketDetailModal({ ticket, onClose }: Props) {
                   Cancelar
                 </button>
                 <button
-                  disabled={evalScore === 0 || !selectedCategoryId || submitEvaluation.isPending}
+                  disabled={(!selectedCategoryId) || (ticket.created_by === user?.id && evalScore === 0) || submitEvaluation.isPending}
                   onClick={() => submitEvaluation.mutate()}
                   className="flex-1 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 transition-opacity disabled:opacity-50"
                 >
