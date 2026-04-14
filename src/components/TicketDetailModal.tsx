@@ -237,7 +237,7 @@ export default function TicketDetailModal({ ticket, onClose }: Props) {
       setStatus("Fechado");
       queryClient.invalidateQueries({ queryKey: ["ticket-evaluation", ticket.id] });
       queryClient.invalidateQueries({ queryKey: ["tickets"] });
-      toast.success("Avaliação enviada e chamado fechado!");
+      toast.success("Pontuação enviada e chamado fechado!");
       dispatchWebhookEvent(ticket.id, "ticket_closed");
       setShowEvaluation(false);
     },
@@ -632,7 +632,7 @@ export default function TicketDetailModal({ ticket, onClose }: Props) {
           {/* Evaluation form (admin only) */}
           {showEvaluation && (
             <div className="space-y-4 p-4 rounded-lg border border-primary/30 bg-primary/5">
-              <h3 className="text-sm font-semibold text-foreground">Avaliar e Pontuar</h3>
+              <h3 className="text-sm font-semibold text-foreground">Pontuar Técnico</h3>
 
               {/* Category selection */}
               <div className="space-y-2">
@@ -722,7 +722,7 @@ export default function TicketDetailModal({ ticket, onClose }: Props) {
                   onClick={() => submitEvaluation.mutate()}
                   className="flex-1 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 transition-opacity disabled:opacity-50"
                 >
-                  {submitEvaluation.isPending ? "Enviando..." : "Enviar Avaliação"}
+                  {submitEvaluation.isPending ? "Enviando..." : "Enviar Pontuação"}
                 </button>
               </div>
             </div>
