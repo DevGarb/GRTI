@@ -245,17 +245,27 @@ export default function TicketDetailModal({ ticket, onClose }: Props) {
         .eq("id", ticket.id);
       if (updateError) throw updateError;
 
-      // If admin is not the requester, use category score; otherwise use evalScore
-      const finalScore = ticket.created_by === user!.id ? evalScore : (selectedCategoryScore ?? 0);
-
+      // Pontuação (meta) é SEMPRE o score da categoria, nunca o CSAT
       const { error } = await supabase.from("evaluations").insert({
         ticket_id: ticket.id,
         evaluator_id: user!.id,
-        score: finalScore,
+        score: selectedCategoryScore ?? 0,
         comment: evalComment || null,
         type: "meta",
       } as any);
       if (error) throw error;
+
+      // Se o admin também é o solicitante, salva a satisfação separadamente como "satisfaction"
+      if (ticket.created_by === user!.id && evalScore > 0) {
+        const { error: satError } = await supabase.from("evaluations").insert({
+          ticket_id: ticket.id,
+          evaluator_id: user!.id,
+          score: evalScore,
+          comment: null,
+          type: "satisfaction",
+        } as any);
+        if (satError) throw satError;
+      }
 
       await addHistory("status_change", status, "Fechado");
       await addHistory("evaluated", undefined, `Pontuação: ${selectedCategoryScore ?? 0} pts`);

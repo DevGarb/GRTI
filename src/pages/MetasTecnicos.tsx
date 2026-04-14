@@ -41,9 +41,12 @@ export default function MetasTecnicos() {
         .order("updated_at", { ascending: false });
       if (tErr) throw tErr;
 
+      // Apenas avaliações de satisfação (CSAT 1-5 do solicitante) para avgScore
+      // Pontuação (pts da categoria) vem da tabela categories via ticket.category_id
       const { data: evaluations, error: eErr } = await supabase
         .from("evaluations")
-        .select("*");
+        .select("*")
+        .eq("type", "satisfaction");
       if (eErr) throw eErr;
 
       const categoryIds = [...new Set(closedTickets.map((t) => t.category_id).filter(Boolean))] as string[];

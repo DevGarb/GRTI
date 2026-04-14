@@ -145,19 +145,22 @@ export default function Chamados() {
     queryKey: ["my-score", user?.id, selectedMonth],
     queryFn: async () => {
       if (!user?.id) return 0;
+      // Busca todos os tickets atribuídos a mim (sem filtro de data)
       const { data: myTickets } = await supabase
         .from("tickets")
         .select("id")
         .eq("assigned_to", user.id)
-        .gte("created_at", monthFrom.toISOString())
-        .lte("created_at", monthTo.toISOString());
+        .eq("status", "Fechado");
       if (!myTickets?.length) return 0;
       const ticketIds = myTickets.map((t: any) => t.id);
+      // Filtra as avaliações meta pelo MÊS em que foram criadas (= quando o chamado foi fechado/pontuado)
       const { data: evals } = await supabase
         .from("evaluations")
         .select("score")
         .eq("type", "meta")
-        .in("ticket_id", ticketIds);
+        .in("ticket_id", ticketIds)
+        .gte("created_at", monthFrom.toISOString())
+        .lte("created_at", monthTo.toISOString());
       return (evals || []).reduce((sum: number, e: any) => sum + (e.score || 0), 0);
     },
     enabled: !!user?.id && !isAdmin,
@@ -350,7 +353,7 @@ export default function Chamados() {
           const availableTickets = filtered.filter(t => t.status === "Disponível");
               const assignedToMe = filtered.filter(t => t.assigned_to === userId && t.status !== "Disponível");
               const createdByMe = filtered.filter(t => t.created_by === userId && t.assigned_to !== userId && t.status !== "Disponível");
-              const closedByMe = tickets.filter(t => t.assigned_to === userId && t.status === "Fechado");
+              const closedByMe = filtered.filter(t => t.assigned_to === userId && t.status === "Fechado");
               return (
                 <div className="space-y-4">
                   {/* Pontuação do técnico */}
