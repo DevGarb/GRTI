@@ -673,35 +673,37 @@ export default function TicketDetailModal({ ticket, onClose }: Props) {
                 )}
               </div>
 
-              {/* Star rating */}
-              <div className="space-y-1.5">
-                <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                  Nota de atendimento
-                </label>
-                <div className="flex items-center gap-1">
-                  {[1, 2, 3, 4, 5].map((star) => (
-                    <button
-                      key={star}
-                      type="button"
-                      onClick={() => setEvalScore(star)}
-                      onMouseEnter={() => setEvalHover(star)}
-                      onMouseLeave={() => setEvalHover(0)}
-                      className="p-0.5 transition-transform hover:scale-110"
-                    >
-                      <Star
-                        className={`h-7 w-7 transition-colors ${
-                          star <= (evalHover || evalScore)
-                            ? "text-amber-400 fill-amber-400"
-                            : "text-muted-foreground/30"
-                        }`}
-                      />
-                    </button>
-                  ))}
-                  {evalScore > 0 && (
-                    <span className="ml-2 text-sm text-muted-foreground">{evalScore}/5</span>
-                  )}
+              {/* Star rating - only if admin is also the requester */}
+              {ticket.created_by === user?.id && (
+                <div className="space-y-1.5">
+                  <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                    Nota de atendimento
+                  </label>
+                  <div className="flex items-center gap-1">
+                    {[1, 2, 3, 4, 5].map((star) => (
+                      <button
+                        key={star}
+                        type="button"
+                        onClick={() => setEvalScore(star)}
+                        onMouseEnter={() => setEvalHover(star)}
+                        onMouseLeave={() => setEvalHover(0)}
+                        className="p-0.5 transition-transform hover:scale-110"
+                      >
+                        <Star
+                          className={`h-7 w-7 transition-colors ${
+                            star <= (evalHover || evalScore)
+                              ? "text-amber-400 fill-amber-400"
+                              : "text-muted-foreground/30"
+                          }`}
+                        />
+                      </button>
+                    ))}
+                    {evalScore > 0 && (
+                      <span className="ml-2 text-sm text-muted-foreground">{evalScore}/5</span>
+                    )}
+                  </div>
                 </div>
-              </div>
+              )}
 
               <textarea
                 value={evalComment}
