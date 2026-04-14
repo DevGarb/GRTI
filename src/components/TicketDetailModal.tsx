@@ -223,6 +223,16 @@ export default function TicketDetailModal({ ticket, onClose }: Props) {
     queryClient.invalidateQueries({ queryKey: ["ticket-history", ticket.id] });
   };
 
+  // Update ticket status directly in every cached tickets query (bypasses fuzzy key matching issues)
+  const updateTicketStatusInCache = (newStatus: string) => {
+    queryClient.getQueriesData<any[]>({ queryKey: ["tickets"] }).forEach(([key, data]) => {
+      if (!Array.isArray(data)) return;
+      queryClient.setQueryData(key, data.map((t: any) =>
+        t.id === ticket.id ? { ...t, status: newStatus } : t
+      ));
+    });
+  };
+
   const submitEvaluation = useMutation({
     mutationFn: async () => {
       // Update category and close ticket
@@ -252,6 +262,7 @@ export default function TicketDetailModal({ ticket, onClose }: Props) {
     },
     onSuccess: () => {
       setStatus("Fechado");
+      updateTicketStatusInCache("Fechado");
       queryClient.invalidateQueries({ queryKey: ["ticket-evaluation", ticket.id] });
       queryClient.invalidateQueries({ queryKey: ["tickets"] });
       toast.success("Pontuação enviada e chamado fechado!");
@@ -266,7 +277,7 @@ export default function TicketDetailModal({ ticket, onClose }: Props) {
   const handleStatusChange = async (newStatus: string) => {
     const oldStatus = status;
     setStatus(newStatus);
-    updateTicket.mutate({ id: ticket.id, status: newStatus });
+    await updateTicket.mutateAsync({ id: ticket.id, status: newStatus });
     await addHistory("status_change", oldStatus, newStatus);
   };
 
@@ -319,6 +330,7 @@ export default function TicketDetailModal({ ticket, onClose }: Props) {
     }
 
     await addHistory("approved", undefined, `Solicitante aprovou — Nota: ${approvalScore}/5`);
+    updateTicketStatusInCache("Aprovado");
     queryClient.invalidateQueries({ queryKey: ["ticket-evaluation", ticket.id] });
     queryClient.invalidateQueries({ queryKey: ["tickets"] });
     dispatchWebhookEvent(ticket.id, "ticket_approved");
