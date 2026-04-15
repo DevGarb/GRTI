@@ -41,13 +41,21 @@ export default function MetasTecnicos() {
         .order("updated_at", { ascending: false });
       if (tErr) throw tErr;
 
-      // Apenas avaliações de satisfação (CSAT 1-5 do solicitante) para avgScore
-      // Pontuação (pts da categoria) vem da tabela categories via ticket.category_id
+      // Avaliações de satisfação (CSAT 1-5 do solicitante)
       const { data: evaluations, error: eErr } = await supabase
         .from("evaluations")
         .select("*")
         .eq("type", "satisfaction");
       if (eErr) throw eErr;
+
+      // Avaliações meta (pontuação do admin) - APENAS estas contam como pontos
+      const { data: metaEvaluations, error: mErr } = await supabase
+        .from("evaluations")
+        .select("*")
+        .eq("type", "meta");
+      if (mErr) throw mErr;
+
+      const metaScoreMap = new Map((metaEvaluations || []).map((e) => [e.ticket_id, e.score]));
 
       const categoryIds = [...new Set(closedTickets.map((t) => t.category_id).filter(Boolean))] as string[];
       let categoryMap = new Map<string, { name: string; score: number }>();
@@ -121,10 +129,11 @@ export default function MetasTecnicos() {
         const evalScore = evalMap.get(ticket.id) ?? null;
 
         const catInfo = ticket.category_id ? categoryMap.get(ticket.category_id) : null;
-        const categoryPoints = catInfo?.score ?? 0;
+        // Pontuação vem APENAS da avaliação meta do admin, não do category score
+        const metaPoints = metaScoreMap.get(ticket.id) ?? 0;
 
         tech.totalClosed++;
-        tech.totalPoints += categoryPoints;
+        tech.totalPoints += metaPoints;
         tech.reworkCount += reworkMap.get(ticket.id) || 0;
         if (evalScore !== null) tech.evaluations++;
 
@@ -134,7 +143,7 @@ export default function MetasTecnicos() {
           resolutionHours,
           closedAt: ticket.updated_at,
           categoryName: catInfo?.name ?? null,
-          categoryPoints,
+          categoryPoints: metaPoints,
         });
       }
 
