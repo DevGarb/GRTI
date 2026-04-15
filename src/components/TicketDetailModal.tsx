@@ -114,8 +114,6 @@ export default function TicketDetailModal({ ticket, onClose }: Props) {
   const queryClient = useQueryClient();
   const [status, setStatus] = useState(ticket.status);
   const [showEvaluation, setShowEvaluation] = useState(false);
-  const [evalScore, setEvalScore] = useState(0);
-  const [evalHover, setEvalHover] = useState(0);
   const [evalComment, setEvalComment] = useState("");
   const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(
     (ticket as any).category_id || null
@@ -255,17 +253,6 @@ export default function TicketDetailModal({ ticket, onClose }: Props) {
       } as any);
       if (error) throw error;
 
-      // Se o admin também é o solicitante, salva a satisfação separadamente como "satisfaction"
-      if (ticket.created_by === user!.id && evalScore > 0) {
-        const { error: satError } = await supabase.from("evaluations").insert({
-          ticket_id: ticket.id,
-          evaluator_id: user!.id,
-          score: evalScore,
-          comment: null,
-          type: "satisfaction",
-        } as any);
-        if (satError) throw satError;
-      }
 
       await addHistory("status_change", status, "Fechado");
       await addHistory("evaluated", undefined, `Pontuação: ${selectedCategoryScore ?? 0} pts`);
@@ -712,37 +699,6 @@ export default function TicketDetailModal({ ticket, onClose }: Props) {
                 )}
               </div>
 
-              {/* Star rating - only if admin is also the requester */}
-              {ticket.created_by === user?.id && (
-                <div className="space-y-1.5">
-                  <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                    Nota de atendimento
-                  </label>
-                  <div className="flex items-center gap-1">
-                    {[1, 2, 3, 4, 5].map((star) => (
-                      <button
-                        key={star}
-                        type="button"
-                        onClick={() => setEvalScore(star)}
-                        onMouseEnter={() => setEvalHover(star)}
-                        onMouseLeave={() => setEvalHover(0)}
-                        className="p-0.5 transition-transform hover:scale-110"
-                      >
-                        <Star
-                          className={`h-7 w-7 transition-colors ${
-                            star <= (evalHover || evalScore)
-                              ? "text-amber-400 fill-amber-400"
-                              : "text-muted-foreground/30"
-                          }`}
-                        />
-                      </button>
-                    ))}
-                    {evalScore > 0 && (
-                      <span className="ml-2 text-sm text-muted-foreground">{evalScore}/5</span>
-                    )}
-                  </div>
-                </div>
-              )}
 
               <textarea
                 value={evalComment}
@@ -759,7 +715,7 @@ export default function TicketDetailModal({ ticket, onClose }: Props) {
                   Cancelar
                 </button>
                 <button
-                  disabled={(!selectedCategoryId) || (ticket.created_by === user?.id && evalScore === 0) || submitEvaluation.isPending}
+                  disabled={!selectedCategoryId || submitEvaluation.isPending}
                   onClick={() => submitEvaluation.mutate()}
                   className="flex-1 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 transition-opacity disabled:opacity-50"
                 >
