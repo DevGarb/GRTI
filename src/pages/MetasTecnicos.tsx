@@ -129,10 +129,11 @@ export default function MetasTecnicos() {
         const evalScore = evalMap.get(ticket.id) ?? null;
 
         const catInfo = ticket.category_id ? categoryMap.get(ticket.category_id) : null;
-        const categoryPoints = catInfo?.score ?? 0;
+        // Pontuação vem APENAS da avaliação meta do admin, não do category score
+        const metaPoints = metaScoreMap.get(ticket.id) ?? 0;
 
         tech.totalClosed++;
-        tech.totalPoints += categoryPoints;
+        tech.totalPoints += metaPoints;
         tech.reworkCount += reworkMap.get(ticket.id) || 0;
         if (evalScore !== null) tech.evaluations++;
 
