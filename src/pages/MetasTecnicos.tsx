@@ -143,7 +143,7 @@ export default function MetasTecnicos() {
           resolutionHours,
           closedAt: ticket.updated_at,
           categoryName: catInfo?.name ?? null,
-          categoryPoints,
+          categoryPoints: metaPoints,
         });
       }
 
