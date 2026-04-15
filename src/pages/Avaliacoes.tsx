@@ -57,7 +57,7 @@ export default function Avaliacoes() {
       let query = supabase
         .from("tickets")
         .select("id, title")
-        .eq("status", "Resolvido")
+        .eq("status", "Fechado")
         .order("created_at", { ascending: false });
 
       if (orgId) {
@@ -79,6 +79,7 @@ export default function Avaliacoes() {
         evaluator_id: user!.id,
         score,
         comment: comment.trim() || null,
+        type: "satisfaction",
       });
       if (error) throw error;
     },

@@ -20,6 +20,7 @@ export interface DashboardMetrics {
   monthlyCsat: { month: string; value: number }[];
   monthlyAvgTime: { month: string; value: number }[];
   techCsat: TechCsatData[];
+  techPoints: { name: string; points: number }[];
 }
 
 function formatMinutes(mins: number): string {
@@ -155,6 +156,34 @@ export function useDashboardMetrics(dateFrom?: Date, dateTo?: Date) {
       // Total score = sum of meta evaluation scores (admin scoring)
       const totalScore = metaEvalsList.reduce((sum, e) => sum + e.score, 0);
 
+      // Per-technician points from meta evaluations
+      const metaTicketIds = [...new Set(metaEvalsList.map(e => e.ticket_id).filter(Boolean))] as string[];
+      const techPointsMap = new Map<string, number>();
+      if (metaTicketIds.length > 0) {
+        const { data: metaTickets } = await supabase
+          .from("tickets")
+          .select("id, assigned_to")
+          .in("id", metaTicketIds);
+        const metaTechIds = [...new Set((metaTickets || []).map((t: any) => t.assigned_to).filter(Boolean))] as string[];
+        let metaNameMap = new Map<string, string>();
+        if (metaTechIds.length > 0) {
+          const { data: metaProfiles } = await supabase
+            .from("profiles")
+            .select("user_id, full_name")
+            .in("user_id", metaTechIds);
+          metaNameMap = new Map((metaProfiles || []).map((p: any) => [p.user_id, p.full_name]));
+        }
+        const metaTicketMap = new Map((metaTickets || []).map((t: any) => [t.id, t.assigned_to]));
+        metaEvalsList.forEach(e => {
+          const techId = metaTicketMap.get(e.ticket_id);
+          const techName = techId ? metaNameMap.get(techId) : null;
+          if (techName) techPointsMap.set(techName, (techPointsMap.get(techName) || 0) + e.score);
+        });
+      }
+      const techPoints = [...techPointsMap.entries()]
+        .map(([name, points]) => ({ name, points }))
+        .sort((a, b) => b.points - a.points);
+
       // CSAT calculation (1-5 scale) from satisfaction evaluations
       let satisfied = 0, neutral = 0, unsatisfied = 0;
       allEvals.forEach((e) => {
@@ -260,6 +289,7 @@ export function useDashboardMetrics(dateFrom?: Date, dateTo?: Date) {
         monthlyCsat,
         monthlyAvgTime,
         techCsat,
+        techPoints,
       } as DashboardMetrics;
     },
     enabled: !!user,

@@ -104,20 +104,27 @@ export default function Dashboard() {
   };
 
   // Technician performance
-  const techPerformance = filteredTickets.reduce<Record<string, { chamados: number; fechados: number }>>((acc, t) => {
+  const techPerformance = filteredTickets.reduce<Record<string, { chamados: number; fechados: number; reworks: number }>>((acc, t) => {
     const name = t.assignedProfile?.full_name || "Não atribuído";
-    if (!acc[name]) acc[name] = { chamados: 0, fechados: 0 };
+    if (!acc[name]) acc[name] = { chamados: 0, fechados: 0, reworks: 0 };
     acc[name].chamados++;
     if (t.status === "Fechado") acc[name].fechados++;
+    acc[name].reworks += (t.reworkCount || 0);
     return acc;
   }, {});
 
   const techData = Object.entries(techPerformance)
-    .map(([name, stats]) => ({
-      name,
-      ...stats,
-      percent: stats.chamados > 0 ? Math.round((stats.fechados / stats.chamados) * 100) : 0,
-    }))
+    .map(([name, stats]) => {
+      const csatEntry = (metrics_data?.techCsat || []).find(tc => tc.name === name);
+      const ptsEntry = (metrics_data?.techPoints || []).find(tp => tp.name === name);
+      return {
+        name,
+        ...stats,
+        percent: stats.chamados > 0 ? Math.round((stats.fechados / stats.chamados) * 100) : 0,
+        csat: csatEntry ? csatEntry.csat : null,
+        points: ptsEntry ? ptsEntry.points : 0,
+      };
+    })
     .sort((a, b) => b.chamados - a.chamados);
 
   const metrics = [
@@ -300,16 +307,16 @@ export default function Dashboard() {
       {/* Ranking Charts */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div className="card-elevated p-5">
-          <h3 className="text-sm font-semibold text-foreground mb-4">Ranking - Pontuação</h3>
+          <h3 className="text-sm font-semibold text-foreground mb-4">Ranking - Pontuação (pts)</h3>
           <div className="h-48">
-            {techData.length > 0 ? (
+            {(metrics_data?.techPoints || []).length > 0 ? (
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={techData.slice(0, 5)}>
+                <BarChart data={(metrics_data?.techPoints || []).slice(0, 5)}>
                   <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                   <XAxis dataKey="name" tick={{ fontSize: 8 }} />
                   <YAxis tick={{ fontSize: 10 }} />
-                  <Tooltip />
-                  <Bar dataKey="chamados" fill="hsl(210, 70%, 50%)" radius={[4, 4, 0, 0]} />
+                  <Tooltip formatter={(value: number) => [`${value} pts`, "Pontuação"]} />
+                  <Bar dataKey="points" fill="hsl(38, 92%, 50%)" radius={[4, 4, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             ) : (
@@ -403,10 +410,10 @@ export default function Dashboard() {
                 <tr key={tech.name} className="border-b border-border last:border-0 hover:bg-muted/30 transition-colors">
                   <td className="px-3 py-2.5 text-sm font-medium text-foreground">{tech.name}</td>
                   <td className="px-3 py-2.5 text-sm text-center text-foreground">{tech.chamados}</td>
-                  <td className="px-3 py-2.5 text-sm text-center text-foreground">{tech.fechados}</td>
-                  <td className="px-3 py-2.5 text-sm text-center text-foreground">—</td>
+                  <td className="px-3 py-2.5 text-sm text-center font-semibold text-amber-600 dark:text-amber-400">{tech.points > 0 ? `${tech.points} pts` : "—"}</td>
+                  <td className="px-3 py-2.5 text-sm text-center text-foreground">{tech.csat !== null ? `${tech.csat}%` : "—"}</td>
                   <td className="px-3 py-2.5 text-sm text-center text-foreground">{tech.percent}%</td>
-                  <td className="px-3 py-2.5 text-sm text-center text-foreground">—</td>
+                  <td className="px-3 py-2.5 text-sm text-center text-foreground">{tech.reworks > 0 ? tech.reworks : "—"}</td>
                 </tr>
               )) : (
                 <tr>
