@@ -54,13 +54,20 @@ export function useDashboardMetrics(dateFrom?: Date, dateTo?: Date) {
       }
       const { data: tickets } = await ticketQuery;
 
+      // Tickets criados no período (para "total" e categorias)
       const allTickets = (tickets || []).filter((t) => {
         if (!dateFrom || !dateTo) return true;
         const d = new Date(t.created_at);
         return d >= dateFrom && d <= dateTo;
       });
 
-      const closedTickets = allTickets.filter((t) => t.status === "Fechado");
+      // Tickets FECHADOS no período (por updated_at) — base para pontos e tempo médio
+      const closedTickets = (tickets || []).filter((t) => {
+        if (t.status !== "Fechado") return false;
+        if (!dateFrom || !dateTo) return true;
+        const d = new Date(t.updated_at);
+        return d >= dateFrom && d <= dateTo;
+      });
 
       // Avg resolution time
       let avgResolutionMinutes = 0;
