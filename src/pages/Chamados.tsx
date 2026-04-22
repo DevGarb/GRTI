@@ -20,7 +20,7 @@ const statusBadgeColors: Record<string, string> = {
   "Fechado": "bg-gray-300 text-gray-700 dark:bg-gray-600 dark:text-gray-200",
   "Disponível": "bg-red-600 text-white",
 };
-function TicketTable({ tickets, onSelect }: { tickets: Ticket[]; onSelect: (t: Ticket) => void }) {
+function TicketTable({ tickets, onSelect, scoreMap }: { tickets: Ticket[]; onSelect: (t: Ticket) => void; scoreMap?: Map<string, number> }) {
   return (
     <div className="overflow-x-auto">
       <table className="w-full">
@@ -32,10 +32,13 @@ function TicketTable({ tickets, onSelect }: { tickets: Ticket[]; onSelect: (t: T
             <th className="text-left text-xs font-semibold text-muted-foreground px-4 py-2">Categoria</th>
             <th className="text-left text-xs font-semibold text-muted-foreground px-4 py-2">Data</th>
             <th className="text-left text-xs font-semibold text-muted-foreground px-4 py-2">Prioridade</th>
+            <th className="text-left text-xs font-semibold text-muted-foreground px-4 py-2">Pontuação</th>
           </tr>
         </thead>
         <tbody>
-          {tickets.map((ticket) => (
+          {tickets.map((ticket) => {
+            const score = scoreMap?.get(ticket.id);
+            return (
             <tr
               key={ticket.id}
               onClick={() => onSelect(ticket)}
@@ -67,8 +70,19 @@ function TicketTable({ tickets, onSelect }: { tickets: Ticket[]; onSelect: (t: T
               <td className="px-4 py-3">
                 <PriorityBadge priority={ticket.priority} />
               </td>
+              <td className="px-4 py-3">
+                {score !== undefined && score > 0 ? (
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">
+                    <Trophy className="h-3 w-3" />
+                    {score} pts
+                  </span>
+                ) : (
+                  <span className="text-xs text-muted-foreground">—</span>
+                )}
+              </td>
             </tr>
-          ))}
+            );
+          })}
         </tbody>
       </table>
     </div>
@@ -184,6 +198,28 @@ export default function Chamados() {
       }, 0);
     },
     enabled: !!user?.id && !isAdmin && closedTicketIds.length > 0,
+  });
+
+  // Pontuação por chamado (meta) para exibir na coluna da tabela
+  const allFilteredIds = filtered.map((t) => t.id);
+  const { data: scoreMap = new Map<string, number>() } = useQuery({
+    queryKey: ["ticket-scores", allFilteredIds.join(",")],
+    queryFn: async () => {
+      const map = new Map<string, number>();
+      if (allFilteredIds.length === 0) return map;
+      const { data: evals, error } = await supabase
+        .from("evaluations")
+        .select("ticket_id, score, created_at")
+        .eq("type", "meta")
+        .in("ticket_id", allFilteredIds)
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      (evals || []).forEach((e) => {
+        if (!map.has(e.ticket_id)) map.set(e.ticket_id, e.score || 0);
+      });
+      return map;
+    },
+    enabled: allFilteredIds.length > 0,
   });
 
   // Group by assigned technician (or creator if not assigned)
@@ -345,7 +381,7 @@ export default function Chamados() {
 
                 {isExpanded && (
                   <div className="border-t border-border">
-                    <TicketTable tickets={userTickets} onSelect={setSelectedTicket} />
+                    <TicketTable tickets={userTickets} onSelect={setSelectedTicket} scoreMap={scoreMap} />
                   </div>
                 )}
               </div>
@@ -393,7 +429,7 @@ export default function Chamados() {
                       <p className="text-xs text-muted-foreground">{assignedToMe.length} chamado{assignedToMe.length !== 1 ? 's' : ''}</p>
                     </div>
                   </div>
-                  <TicketTable tickets={assignedToMe} onSelect={setSelectedTicket} />
+                  <TicketTable tickets={assignedToMe} onSelect={setSelectedTicket} scoreMap={scoreMap} />
                 </div>
               )}
               {createdByMe.length > 0 && (
@@ -405,7 +441,7 @@ export default function Chamados() {
                       <p className="text-xs text-muted-foreground">{createdByMe.length} chamado{createdByMe.length !== 1 ? 's' : ''}</p>
                     </div>
                   </div>
-                  <TicketTable tickets={createdByMe} onSelect={setSelectedTicket} />
+                  <TicketTable tickets={createdByMe} onSelect={setSelectedTicket} scoreMap={scoreMap} />
                 </div>
               )}
               {availableTickets.length === 0 && assignedToMe.length === 0 && createdByMe.length === 0 && (
