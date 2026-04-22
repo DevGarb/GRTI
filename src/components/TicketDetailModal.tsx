@@ -251,15 +251,27 @@ export default function TicketDetailModal({ ticket, onClose }: Props) {
         .eq("id", ticket.id);
       if (updateError) throw updateError;
 
-      // Pontuação (meta): upsert garante que não duplica caso o chamado já tenha pontuação
-      const { error } = await supabase.from("evaluations").upsert({
-        ticket_id: ticket.id,
-        evaluator_id: user!.id,
-        score: selectedCategoryScore ?? 0,
-        comment: evalComment || null,
-        type: "meta",
-      } as any, { onConflict: "ticket_id,type" } as any);
-      if (error) throw error;
+      // Pontuação (meta): UPDATE se já existe, INSERT se não existe
+      if (existingEvaluation) {
+        const { error } = await supabase
+          .from("evaluations")
+          .update({
+            evaluator_id: user!.id,
+            score: selectedCategoryScore ?? 0,
+            comment: evalComment || null,
+          })
+          .eq("id", existingEvaluation.id);
+        if (error) throw error;
+      } else {
+        const { error } = await supabase.from("evaluations").insert({
+          ticket_id: ticket.id,
+          evaluator_id: user!.id,
+          score: selectedCategoryScore ?? 0,
+          comment: evalComment || null,
+          type: "meta",
+        } as any);
+        if (error) throw error;
+      }
 
 
       await addHistory("status_change", status, "Fechado");
