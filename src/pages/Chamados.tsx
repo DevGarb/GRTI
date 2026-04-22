@@ -70,8 +70,19 @@ function TicketTable({ tickets, onSelect, scoreMap }: { tickets: Ticket[]; onSel
               <td className="px-4 py-3">
                 <PriorityBadge priority={ticket.priority} />
               </td>
+              <td className="px-4 py-3">
+                {score !== undefined && score > 0 ? (
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">
+                    <Trophy className="h-3 w-3" />
+                    {score} pts
+                  </span>
+                ) : (
+                  <span className="text-xs text-muted-foreground">—</span>
+                )}
+              </td>
             </tr>
-          ))}
+            );
+          })}
         </tbody>
       </table>
     </div>
