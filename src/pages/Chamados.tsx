@@ -200,6 +200,28 @@ export default function Chamados() {
     enabled: !!user?.id && !isAdmin && closedTicketIds.length > 0,
   });
 
+  // Pontuação por chamado (meta) para exibir na coluna da tabela
+  const allFilteredIds = filtered.map((t) => t.id);
+  const { data: scoreMap = new Map<string, number>() } = useQuery({
+    queryKey: ["ticket-scores", allFilteredIds.join(",")],
+    queryFn: async () => {
+      const map = new Map<string, number>();
+      if (allFilteredIds.length === 0) return map;
+      const { data: evals, error } = await supabase
+        .from("evaluations")
+        .select("ticket_id, score, created_at")
+        .eq("type", "meta")
+        .in("ticket_id", allFilteredIds)
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      (evals || []).forEach((e) => {
+        if (!map.has(e.ticket_id)) map.set(e.ticket_id, e.score || 0);
+      });
+      return map;
+    },
+    enabled: allFilteredIds.length > 0,
+  });
+
   // Group by assigned technician (or creator if not assigned)
   const grouped = filtered.reduce<Record<string, typeof filtered>>((acc, t) => {
     const name = t.assignedProfile?.full_name || t.creatorProfile?.full_name || "Sem atribuição";
