@@ -381,7 +381,7 @@ export default function Chamados() {
 
                 {isExpanded && (
                   <div className="border-t border-border">
-                    <TicketTable tickets={userTickets} onSelect={setSelectedTicket} />
+                    <TicketTable tickets={userTickets} onSelect={setSelectedTicket} scoreMap={scoreMap} />
                   </div>
                 )}
               </div>
