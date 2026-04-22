@@ -149,44 +149,50 @@ export function useDashboardMetrics(dateFrom?: Date, dateTo?: Date) {
         });
       }
 
-      // Fetch meta evaluations (admin scoring) for total score in the period
-      let metaQuery = supabase
-        .from("evaluations")
-        .select("score, ticket_id")
-        .eq("type", "meta");
-      if (dateFrom && dateTo) {
-        metaQuery = metaQuery.gte("created_at", dateFrom.toISOString()).lte("created_at", dateTo.toISOString());
-      }
-      const { data: metaEvals } = await (metaQuery as any);
-      const metaEvalsList = (metaEvals || []) as { score: number; ticket_id: string }[];
+      // ===== PONTUAÇÃO =====
+      // Regra unificada: pontos vêm de avaliações META dos chamados FECHADOS no período.
+      // Deduplicar por ticket (uma única meta por ticket).
+      const closedTicketIds = closedTickets.map(t => t.id);
+      const closedTicketTechMap = new Map<string, string | null>(
+        closedTickets.map(t => [t.id, t.assigned_to])
+      );
 
-      // Total score = sum of meta evaluation scores (admin scoring)
-      const totalScore = metaEvalsList.reduce((sum, e) => sum + e.score, 0);
-
-      // Per-technician points from meta evaluations
-      const metaTicketIds = [...new Set(metaEvalsList.map(e => e.ticket_id).filter(Boolean))] as string[];
+      let totalScore = 0;
       const techPointsMap = new Map<string, number>();
-      if (metaTicketIds.length > 0) {
-        const { data: metaTickets } = await supabase
-          .from("tickets")
-          .select("id, assigned_to")
-          .in("id", metaTicketIds);
-        const metaTechIds = [...new Set((metaTickets || []).map((t: any) => t.assigned_to).filter(Boolean))] as string[];
-        let metaNameMap = new Map<string, string>();
-        if (metaTechIds.length > 0) {
-          const { data: metaProfiles } = await supabase
+
+      if (closedTicketIds.length > 0) {
+        const { data: metaEvals } = await supabase
+          .from("evaluations")
+          .select("score, ticket_id, created_at")
+          .eq("type", "meta")
+          .in("ticket_id", closedTicketIds)
+          .order("created_at", { ascending: false });
+
+        // Map tech ids -> names (for closed tickets in period)
+        const closedTechIds = [...new Set(closedTickets.map(t => t.assigned_to).filter(Boolean))] as string[];
+        let nameMap = new Map<string, string>();
+        if (closedTechIds.length > 0) {
+          const { data: profs } = await supabase
             .from("profiles")
             .select("user_id, full_name")
-            .in("user_id", metaTechIds);
-          metaNameMap = new Map((metaProfiles || []).map((p: any) => [p.user_id, p.full_name]));
+            .in("user_id", closedTechIds);
+          nameMap = new Map((profs || []).map(p => [p.user_id, p.full_name]));
         }
-        const metaTicketMap = new Map((metaTickets || []).map((t: any) => [t.id, t.assigned_to]));
-        metaEvalsList.forEach(e => {
-          const techId = metaTicketMap.get(e.ticket_id);
-          const techName = techId ? metaNameMap.get(techId) : null;
-          if (techName) techPointsMap.set(techName, (techPointsMap.get(techName) || 0) + e.score);
+
+        const seen = new Set<string>();
+        (metaEvals || []).forEach((e: any) => {
+          if (seen.has(e.ticket_id)) return;
+          seen.add(e.ticket_id);
+          const score = e.score || 0;
+          totalScore += score;
+          const techId = closedTicketTechMap.get(e.ticket_id);
+          const techName = techId ? nameMap.get(techId) : null;
+          if (techName) {
+            techPointsMap.set(techName, (techPointsMap.get(techName) || 0) + score);
+          }
         });
       }
+
       const techPoints = [...techPointsMap.entries()]
         .map(([name, points]) => ({ name, points }))
         .sort((a, b) => b.points - a.points);
