@@ -61,13 +61,21 @@ export function useDashboardMetrics(dateFrom?: Date, dateTo?: Date) {
         return d >= dateFrom && d <= dateTo;
       });
 
-      // Tickets FECHADOS no período (por updated_at) — base para pontos e tempo médio
-      const closedTickets = (tickets || []).filter((t) => {
-        if (t.status !== "Fechado") return false;
-        if (!dateFrom || !dateTo) return true;
-        const d = new Date(t.updated_at);
-        return d >= dateFrom && d <= dateTo;
-      });
+      // Tickets FECHADOS no período: usa ticket_history para data real de fechamento
+      // updated_at é alterado por qualquer edição e não reflete a data de fechamento
+      let closedTickets = (tickets || []).filter((t) => t.status === "Fechado");
+      if (dateFrom && dateTo) {
+        let histQuery = supabase
+          .from("ticket_history")
+          .select("ticket_id")
+          .eq("action", "status_change")
+          .eq("new_value", "Fechado")
+          .gte("created_at", dateFrom.toISOString())
+          .lte("created_at", dateTo.toISOString());
+        const { data: closedHistory } = await histQuery;
+        const closedInPeriodIds = new Set((closedHistory || []).map((h: any) => h.ticket_id));
+        closedTickets = closedTickets.filter((t) => closedInPeriodIds.has(t.id));
+      }
 
       // Avg resolution time
       let avgResolutionMinutes = 0;
