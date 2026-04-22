@@ -23,7 +23,7 @@ function TabChamados() {
       // Chamados criados no mês selecionado
       const { data: rawTickets, error } = await supabase
         .from("tickets")
-        .select("id, title, status, created_at, created_by, category_id")
+        .select("id, title, status, created_at, created_by, assigned_to, category_id")
         .gte("created_at", monthFrom.toISOString())
         .lte("created_at", monthTo.toISOString())
         .order("created_at", { ascending: false });
@@ -32,15 +32,18 @@ function TabChamados() {
 
       const ticketIds = rawTickets.map((t) => t.id);
 
-      // Criadores (quem abriu)
-      const creatorIds = [...new Set(rawTickets.map((t) => t.created_by).filter(Boolean))] as string[];
-      let creatorMap = new Map<string, string>();
-      if (creatorIds.length > 0) {
+      // Perfis: criadores + técnicos atribuídos (uma única query)
+      const allProfileIds = [...new Set([
+        ...rawTickets.map((t) => t.created_by),
+        ...rawTickets.map((t) => t.assigned_to),
+      ].filter(Boolean))] as string[];
+      let profileMap = new Map<string, string>();
+      if (allProfileIds.length > 0) {
         const { data: profiles } = await supabase
           .from("profiles")
           .select("user_id, full_name")
-          .in("user_id", creatorIds);
-        creatorMap = new Map((profiles || []).map((p) => [p.user_id, p.full_name || "Sem nome"]));
+          .in("user_id", allProfileIds);
+        profileMap = new Map((profiles || []).map((p) => [p.user_id, p.full_name || "Sem nome"]));
       }
 
       // Pontuação (meta evaluation)
@@ -67,7 +70,8 @@ function TabChamados() {
         title: t.title,
         status: t.status,
         createdAt: t.created_at,
-        openedBy: creatorMap.get(t.created_by) || "Desconhecido",
+        openedBy: profileMap.get(t.created_by) || "Desconhecido",
+        assignedTo: t.assigned_to ? profileMap.get(t.assigned_to) || "Desconhecido" : "Não atribuído",
         score: scoreMap.get(t.id) ?? null,
         categoryName: t.category_id ? catMap.get(t.category_id) ?? "—" : "—",
       }));
@@ -79,6 +83,7 @@ function TabChamados() {
     return (
       t.title.toLowerCase().includes(q) ||
       t.openedBy.toLowerCase().includes(q) ||
+      t.assignedTo.toLowerCase().includes(q) ||
       t.categoryName.toLowerCase().includes(q) ||
       t.id.toLowerCase().includes(q)
     );
@@ -91,12 +96,14 @@ function TabChamados() {
         toast.error("Nenhum chamado para exportar.");
         return;
       }
-      const headers = ["ID do Chamado", "Quem Abriu", "Título", "Data", "Pontuação", "Categoria"];
+      const headers = ["ID do Chamado", "Quem Abriu", "Técnico Atribuído", "Título", "Data", "Status", "Pontuação", "Categoria"];
       const rows = filtered.map((t) => [
         t.id,
         t.openedBy,
+        t.assignedTo,
         t.title,
         new Date(t.createdAt).toLocaleDateString("pt-BR"),
+        t.status,
         t.score !== null ? String(t.score) : "—",
         t.categoryName,
       ]);
@@ -182,6 +189,7 @@ function TabChamados() {
                 <tr className="border-b border-border bg-muted/30">
                   <th className="text-left px-4 py-3 font-medium text-muted-foreground text-xs">ID</th>
                   <th className="text-left px-4 py-3 font-medium text-muted-foreground text-xs">Quem Abriu</th>
+                  <th className="text-left px-4 py-3 font-medium text-muted-foreground text-xs">Técnico Atribuído</th>
                   <th className="text-left px-4 py-3 font-medium text-muted-foreground text-xs">Título</th>
                   <th className="text-left px-4 py-3 font-medium text-muted-foreground text-xs">Data</th>
                   <th className="text-left px-4 py-3 font-medium text-muted-foreground text-xs">Status</th>
@@ -196,6 +204,7 @@ function TabChamados() {
                       <span className="font-mono text-[11px] text-muted-foreground">{t.id.slice(0, 8)}…</span>
                     </td>
                     <td className="px-4 py-3 font-medium text-foreground">{t.openedBy}</td>
+                    <td className="px-4 py-3 text-foreground">{t.assignedTo}</td>
                     <td className="px-4 py-3 max-w-[260px]">
                       <span className="truncate block text-foreground">{t.title}</span>
                     </td>
