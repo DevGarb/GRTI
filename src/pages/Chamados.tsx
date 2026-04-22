@@ -154,7 +154,12 @@ export default function Chamados() {
     return matchSearch && matchStatus && (matchMonth || isDisponivel) && matchRework;
   });
 
-  const closedByMe = filtered.filter((t) => t.assigned_to === user?.id && t.status === "Fechado");
+  // Pontuação: tickets fechados pelo usuário no mês selecionado (filtra por updated_at = data de fechamento)
+  const closedByMe = tickets.filter((t) => {
+    if (t.assigned_to !== user?.id || t.status !== "Fechado") return false;
+    const d = new Date(t.updated_at);
+    return d >= monthFrom && d <= monthTo;
+  });
   const closedTicketIds = closedByMe.map((t) => t.id);
 
   const { data: myScore = 0 } = useQuery({
