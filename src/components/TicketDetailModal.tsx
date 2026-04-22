@@ -1,5 +1,5 @@
-import { useState, useMemo } from "react";
-import { X, User, Tag, Paperclip, Star, ChevronDown, ChevronRight, LayoutList, Play, CheckCircle2, RotateCcw, ThumbsUp, ThumbsDown, RefreshCw, HandMetal, AlertTriangle, Clock, Trash2 } from "lucide-react";
+import { useState, useMemo, useEffect } from "react";
+import { X, User, Tag, Paperclip, Star, ChevronDown, ChevronRight, LayoutList, Play, CheckCircle2, RotateCcw, ThumbsUp, ThumbsDown, RefreshCw, HandMetal, AlertTriangle, Clock, Trash2, Award } from "lucide-react";
 import { StatusBadge, PriorityBadge } from "@/components/StatusBadge";
 import type { Ticket } from "@/hooks/useTickets";
 import { useUpdateTicket, usePickTicket, useTechnicianProfiles, useProfiles } from "@/hooks/useTickets";
@@ -196,6 +196,14 @@ export default function TicketDetailModal({ ticket, onClose }: Props) {
   const { data: allProfiles = [] } = useProfiles();
   const { data: techProfiles = [] } = useTechnicianProfiles();
 
+  // Quando o ticket já tem categoria, sincroniza o score assim que as categorias carregarem
+  useEffect(() => {
+    if (selectedCategoryId && selectedCategoryScore === null && categories.length > 0) {
+      const cat = categories.find((c) => c.id === selectedCategoryId);
+      if (cat) setSelectedCategoryScore(cat.score ?? 0);
+    }
+  }, [selectedCategoryId, categories]);
+
   const selectedCategoryName = useMemo(() => {
     if (!selectedCategoryId) return null;
     const cat = categories.find((c) => c.id === selectedCategoryId);
@@ -243,14 +251,14 @@ export default function TicketDetailModal({ ticket, onClose }: Props) {
         .eq("id", ticket.id);
       if (updateError) throw updateError;
 
-      // Pontuação (meta) é SEMPRE o score da categoria, nunca o CSAT
-      const { error } = await supabase.from("evaluations").insert({
+      // Pontuação (meta): upsert garante que não duplica caso o chamado já tenha pontuação
+      const { error } = await supabase.from("evaluations").upsert({
         ticket_id: ticket.id,
         evaluator_id: user!.id,
         score: selectedCategoryScore ?? 0,
         comment: evalComment || null,
         type: "meta",
-      } as any);
+      } as any, { onConflict: "ticket_id,type" } as any);
       if (error) throw error;
 
 
@@ -644,6 +652,26 @@ export default function TicketDetailModal({ ticket, onClose }: Props) {
             </div>
           )}
 
+          {/* Pontuação já atribuída — exibe e permite alterar explicitamente */}
+          {existingEvaluation && !showEvaluation && (
+            <div className="flex items-center justify-between p-3 rounded-lg border border-amber-200 bg-amber-50 dark:bg-amber-950/20 dark:border-amber-800">
+              <div className="flex items-center gap-2">
+                <Award className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+                <span className="text-sm font-semibold text-amber-700 dark:text-amber-400">
+                  Pontuação atribuída: {existingEvaluation.score} pts
+                </span>
+              </div>
+              {isAdmin && isClosed && (
+                <button
+                  onClick={() => setShowEvaluation(true)}
+                  className="text-xs text-muted-foreground hover:text-foreground underline"
+                >
+                  Alterar
+                </button>
+              )}
+            </div>
+          )}
+
           {/* Admin: Evaluate already closed tickets without evaluation */}
           {isAdmin && !existingEvaluation && !showEvaluation && isClosed && (
             <button
@@ -715,7 +743,7 @@ export default function TicketDetailModal({ ticket, onClose }: Props) {
                   Cancelar
                 </button>
                 <button
-                  disabled={!selectedCategoryId || submitEvaluation.isPending}
+                  disabled={!selectedCategoryId || selectedCategoryScore === null || submitEvaluation.isPending}
                   onClick={() => submitEvaluation.mutate()}
                   className="flex-1 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 transition-opacity disabled:opacity-50"
                 >
