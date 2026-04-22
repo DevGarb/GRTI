@@ -163,10 +163,9 @@ export function useDashboardMetrics(dateFrom?: Date, dateTo?: Date) {
       if (closedTicketIds.length > 0) {
         const { data: metaEvals } = await supabase
           .from("evaluations")
-          .select("score, ticket_id, created_at")
+          .select("score, ticket_id")
           .eq("type", "meta")
-          .in("ticket_id", closedTicketIds)
-          .order("created_at", { ascending: false });
+          .in("ticket_id", closedTicketIds);
 
         // Map tech ids -> names (for closed tickets in period)
         const closedTechIds = [...new Set(closedTickets.map(t => t.assigned_to).filter(Boolean))] as string[];
@@ -179,10 +178,8 @@ export function useDashboardMetrics(dateFrom?: Date, dateTo?: Date) {
           nameMap = new Map((profs || []).map(p => [p.user_id, p.full_name]));
         }
 
-        const seen = new Set<string>();
+        // Soma direta: um único meta por ticket (garantido pelo unique index no banco)
         (metaEvals || []).forEach((e: any) => {
-          if (seen.has(e.ticket_id)) return;
-          seen.add(e.ticket_id);
           const score = e.score || 0;
           totalScore += score;
           const techId = closedTicketTechMap.get(e.ticket_id);

@@ -180,46 +180,37 @@ export default function Chamados() {
     queryKey: ["my-score", user?.id, selectedMonth, closedTicketIds.join(",")],
     queryFn: async () => {
       if (!user?.id || closedTicketIds.length === 0) return 0;
-
+      // Soma dos pontos atribuídos (type="meta") nos chamados fechados pelo técnico no mês
       const { data: evals, error } = await supabase
         .from("evaluations")
-        .select("ticket_id, score, created_at")
+        .select("score")
         .eq("type", "meta")
-        .in("ticket_id", closedTicketIds)
-        .order("created_at", { ascending: false });
-
+        .in("ticket_id", closedTicketIds);
       if (error) throw error;
-
-      const scoredTickets = new Set<string>();
-      return (evals || []).reduce((sum, evaluation) => {
-        if (scoredTickets.has(evaluation.ticket_id)) return sum;
-        scoredTickets.add(evaluation.ticket_id);
-        return sum + (evaluation.score || 0);
-      }, 0);
+      return (evals || []).reduce((sum, e) => sum + (e.score || 0), 0);
     },
     enabled: !!user?.id && !isAdmin && closedTicketIds.length > 0,
   });
 
-  // Pontuação por chamado (meta) para exibir na coluna da tabela
-  const allFilteredIds = filtered.map((t) => t.id);
+  // Pontuação: apenas chamados FECHADOS que tiveram pontuação atribuída (type="meta")
+  const closedFilteredIds = filtered.filter((t) => t.status === "Fechado").map((t) => t.id);
   const { data: scoreMap = new Map<string, number>() } = useQuery({
-    queryKey: ["ticket-scores", allFilteredIds.join(",")],
+    queryKey: ["ticket-scores", closedFilteredIds.join(",")],
     queryFn: async () => {
       const map = new Map<string, number>();
-      if (allFilteredIds.length === 0) return map;
+      if (closedFilteredIds.length === 0) return map;
       const { data: evals, error } = await supabase
         .from("evaluations")
-        .select("ticket_id, score, created_at")
+        .select("ticket_id, score")
         .eq("type", "meta")
-        .in("ticket_id", allFilteredIds)
-        .order("created_at", { ascending: false });
+        .in("ticket_id", closedFilteredIds);
       if (error) throw error;
       (evals || []).forEach((e) => {
-        if (!map.has(e.ticket_id)) map.set(e.ticket_id, e.score || 0);
+        map.set(e.ticket_id, e.score || 0);
       });
       return map;
     },
-    enabled: allFilteredIds.length > 0,
+    enabled: closedFilteredIds.length > 0,
   });
 
   // Group by assigned technician (or creator if not assigned)

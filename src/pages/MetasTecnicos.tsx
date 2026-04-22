@@ -17,7 +17,7 @@ interface TechnicianStats {
   totalPoints: number;
   preventivasDone: number;
   reworkCount: number;
-  tickets: { title: string; score: number | null; resolutionHours: number; closedAt: string; categoryName: string | null; categoryPoints: number }[];
+  tickets: { title: string; score: number | null; resolutionHours: number; closedAt: string; categoryName: string | null; points: number }[];
 }
 
 export default function MetasTecnicos() {
@@ -59,28 +59,27 @@ export default function MetasTecnicos() {
         .in("ticket_id", closedIds);
       if (eErr) throw eErr;
 
+      // Pontuação: avaliações META dos chamados fechados no mês
+      // Regra: 1 meta por ticket (garantido pelo unique index no banco)
       const { data: metaEvaluations, error: mErr } = await supabase
         .from("evaluations")
-        .select("*")
+        .select("ticket_id, score")
         .eq("type", "meta")
-        .in("ticket_id", closedIds)
-        .order("created_at", { ascending: false });
+        .in("ticket_id", closedIds);
       if (mErr) throw mErr;
 
-      // Deduplicar meta por ticket (uma única meta por chamado)
-      const metaScoreMap = new Map<string, number>();
-      (metaEvaluations || []).forEach((e) => {
-        if (!metaScoreMap.has(e.ticket_id)) metaScoreMap.set(e.ticket_id, e.score);
-      });
+      const metaScoreMap = new Map<string, number>(
+        (metaEvaluations || []).map((e) => [e.ticket_id, e.score])
+      );
 
       const categoryIds = [...new Set(closedTickets.map((t) => t.category_id).filter(Boolean))] as string[];
-      let categoryMap = new Map<string, { name: string; score: number }>();
+      let categoryMap = new Map<string, string>();
       if (categoryIds.length > 0) {
         const { data: cats } = await supabase
           .from("categories")
-          .select("id, name, score")
+          .select("id, name")
           .in("id", categoryIds);
-        categoryMap = new Map((cats || []).map((c) => [c.id, { name: c.name, score: c.score ?? 0 }]));
+        categoryMap = new Map((cats || []).map((c) => [c.id, c.name]));
       }
 
       const techIds = [...new Set(closedTickets.map((t) => t.assigned_to).filter(Boolean))] as string[];
@@ -145,11 +144,12 @@ export default function MetasTecnicos() {
         const resolutionHours = Math.max(0, (closed - created) / (1000 * 60 * 60));
         const evalScore = evalMap.get(ticket.id) ?? null;
 
-        const catInfo = ticket.category_id ? categoryMap.get(ticket.category_id) : null;
-        const metaPoints = metaScoreMap.get(ticket.id) ?? 0;
+        const categoryName = ticket.category_id ? categoryMap.get(ticket.category_id) ?? null : null;
+        // Pontuação: avaliação META atribuída a este chamado fechado
+        const points = metaScoreMap.get(ticket.id) ?? 0;
 
         tech.totalClosed++;
-        tech.totalPoints += metaPoints;
+        tech.totalPoints += points;
         tech.reworkCount += reworkMap.get(ticket.id) || 0;
         if (evalScore !== null) tech.evaluations++;
 
@@ -158,8 +158,8 @@ export default function MetasTecnicos() {
           score: evalScore,
           resolutionHours,
           closedAt: ticket.updated_at,
-          categoryName: catInfo?.name ?? null,
-          categoryPoints: metaPoints,
+          categoryName,
+          points,
         });
       }
 
@@ -462,9 +462,9 @@ export default function MetasTecnicos() {
                                   <td className="px-4 py-2.5 text-sm text-foreground max-w-[250px] truncate">{t.title}</td>
                                   <td className="px-4 py-2.5 text-sm text-muted-foreground">{t.categoryName || "—"}</td>
                                   <td className="px-4 py-2.5">
-                                    {t.categoryPoints > 0 ? (
+                                    {t.points > 0 ? (
                                       <span className="inline-flex items-center gap-1 text-xs font-semibold text-amber-600 dark:text-amber-400">
-                                        <Award className="h-3 w-3" />{t.categoryPoints}
+                                        <Award className="h-3 w-3" />{t.points}
                                       </span>
                                     ) : (
                                       <span className="text-xs text-muted-foreground">—</span>
