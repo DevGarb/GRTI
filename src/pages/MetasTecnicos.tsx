@@ -32,30 +32,46 @@ export default function MetasTecnicos() {
   const { data: goals = [] } = useGoals(selectedYear, selectedMonth);
 
   const { data: stats = [], isLoading } = useQuery({
-    queryKey: ["metas-tecnicos"],
+    queryKey: ["metas-tecnicos", selectedYear, selectedMonth],
     queryFn: async () => {
+      // Range do mês selecionado
+      const monthStart = new Date(selectedYear, selectedMonth - 1, 1);
+      const monthEnd = new Date(selectedYear, selectedMonth, 1);
+
+      // Tickets fechados DENTRO do mês selecionado (por updated_at = data de fechamento)
       const { data: closedTickets, error: tErr } = await supabase
         .from("tickets")
         .select("*")
         .eq("status", "Fechado")
+        .gte("updated_at", monthStart.toISOString())
+        .lt("updated_at", monthEnd.toISOString())
         .order("updated_at", { ascending: false });
       if (tErr) throw tErr;
 
-      // Avaliações de satisfação (CSAT 1-5 do solicitante)
+      const closedIds = (closedTickets || []).map((t) => t.id);
+      if (closedIds.length === 0) return [];
+
+      // Avaliações de satisfação (CSAT) e meta (pontos do admin) APENAS para tickets do mês
       const { data: evaluations, error: eErr } = await supabase
         .from("evaluations")
         .select("*")
-        .eq("type", "satisfaction");
+        .eq("type", "satisfaction")
+        .in("ticket_id", closedIds);
       if (eErr) throw eErr;
 
-      // Avaliações meta (pontuação do admin) - APENAS estas contam como pontos
       const { data: metaEvaluations, error: mErr } = await supabase
         .from("evaluations")
         .select("*")
-        .eq("type", "meta");
+        .eq("type", "meta")
+        .in("ticket_id", closedIds)
+        .order("created_at", { ascending: false });
       if (mErr) throw mErr;
 
-      const metaScoreMap = new Map((metaEvaluations || []).map((e) => [e.ticket_id, e.score]));
+      // Deduplicar meta por ticket (uma única meta por chamado)
+      const metaScoreMap = new Map<string, number>();
+      (metaEvaluations || []).forEach((e) => {
+        if (!metaScoreMap.has(e.ticket_id)) metaScoreMap.set(e.ticket_id, e.score);
+      });
 
       const categoryIds = [...new Set(closedTickets.map((t) => t.category_id).filter(Boolean))] as string[];
       let categoryMap = new Map<string, { name: string; score: number }>();
@@ -70,24 +86,25 @@ export default function MetasTecnicos() {
       const techIds = [...new Set(closedTickets.map((t) => t.assigned_to).filter(Boolean))] as string[];
       if (techIds.length === 0) return [];
 
-      // Fetch preventivas count per technician
+      // Preventivas FEITAS no mês selecionado, por técnico
       const { data: preventivas } = await supabase
         .from("preventive_maintenance")
-        .select("created_by");
+        .select("created_by, created_at")
+        .gte("created_at", monthStart.toISOString())
+        .lt("created_at", monthEnd.toISOString());
       const preventivasMap = new Map<string, number>();
       (preventivas || []).forEach((p) => {
         preventivasMap.set(p.created_by, (preventivasMap.get(p.created_by) || 0) + 1);
       });
 
-      // Fetch rework count per ticket
-      const ticketIds = closedTickets.map((t) => t.id);
+      // Retrabalhos para os tickets do mês
       let reworkMap = new Map<string, number>();
-      if (ticketIds.length > 0) {
+      if (closedIds.length > 0) {
         const { data: reworkHistory } = await supabase
           .from("ticket_history")
           .select("ticket_id")
           .eq("action", "rework")
-          .in("ticket_id", ticketIds);
+          .in("ticket_id", closedIds);
         (reworkHistory || []).forEach((r) => {
           reworkMap.set(r.ticket_id, (reworkMap.get(r.ticket_id) || 0) + 1);
         });
@@ -129,7 +146,6 @@ export default function MetasTecnicos() {
         const evalScore = evalMap.get(ticket.id) ?? null;
 
         const catInfo = ticket.category_id ? categoryMap.get(ticket.category_id) : null;
-        // Pontuação vem APENAS da avaliação meta do admin, não do category score
         const metaPoints = metaScoreMap.get(ticket.id) ?? 0;
 
         tech.totalClosed++;
