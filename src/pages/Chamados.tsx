@@ -20,7 +20,7 @@ const statusBadgeColors: Record<string, string> = {
   "Fechado": "bg-gray-300 text-gray-700 dark:bg-gray-600 dark:text-gray-200",
   "Disponível": "bg-red-600 text-white",
 };
-function TicketTable({ tickets, onSelect }: { tickets: Ticket[]; onSelect: (t: Ticket) => void }) {
+function TicketTable({ tickets, onSelect, scoreMap }: { tickets: Ticket[]; onSelect: (t: Ticket) => void; scoreMap?: Map<string, number> }) {
   return (
     <div className="overflow-x-auto">
       <table className="w-full">
@@ -32,10 +32,13 @@ function TicketTable({ tickets, onSelect }: { tickets: Ticket[]; onSelect: (t: T
             <th className="text-left text-xs font-semibold text-muted-foreground px-4 py-2">Categoria</th>
             <th className="text-left text-xs font-semibold text-muted-foreground px-4 py-2">Data</th>
             <th className="text-left text-xs font-semibold text-muted-foreground px-4 py-2">Prioridade</th>
+            <th className="text-left text-xs font-semibold text-muted-foreground px-4 py-2">Pontuação</th>
           </tr>
         </thead>
         <tbody>
-          {tickets.map((ticket) => (
+          {tickets.map((ticket) => {
+            const score = scoreMap?.get(ticket.id);
+            return (
             <tr
               key={ticket.id}
               onClick={() => onSelect(ticket)}
