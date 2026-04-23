@@ -10,6 +10,7 @@ import NewTicketModal from "@/components/NewTicketModal";
 import TicketDetailModal from "@/components/TicketDetailModal";
 import { supabase } from "@/integrations/supabase/client";
 import MyGoalCard from "@/components/metas/MyGoalCard";
+import { calcBusinessMinutes, formatBusinessTime, getSlaStatus } from "@/lib/businessHours";
 
 const allStatuses = ["Aberto", "Em Andamento", "Aguardando Aprovação", "Aprovado", "Fechado", "Disponível"];
 
@@ -21,6 +22,36 @@ const statusBadgeColors: Record<string, string> = {
   "Fechado": "bg-gray-300 text-gray-700 dark:bg-gray-600 dark:text-gray-200",
   "Disponível": "bg-red-600 text-white",
 };
+function SlaTimer({ ticket }: { ticket: Ticket }) {
+  const isClosed = ticket.status === "Fechado";
+  const end = isClosed ? new Date(ticket.updated_at) : new Date();
+  const elapsed = calcBusinessMinutes(new Date(ticket.created_at), end);
+  const label = formatBusinessTime(elapsed);
+
+  if (isClosed) {
+    return (
+      <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
+        <Clock className="h-3 w-3" />
+        {label}
+      </span>
+    );
+  }
+
+  const sla = getSlaStatus(elapsed, ticket.priority);
+  const colors = {
+    ok:   "text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/30 border-emerald-200 dark:border-emerald-800",
+    warn: "text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/30 border-amber-200 dark:border-amber-800",
+    crit: "text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-950/30 border-red-200 dark:border-red-800",
+  };
+
+  return (
+    <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md border text-xs font-medium ${colors[sla]}`}>
+      <Clock className="h-3 w-3" />
+      {label}
+    </span>
+  );
+}
+
 function TicketTable({ tickets, onSelect, scoreMap }: { tickets: Ticket[]; onSelect: (t: Ticket) => void; scoreMap?: Map<string, number> }) {
   return (
     <div className="overflow-x-auto">
@@ -32,6 +63,7 @@ function TicketTable({ tickets, onSelect, scoreMap }: { tickets: Ticket[]; onSel
             <th className="text-left text-xs font-semibold text-muted-foreground px-4 py-2">Status</th>
             <th className="text-left text-xs font-semibold text-muted-foreground px-4 py-2">Categoria</th>
             <th className="text-left text-xs font-semibold text-muted-foreground px-4 py-2">Data</th>
+            <th className="text-left text-xs font-semibold text-muted-foreground px-4 py-2">Tempo SLA</th>
             <th className="text-left text-xs font-semibold text-muted-foreground px-4 py-2">Prioridade</th>
             <th className="text-left text-xs font-semibold text-muted-foreground px-4 py-2">Pontuação</th>
           </tr>
@@ -67,6 +99,9 @@ function TicketTable({ tickets, onSelect, scoreMap }: { tickets: Ticket[]; onSel
               <td className="px-4 py-3 text-sm text-muted-foreground">{ticket.type}</td>
               <td className="px-4 py-3 text-sm text-muted-foreground">
                 {new Date(ticket.created_at).toLocaleDateString("pt-BR")}
+              </td>
+              <td className="px-4 py-3">
+                <SlaTimer ticket={ticket} />
               </td>
               <td className="px-4 py-3">
                 <PriorityBadge priority={ticket.priority} />
