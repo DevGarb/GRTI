@@ -6,6 +6,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useGoals } from "@/hooks/useGoals";
 import GoalsManager from "@/components/metas/GoalsManager";
 import GoalsSummaryCards from "@/components/metas/GoalsSummaryCards";
+import { calcBusinessMinutes, BUSINESS_HOURS_PER_DAY } from "@/lib/businessHours";
 
 interface TechnicianStats {
   userId: string;
@@ -138,9 +139,9 @@ export default function MetasTecnicos() {
         }
 
         const tech = techMap.get(id)!;
-        const created = new Date(ticket.created_at).getTime();
-        const closed = new Date(ticket.updated_at).getTime();
-        const resolutionHours = Math.max(0, (closed - created) / (1000 * 60 * 60));
+        // SLA: de started_at (início do atendimento) até updated_at, em horas úteis
+        const start = ticket.started_at ? new Date(ticket.started_at) : new Date(ticket.created_at);
+        const resolutionHours = Math.max(0, calcBusinessMinutes(start, new Date(ticket.updated_at)) / 60);
         const evalScore = evalMap.get(ticket.id) ?? null;
 
         const categoryName = ticket.category_id ? categoryMap.get(ticket.category_id) ?? null : null;
@@ -204,10 +205,10 @@ export default function MetasTecnicos() {
 
   const formatHours = (h: number) => {
     if (h < 1) return `${Math.round(h * 60)}min`;
-    if (h < 24) return `${h.toFixed(1)}h`;
-    const days = Math.floor(h / 24);
-    const rem = h % 24;
-    return `${days}d ${rem.toFixed(0)}h`;
+    if (h < BUSINESS_HOURS_PER_DAY) return `${h.toFixed(1)}h`;
+    const days = Math.floor(h / BUSINESS_HOURS_PER_DAY);
+    const rem = Math.round(h % BUSINESS_HOURS_PER_DAY);
+    return rem > 0 ? `${days}d ${rem}h` : `${days}d`;
   };
 
   const scoreColor = (score: number) => {

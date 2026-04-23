@@ -4,6 +4,7 @@ import { Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Responsi
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useGoals } from "@/hooks/useGoals";
+import { calcBusinessMinutes, BUSINESS_HOURS_PER_DAY } from "@/lib/businessHours";
 
 const METRIC_CONFIG: Record<string, { label: string; icon: typeof Target; shortLabel: string }> = {
   tickets_closed: { label: "Chamados Fechados", icon: TrendingUp, shortLabel: "Chamados" },
@@ -21,9 +22,10 @@ function getPct(actual: number, target: number, isInverse: boolean): number {
 
 function formatHours(h: number): string {
   if (h < 1) return `${Math.round(h * 60)}min`;
-  if (h < 24) return `${h.toFixed(1)}h`;
-  const days = Math.floor(h / 24);
-  return `${days}d ${(h % 24).toFixed(0)}h`;
+  if (h < BUSINESS_HOURS_PER_DAY) return `${h.toFixed(1)}h`;
+  const days = Math.floor(h / BUSINESS_HOURS_PER_DAY);
+  const rem = Math.round(h % BUSINESS_HOURS_PER_DAY);
+  return rem > 0 ? `${days}d ${rem}h` : `${days}d`;
 }
 
 interface Props {
@@ -51,7 +53,7 @@ export default function MyGoalCard({ year, month }: Props) {
       // Tickets fechados no mês atribuídos ao usuário (mesma base da Auditoria)
       const { data: closedTickets } = await supabase
         .from("tickets")
-        .select("id, created_at, updated_at, assigned_to")
+        .select("id, created_at, updated_at, started_at, assigned_to")
         .eq("status", "Fechado")
         .eq("assigned_to", user.id)
         .gte("created_at", monthStart.toISOString())
@@ -82,11 +84,12 @@ export default function MyGoalCard({ year, month }: Props) {
         avgScore = scores.length > 0 ? scores.reduce((a, b) => a + b, 0) / scores.length : 0;
       }
 
-      // Tempo médio de resolução
+      // Tempo médio de resolução em horas úteis (started_at → updated_at)
       let avgResolutionHours = 0;
       if ((closedTickets || []).length > 0) {
         const totalHours = (closedTickets || []).reduce((sum, t) => {
-          const h = Math.max(0, (new Date(t.updated_at).getTime() - new Date(t.created_at).getTime()) / (1000 * 60 * 60));
+          const start = t.started_at ? new Date(t.started_at) : new Date(t.created_at);
+          const h = Math.max(0, calcBusinessMinutes(start, new Date(t.updated_at)) / 60);
           return sum + h;
         }, 0);
         avgResolutionHours = totalHours / (closedTickets || []).length;
