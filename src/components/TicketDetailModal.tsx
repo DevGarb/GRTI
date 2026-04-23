@@ -664,8 +664,8 @@ export default function TicketDetailModal({ ticket, onClose }: Props) {
             </div>
           )}
 
-          {/* Pontuação já atribuída — exibe e permite alterar explicitamente */}
-          {existingEvaluation && !showEvaluation && (
+          {/* Pontuação já atribuída — exibe apenas para admins e técnicos */}
+          {existingEvaluation && !showEvaluation && (isAdmin || isTecnico) && (
             <div className="flex items-center justify-between p-3 rounded-lg border border-amber-200 bg-amber-50 dark:bg-amber-950/20 dark:border-amber-800">
               <div className="flex items-center gap-2">
                 <Award className="h-4 w-4 text-amber-600 dark:text-amber-400" />

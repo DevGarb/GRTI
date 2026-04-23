@@ -69,7 +69,7 @@ function SlaTimer({ ticket }: { ticket: Ticket }) {
   );
 }
 
-function TicketTable({ tickets, onSelect, scoreMap }: { tickets: Ticket[]; onSelect: (t: Ticket) => void; scoreMap?: Map<string, number> }) {
+function TicketTable({ tickets, onSelect, scoreMap, showScore }: { tickets: Ticket[]; onSelect: (t: Ticket) => void; scoreMap?: Map<string, number>; showScore?: boolean }) {
   return (
     <div className="overflow-x-auto">
       <table className="w-full">
@@ -82,7 +82,7 @@ function TicketTable({ tickets, onSelect, scoreMap }: { tickets: Ticket[]; onSel
             <th className="text-left text-xs font-semibold text-muted-foreground px-4 py-2">Data</th>
             <th className="text-left text-xs font-semibold text-muted-foreground px-4 py-2">Tempo SLA</th>
             <th className="text-left text-xs font-semibold text-muted-foreground px-4 py-2">Prioridade</th>
-            <th className="text-left text-xs font-semibold text-muted-foreground px-4 py-2">Pontuação</th>
+            {showScore && <th className="text-left text-xs font-semibold text-muted-foreground px-4 py-2">Pontuação</th>}
           </tr>
         </thead>
         <tbody>
@@ -123,16 +123,18 @@ function TicketTable({ tickets, onSelect, scoreMap }: { tickets: Ticket[]; onSel
               <td className="px-4 py-3">
                 <PriorityBadge priority={ticket.priority} />
               </td>
-              <td className="px-4 py-3">
-                {score !== undefined && score > 0 ? (
-                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">
-                    <Trophy className="h-3 w-3" />
-                    {score} pts
-                  </span>
-                ) : (
-                  <span className="text-xs text-muted-foreground">—</span>
-                )}
-              </td>
+              {showScore && (
+                <td className="px-4 py-3">
+                  {score !== undefined && score > 0 ? (
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">
+                      <Trophy className="h-3 w-3" />
+                      {score} pts
+                    </span>
+                  ) : (
+                    <span className="text-xs text-muted-foreground">—</span>
+                  )}
+                </td>
+              )}
             </tr>
             );
           })}
@@ -205,6 +207,7 @@ export default function Chamados() {
   const { data: tickets = [], isLoading } = useTickets();
   const { hasRole, roles, user } = useAuth();
   const isAdmin = roles.includes("admin") || roles.includes("super_admin");
+  const isTech = roles.includes("tecnico") || roles.includes("desenvolvedor");
 
   const { from: monthFrom, to: monthTo } = getMonthDateRange(selectedMonth);
 
@@ -433,7 +436,7 @@ export default function Chamados() {
 
                 {isExpanded && (
                   <div className="border-t border-border">
-                    <TicketTable tickets={userTickets} onSelect={setSelectedTicket} scoreMap={scoreMap} />
+                    <TicketTable tickets={userTickets} onSelect={setSelectedTicket} scoreMap={scoreMap} showScore={isAdmin || isTech} />
                   </div>
                 )}
               </div>
@@ -449,7 +452,8 @@ export default function Chamados() {
               const createdByMe = filtered.filter(t => t.created_by === userId && t.assigned_to !== userId && t.status !== "Disponível");
               return (
                 <div className="space-y-4">
-                  {/* Pontuação do técnico */}
+                  {/* Pontuação do técnico — apenas para técnicos e admins */}
+                  {(isAdmin || isTech) && (
                   <div className="card-elevated p-4 flex items-center gap-4 border-2 border-amber-200 dark:border-amber-800 bg-amber-50/50 dark:bg-amber-950/20">
                     <div className="h-12 w-12 rounded-xl bg-amber-100 dark:bg-amber-900/40 flex items-center justify-center shrink-0">
                       <Trophy className="h-6 w-6 text-amber-600 dark:text-amber-400" />
@@ -463,6 +467,7 @@ export default function Chamados() {
                       <p className="text-2xl font-bold text-foreground">{closedByMe.length}</p>
                     </div>
                   </div>
+                  )}
                   {availableTickets.length > 0 && (
                 <AvailableTicketsSection
                   tickets={availableTickets}
@@ -481,7 +486,7 @@ export default function Chamados() {
                       <p className="text-xs text-muted-foreground">{assignedToMe.length} chamado{assignedToMe.length !== 1 ? 's' : ''}</p>
                     </div>
                   </div>
-                  <TicketTable tickets={assignedToMe} onSelect={setSelectedTicket} scoreMap={scoreMap} />
+                  <TicketTable tickets={assignedToMe} onSelect={setSelectedTicket} scoreMap={scoreMap} showScore={isAdmin || isTech} />
                 </div>
               )}
               {createdByMe.length > 0 && (
@@ -493,7 +498,7 @@ export default function Chamados() {
                       <p className="text-xs text-muted-foreground">{createdByMe.length} chamado{createdByMe.length !== 1 ? 's' : ''}</p>
                     </div>
                   </div>
-                  <TicketTable tickets={createdByMe} onSelect={setSelectedTicket} scoreMap={scoreMap} />
+                  <TicketTable tickets={createdByMe} onSelect={setSelectedTicket} scoreMap={scoreMap} showScore={isAdmin || isTech} />
                 </div>
               )}
               {availableTickets.length === 0 && assignedToMe.length === 0 && createdByMe.length === 0 && (
