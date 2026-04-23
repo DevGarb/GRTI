@@ -23,7 +23,7 @@ interface TechnicianStats {
 export default function MetasTecnicos() {
   const [expandedTech, setExpandedTech] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<"desempenho" | "definir">("desempenho");
-  const { hasRole } = useAuth();
+  const { hasRole, user } = useAuth();
   const isAdmin = hasRole("admin");
   const now = new Date();
   const [selectedMonth, setSelectedMonth] = useState(now.getMonth() + 1);
@@ -217,6 +217,48 @@ export default function MetasTecnicos() {
   };
 
   const months = ["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
+
+  // Visão do técnico: apenas seu próprio card
+  if (!isAdmin) {
+    const myStats = stats.filter((s) => s.userId === user?.id);
+    const myGoals = goals.filter((g) => g.target_type === "individual" && g.target_id === user?.id);
+    return (
+      <div className="space-y-6 max-w-2xl">
+        <div className="flex items-center justify-between flex-wrap gap-4">
+          <div className="flex items-center gap-3">
+            <Target className="h-6 w-6 text-primary" />
+            <div>
+              <h1 className="text-2xl font-bold text-foreground">Minhas Metas</h1>
+              <p className="text-sm text-muted-foreground">Acompanhe seu desempenho e metas do mês</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <select
+              value={selectedMonth}
+              onChange={(e) => setSelectedMonth(Number(e.target.value))}
+              className="px-3 py-2 rounded-lg border border-input bg-background text-sm text-foreground"
+            >
+              {months.map((m, i) => <option key={m} value={i + 1}>{m}</option>)}
+            </select>
+            <select
+              value={selectedYear}
+              onChange={(e) => setSelectedYear(Number(e.target.value))}
+              className="px-3 py-2 rounded-lg border border-input bg-background text-sm text-foreground"
+            >
+              {[2024, 2025, 2026, 2027].map((y) => <option key={y} value={y}>{y}</option>)}
+            </select>
+          </div>
+        </div>
+        {isLoading ? (
+          <div className="card-elevated p-12 flex items-center justify-center">
+            <div className="h-6 w-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+          </div>
+        ) : (
+          <GoalsSummaryCards stats={myStats} goals={myGoals} formatHours={formatHours} />
+        )}
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6 max-w-6xl">

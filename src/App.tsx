@@ -86,7 +86,7 @@ const App = () => (
                       <Route path="/chamados-abertos" element={<ChamadosAbertos />} />
                       <Route path="/usuarios" element={<AdminRoute><Usuarios /></AdminRoute>} />
                       <Route path="/avaliacoes" element={<AdminRoute><Avaliacoes /></AdminRoute>} />
-                      <Route path="/metas" element={<AdminRoute><MetasTecnicos /></AdminRoute>} />
+                      <Route path="/metas" element={<MetasTecnicos />} />
                       <Route path="/historico" element={<AdminRoute><Historico /></AdminRoute>} />
                       <Route path="/auditoria" element={<AdminRoute><Auditoria /></AdminRoute>} />
                       <Route path="/categorias" element={<AdminRoute><Categorias /></AdminRoute>} />

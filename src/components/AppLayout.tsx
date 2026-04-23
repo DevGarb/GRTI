@@ -38,7 +38,7 @@ const navItems = [
   { label: "Chamados Abertos", icon: Clock, path: "/chamados-abertos", techAllowed: true, tooltip: "Ver todos os chamados em aberto e atribuir para si" },
   { label: "Usuários", icon: Users, path: "/usuarios", adminOnly: true, tooltip: "Gerenciar usuários da organização" },
   { label: "Avaliações", icon: Star, path: "/avaliacoes", adminOnly: true, tooltip: "Avaliações de atendimento dos chamados" },
-  { label: "Metas", icon: Target, path: "/metas", adminOnly: true, tooltip: "Metas de desempenho dos técnicos" },
+  { label: "Metas", icon: Target, path: "/metas", techAllowed: true, tooltip: "Metas de desempenho dos técnicos" },
   { label: "Histórico", icon: History, path: "/historico", adminOnly: true, tooltip: "Log de auditoria de ações no sistema" },
   { label: "Auditoria", icon: Shield, path: "/auditoria", auditorOnly: true, tooltip: "Trilha de auditoria completa" },
   { label: "Categorias", icon: LayoutList, path: "/categorias", adminOnly: true, tooltip: "Categorias hierárquicas de serviço" },
