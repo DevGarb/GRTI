@@ -168,10 +168,10 @@ export default function Chamados() {
     return matchSearch && matchStatus && (matchMonth || isDisponivel) && matchRework;
   });
 
-  // Pontuação: tickets fechados pelo usuário no mês selecionado (filtra por updated_at = data de fechamento)
+  // Pontuação: tickets criados no mês, atribuídos ao técnico e fechados (mesma base da Auditoria)
   const closedByMe = tickets.filter((t) => {
     if (t.assigned_to !== user?.id || t.status !== "Fechado") return false;
-    const d = new Date(t.updated_at);
+    const d = new Date(t.created_at);
     return d >= monthFrom && d <= monthTo;
   });
   const closedTicketIds = closedByMe.map((t) => t.id);
