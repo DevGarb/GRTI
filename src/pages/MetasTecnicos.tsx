@@ -38,26 +38,13 @@ export default function MetasTecnicos() {
       const monthStart = new Date(selectedYear, selectedMonth - 1, 1);
       const monthEnd = new Date(selectedYear, selectedMonth, 1);
 
-      // Tickets fechados NO mês: usa ticket_history para pegar a data REAL de fechamento
-      // (updated_at é alterado por qualquer edição posterior e não é confiável)
-      const { data: closedHistory, error: hErr } = await supabase
-        .from("ticket_history")
-        .select("ticket_id")
-        .eq("action", "status_change")
-        .eq("new_value", "Fechado")
-        .gte("created_at", monthStart.toISOString())
-        .lt("created_at", monthEnd.toISOString());
-      if (hErr) throw hErr;
-
-      const closedInMonthIds = [...new Set((closedHistory || []).map((h) => h.ticket_id))];
-      if (closedInMonthIds.length === 0) return [];
-
-      // Busca os tickets completos — filtra status=Fechado para excluir reabertos
+      // Tickets CRIADOS no mês E fechados — mesma base da Auditoria (created_at)
       const { data: closedTickets, error: tErr } = await supabase
         .from("tickets")
         .select("*")
-        .in("id", closedInMonthIds)
-        .eq("status", "Fechado");
+        .eq("status", "Fechado")
+        .gte("created_at", monthStart.toISOString())
+        .lt("created_at", monthEnd.toISOString());
       if (tErr) throw tErr;
 
       const closedIds = (closedTickets || []).map((t) => t.id);
