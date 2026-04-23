@@ -60,6 +60,29 @@ Deno.serve(async (req) => {
       });
     }
 
+    // Verify the caller belongs to the webhook's organization (or is super_admin)
+    const callerUserId = claimsData.claims.sub as string;
+    const { data: callerProfile } = await serviceClient
+      .from("profiles")
+      .select("organization_id")
+      .eq("user_id", callerUserId)
+      .single();
+
+    const { data: superAdminCheck } = await serviceClient
+      .from("user_roles")
+      .select("id")
+      .eq("user_id", callerUserId)
+      .eq("role", "super_admin")
+      .limit(1);
+    const isSuperAdmin = (superAdminCheck?.length ?? 0) > 0;
+
+    if (!isSuperAdmin && webhook.organization_id !== callerProfile?.organization_id) {
+      return new Response(JSON.stringify({ error: "Forbidden: webhook does not belong to your organization" }), {
+        status: 403,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     // Build test payload
     const testPayload = {
       event_type: "test",
@@ -127,8 +150,9 @@ Deno.serve(async (req) => {
     );
   } catch (error) {
     console.error("Test webhook error:", error);
+    const message = error instanceof Error ? error.message : "Internal error";
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ error: message }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }

@@ -98,13 +98,25 @@ export default function ImportUsersModal({ open, onClose, onSuccess }: ImportUse
     if (f) handleFile(f);
   };
 
+  // Generates a strong random password (16 chars, mixed alphabet) when none is provided.
+  const generateStrongPassword = () => {
+    const chars = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789!@#$%&*";
+    const arr = new Uint32Array(16);
+    crypto.getRandomValues(arr);
+    return Array.from(arr, (n) => chars[n % chars.length]).join("");
+  };
+
   const getMappedUsers = () =>
-    rows.map((row) => ({
-      full_name: mapColumn(row, ["nome", "nome completo", "full_name", "name", "nome_completo"]),
-      email: mapColumn(row, ["email", "e-mail", "e_mail"]),
-      password: mapColumn(row, ["senha", "password", "pass"]) || "123456",
-      role: mapColumn(row, ["tipo", "role", "perfil", "acesso", "tipo de acesso"]).toLowerCase(),
-    }))
+    rows.map((row) => {
+      const providedPwd = mapColumn(row, ["senha", "password", "pass"]);
+      return {
+        full_name: mapColumn(row, ["nome", "nome completo", "full_name", "name", "nome_completo"]),
+        email: mapColumn(row, ["email", "e-mail", "e_mail"]),
+        password: providedPwd && providedPwd.length >= 8 ? providedPwd : generateStrongPassword(),
+        providedWeakPwd: !!providedPwd && providedPwd.length < 8,
+        role: mapColumn(row, ["tipo", "role", "perfil", "acesso", "tipo de acesso"]).toLowerCase(),
+      };
+    })
     .map((u) => ({
       ...u,
       role: u.role.includes("admin") ? "admin" : u.role.includes("téc") || u.role.includes("tec") ? "tecnico" : "solicitante",
@@ -118,6 +130,10 @@ export default function ImportUsersModal({ open, onClose, onSuccess }: ImportUse
     for (const user of mapped) {
       if (!user.email || !user.full_name) {
         importResults.push({ email: user.email || "—", full_name: user.full_name || "—", status: "error", message: "Nome ou e-mail ausente" });
+        continue;
+      }
+      if (user.providedWeakPwd) {
+        importResults.push({ email: user.email, full_name: user.full_name, status: "error", message: "Senha fraca (mínimo 8 caracteres)" });
         continue;
       }
       try {
@@ -146,7 +162,9 @@ export default function ImportUsersModal({ open, onClose, onSuccess }: ImportUse
   };
 
   const downloadTemplate = () => {
-    const csv = "nome,email,senha,tipo\nJoão Silva,joao@exemplo.com,123456,solicitante\nMaria Souza,maria@exemplo.com,123456,tecnico\n";
+    // No default insecure password in the template — users should provide one (min 8 chars)
+    // or leave empty to receive an auto-generated strong password.
+    const csv = "nome,email,senha,tipo\nJoão Silva,joao@exemplo.com,,solicitante\nMaria Souza,maria@exemplo.com,,tecnico\n";
     const blob = new Blob([csv], { type: "text/csv" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
@@ -199,7 +217,7 @@ export default function ImportUsersModal({ open, onClose, onSuccess }: ImportUse
                 <p className="font-medium text-foreground text-sm">Colunas esperadas:</p>
                 <p><strong>nome</strong> — Nome completo do usuário</p>
                 <p><strong>email</strong> — E-mail de login</p>
-                <p><strong>senha</strong> — Senha (padrão: 123456)</p>
+                <p><strong>senha</strong> — Mínimo 8 caracteres. Se em branco, será gerada uma senha forte automaticamente.</p>
                 <p><strong>tipo</strong> — solicitante, tecnico ou admin</p>
               </div>
             </div>

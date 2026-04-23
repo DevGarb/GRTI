@@ -12,6 +12,35 @@ Deno.serve(async (req) => {
   }
 
   try {
+    // Require authenticated caller (JWT) OR a valid internal secret header.
+    // This prevents anonymous users from triggering outbound webhooks.
+    const authHeader = req.headers.get("Authorization");
+    const internalSecret = req.headers.get("x-internal-secret");
+    const expectedInternal = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+
+    let authorized = false;
+    if (internalSecret && expectedInternal && internalSecret === expectedInternal) {
+      authorized = true;
+    } else if (authHeader?.startsWith("Bearer ")) {
+      const verifyClient = createClient(
+        Deno.env.get("SUPABASE_URL")!,
+        Deno.env.get("SUPABASE_ANON_KEY")!,
+        { global: { headers: { Authorization: authHeader } } }
+      );
+      const token = authHeader.replace("Bearer ", "");
+      const { data: claimsData } = await verifyClient.auth.getClaims(token);
+      if (claimsData?.claims) {
+        authorized = true;
+      }
+    }
+
+    if (!authorized) {
+      return new Response(
+        JSON.stringify({ error: "Unauthorized" }),
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
     const { event_type, ticket_id, extra } = await req.json();
 
     if (!event_type || !ticket_id) {
@@ -177,9 +206,14 @@ Deno.serve(async (req) => {
           ticket_title: ticket.title,
           technician_name: technician?.full_name || null,
           status_code: 0,
-          response: { error: err.message },
+          response: { error: err instanceof Error ? err.message : String(err) },
         });
-        results.push({ webhook_id: webhook.id, status: 0, success: false, error: err.message });
+        results.push({
+          webhook_id: webhook.id,
+          status: 0,
+          success: false,
+          error: err instanceof Error ? err.message : String(err),
+        });
       }
     }
 
@@ -189,8 +223,9 @@ Deno.serve(async (req) => {
     );
   } catch (error) {
     console.error("Error dispatching webhook:", error);
+    const message = error instanceof Error ? error.message : "Internal error";
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ error: message }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }

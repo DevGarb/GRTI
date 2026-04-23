@@ -12,6 +12,34 @@ Deno.serve(async (req) => {
   }
 
   try {
+    // Require authenticated caller (JWT) OR a valid internal secret header.
+    const authHeader = req.headers.get("Authorization");
+    const internalSecret = req.headers.get("x-internal-secret");
+    const expectedInternal = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+
+    let authorized = false;
+    if (internalSecret && expectedInternal && internalSecret === expectedInternal) {
+      authorized = true;
+    } else if (authHeader?.startsWith("Bearer ")) {
+      const verifyClient = createClient(
+        Deno.env.get("SUPABASE_URL")!,
+        Deno.env.get("SUPABASE_ANON_KEY")!,
+        { global: { headers: { Authorization: authHeader } } }
+      );
+      const token = authHeader.replace("Bearer ", "");
+      const { data: claimsData } = await verifyClient.auth.getClaims(token);
+      if (claimsData?.claims) {
+        authorized = true;
+      }
+    }
+
+    if (!authorized) {
+      return new Response(
+        JSON.stringify({ error: "Unauthorized" }),
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
     const { ticket_id, event_type } = await req.json();
 
     if (!ticket_id || !event_type) {
@@ -139,8 +167,9 @@ Deno.serve(async (req) => {
     );
   } catch (error) {
     console.error("Error sending WhatsApp:", error);
+    const message = error instanceof Error ? error.message : "Internal error";
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ error: message }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }

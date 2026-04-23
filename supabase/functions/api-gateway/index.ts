@@ -86,30 +86,36 @@ Deno.serve(async (req) => {
 
     // Handle GET (list/detail)
     if (req.method === "GET") {
-      let query = supabaseAdmin.from(resource).select("*");
+      const baseQuery = supabaseAdmin.from(resource).select("*");
 
       // Always filter by org - token is org-scoped
-      if (resource !== "organizations") {
-        query = query.eq("organization_id", orgId);
-      } else {
-        query = query.eq("id", orgId);
-      }
+      const scoped = resource !== "organizations"
+        ? baseQuery.eq("organization_id", orgId)
+        : baseQuery.eq("id", orgId);
 
       if (id) {
-        query = query.eq("id", id).single();
-      } else {
-        query = query.range(offset, offset + limit - 1).order("created_at", { ascending: false });
+        const { data, error } = await scoped.eq("id", id).single();
+        if (error) {
+          return new Response(JSON.stringify({ error: error.message }), {
+            status: 400,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+        return new Response(JSON.stringify({ data }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
       }
 
-      const { data, error } = await query;
+      const { data, error } = await scoped
+        .range(offset, offset + limit - 1)
+        .order("created_at", { ascending: false });
       if (error) {
         return new Response(JSON.stringify({ error: error.message }), {
           status: 400,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
-
-      return new Response(JSON.stringify({ data, meta: id ? undefined : { limit, offset } }), {
+      return new Response(JSON.stringify({ data, meta: { limit, offset } }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
