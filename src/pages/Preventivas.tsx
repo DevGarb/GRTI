@@ -43,7 +43,8 @@ export default function Preventivas() {
     return vals.length > 0 && vals.every(Boolean);
   }).length;
   const uniqueEquipment = new Set(preventivas.map((p) => p.asset_tag)).size;
-  const overdueCount = overdueEquipment.length;
+  const overdueCount = overdueEquipment.filter((e) => e.status === "overdue").length;
+  const warningCount = overdueEquipment.filter((e) => e.status === "warning").length;
 
   // Equipment map
   const equipmentMap = new Map<string, { type: string; tag: string; count: number; lastDate: string; sector: string; responsible: string }>();
@@ -100,6 +101,7 @@ export default function Preventivas() {
     { label: "Total Preventivas", value: totalPreventivas, icon: <Wrench className="h-5 w-5" />, color: "text-primary" },
     { label: "Checklist Completo", value: completedChecks, icon: <CheckCircle2 className="h-5 w-5" />, color: "text-emerald-600 dark:text-emerald-400" },
     { label: "Equipamentos", value: uniqueEquipment, icon: <Monitor className="h-5 w-5" />, color: "text-blue-600 dark:text-blue-400" },
+    { label: "A Vencer (≤15d)", value: warningCount, icon: <Clock className="h-5 w-5" />, color: warningCount > 0 ? "text-amber-600 dark:text-amber-400" : "text-muted-foreground" },
     { label: "Vencidas", value: overdueCount, icon: <AlertTriangle className="h-5 w-5" />, color: overdueCount > 0 ? "text-red-600 dark:text-red-400" : "text-muted-foreground" },
   ];
 
@@ -135,7 +137,7 @@ export default function Preventivas() {
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
         {stats.map((s) => (
           <div key={s.label} className="p-4 rounded-xl border border-border bg-card">
             <div className="flex items-center justify-between mb-2">
@@ -212,7 +214,7 @@ export default function Preventivas() {
       ) : activeTab === "registros" ? (
         <PreventivasTable preventivas={filteredPreventivas} />
       ) : activeTab === "equipamentos" ? (
-        <EquipmentTable equipment={filteredEquipment} />
+        <EquipmentTable equipment={filteredEquipment} statusData={overdueEquipment} />
       ) : activeTab === "relatorio" ? (
         <MonthlyReport preventivas={preventivas} monthLabel={months[selectedMonth]} year={selectedYear} />
       ) : (

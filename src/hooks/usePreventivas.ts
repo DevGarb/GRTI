@@ -144,12 +144,16 @@ export function useUpdateInterval() {
   });
 }
 
+const WARNING_DAYS = 15; // days before due date to show warning
+
 export interface OverdueEquipment {
   asset_tag: string;
   equipment_type: string;
   last_date: string;
   days_since: number;
   interval_days: number;
+  days_until_due: number; // positive = days remaining, negative = overdue by N days
+  status: "ok" | "warning" | "overdue";
   technician: string;
 }
 
@@ -182,7 +186,7 @@ export function useOverdueEquipment() {
       });
 
       const now = new Date();
-      const overdue: OverdueEquipment[] = [];
+      const result: OverdueEquipment[] = [];
 
       const userIds = [...new Set([...latestByAsset.values()].map((d) => d.created_by))];
       const { data: profiles } = await supabase
@@ -196,19 +200,30 @@ export function useOverdueEquipment() {
           (now.getTime() - new Date(record.execution_date).getTime()) / (1000 * 60 * 60 * 24)
         );
         const threshold = intervalMap.get(record.equipment_type) ?? 90;
-        if (daysSince >= threshold) {
-          overdue.push({
-            asset_tag: record.asset_tag,
-            equipment_type: record.equipment_type,
-            last_date: record.execution_date,
-            days_since: daysSince,
-            interval_days: threshold,
-            technician: profileMap.get(record.created_by) || "",
-          });
-        }
+        const daysUntilDue = threshold - daysSince;
+        const status: "ok" | "warning" | "overdue" =
+          daysUntilDue < 0 ? "overdue" : daysUntilDue <= WARNING_DAYS ? "warning" : "ok";
+
+        result.push({
+          asset_tag: record.asset_tag,
+          equipment_type: record.equipment_type,
+          last_date: record.execution_date,
+          days_since: daysSince,
+          interval_days: threshold,
+          days_until_due: daysUntilDue,
+          status,
+          technician: profileMap.get(record.created_by) || "",
+        });
       });
 
-      return overdue.sort((a, b) => b.days_since - a.days_since);
+      // Sort: overdue (most overdue first) → warning (least time remaining first) → ok
+      return result.sort((a, b) => {
+        if (a.status !== b.status) {
+          const order = { overdue: 0, warning: 1, ok: 2 };
+          return order[a.status] - order[b.status];
+        }
+        return a.days_until_due - b.days_until_due;
+      });
     },
   });
 }

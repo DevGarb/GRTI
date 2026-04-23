@@ -9,6 +9,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import NewTicketModal from "@/components/NewTicketModal";
 import TicketDetailModal from "@/components/TicketDetailModal";
 import { supabase } from "@/integrations/supabase/client";
+import MyGoalCard from "@/components/metas/MyGoalCard";
 
 const allStatuses = ["Aberto", "Em Andamento", "Aguardando Aprovação", "Aprovado", "Fechado", "Disponível"];
 
@@ -277,6 +278,14 @@ export default function Chamados() {
           </div>
         ))}
       </div>
+
+      {/* Meu Card de Metas — visível apenas para técnicos */}
+      {!isAdmin && (
+        <MyGoalCard
+          year={monthFrom.getFullYear()}
+          month={monthFrom.getMonth() + 1}
+        />
+      )}
 
       <div className="card-elevated p-4 space-y-3">
         <div className="flex items-center gap-2 text-sm text-muted-foreground">
