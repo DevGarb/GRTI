@@ -241,6 +241,11 @@ export function useDashboardMetrics(dateFrom?: Date, dateTo?: Date) {
       const allTicketsUnfiltered = tickets || [];
       const closedUnfiltered = allTicketsUnfiltered.filter((t) => t.status === "Fechado");
 
+      // Resolution end map para todos os fechados (gráfico mensal)
+      const allResolutionEndMap = await fetchTicketResolutionEnds(
+        closedUnfiltered.map((t) => t.id)
+      );
+
       // Fetch ALL evaluations for monthly chart
       const { data: allEvalsForChart } = await (supabase
         .from("evaluations")
@@ -267,13 +272,16 @@ export function useDashboardMetrics(dateFrom?: Date, dateTo?: Date) {
           : 0;
         monthlyCsat.push({ month: label, value: mCsat });
 
+        // Agrupa pelo mês de RESOLUÇÃO (não pelo updated_at, que pode ser posterior)
         const monthClosed = closedUnfiltered.filter((t) => {
-          const cd = new Date(t.updated_at);
+          const cd = allResolutionEndMap.get(t.id) ?? new Date(t.updated_at);
           return cd >= d && cd < nextMonth;
         });
         const avgMin = monthClosed.length > 0
           ? Math.round(monthClosed.reduce((sum, t) => {
-              return sum + calcBusinessMinutes(new Date(t.created_at), new Date(t.updated_at));
+              const start = getTicketWorkStart(t);
+              const end = allResolutionEndMap.get(t.id) ?? new Date(t.updated_at);
+              return sum + calcBusinessMinutes(start, end);
             }, 0) / monthClosed.length)
           : 0;
         monthlyAvgTime.push({ month: label, value: avgMin });
