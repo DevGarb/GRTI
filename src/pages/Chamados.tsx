@@ -73,7 +73,7 @@ function SlaTimer({ ticket, resolutionEnd }: { ticket: Ticket; resolutionEnd?: D
   );
 }
 
-function TicketTable({ tickets, onSelect, scoreMap, showScore }: { tickets: Ticket[]; onSelect: (t: Ticket) => void; scoreMap?: Map<string, number>; showScore?: boolean }) {
+function TicketTable({ tickets, onSelect, scoreMap, showScore, resolutionEndMap }: { tickets: Ticket[]; onSelect: (t: Ticket) => void; scoreMap?: Map<string, number>; showScore?: boolean; resolutionEndMap?: Map<string, Date> }) {
   return (
     <div className="overflow-x-auto">
       <table className="w-full">
