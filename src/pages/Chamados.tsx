@@ -509,7 +509,7 @@ export default function Chamados() {
                       <p className="text-xs text-muted-foreground">{createdByMe.length} chamado{createdByMe.length !== 1 ? 's' : ''}</p>
                     </div>
                   </div>
-                  <TicketTable tickets={createdByMe} onSelect={setSelectedTicket} scoreMap={scoreMap} showScore={isAdmin || isTech} />
+                  <TicketTable tickets={createdByMe} onSelect={setSelectedTicket} scoreMap={scoreMap} showScore={isAdmin || isTech} resolutionEndMap={resolutionEndMap} />
                 </div>
               )}
               {availableTickets.length === 0 && assignedToMe.length === 0 && createdByMe.length === 0 && (
