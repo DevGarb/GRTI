@@ -11,6 +11,7 @@ import ChamadosAbertos from "@/pages/ChamadosAbertos";
 import Preventivas from "@/pages/Preventivas";
 import Patrimonio from "@/pages/Patrimonio";
 import Projetos from "@/pages/Projetos";
+import ProjetoDetalhe from "@/pages/ProjetoDetalhe";
 import Configuracoes from "@/pages/Configuracoes";
 import Login from "@/pages/Login";
 import WhiteLabel from "@/pages/WhiteLabel";
@@ -96,6 +97,7 @@ const App = () => (
                       <Route path="/preventivas" element={<Preventivas />} />
                       <Route path="/patrimonio" element={<AdminRoute><Patrimonio /></AdminRoute>} />
                       <Route path="/projetos" element={<AdminRoute><Projetos /></AdminRoute>} />
+                      <Route path="/projetos/:id" element={<AdminRoute><ProjetoDetalhe /></AdminRoute>} />
                       <Route path="/configuracoes" element={<Configuracoes />} />
                       <Route path="/white-label" element={<AdminRoute><WhiteLabel /></AdminRoute>} />
                       <Route path="/integracoes" element={<AdminRoute><Integracoes /></AdminRoute>} />
