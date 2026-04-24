@@ -16,6 +16,9 @@ export interface Project {
   owner_id: string | null;
   organization_id: string | null;
   total_points_target: number;
+  enforce_capacity?: boolean;
+  enforce_technician_capacity?: boolean;
+  max_critical_per_sprint?: number;
   created_at: string;
   updated_at: string;
 }
