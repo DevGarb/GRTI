@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect } from "react";
-import { X, User, Tag, Paperclip, Star, ChevronDown, ChevronRight, LayoutList, Play, CheckCircle2, RotateCcw, ThumbsUp, ThumbsDown, RefreshCw, HandMetal, AlertTriangle, Clock, Trash2, Award } from "lucide-react";
+import { X, User, Tag, Paperclip, Star, ChevronDown, ChevronRight, LayoutList, Play, CheckCircle2, RotateCcw, ThumbsUp, ThumbsDown, RefreshCw, HandMetal, AlertTriangle, Clock, Trash2, Award, FolderKanban } from "lucide-react";
 import { StatusBadge, PriorityBadge } from "@/components/StatusBadge";
 import type { Ticket } from "@/hooks/useTickets";
 import { useUpdateTicket, usePickTicket, useTechnicianProfiles, useProfiles } from "@/hooks/useTickets";
