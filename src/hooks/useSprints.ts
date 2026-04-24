@@ -10,22 +10,22 @@ export interface Sprint {
   organization_id: string | null;
   name: string;
   goal: string | null;
-  status: "planejada" | "ativa" | "concluida" | "fechada" | "cancelada" | string;
-  closed_at?: string | null;
+  status: "planejada" | "ativa" | "concluida" | "cancelada" | string;
   activated_at?: string | null;
+  closed_at?: string | null;
   start_date: string | null;
   end_date: string | null;
-  capacity_points: number;
   created_by: string;
   created_at: string;
   updated_at: string;
 }
 
 export interface SprintWithProgress extends Sprint {
-  totalPoints: number;
-  completedPoints: number;
   ticketCount: number;
   taskCount: number;
+  completedTickets: number;
+  completedTasks: number;
+  donePct: number;
 }
 
 const RESOLVED_STATUSES = ["Resolvido", "Aprovado", "Aguardando Aprovação", "Fechado"];
@@ -67,29 +67,24 @@ export function useSprints(projectId: string | undefined) {
 
       const sprintIds = sprints.map((s) => s.id);
       const [{ data: tickets }, { data: tasks }] = await Promise.all([
-        supabase.from("tickets").select("sprint_id, status, story_points").in("sprint_id", sprintIds),
-        supabase.from("project_tasks").select("sprint_id, status, story_points").in("sprint_id", sprintIds),
+        supabase.from("tickets").select("sprint_id, status").in("sprint_id", sprintIds),
+        supabase.from("project_tasks").select("sprint_id, status").in("sprint_id", sprintIds),
       ]);
 
       return sprints.map<SprintWithProgress>((s) => {
         const sTickets = (tickets || []).filter((t: any) => t.sprint_id === s.id);
         const sTasks = (tasks || []).filter((t: any) => t.sprint_id === s.id);
-        const totalPoints =
-          sTickets.reduce((sum: number, t: any) => sum + (t.story_points || 0), 0) +
-          sTasks.reduce((sum: number, t: any) => sum + (t.story_points || 0), 0);
-        const completedPoints =
-          sTickets
-            .filter((t: any) => RESOLVED_STATUSES.includes(t.status))
-            .reduce((sum: number, t: any) => sum + (t.story_points || 0), 0) +
-          sTasks
-            .filter((t: any) => t.status === "done")
-            .reduce((sum: number, t: any) => sum + (t.story_points || 0), 0);
+        const completedTickets = sTickets.filter((t: any) => RESOLVED_STATUSES.includes(t.status)).length;
+        const completedTasks = sTasks.filter((t: any) => t.status === "done").length;
+        const total = sTickets.length + sTasks.length;
+        const done = completedTickets + completedTasks;
         return {
           ...s,
-          totalPoints,
-          completedPoints,
           ticketCount: sTickets.length,
           taskCount: sTasks.length,
+          completedTickets,
+          completedTasks,
+          donePct: total > 0 ? Math.round((done / total) * 100) : 0,
         };
       });
     },
@@ -103,7 +98,6 @@ interface CreateSprintInput {
   goal?: string;
   start_date?: string | null;
   end_date?: string | null;
-  capacity_points?: number;
 }
 
 export function useCreateSprint() {
@@ -115,7 +109,6 @@ export function useCreateSprint() {
         .from("sprints")
         .insert({
           ...input,
-          capacity_points: input.capacity_points ?? 0,
           created_by: user!.id,
           organization_id: profile?.organization_id ?? null,
           status: "planejada",
@@ -155,7 +148,6 @@ export function useDeleteSprint() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async ({ id, projectId }: { id: string; projectId: string }) => {
-      // libera chamados e tarefas
       await supabase.from("tickets").update({ sprint_id: null }).eq("sprint_id", id);
       await supabase.from("project_tasks").update({ sprint_id: null }).eq("sprint_id", id);
       const { error } = await supabase.from("sprints").delete().eq("id", id);
@@ -174,9 +166,13 @@ export function useActivateSprint() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async ({ id, projectId }: { id: string; projectId: string }) => {
-      // só uma sprint ativa por vez por projeto
       await supabase.from("sprints").update({ status: "planejada" }).eq("project_id", projectId).eq("status", "ativa");
-      const { data, error } = await supabase.from("sprints").update({ status: "ativa" }).eq("id", id).select().single();
+      const { data, error } = await supabase
+        .from("sprints")
+        .update({ status: "ativa", activated_at: new Date().toISOString() })
+        .eq("id", id)
+        .select()
+        .single();
       if (error) throw error;
       return data;
     },

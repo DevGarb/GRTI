@@ -14,8 +14,8 @@ const statusStyles: Record<string, string> = {
 };
 
 export default function ProjectCard({ project }: { project: ProjectAggregate }) {
-  const target = project.total_points_target || project.totalPoints || 1;
-  const pct = Math.min(100, Math.round((project.completedPoints / target) * 100));
+  const total = project.totalLinkedTickets || 1;
+  const pct = Math.min(100, Math.round((project.completedTickets / total) * 100));
 
   return (
     <Link to={`/projetos/${project.id}`} className="block">
@@ -39,8 +39,8 @@ export default function ProjectCard({ project }: { project: ProjectAggregate }) 
 
         <div className="mt-4 space-y-2">
           <div className="flex items-center justify-between text-[11px] text-muted-foreground">
-            <span>Progresso</span>
-            <span className="font-mono">{project.completedPoints} / {target} pts</span>
+            <span>Chamados concluídos</span>
+            <span className="font-mono">{project.completedTickets} / {project.totalLinkedTickets}</span>
           </div>
           <Progress value={pct} className="h-1.5" />
         </div>

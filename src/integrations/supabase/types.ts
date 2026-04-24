@@ -614,17 +614,13 @@ export type Database = {
           created_at: string
           description: string | null
           end_date: string | null
-          enforce_capacity: boolean
-          enforce_technician_capacity: boolean
           goal: string | null
           id: string
-          max_critical_per_sprint: number
           name: string
           organization_id: string | null
           owner_id: string | null
           start_date: string | null
           status: string
-          total_points_target: number
           updated_at: string
         }
         Insert: {
@@ -632,17 +628,13 @@ export type Database = {
           created_at?: string
           description?: string | null
           end_date?: string | null
-          enforce_capacity?: boolean
-          enforce_technician_capacity?: boolean
           goal?: string | null
           id?: string
-          max_critical_per_sprint?: number
           name: string
           organization_id?: string | null
           owner_id?: string | null
           start_date?: string | null
           status?: string
-          total_points_target?: number
           updated_at?: string
         }
         Update: {
@@ -650,17 +642,13 @@ export type Database = {
           created_at?: string
           description?: string | null
           end_date?: string | null
-          enforce_capacity?: boolean
-          enforce_technician_capacity?: boolean
           goal?: string | null
           id?: string
-          max_critical_per_sprint?: number
           name?: string
           organization_id?: string | null
           owner_id?: string | null
           start_date?: string | null
           status?: string
-          total_points_target?: number
           updated_at?: string
         }
         Relationships: [
@@ -708,134 +696,9 @@ export type Database = {
           },
         ]
       }
-      sprint_metrics: {
-        Row: {
-          capacity_at_close: number | null
-          closed_at: string | null
-          created_at: string
-          delivered_points: number
-          delivered_tasks: number
-          delivered_tickets: number
-          efficiency_pct: number | null
-          organization_id: string | null
-          planned_points: number
-          planned_tasks: number
-          planned_tickets: number
-          predictability_pct: number | null
-          project_id: string
-          scope_added_points: number
-          scope_change_pct: number | null
-          scope_removed_points: number
-          sprint_id: string
-          updated_at: string
-        }
-        Insert: {
-          capacity_at_close?: number | null
-          closed_at?: string | null
-          created_at?: string
-          delivered_points?: number
-          delivered_tasks?: number
-          delivered_tickets?: number
-          efficiency_pct?: number | null
-          organization_id?: string | null
-          planned_points?: number
-          planned_tasks?: number
-          planned_tickets?: number
-          predictability_pct?: number | null
-          project_id: string
-          scope_added_points?: number
-          scope_change_pct?: number | null
-          scope_removed_points?: number
-          sprint_id: string
-          updated_at?: string
-        }
-        Update: {
-          capacity_at_close?: number | null
-          closed_at?: string | null
-          created_at?: string
-          delivered_points?: number
-          delivered_tasks?: number
-          delivered_tickets?: number
-          efficiency_pct?: number | null
-          organization_id?: string | null
-          planned_points?: number
-          planned_tasks?: number
-          planned_tickets?: number
-          predictability_pct?: number | null
-          project_id?: string
-          scope_added_points?: number
-          scope_change_pct?: number | null
-          scope_removed_points?: number
-          sprint_id?: string
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "sprint_metrics_sprint_id_fkey"
-            columns: ["sprint_id"]
-            isOneToOne: true
-            referencedRelation: "sprints"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      sprint_planning_history: {
-        Row: {
-          action: string
-          context: string | null
-          created_at: string
-          entity_id: string | null
-          entity_type: string | null
-          id: string
-          new_value: Json | null
-          old_value: Json | null
-          organization_id: string | null
-          project_id: string
-          sprint_id: string
-          user_id: string
-        }
-        Insert: {
-          action: string
-          context?: string | null
-          created_at?: string
-          entity_id?: string | null
-          entity_type?: string | null
-          id?: string
-          new_value?: Json | null
-          old_value?: Json | null
-          organization_id?: string | null
-          project_id: string
-          sprint_id: string
-          user_id: string
-        }
-        Update: {
-          action?: string
-          context?: string | null
-          created_at?: string
-          entity_id?: string | null
-          entity_type?: string | null
-          id?: string
-          new_value?: Json | null
-          old_value?: Json | null
-          organization_id?: string | null
-          project_id?: string
-          sprint_id?: string
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "sprint_planning_history_sprint_id_fkey"
-            columns: ["sprint_id"]
-            isOneToOne: false
-            referencedRelation: "sprints"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       sprints: {
         Row: {
           activated_at: string | null
-          capacity_points: number
           closed_at: string | null
           created_at: string
           created_by: string
@@ -851,7 +714,6 @@ export type Database = {
         }
         Insert: {
           activated_at?: string | null
-          capacity_points?: number
           closed_at?: string | null
           created_at?: string
           created_by: string
@@ -867,7 +729,6 @@ export type Database = {
         }
         Update: {
           activated_at?: string | null
-          capacity_points?: number
           closed_at?: string | null
           created_at?: string
           created_by?: string
@@ -916,36 +777,6 @@ export type Database = {
           name?: string
           price_monthly?: number
           updated_at?: string
-        }
-        Relationships: []
-      }
-      technician_capacity: {
-        Row: {
-          created_at: string
-          id: string
-          organization_id: string
-          points_per_sprint: number
-          project_id: string | null
-          updated_at: string
-          user_id: string
-        }
-        Insert: {
-          created_at?: string
-          id?: string
-          organization_id: string
-          points_per_sprint?: number
-          project_id?: string | null
-          updated_at?: string
-          user_id: string
-        }
-        Update: {
-          created_at?: string
-          id?: string
-          organization_id?: string
-          points_per_sprint?: number
-          project_id?: string | null
-          updated_at?: string
-          user_id?: string
         }
         Relationships: []
       }

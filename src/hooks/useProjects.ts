@@ -15,10 +15,6 @@ export interface Project {
   end_date: string | null;
   owner_id: string | null;
   organization_id: string | null;
-  total_points_target: number;
-  enforce_capacity?: boolean;
-  enforce_technician_capacity?: boolean;
-  max_critical_per_sprint?: number;
   created_at: string;
   updated_at: string;
 }
@@ -26,8 +22,7 @@ export interface Project {
 export interface ProjectAggregate extends Project {
   ownerName?: string | null;
   totalLinkedTickets: number;
-  completedPoints: number;
-  totalPoints: number;
+  completedTickets: number;
   activeSprints: number;
 }
 
@@ -38,7 +33,6 @@ export function useProjects() {
   const orgId = profile?.organization_id;
   const queryClient = useQueryClient();
 
-  // realtime
   useEffect(() => {
     const ch = supabase
       .channel(`projects-realtime`)
@@ -67,25 +61,16 @@ export function useProjects() {
 
       const projectIds = projects.map((p) => p.id);
 
-      // tickets agregados
       const { data: tickets } = await supabase
         .from("tickets")
-        .select("project_id, status, story_points")
+        .select("project_id, status")
         .in("project_id", projectIds);
 
-      // tasks agregadas
-      const { data: tasks } = await supabase
-        .from("project_tasks")
-        .select("project_id, status, story_points")
-        .in("project_id", projectIds);
-
-      // sprints
       const { data: sprints } = await supabase
         .from("sprints")
         .select("project_id, status")
         .in("project_id", projectIds);
 
-      // owners
       const ownerIds = projects.map((p) => p.owner_id).filter(Boolean) as string[];
       const { data: owners } = ownerIds.length
         ? await supabase.from("profiles").select("user_id, full_name").in("user_id", ownerIds)
@@ -94,17 +79,7 @@ export function useProjects() {
 
       return projects.map<ProjectAggregate>((p) => {
         const pTickets = (tickets || []).filter((t: any) => t.project_id === p.id);
-        const pTasks = (tasks || []).filter((t: any) => t.project_id === p.id);
-        const totalPoints =
-          pTickets.reduce((s: number, t: any) => s + (t.story_points || 0), 0) +
-          pTasks.reduce((s: number, t: any) => s + (t.story_points || 0), 0);
-        const completedPoints =
-          pTickets
-            .filter((t: any) => RESOLVED_STATUSES.includes(t.status))
-            .reduce((s: number, t: any) => s + (t.story_points || 0), 0) +
-          pTasks
-            .filter((t: any) => t.status === "done")
-            .reduce((s: number, t: any) => s + (t.story_points || 0), 0);
+        const completedTickets = pTickets.filter((t: any) => RESOLVED_STATUSES.includes(t.status)).length;
         const activeSprints = (sprints || []).filter(
           (s: any) => s.project_id === p.id && s.status === "ativa"
         ).length;
@@ -112,8 +87,7 @@ export function useProjects() {
           ...p,
           ownerName: p.owner_id ? ownerMap.get(p.owner_id) : null,
           totalLinkedTickets: pTickets.length,
-          completedPoints,
-          totalPoints,
+          completedTickets,
           activeSprints,
         };
       });
@@ -142,7 +116,6 @@ interface CreateProjectInput {
   status?: string;
   start_date?: string | null;
   end_date?: string | null;
-  total_points_target?: number;
   owner_id?: string | null;
 }
 
@@ -192,7 +165,6 @@ export function useDeleteProject() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (id: string) => {
-      // limpa vínculos
       await supabase.from("tickets").update({ project_id: null, sprint_id: null }).eq("project_id", id);
       await supabase.from("project_tasks").delete().eq("project_id", id);
       await supabase.from("sprints").delete().eq("project_id", id);
