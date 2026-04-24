@@ -1,221 +1,222 @@
-# Refatoração do módulo Projetos — Helpdesk + Agile
+# Sprint Management — Plano Completo (UX + Inteligência + Robustez)
 
-Transformar o módulo atual (mock estático) num sistema completo de gestão ágil que **usa chamados reais como unidade de execução**, com Sprints, Backlog, capacidade por pontos e dashboards de progresso.
-
----
-
-## 1. Modelo de dados (migration)
-
-### Alterações em `tickets`
-Adicionar 3 colunas (nullable, sem quebrar nada existente):
-- `project_id uuid` — projeto vinculado
-- `sprint_id uuid` — sprint vinculada
-- `story_points integer` — pontos atribuídos pelo admin (default = score da categoria do chamado, fallback 1)
-
-Index em `(project_id, sprint_id)` para queries rápidas.
-
-### Reaproveitar `projects` (já existe) e estender
-Adicionar:
-- `code text` — sigla curta (ex: "INFRA-2026")
-- `goal text` — objetivo do projeto
-- `total_points_target integer default 0` — meta total
-- Manter `status`, `start_date`, `end_date`, `owner_id`
-
-### Nova tabela `sprints`
-```
-id uuid pk
-project_id uuid not null
-organization_id uuid
-name text                 -- "Sprint 1", "Sprint Out/26"
-goal text
-status text default 'planejada'  -- planejada | ativa | concluida | cancelada
-start_date date
-end_date date
-capacity_points integer default 0  -- limite de pontos da sprint
-created_by uuid
-created_at, updated_at
-```
-
-### Nova tabela `project_tasks` (tarefas manuais — opcional, prioridade secundária)
-```
-id, project_id, sprint_id (nullable), title, description,
-status (todo|doing|done), story_points, assignee_id, created_by, timestamps
-```
-
-### Constraint / regra (via trigger)
-- Não permitir vincular um chamado a uma sprint que não pertence ao mesmo `project_id` do ticket
-- Bloquear vinculação se a soma de `story_points` da sprint exceder `capacity_points` (com flag `force` opcional pelo admin via UPDATE direto — manteremos validação só no client por simplicidade, sinalizando o exceso)
-
-### RLS
-- `sprints` e `project_tasks`: SELECT por organização (`is_same_organization`); INSERT/UPDATE/DELETE só `admin` ou `super_admin`.
-- Atualizações em `tickets` para vinculação reaproveitam policy existente (admin já pode atualizar).
+Três camadas: **UX rápida** no front, **planejamento inteligente** com simulação local, e **regras invioláveis + auditoria** no backend.
 
 ---
 
-## 2. UI/UX — nova estrutura da página `/projetos`
+## Parte A — UX (resolve o problema atual)
 
-### Lista de projetos (nova `Projetos.tsx`)
-Substituir mock por dados reais. Cards com:
-- nome, código, status, owner, datas
-- progresso: `pontos concluídos / pontos totais` (barra)
-- nº de sprints ativas, nº de chamados vinculados
-- Botão **"Novo projeto"** (modal)
-
-### Detalhe do projeto `/projetos/:id` (nova rota)
-Layout com tabs:
-
-**Tab 1 — Visão geral**
-- Cards: total de pontos, pontos concluídos, % vindo de chamados vs tarefas, chamados planejados vs concluídos
-- Mini-timeline de sprints
-
-**Tab 2 — Sprints**
-- Lista de sprints com badge de status, capacidade usada (`72/100 pts`)
-- Botão **"Nova sprint"** (modal: nome, datas, capacidade, objetivo)
-- Cada sprint expansível mostrando seus chamados + tarefas, com botão **"Ativar"** / **"Concluir"**
-- Kanban opcional dentro da sprint (reaproveitar `KanbanBoard` existente filtrado por `sprint_id`)
-
-**Tab 3 — Backlog**
-- Lista priorizada de chamados + tarefas vinculadas ao projeto **sem sprint**
-- Drag-to-sprint (ou botão "Mover para sprint X")
-- Botão **"+ Adicionar chamados"** → abre modal (ver abaixo)
-- Botão **"+ Nova tarefa"** (manual)
-
-**Tab 4 — Dashboard**
-- Gráfico de burndown (pontos restantes por dia da sprint ativa)
-- Origem dos pontos (pizza chamados vs tarefas)
-- Eficiência: % de chamados planejados que foram concluídos no prazo da sprint
-- Throughput por técnico no projeto
-
-### Modal "Adicionar Chamados" (componente novo `AddTicketsToSprintModal`)
-- Lista chamados da org com filtros:
-  - status (default: Aberto, Em Andamento, Disponível)
-  - prioridade, técnico, categoria, busca por título/id
-  - já mostra apenas chamados **sem `project_id`** (não vinculados)
-- Multi-select com checkbox
-- Seletor de sprint destino (sprints do projeto + opção "Apenas backlog")
-- Mostra preview: "X chamados, Y pontos serão adicionados. Capacidade da sprint: Z/W"
-- Avisa em vermelho se exceder capacidade (admin pode forçar)
-- Botão "Vincular"
-
-### Modal "Editar pontos do chamado"
-Quando admin abre um chamado dentro do projeto, pode ajustar `story_points` (default = score da categoria).
+- **Destino padrão inteligente**: ao abrir "Adicionar chamados", default = sprint `ativa` > sprint `planejada` mais antiga > backlog.
+- **Botão "+ Adicionar chamados"** no card da sprint ativa e no bloco "Sprint ativa" da Visão geral.
+- **Renomear**: aba "Backlog" → "Não planejados"; opção do select → "Deixar para depois (sem sprint)".
+- **Modal enxuto**: chips de prioridade, coluna "Pontos" oculta por padrão (toggle "Editar pontos"), aviso amarelo ao escolher "sem sprint" havendo sprint ativa.
 
 ---
 
-## 3. Hooks novos (`src/hooks/`)
+## Parte B — Planejamento inteligente
 
-- `useProjects()` — lista projetos da org com agregados (pontos, sprints, chamados)
-- `useProject(id)` — detalhe + cache compartilhado
-- `useCreateProject()`, `useUpdateProject()`, `useDeleteProject()`
-- `useSprints(projectId)` + create/update/delete + `useActivateSprint`
-- `useProjectBacklog(projectId)` — chamados+tarefas com `project_id` e sem sprint
-- `useSprintItems(sprintId)` — chamados+tarefas da sprint
-- `useAvailableTickets(projectId)` — chamados não vinculados a nenhum projeto da org
-- `useLinkTicketsToProject(projectId, sprintId?)` — bulk update em `tickets`
-- `useUnlinkTicket(ticketId)` — limpa `project_id` e `sprint_id`
-- `useProjectMetrics(projectId)` — burndown, origem dos pontos, eficiência
-- `useProjectTasks(projectId)` + CRUD
-
-Realtime: subscrever `tickets`, `sprints`, `project_tasks` com invalidação seletiva (já temos pattern em `useTickets`).
-
----
-
-## 4. Integração com chamados existentes
-
-### `Chamados.tsx` / `TicketDetailModal.tsx`
-- Mostrar badge "📁 Projeto X · Sprint Y" se vinculado
-- Admin: botão "Remover do projeto" no modal de detalhe
-
-### `useTickets.ts`
-- Retornar `project_id`, `sprint_id`, `story_points` no objeto `Ticket`
-- Adicionar filtro opcional `excludeLinkedToProjects`
-
-### Pontuação automática
-Ao fechar um chamado vinculado (status → "Aguardando Aprovação"/"Aprovado"/"Fechado"):
-- Não precisa de trigger no DB; o cálculo de "pontos concluídos da sprint" é **derivado em runtime** via query `SUM(story_points) WHERE sprint_id=X AND status IN (...)`. Assim não há divergência.
-- `useProjectMetrics` faz esse SUM e atualiza dashboard via realtime.
-
-### Score da categoria como sugestão de story_points
-Ao vincular chamado, default `story_points = categories.score || 1`. Admin pode editar.
-
----
-
-## 5. Governança e regras
-
-| Ação | Admin | Técnico | Solicitante |
-|---|---|---|---|
-| Ver projetos da org | ✅ | ❌ (futuro) | ❌ |
-| Criar/editar projeto e sprint | ✅ | ❌ | ❌ |
-| Vincular/desvincular chamados | ✅ | ❌ | ❌ |
-| Definir capacidade / story points | ✅ | ❌ | ❌ |
-| Trabalhar no chamado (executar) | ✅ | ✅ | — |
-| Ver burndown da sprint onde tem chamado atribuído | ✅ | ✅ (read-only futuro) | ❌ |
-
-Restrições no client + RLS no DB:
-- Chamado **fechado** não pode ser vinculado (validação no modal — opcional, controlada por toggle "permitir vincular fechados" para fins históricos)
-- Um chamado em **uma única sprint** garantido pela coluna única `sprint_id`
-- Remover chamado da sprint = `UPDATE sprint_id = null` (continua no projeto)
-- Remover do projeto = ambos campos a null
-
----
-
-## 6. Estrutura de arquivos
-
-**Criar:**
-- `supabase/migrations/<timestamp>_projects_sprints.sql`
-- `src/hooks/useProjects.ts`
-- `src/hooks/useSprints.ts`
-- `src/hooks/useProjectTasks.ts`
-- `src/hooks/useProjectMetrics.ts`
-- `src/pages/Projetos.tsx` (substitui o mock)
-- `src/pages/ProjetoDetalhe.tsx`
-- `src/components/projetos/ProjectCard.tsx`
-- `src/components/projetos/NewProjectModal.tsx`
-- `src/components/projetos/SprintCard.tsx`
-- `src/components/projetos/NewSprintModal.tsx`
-- `src/components/projetos/BacklogList.tsx`
-- `src/components/projetos/AddTicketsToSprintModal.tsx`
-- `src/components/projetos/ProjectDashboard.tsx` (burndown + cards)
-- `src/components/projetos/TaskItem.tsx`
-
-**Editar:**
-- `src/App.tsx` — nova rota `/projetos/:id`
-- `src/hooks/useTickets.ts` — incluir novos campos
-- `src/components/TicketDetailModal.tsx` — badge de projeto/sprint + ações admin
-- `src/integrations/supabase/types.ts` — atualizado automaticamente após migration
-
-**Remover:**
-- `src/data/mockData.ts` (`mockProjects`) — após migrar
-
----
-
-## 7. Fluxo end-to-end (validação)
-
+### B1. Painel de impacto em tempo real
+Rodapé fixo do modal:
 ```text
-1. Solicitante abre chamado normal           → status=Aberto, project_id=null
-2. Admin entra em /projetos/:id, aba Backlog → clica "Adicionar chamados"
-3. Modal lista chamados livres da org        → admin seleciona 5, escolhe Sprint 2
-4. Sistema: UPDATE tickets SET project_id=P, sprint_id=S2 WHERE id IN (...)
-5. Realtime invalida queries → backlog/sprint atualizam
-6. Técnico assume e trabalha (interface de chamados padrão)
-7. Técnico fecha → ticket vai para "Aguardando Aprovação"
-8. useProjectMetrics recalcula: pontos concluídos da sprint sobem
-9. Burndown e dashboard refletem em tempo real
+Selecionados: 8 · 24 pts
+Sprint "Sprint 3":  Atual 12/30 → Após 36/30 (+24)  ⚠ excede em 6
+Por prioridade:  2 Crítica · 3 Alta · 3 Média
+Por técnico:     João 16/8 ⚠  Maria 8/12 ✓  Sem atribuição 1
+```
+Barra de progresso com 3 cores: verde (atual) + azul (delta) + vermelho (excedente).
+
+### B2. Ordenação por urgência
+```text
+score = (prioridade × 10) + bônus_sla
+prioridade: Crítica=4, Alta=3, Média=2, Baixa=1
+bônus_sla: vencido +20 · <2h +15 · <24h +8 · <72h +3
+```
+Vencidos com faixa vermelha à esquerda; perto de vencer, amarela. Toggle "Urgência | Mais antigos | Prioridade".
+
+### B3. Sugestão inteligente — "Sugerir para a sprint"
+Knapsack greedy considerando:
+1. Capacidade restante da sprint.
+2. **Capacidade por técnico** (ver C5).
+3. Limite de chamados Críticos por sprint.
+4. Ordem por `score_urgência`.
+
+Pré-marca checkboxes com badge "Sugerido". Usuário pode ajustar antes de confirmar.
+
+### B4. Modo Planejamento (simulação)
+Nova aba `Planejamento` no card da sprint. Estado local com diff:
+```text
++ 4 chamados · +12 pts  |  − 1 chamado · −3 pts  |  Saldo: +9 pts
+```
+Botões **Confirmar plano** (persiste em batch) ou **Descartar**.
+
+---
+
+## Parte C — Robustez backend (esta camada nova)
+
+### C1. Validações no banco (regras invioláveis)
+
+Trigger `enforce_sprint_capacity` em INSERT/UPDATE de `tickets` e `project_tasks` quando `sprint_id` mudar:
+
+```sql
+-- pseudocódigo da trigger
+1. se sprint.status = 'fechada' → RAISE 'Sprint fechada não aceita alterações'
+2. se sprint.status = 'cancelada' → RAISE 'Sprint cancelada'
+3. carrega project.enforce_capacity, max_critical_per_sprint
+4. soma_atual = SUM(story_points) de tickets+tasks na sprint
+5. se project.enforce_capacity AND soma_atual + NEW.story_points > sprint.capacity_points
+   → RAISE 'Capacidade da sprint excedida (X/Y pts)'
+6. se ticket.priority = 'Crítica':
+   conta_criticos = COUNT(*) de tickets críticos na sprint
+   se conta_criticos >= project.max_critical_per_sprint
+   → RAISE 'Limite de chamados críticos atingido'
+7. valida capacidade do técnico (ver C5)
 ```
 
+**Soft cap (default)**: front mostra aviso, backend permite.
+**Hard cap**: `project.enforce_capacity = true` → trigger bloqueia.
+
+### C2. Status "fechada" + ciclo de vida
+Status atual: `planejada → ativa → concluida`. Adicionar **`fechada`**:
+- `concluida` = sprint terminou, pode reabrir/ajustar.
+- `fechada` = **escopo trancado**, nada entra, nada sai, nada muda de pontos. Snapshot dos KPIs é registrado.
+- Transições válidas (validadas por trigger):
+```text
+planejada ↔ ativa
+ativa     → concluida
+concluida → fechada (irreversível) | ativa (reabrir)
+qualquer  → cancelada
+```
+Botão "Fechar sprint" exige confirmação dupla com aviso de irreversibilidade.
+
+### C3. Histórico de planejamento — `sprint_planning_history`
+Nova tabela:
+```sql
+create table sprint_planning_history (
+  id uuid primary key default gen_random_uuid(),
+  sprint_id uuid not null references sprints(id) on delete cascade,
+  project_id uuid not null,
+  organization_id uuid,
+  user_id uuid not null,
+  action text not null,  -- ticket_added, ticket_removed, points_changed,
+                          -- capacity_changed, status_changed, plan_committed
+  entity_type text,       -- ticket | task | sprint
+  entity_id uuid,
+  old_value jsonb,
+  new_value jsonb,
+  context text,           -- 'modal' | 'planning_panel' | 'auto_suggestion'
+  created_at timestamptz not null default now()
+);
+```
+Triggers automáticos:
+- `log_ticket_sprint_changes` em UPDATE de `tickets` quando `sprint_id` ou `story_points` mudarem dentro de um projeto.
+- `log_task_sprint_changes` equivalente em `project_tasks`.
+- `log_sprint_changes` em UPDATE de `sprints` (status, capacity_points).
+
+Aba **"Histórico"** dentro do card da sprint mostra timeline.
+
+### C4. Snapshot de eficiência — `sprint_metrics`
+Quando sprint vai para `concluida` ou `fechada`, trigger grava snapshot:
+```sql
+create table sprint_metrics (
+  sprint_id uuid primary key references sprints(id) on delete cascade,
+  project_id uuid not null,
+  organization_id uuid,
+  -- snapshot no momento da ativação
+  planned_points int not null default 0,
+  planned_tickets int not null default 0,
+  planned_tasks int not null default 0,
+  -- snapshot no fechamento
+  delivered_points int not null default 0,
+  delivered_tickets int not null default 0,
+  delivered_tasks int not null default 0,
+  -- mudanças durante a execução
+  scope_added_points int not null default 0,
+  scope_removed_points int not null default 0,
+  -- KPIs
+  efficiency_pct numeric,        -- delivered / planned * 100
+  scope_change_pct numeric,      -- (added + removed) / planned * 100
+  predictability_pct numeric,    -- delivered / capacity * 100
+  closed_at timestamptz,
+  created_at timestamptz default now()
+);
+```
+- `planned_*` é gravado no momento `planejada → ativa`.
+- `delivered_*`, `scope_*` e KPIs são calculados em `→ concluida` ou `→ fechada`.
+
+**Painel "Eficiência" no Dashboard do projeto**:
+- Velocidade média (média de `delivered_points` últimas 5 sprints).
+- Previsibilidade (média de `predictability_pct`).
+- Estabilidade de escopo (média de `scope_change_pct` — quanto menor, melhor).
+- Gráfico barra: Planejado vs Entregue por sprint.
+
+### C5. Capacidade por técnico
+Nova tabela:
+```sql
+create table technician_capacity (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null,
+  project_id uuid,             -- null = padrão para todos os projetos da org
+  organization_id uuid not null,
+  points_per_sprint int not null default 8,
+  created_at timestamptz default now(),
+  updated_at timestamptz default now(),
+  unique (user_id, project_id)
+);
+```
+- Aba "Capacidade da equipe" no projeto: lista técnicos da org com input de pontos/sprint.
+- Algoritmo de sugestão (B3) respeita: para cada técnico, soma dos `story_points` na sprint ≤ `points_per_sprint`.
+- Trigger `enforce_sprint_capacity` (C1) também valida — em modo hard cap, bloqueia atribuir mais que a capacidade do técnico.
+- Painel de impacto (B1) mostra carga por técnico com cores: verde ≤80%, amarelo 80-100%, vermelho >100%.
+
 ---
 
-## 8. O que NÃO está no escopo desta entrega
+## Detalhes técnicos
 
-- Drag-and-drop visual no kanban da sprint (usaremos botões "Mover para Sprint X" — DnD pode vir depois)
-- Notificações por WhatsApp ao vincular chamado a sprint
-- Velocity histórica multi-sprint (gráfico) — começamos com burndown da ativa
-- Permissão de leitura para técnicos verem o projeto (entregaremos só admin nesta fase, conforme regra de governança)
+### Migrations
+Uma migration única com tudo:
+1. `alter table projects add column enforce_capacity boolean default false, max_critical_per_sprint int default 5`.
+2. `alter table sprints` — atualizar check de status para incluir `fechada`.
+3. `create table sprint_planning_history` + RLS (admin/auditor view, admin insert via trigger).
+4. `create table sprint_metrics` + RLS (org members view, system insert via trigger).
+5. `create table technician_capacity` + RLS (admin manage, org view).
+6. Funções:
+   - `enforce_sprint_capacity()` — validação no INSERT/UPDATE de tickets/tasks.
+   - `enforce_sprint_status_transition()` — valida transições.
+   - `log_sprint_planning_change()` — grava em history.
+   - `snapshot_sprint_metrics()` — grava planejado/entregue.
+7. Triggers para amarrar tudo nas tabelas certas.
+
+### Frontend
+- `src/lib/sprintPlanning.ts` *(novo)* — `urgencyScore`, `sortByUrgency`, `suggestForSprint`, `simulateImpact`.
+- `src/hooks/useSprintHistory.ts` *(novo)*.
+- `src/hooks/useSprintMetrics.ts` *(novo)*.
+- `src/hooks/useTechnicianCapacity.ts` *(novo)*.
+- `src/components/projetos/AddTicketsToSprintModal.tsx` — destino inteligente, chips, ordenação, sugestão, painel impacto, tratamento de erros do trigger.
+- `src/components/projetos/SprintCard.tsx` — botão "+ Adicionar", barra excedida, abas Planejamento + Histórico, botão "Fechar sprint".
+- `src/components/projetos/SprintPlanningPanel.tsx` *(novo)*.
+- `src/components/projetos/SprintImpactPanel.tsx` *(novo)*.
+- `src/components/projetos/SprintHistoryTimeline.tsx` *(novo)*.
+- `src/components/projetos/EfficiencyDashboard.tsx` *(novo)* — gráficos planejado vs entregue.
+- `src/components/projetos/TeamCapacityTab.tsx` *(novo)*.
+- `src/components/projetos/NewProjectModal.tsx` — campos de configuração (`enforce_capacity`, limites).
+- `src/pages/ProjetoDetalhe.tsx` — bloco "Sprint ativa", aba "Capacidade da equipe", aba "Eficiência".
+
+### Tratamento de erros
+Mutações capturam `error.message` dos RAISE do banco e mostram toast claro:
+> "Capacidade excedida: 36/30 pts. Aumente a capacidade ou remova chamados."
+> "João já está com 12/8 pts. Atribua a outro técnico."
+> "Sprint fechada — escopo bloqueado."
 
 ---
 
-## Pergunta antes de implementar
+## Resultado final
 
-**Story points:** quando um chamado é vinculado, devo usar como pontos default (a) o `score` da categoria do chamado, (b) sempre 1, ou (c) deixar o admin sempre escolher manualmente? Recomendo **(a) com possibilidade de edição** para integrar com sua pontuação existente. Confirma?
+Modelo completo de execução:
 
-Aprova o plano para eu implementar?
+1. **Planejar** — sugestão respeita capacidade da sprint e dos técnicos, simulação antes de confirmar.
+2. **Executar** — sprint ativa com escopo controlado, alterações registradas em histórico.
+3. **Fechar** — snapshot automático de planejado vs entregue, escopo trancado.
+4. **Medir** — dashboard de eficiência, velocidade, previsibilidade, estabilidade de escopo.
+5. **Auditar** — timeline completa de quem mudou o quê, quando e em qual contexto.
+
+Regras críticas (capacidade, limites, status) ficam **no banco** — impossível burlar via API direta, edge function ou app mobile futuro. Front reflete e melhora UX, mas não é a fonte da verdade.
