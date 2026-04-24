@@ -27,9 +27,16 @@ function SlaTimer({ ticket, resolutionEnd }: { ticket: Ticket; resolutionEnd?: D
   // SLA conta apenas o tempo de trabalho do técnico:
   // início = started_at (quando o técnico iniciou o atendimento)
   // fim    = momento da resolução técnica (Aguardando Aprovação/Aprovado/Fechado)
-  //          ou agora (em aberto)
-  // Se ainda não foi iniciado, exibe "Aguardando"
+  //          ou agora (em aberto) — atualizado a cada minuto via ticker
   const isClosed = ticket.status === "Fechado";
+
+  // Ticker para chamados em andamento: força re-render a cada 60s
+  const [, setTick] = useState(0);
+  useEffect(() => {
+    if (isClosed) return; // chamados fechados não precisam atualizar
+    const id = setInterval(() => setTick((t) => t + 1), 60_000);
+    return () => clearInterval(id);
+  }, [isClosed]);
 
   if (!ticket.started_at && !isClosed) {
     return (
@@ -66,7 +73,7 @@ function SlaTimer({ ticket, resolutionEnd }: { ticket: Ticket; resolutionEnd?: D
   };
 
   return (
-    <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md border text-xs font-medium ${colors[sla]}`}>
+    <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md border text-xs font-medium ${colors[sla]}`} title="Atualizado em tempo real">
       <Clock className="h-3 w-3" />
       {label}
     </span>
