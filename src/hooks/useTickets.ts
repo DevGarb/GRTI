@@ -22,6 +22,9 @@ export interface Ticket {
   started_at: string | null;
   picked_at: string | null;
   original_assigned_to: string | null;
+  project_id?: string | null;
+  sprint_id?: string | null;
+  story_points?: number | null;
   reworkCount?: number;
   // joined
   assignedProfile?: { full_name: string } | null;

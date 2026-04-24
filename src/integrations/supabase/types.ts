@@ -563,41 +563,95 @@ export type Database = {
           },
         ]
       }
+      project_tasks: {
+        Row: {
+          assignee_id: string | null
+          created_at: string
+          created_by: string
+          description: string | null
+          id: string
+          organization_id: string | null
+          project_id: string
+          sprint_id: string | null
+          status: string
+          story_points: number
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          assignee_id?: string | null
+          created_at?: string
+          created_by: string
+          description?: string | null
+          id?: string
+          organization_id?: string | null
+          project_id: string
+          sprint_id?: string | null
+          status?: string
+          story_points?: number
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          assignee_id?: string | null
+          created_at?: string
+          created_by?: string
+          description?: string | null
+          id?: string
+          organization_id?: string | null
+          project_id?: string
+          sprint_id?: string | null
+          status?: string
+          story_points?: number
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       projects: {
         Row: {
+          code: string | null
           created_at: string
           description: string | null
           end_date: string | null
+          goal: string | null
           id: string
           name: string
           organization_id: string | null
           owner_id: string | null
           start_date: string | null
           status: string
+          total_points_target: number
           updated_at: string
         }
         Insert: {
+          code?: string | null
           created_at?: string
           description?: string | null
           end_date?: string | null
+          goal?: string | null
           id?: string
           name: string
           organization_id?: string | null
           owner_id?: string | null
           start_date?: string | null
           status?: string
+          total_points_target?: number
           updated_at?: string
         }
         Update: {
+          code?: string | null
           created_at?: string
           description?: string | null
           end_date?: string | null
+          goal?: string | null
           id?: string
           name?: string
           organization_id?: string | null
           owner_id?: string | null
           start_date?: string | null
           status?: string
+          total_points_target?: number
           updated_at?: string
         }
         Relationships: [
@@ -644,6 +698,51 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      sprints: {
+        Row: {
+          capacity_points: number
+          created_at: string
+          created_by: string
+          end_date: string | null
+          goal: string | null
+          id: string
+          name: string
+          organization_id: string | null
+          project_id: string
+          start_date: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          capacity_points?: number
+          created_at?: string
+          created_by: string
+          end_date?: string | null
+          goal?: string | null
+          id?: string
+          name: string
+          organization_id?: string | null
+          project_id: string
+          start_date?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          capacity_points?: number
+          created_at?: string
+          created_by?: string
+          end_date?: string | null
+          goal?: string | null
+          id?: string
+          name?: string
+          organization_id?: string | null
+          project_id?: string
+          start_date?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
       subscription_plans: {
         Row: {
@@ -798,10 +897,13 @@ export type Database = {
           original_assigned_to: string | null
           picked_at: string | null
           priority: string
+          project_id: string | null
           sector: string | null
           sla_deadline: string | null
+          sprint_id: string | null
           started_at: string | null
           status: string
+          story_points: number | null
           title: string
           type: string
           updated_at: string
@@ -817,10 +919,13 @@ export type Database = {
           original_assigned_to?: string | null
           picked_at?: string | null
           priority?: string
+          project_id?: string | null
           sector?: string | null
           sla_deadline?: string | null
+          sprint_id?: string | null
           started_at?: string | null
           status?: string
+          story_points?: number | null
           title: string
           type?: string
           updated_at?: string
@@ -836,10 +941,13 @@ export type Database = {
           original_assigned_to?: string | null
           picked_at?: string | null
           priority?: string
+          project_id?: string | null
           sector?: string | null
           sla_deadline?: string | null
+          sprint_id?: string | null
           started_at?: string | null
           status?: string
+          story_points?: number | null
           title?: string
           type?: string
           updated_at?: string
