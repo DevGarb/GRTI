@@ -85,12 +85,15 @@ export default function MyGoalCard({ year, month }: Props) {
         avgScore = scores.length > 0 ? scores.reduce((a, b) => a + b, 0) / scores.length : 0;
       }
 
-      // Tempo médio de resolução em horas úteis (started_at → updated_at)
+      // Tempo médio de resolução em horas úteis (started_at → momento da resolução técnica)
       let avgResolutionHours = 0;
       if ((closedTickets || []).length > 0) {
+        const ids = (closedTickets || []).map((t) => t.id);
+        const resolutionEndMap = await fetchTicketResolutionEnds(ids);
         const totalHours = (closedTickets || []).reduce((sum, t) => {
-          const start = t.started_at ? new Date(t.started_at) : new Date(t.created_at);
-          const h = Math.max(0, calcBusinessMinutes(start, new Date(t.updated_at)) / 60);
+          const start = getTicketWorkStart(t);
+          const end = resolutionEndMap.get(t.id) ?? new Date(t.updated_at);
+          const h = Math.max(0, calcBusinessMinutes(start, end) / 60);
           return sum + h;
         }, 0);
         avgResolutionHours = totalHours / (closedTickets || []).length;
