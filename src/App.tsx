@@ -18,6 +18,7 @@ import Usuarios from "@/pages/Usuarios";
 import Categorias from "@/pages/Categorias";
 import Historico from "@/pages/Historico";
 import Auditoria from "@/pages/Auditoria";
+import AuditoriaSla from "@/pages/AuditoriaSla";
 import Avaliacoes from "@/pages/Avaliacoes";
 import MetasTecnicos from "@/pages/MetasTecnicos";
 import WebhookLogs from "@/pages/WebhookLogs";
