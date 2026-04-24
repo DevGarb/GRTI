@@ -4,7 +4,6 @@ import { ArrowLeft, FolderKanban, Plus, Pencil, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
 import { useProject, useDeleteProject } from "@/hooks/useProjects";
 import { useSprints } from "@/hooks/useSprints";
 import SprintCard from "@/components/projetos/SprintCard";
@@ -13,6 +12,7 @@ import NewSprintModal from "@/components/projetos/NewSprintModal";
 import NewProjectModal from "@/components/projetos/NewProjectModal";
 import AddTicketsToSprintModal from "@/components/projetos/AddTicketsToSprintModal";
 import NewTaskModal from "@/components/projetos/NewTaskModal";
+import ProjectOverview from "@/components/projetos/ProjectOverview";
 
 export default function ProjetoDetalhe() {
   const { id } = useParams<{ id: string }>();
@@ -74,63 +74,13 @@ export default function ProjetoDetalhe() {
           <TabsTrigger value="backlog">Backlog</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="overview" className="space-y-4 mt-4">
-          {activeSprint ? (
-            <div className="card-elevated p-5 border-l-4 border-l-blue-500">
-              <div className="flex items-start justify-between gap-3 mb-3">
-                <div>
-                  <div className="flex items-center gap-2">
-                    <Badge className="bg-blue-500/20 text-blue-700 dark:text-blue-300 text-[10px]">
-                      Sprint ativa
-                    </Badge>
-                    <h3 className="font-semibold text-sm">{activeSprint.name}</h3>
-                  </div>
-                  {activeSprint.goal && (
-                    <p className="text-xs text-muted-foreground mt-1">{activeSprint.goal}</p>
-                  )}
-                </div>
-                <Button size="sm" onClick={() => setAddToActiveOpen(true)}>
-                  <Plus className="h-3.5 w-3.5 mr-1" /> Adicionar chamados
-                </Button>
-              </div>
-              <div className="space-y-2">
-                <div className="flex items-center justify-between text-xs text-muted-foreground">
-                  <span>
-                    {activeSprint.ticketCount} chamados · {activeSprint.taskCount} tarefas
-                  </span>
-                  <span>
-                    {activeSprint.completedTickets + activeSprint.completedTasks}/
-                    {activeSprint.ticketCount + activeSprint.taskCount} concluídos ({activeSprint.donePct}%)
-                  </span>
-                </div>
-                <Progress value={activeSprint.donePct} className="h-1.5 [&>div]:bg-emerald-500" />
-              </div>
-            </div>
-          ) : (
-            <div className="card-elevated p-5 text-center">
-              <p className="text-sm text-muted-foreground mb-3">
-                Nenhuma sprint ativa. Crie uma sprint para começar.
-              </p>
-              <Button size="sm" onClick={() => setSprintModalOpen(true)}>
-                <Plus className="h-3.5 w-3.5 mr-1" /> Nova sprint
-              </Button>
-            </div>
-          )}
-
-          {(project.description || project.start_date || project.end_date) && (
-            <div className="card-elevated p-5">
-              {project.description && (
-                <p className="text-sm text-muted-foreground whitespace-pre-wrap">{project.description}</p>
-              )}
-              {(project.start_date || project.end_date) && (
-                <p className="text-xs text-muted-foreground mt-3">
-                  {project.start_date && new Date(project.start_date).toLocaleDateString("pt-BR")}
-                  {" → "}
-                  {project.end_date && new Date(project.end_date).toLocaleDateString("pt-BR")}
-                </p>
-              )}
-            </div>
-          )}
+        <TabsContent value="overview" className="mt-4">
+          <ProjectOverview
+            project={project}
+            sprints={sprints}
+            onAddToActive={() => setAddToActiveOpen(true)}
+            onCreateSprint={() => setSprintModalOpen(true)}
+          />
         </TabsContent>
 
         <TabsContent value="sprints" className="space-y-3 mt-4">
