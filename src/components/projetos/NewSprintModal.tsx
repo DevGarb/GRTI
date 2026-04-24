@@ -21,7 +21,6 @@ export default function NewSprintModal({ open, onOpenChange, projectId, sprint }
   const [goal, setGoal] = useState(sprint?.goal || "");
   const [startDate, setStartDate] = useState(sprint?.start_date || "");
   const [endDate, setEndDate] = useState(sprint?.end_date || "");
-  const [capacity, setCapacity] = useState<number>(sprint?.capacity_points ?? 100);
 
   async function submit() {
     if (!name.trim()) return;
@@ -32,7 +31,6 @@ export default function NewSprintModal({ open, onOpenChange, projectId, sprint }
         goal: goal.trim() || null,
         start_date: startDate || null,
         end_date: endDate || null,
-        capacity_points: Number(capacity) || 0,
       });
     } else {
       await createMut.mutateAsync({
@@ -41,11 +39,10 @@ export default function NewSprintModal({ open, onOpenChange, projectId, sprint }
         goal: goal.trim() || undefined,
         start_date: startDate || null,
         end_date: endDate || null,
-        capacity_points: Number(capacity) || 0,
       });
     }
     onOpenChange(false);
-    if (!isEdit) { setName(""); setGoal(""); setStartDate(""); setEndDate(""); setCapacity(100); }
+    if (!isEdit) { setName(""); setGoal(""); setStartDate(""); setEndDate(""); }
   }
 
   return (
@@ -72,10 +69,6 @@ export default function NewSprintModal({ open, onOpenChange, projectId, sprint }
               <Label>Fim</Label>
               <Input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} />
             </div>
-          </div>
-          <div>
-            <Label>Capacidade (pontos)</Label>
-            <Input type="number" min={0} value={capacity} onChange={(e) => setCapacity(Number(e.target.value))} />
           </div>
         </div>
         <DialogFooter>
