@@ -10,7 +10,9 @@ export interface Sprint {
   organization_id: string | null;
   name: string;
   goal: string | null;
-  status: "planejada" | "ativa" | "concluida" | "cancelada" | string;
+  status: "planejada" | "ativa" | "concluida" | "fechada" | "cancelada" | string;
+  closed_at?: string | null;
+  activated_at?: string | null;
   start_date: string | null;
   end_date: string | null;
   capacity_points: number;
