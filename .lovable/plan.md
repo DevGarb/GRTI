@@ -1,70 +1,60 @@
 
-Objetivo: eliminar a origem errada da pontuação e deixar todos os lugares do sistema calculando pontos da mesma forma.
+## Diagnóstico
 
-1. Diagnóstico confirmado
-- Os pontos do quadro “Acompanhamento Detalhado por Técnico” estão vindo de `src/pages/Dashboard.tsx`, pela coluna `tech.points`.
-- Esse valor vem de `src/hooks/useDashboardMetrics.ts`, que hoje soma registros da tabela `evaluations` com `type = 'meta'`.
-- No banco, os pontos atuais de abril já batem com o que aparece na tela:
-  - MARIA IZABELE LIMA: 191 pts
-  - FELIPE AUGUSTO: 152 pts
-  - VICTOR HUGO CORIOLANO BORGES: 120 pts
-  - DANILO NASCIMENTO: 113 pts
-- Também confirmei que ainda existem 7 avaliações `meta` de abril divergentes do `score` real da categoria do chamado.
-- Há uma causa histórica importante: a migration `supabase/migrations/20260309201900_d584794f-6fb8-4ae4-831e-44ca19860ae2.sql` classificou os tipos invertidos:
-  - `score <= 5` virou `meta`
-  - `score > 5` virou `satisfaction`
-  Isso é o oposto da regra correta de CSAT 1–5 e contaminou dados antigos.
+Confirmei no banco a causa do tempo médio inflado. Existem **dois bugs** combinados:
 
-2. Correção no banco de dados
-- Criar uma nova migration corretiva para:
-  - identificar avaliações `meta` que na verdade eram CSAT;
-  - copiar esses valores para `type = 'satisfaction'` quando ainda não existir satisfação para o chamado;
-  - recalcular `score` das avaliações `meta` usando o `categories.score` do chamado;
-  - corrigir `type` de registros históricos impactados pela migration invertida.
-- Adicionar proteção para evitar o problema voltar:
-  - índice único por `(ticket_id, type)` na tabela `evaluations`, para existir no máximo uma `meta` e uma `satisfaction` por chamado;
-  - trigger de validação em `evaluations`:
-    - `satisfaction` só aceita nota de 1 a 5;
-    - `meta` deve usar o score real da categoria do chamado.
+### Bug 1 — Tickets sem `started_at` usam `created_at` como início
+- 100 dos 312 chamados fechados em abril não têm `started_at` preenchido (chamados mais antigos).
+- O cálculo cai no fallback `created_at`, somando todo o tempo de espera antes de o técnico assumir o ticket.
 
-3. Unificar a regra de pontos no frontend
-- `src/hooks/useDashboardMetrics.ts`
-  - parar de somar pontos apenas por `evaluations.created_at`;
-  - calcular pontos a partir do conjunto de chamados do mês selecionado, para a coluna “Chamados” e a coluna “Pts” usarem a mesma base;
-  - deduplicar por chamado, usando só a avaliação `meta` válida daquele ticket.
-- `src/pages/Dashboard.tsx`
-  - manter a tabela “Acompanhamento Detalhado por Técnico” ligada à regra unificada;
-  - garantir que o ranking e a tabela usem exatamente a mesma fonte de pontos.
-- `src/pages/Chamados.tsx`
-  - alinhar “Minha Pontuação” com a mesma regra do dashboard;
-  - contar apenas chamados fechados do período filtrado e apenas `meta`.
-- `src/pages/MetasTecnicos.tsx`
-  - aplicar o filtro de mês/ano de verdade nos tickets e nas pontuações;
-  - parar de buscar tudo sem recorte temporal;
-  - usar só a `meta` válida por ticket.
+### Bug 2 — `updated_at` é tratado como "data de fechamento", mas sofre alterações depois da resolução
+Este é o problema **mais grave**. Exemplo real:
+- Ticket "Mouse ortopédico"
+- Resolvido pelo técnico em **06/04** (status virou "Aguardando Aprovação")
+- Aprovado pelo solicitante em **22/04**
+- Marcado como "Fechado" em **23/04**
+- Sistema calcula: `created_at (02/04) → updated_at (23/04) = 501 horas`
+- Tempo real de atendimento: ~3 dias úteis
 
-4. Blindar o fluxo correto de negócio
-- `src/components/TicketDetailModal.tsx`
-  - manter separado:
-    - solicitante aprova + dá CSAT 1–5 (`satisfaction`);
-    - admin apenas pontua categoria (`meta`);
-  - impedir nova gravação `meta` se o chamado já tiver sido pontuado;
-  - garantir que o fechamento só aconteça após a pontuação do admin.
+Ou seja: o tempo de espera por aprovação do solicitante e qualquer comentário/edição posterior está sendo somado ao "tempo de atendimento do técnico".
 
-5. Corrigir os erros de build que hoje impedem a entrega limpa
-- `supabase/functions/api-gateway/index.ts`
-  - separar o fluxo de detalhe e lista para não quebrar a tipagem do builder em `.single()`.
-- `supabase/functions/check-sla/index.ts`
-- `supabase/functions/create-user/index.ts`
-- `supabase/functions/delete-user/index.ts`
-- `supabase/functions/dispatch-webhook/index.ts`
-- `supabase/functions/send-whatsapp/index.ts`
-- `supabase/functions/test-webhook/index.ts`
-  - tratar `catch (error: unknown)` corretamente antes de acessar `.message`.
+### Confirmação numérica (abril/2026)
+- Média atual (`created_at → updated_at`): **151,5 horas**
+- Média se trocar só por `started_at → updated_at`: **142,8 horas**
+- Média correta (`started_at → momento da resolução`): vai cair drasticamente, como o exemplo de 501h → ~30h.
 
-Resultado esperado após aplicar
-- Pontos passam a vir somente da pontuação do admin por categoria.
-- CSAT 1–5 deixa de impactar qualquer ranking de pontos.
-- Dashboard, Chamados e Metas Técnicos mostram o mesmo total para o mesmo período.
-- Dados históricos contaminados ficam corrigidos no banco.
-- O projeto volta a compilar sem erro.
+## O que precisa ser corrigido
+
+### 1. `src/hooks/useDashboardMetrics.ts` (cards do Dashboard)
+Trocar o cálculo:
+- **Início**: `started_at` (e só usar `created_at` como fallback se realmente não houver `started_at`)
+- **Fim**: momento em que o ticket foi resolvido pelo técnico — buscar em `ticket_history` o registro `status_change` cujo `new_value` foi "Aguardando Aprovação". Se não existir, usar a data do `status_change` para "Fechado". Como último recurso, usar `updated_at`.
+
+Aplicar a mesma correção em:
+- Card "Tempo Médio" do topo
+- Gráfico "Evolução Tempo Médio (min)" dos últimos 6 meses
+
+### 2. `src/pages/MetasTecnicos.tsx`
+Mesma lógica de fim de atendimento (Aguardando Aprovação → Fechado → updated_at), tanto para a coluna "Tempo Médio" da tabela de técnicos quanto para o card global de "Tempo Médio".
+
+### 3. `src/components/metas/MyGoalCard.tsx`
+Mesma correção para o card de meta individual do técnico (Tempo Resolução).
+
+### 4. `src/pages/Chamados.tsx` (coluna "Tempo" da lista de chamados fechados)
+Usar a mesma fonte do "fim do atendimento" para chamados fechados, em vez de `updated_at`. Em chamados ainda abertos, mantém o comportamento atual (`now()`).
+
+### 5. Padronização
+Criar uma helper compartilhada em `src/lib/businessHours.ts` (ou novo arquivo `src/lib/ticketTiming.ts`) com a função `getTicketResolutionEnd(ticket, history)` para garantir que **todas** as telas usem exatamente a mesma regra e nunca mais haja divergência.
+
+## Resultado esperado
+
+- "Tempo Médio" do Dashboard cai de ~150h para um valor realista (provavelmente entre 8h e 30h úteis dependendo do mix de chamados).
+- "Tempo Médio" da aba Metas dos Técnicos passa a refletir só o trabalho real do técnico, sem contar o tempo que o solicitante demora para aprovar.
+- O número fica consistente entre Dashboard, Metas dos Técnicos, Meu Card de Metas e a coluna "Tempo" da lista de chamados.
+- Tickets antigos sem `started_at` continuam sendo considerados (com fallback claro), mas o "fim" passa a ser o momento da resolução, eliminando o pior dos outliers.
+
+## O que **não** será alterado
+
+- A regra de horário comercial (08:00–18:00, seg–sex) continua igual.
+- Os limites de SLA por prioridade continuam iguais.
+- A pontuação dos técnicos não é afetada por esta mudança.
