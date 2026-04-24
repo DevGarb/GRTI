@@ -273,6 +273,13 @@ export default function Chamados() {
     enabled: closedFilteredIds.length > 0,
   });
 
+  // Mapa "fim do atendimento técnico" para chamados fechados (não usar updated_at)
+  const { data: resolutionEndMap = new Map<string, Date>() } = useQuery({
+    queryKey: ["ticket-resolution-ends", closedFilteredIds.join(",")],
+    queryFn: () => fetchTicketResolutionEnds(closedFilteredIds),
+    enabled: closedFilteredIds.length > 0,
+  });
+
   // Group by assigned technician (or creator if not assigned)
   const grouped = filtered.reduce<Record<string, typeof filtered>>((acc, t) => {
     const name = t.assignedProfile?.full_name || t.creatorProfile?.full_name || "Sem atribuição";
