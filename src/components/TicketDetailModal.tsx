@@ -421,6 +421,17 @@ export default function TicketDetailModal({ ticket, onClose }: Props) {
                   Retrabalho ({reworkCount}x)
                 </span>
               )}
+              {(ticket as any).project_id && (
+                <a
+                  href={`/projetos/${(ticket as any).project_id}`}
+                  className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-primary/10 text-primary border border-primary/30 hover:bg-primary/20"
+                  title="Abrir projeto"
+                >
+                  <FolderKanban className="h-3 w-3" />
+                  Projeto
+                  {(ticket as any).story_points ? ` · ${(ticket as any).story_points} pts` : ""}
+                </a>
+              )}
               <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
                 <Tag className="h-3 w-3" /> {ticket.type}
               </span>
