@@ -48,7 +48,7 @@ export function useDashboardMetrics(dateFrom?: Date, dateTo?: Date) {
       // Fetch tickets
       let ticketQuery = supabase
         .from("tickets")
-        .select("id, status, created_at, updated_at, type, assigned_to")
+        .select("id, status, created_at, updated_at, started_at, type, assigned_to")
         .order("created_at", { ascending: false });
       if (orgId) {
         ticketQuery = ticketQuery.eq("organization_id", orgId);
@@ -70,11 +70,19 @@ export function useDashboardMetrics(dateFrom?: Date, dateTo?: Date) {
         return d >= dateFrom && d <= dateTo;
       });
 
-      // Avg resolution time
+      // Resolve "fim do atendimento técnico" para cada ticket fechado
+      // (momento em que virou "Aguardando Aprovação"/"Aprovado"/"Fechado")
+      const resolutionEndMap = await fetchTicketResolutionEnds(
+        closedTickets.map((t) => t.id)
+      );
+
+      // Avg resolution time (started_at → momento da resolução técnica)
       let avgResolutionMinutes = 0;
       if (closedTickets.length > 0) {
         const totalMinutes = closedTickets.reduce((sum, t) => {
-          return sum + calcBusinessMinutes(new Date(t.created_at), new Date(t.updated_at));
+          const start = getTicketWorkStart(t);
+          const end = resolutionEndMap.get(t.id) ?? new Date(t.updated_at);
+          return sum + calcBusinessMinutes(start, end);
         }, 0);
         avgResolutionMinutes = totalMinutes / closedTickets.length;
       }
