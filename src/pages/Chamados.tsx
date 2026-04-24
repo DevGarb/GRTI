@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Search, Filter, ChevronDown, ChevronRight, Plus, User, RefreshCw, Inbox, SendHorizonal, HandMetal, AlertTriangle, Clock, TicketCheck, CircleDot, Loader2, CheckCircle2, LayoutGrid, List, Trophy } from "lucide-react";
 import KanbanBoard from "@/components/KanbanBoard";
