@@ -1,60 +1,221 @@
+# Refatoração do módulo Projetos — Helpdesk + Agile
 
-## Diagnóstico
+Transformar o módulo atual (mock estático) num sistema completo de gestão ágil que **usa chamados reais como unidade de execução**, com Sprints, Backlog, capacidade por pontos e dashboards de progresso.
 
-Confirmei no banco a causa do tempo médio inflado. Existem **dois bugs** combinados:
+---
 
-### Bug 1 — Tickets sem `started_at` usam `created_at` como início
-- 100 dos 312 chamados fechados em abril não têm `started_at` preenchido (chamados mais antigos).
-- O cálculo cai no fallback `created_at`, somando todo o tempo de espera antes de o técnico assumir o ticket.
+## 1. Modelo de dados (migration)
 
-### Bug 2 — `updated_at` é tratado como "data de fechamento", mas sofre alterações depois da resolução
-Este é o problema **mais grave**. Exemplo real:
-- Ticket "Mouse ortopédico"
-- Resolvido pelo técnico em **06/04** (status virou "Aguardando Aprovação")
-- Aprovado pelo solicitante em **22/04**
-- Marcado como "Fechado" em **23/04**
-- Sistema calcula: `created_at (02/04) → updated_at (23/04) = 501 horas`
-- Tempo real de atendimento: ~3 dias úteis
+### Alterações em `tickets`
+Adicionar 3 colunas (nullable, sem quebrar nada existente):
+- `project_id uuid` — projeto vinculado
+- `sprint_id uuid` — sprint vinculada
+- `story_points integer` — pontos atribuídos pelo admin (default = score da categoria do chamado, fallback 1)
 
-Ou seja: o tempo de espera por aprovação do solicitante e qualquer comentário/edição posterior está sendo somado ao "tempo de atendimento do técnico".
+Index em `(project_id, sprint_id)` para queries rápidas.
 
-### Confirmação numérica (abril/2026)
-- Média atual (`created_at → updated_at`): **151,5 horas**
-- Média se trocar só por `started_at → updated_at`: **142,8 horas**
-- Média correta (`started_at → momento da resolução`): vai cair drasticamente, como o exemplo de 501h → ~30h.
+### Reaproveitar `projects` (já existe) e estender
+Adicionar:
+- `code text` — sigla curta (ex: "INFRA-2026")
+- `goal text` — objetivo do projeto
+- `total_points_target integer default 0` — meta total
+- Manter `status`, `start_date`, `end_date`, `owner_id`
 
-## O que precisa ser corrigido
+### Nova tabela `sprints`
+```
+id uuid pk
+project_id uuid not null
+organization_id uuid
+name text                 -- "Sprint 1", "Sprint Out/26"
+goal text
+status text default 'planejada'  -- planejada | ativa | concluida | cancelada
+start_date date
+end_date date
+capacity_points integer default 0  -- limite de pontos da sprint
+created_by uuid
+created_at, updated_at
+```
 
-### 1. `src/hooks/useDashboardMetrics.ts` (cards do Dashboard)
-Trocar o cálculo:
-- **Início**: `started_at` (e só usar `created_at` como fallback se realmente não houver `started_at`)
-- **Fim**: momento em que o ticket foi resolvido pelo técnico — buscar em `ticket_history` o registro `status_change` cujo `new_value` foi "Aguardando Aprovação". Se não existir, usar a data do `status_change` para "Fechado". Como último recurso, usar `updated_at`.
+### Nova tabela `project_tasks` (tarefas manuais — opcional, prioridade secundária)
+```
+id, project_id, sprint_id (nullable), title, description,
+status (todo|doing|done), story_points, assignee_id, created_by, timestamps
+```
 
-Aplicar a mesma correção em:
-- Card "Tempo Médio" do topo
-- Gráfico "Evolução Tempo Médio (min)" dos últimos 6 meses
+### Constraint / regra (via trigger)
+- Não permitir vincular um chamado a uma sprint que não pertence ao mesmo `project_id` do ticket
+- Bloquear vinculação se a soma de `story_points` da sprint exceder `capacity_points` (com flag `force` opcional pelo admin via UPDATE direto — manteremos validação só no client por simplicidade, sinalizando o exceso)
 
-### 2. `src/pages/MetasTecnicos.tsx`
-Mesma lógica de fim de atendimento (Aguardando Aprovação → Fechado → updated_at), tanto para a coluna "Tempo Médio" da tabela de técnicos quanto para o card global de "Tempo Médio".
+### RLS
+- `sprints` e `project_tasks`: SELECT por organização (`is_same_organization`); INSERT/UPDATE/DELETE só `admin` ou `super_admin`.
+- Atualizações em `tickets` para vinculação reaproveitam policy existente (admin já pode atualizar).
 
-### 3. `src/components/metas/MyGoalCard.tsx`
-Mesma correção para o card de meta individual do técnico (Tempo Resolução).
+---
 
-### 4. `src/pages/Chamados.tsx` (coluna "Tempo" da lista de chamados fechados)
-Usar a mesma fonte do "fim do atendimento" para chamados fechados, em vez de `updated_at`. Em chamados ainda abertos, mantém o comportamento atual (`now()`).
+## 2. UI/UX — nova estrutura da página `/projetos`
 
-### 5. Padronização
-Criar uma helper compartilhada em `src/lib/businessHours.ts` (ou novo arquivo `src/lib/ticketTiming.ts`) com a função `getTicketResolutionEnd(ticket, history)` para garantir que **todas** as telas usem exatamente a mesma regra e nunca mais haja divergência.
+### Lista de projetos (nova `Projetos.tsx`)
+Substituir mock por dados reais. Cards com:
+- nome, código, status, owner, datas
+- progresso: `pontos concluídos / pontos totais` (barra)
+- nº de sprints ativas, nº de chamados vinculados
+- Botão **"Novo projeto"** (modal)
 
-## Resultado esperado
+### Detalhe do projeto `/projetos/:id` (nova rota)
+Layout com tabs:
 
-- "Tempo Médio" do Dashboard cai de ~150h para um valor realista (provavelmente entre 8h e 30h úteis dependendo do mix de chamados).
-- "Tempo Médio" da aba Metas dos Técnicos passa a refletir só o trabalho real do técnico, sem contar o tempo que o solicitante demora para aprovar.
-- O número fica consistente entre Dashboard, Metas dos Técnicos, Meu Card de Metas e a coluna "Tempo" da lista de chamados.
-- Tickets antigos sem `started_at` continuam sendo considerados (com fallback claro), mas o "fim" passa a ser o momento da resolução, eliminando o pior dos outliers.
+**Tab 1 — Visão geral**
+- Cards: total de pontos, pontos concluídos, % vindo de chamados vs tarefas, chamados planejados vs concluídos
+- Mini-timeline de sprints
 
-## O que **não** será alterado
+**Tab 2 — Sprints**
+- Lista de sprints com badge de status, capacidade usada (`72/100 pts`)
+- Botão **"Nova sprint"** (modal: nome, datas, capacidade, objetivo)
+- Cada sprint expansível mostrando seus chamados + tarefas, com botão **"Ativar"** / **"Concluir"**
+- Kanban opcional dentro da sprint (reaproveitar `KanbanBoard` existente filtrado por `sprint_id`)
 
-- A regra de horário comercial (08:00–18:00, seg–sex) continua igual.
-- Os limites de SLA por prioridade continuam iguais.
-- A pontuação dos técnicos não é afetada por esta mudança.
+**Tab 3 — Backlog**
+- Lista priorizada de chamados + tarefas vinculadas ao projeto **sem sprint**
+- Drag-to-sprint (ou botão "Mover para sprint X")
+- Botão **"+ Adicionar chamados"** → abre modal (ver abaixo)
+- Botão **"+ Nova tarefa"** (manual)
+
+**Tab 4 — Dashboard**
+- Gráfico de burndown (pontos restantes por dia da sprint ativa)
+- Origem dos pontos (pizza chamados vs tarefas)
+- Eficiência: % de chamados planejados que foram concluídos no prazo da sprint
+- Throughput por técnico no projeto
+
+### Modal "Adicionar Chamados" (componente novo `AddTicketsToSprintModal`)
+- Lista chamados da org com filtros:
+  - status (default: Aberto, Em Andamento, Disponível)
+  - prioridade, técnico, categoria, busca por título/id
+  - já mostra apenas chamados **sem `project_id`** (não vinculados)
+- Multi-select com checkbox
+- Seletor de sprint destino (sprints do projeto + opção "Apenas backlog")
+- Mostra preview: "X chamados, Y pontos serão adicionados. Capacidade da sprint: Z/W"
+- Avisa em vermelho se exceder capacidade (admin pode forçar)
+- Botão "Vincular"
+
+### Modal "Editar pontos do chamado"
+Quando admin abre um chamado dentro do projeto, pode ajustar `story_points` (default = score da categoria).
+
+---
+
+## 3. Hooks novos (`src/hooks/`)
+
+- `useProjects()` — lista projetos da org com agregados (pontos, sprints, chamados)
+- `useProject(id)` — detalhe + cache compartilhado
+- `useCreateProject()`, `useUpdateProject()`, `useDeleteProject()`
+- `useSprints(projectId)` + create/update/delete + `useActivateSprint`
+- `useProjectBacklog(projectId)` — chamados+tarefas com `project_id` e sem sprint
+- `useSprintItems(sprintId)` — chamados+tarefas da sprint
+- `useAvailableTickets(projectId)` — chamados não vinculados a nenhum projeto da org
+- `useLinkTicketsToProject(projectId, sprintId?)` — bulk update em `tickets`
+- `useUnlinkTicket(ticketId)` — limpa `project_id` e `sprint_id`
+- `useProjectMetrics(projectId)` — burndown, origem dos pontos, eficiência
+- `useProjectTasks(projectId)` + CRUD
+
+Realtime: subscrever `tickets`, `sprints`, `project_tasks` com invalidação seletiva (já temos pattern em `useTickets`).
+
+---
+
+## 4. Integração com chamados existentes
+
+### `Chamados.tsx` / `TicketDetailModal.tsx`
+- Mostrar badge "📁 Projeto X · Sprint Y" se vinculado
+- Admin: botão "Remover do projeto" no modal de detalhe
+
+### `useTickets.ts`
+- Retornar `project_id`, `sprint_id`, `story_points` no objeto `Ticket`
+- Adicionar filtro opcional `excludeLinkedToProjects`
+
+### Pontuação automática
+Ao fechar um chamado vinculado (status → "Aguardando Aprovação"/"Aprovado"/"Fechado"):
+- Não precisa de trigger no DB; o cálculo de "pontos concluídos da sprint" é **derivado em runtime** via query `SUM(story_points) WHERE sprint_id=X AND status IN (...)`. Assim não há divergência.
+- `useProjectMetrics` faz esse SUM e atualiza dashboard via realtime.
+
+### Score da categoria como sugestão de story_points
+Ao vincular chamado, default `story_points = categories.score || 1`. Admin pode editar.
+
+---
+
+## 5. Governança e regras
+
+| Ação | Admin | Técnico | Solicitante |
+|---|---|---|---|
+| Ver projetos da org | ✅ | ❌ (futuro) | ❌ |
+| Criar/editar projeto e sprint | ✅ | ❌ | ❌ |
+| Vincular/desvincular chamados | ✅ | ❌ | ❌ |
+| Definir capacidade / story points | ✅ | ❌ | ❌ |
+| Trabalhar no chamado (executar) | ✅ | ✅ | — |
+| Ver burndown da sprint onde tem chamado atribuído | ✅ | ✅ (read-only futuro) | ❌ |
+
+Restrições no client + RLS no DB:
+- Chamado **fechado** não pode ser vinculado (validação no modal — opcional, controlada por toggle "permitir vincular fechados" para fins históricos)
+- Um chamado em **uma única sprint** garantido pela coluna única `sprint_id`
+- Remover chamado da sprint = `UPDATE sprint_id = null` (continua no projeto)
+- Remover do projeto = ambos campos a null
+
+---
+
+## 6. Estrutura de arquivos
+
+**Criar:**
+- `supabase/migrations/<timestamp>_projects_sprints.sql`
+- `src/hooks/useProjects.ts`
+- `src/hooks/useSprints.ts`
+- `src/hooks/useProjectTasks.ts`
+- `src/hooks/useProjectMetrics.ts`
+- `src/pages/Projetos.tsx` (substitui o mock)
+- `src/pages/ProjetoDetalhe.tsx`
+- `src/components/projetos/ProjectCard.tsx`
+- `src/components/projetos/NewProjectModal.tsx`
+- `src/components/projetos/SprintCard.tsx`
+- `src/components/projetos/NewSprintModal.tsx`
+- `src/components/projetos/BacklogList.tsx`
+- `src/components/projetos/AddTicketsToSprintModal.tsx`
+- `src/components/projetos/ProjectDashboard.tsx` (burndown + cards)
+- `src/components/projetos/TaskItem.tsx`
+
+**Editar:**
+- `src/App.tsx` — nova rota `/projetos/:id`
+- `src/hooks/useTickets.ts` — incluir novos campos
+- `src/components/TicketDetailModal.tsx` — badge de projeto/sprint + ações admin
+- `src/integrations/supabase/types.ts` — atualizado automaticamente após migration
+
+**Remover:**
+- `src/data/mockData.ts` (`mockProjects`) — após migrar
+
+---
+
+## 7. Fluxo end-to-end (validação)
+
+```text
+1. Solicitante abre chamado normal           → status=Aberto, project_id=null
+2. Admin entra em /projetos/:id, aba Backlog → clica "Adicionar chamados"
+3. Modal lista chamados livres da org        → admin seleciona 5, escolhe Sprint 2
+4. Sistema: UPDATE tickets SET project_id=P, sprint_id=S2 WHERE id IN (...)
+5. Realtime invalida queries → backlog/sprint atualizam
+6. Técnico assume e trabalha (interface de chamados padrão)
+7. Técnico fecha → ticket vai para "Aguardando Aprovação"
+8. useProjectMetrics recalcula: pontos concluídos da sprint sobem
+9. Burndown e dashboard refletem em tempo real
+```
+
+---
+
+## 8. O que NÃO está no escopo desta entrega
+
+- Drag-and-drop visual no kanban da sprint (usaremos botões "Mover para Sprint X" — DnD pode vir depois)
+- Notificações por WhatsApp ao vincular chamado a sprint
+- Velocity histórica multi-sprint (gráfico) — começamos com burndown da ativa
+- Permissão de leitura para técnicos verem o projeto (entregaremos só admin nesta fase, conforme regra de governança)
+
+---
+
+## Pergunta antes de implementar
+
+**Story points:** quando um chamado é vinculado, devo usar como pontos default (a) o `score` da categoria do chamado, (b) sempre 1, ou (c) deixar o admin sempre escolher manualmente? Recomendo **(a) com possibilidade de edição** para integrar com sua pontuação existente. Confirma?
+
+Aprova o plano para eu implementar?
