@@ -23,10 +23,11 @@ const statusBadgeColors: Record<string, string> = {
   "Fechado": "bg-gray-300 text-gray-700 dark:bg-gray-600 dark:text-gray-200",
   "Disponível": "bg-red-600 text-white",
 };
-function SlaTimer({ ticket }: { ticket: Ticket }) {
+function SlaTimer({ ticket, resolutionEnd }: { ticket: Ticket; resolutionEnd?: Date }) {
   // SLA conta apenas o tempo de trabalho do técnico:
   // início = started_at (quando o técnico iniciou o atendimento)
-  // fim    = updated_at (quando fechado) ou agora (em aberto)
+  // fim    = momento da resolução técnica (Aguardando Aprovação/Aprovado/Fechado)
+  //          ou agora (em aberto)
   // Se ainda não foi iniciado, exibe "Aguardando"
   const isClosed = ticket.status === "Fechado";
 
@@ -42,7 +43,9 @@ function SlaTimer({ ticket }: { ticket: Ticket }) {
   const start = ticket.started_at
     ? new Date(ticket.started_at)
     : new Date(ticket.created_at); // fallback para tickets antigos sem started_at
-  const end = isClosed ? new Date(ticket.updated_at) : new Date();
+  const end = isClosed
+    ? (resolutionEnd ?? new Date(ticket.updated_at))
+    : new Date();
   const elapsed = calcBusinessMinutes(start, end);
   const label = formatBusinessTime(elapsed);
 
