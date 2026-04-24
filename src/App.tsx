@@ -18,6 +18,7 @@ import Usuarios from "@/pages/Usuarios";
 import Categorias from "@/pages/Categorias";
 import Historico from "@/pages/Historico";
 import Auditoria from "@/pages/Auditoria";
+import AuditoriaSla from "@/pages/AuditoriaSla";
 import Avaliacoes from "@/pages/Avaliacoes";
 import MetasTecnicos from "@/pages/MetasTecnicos";
 import WebhookLogs from "@/pages/WebhookLogs";
@@ -89,6 +90,7 @@ const App = () => (
                       <Route path="/metas" element={<MetasTecnicos />} />
                       <Route path="/historico" element={<AdminRoute><Historico /></AdminRoute>} />
                       <Route path="/auditoria" element={<AdminRoute><Auditoria /></AdminRoute>} />
+                      <Route path="/auditoria-sla" element={<AdminRoute><AuditoriaSla /></AdminRoute>} />
                       <Route path="/categorias" element={<AdminRoute><Categorias /></AdminRoute>} />
                       <Route path="/webhook-logs" element={<AdminRoute><WebhookLogs /></AdminRoute>} />
                       <Route path="/preventivas" element={<Preventivas />} />

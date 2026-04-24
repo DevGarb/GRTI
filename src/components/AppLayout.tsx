@@ -41,6 +41,7 @@ const navItems = [
   { label: "Metas", icon: Target, path: "/metas", techAllowed: true, tooltip: "Metas de desempenho dos técnicos" },
   { label: "Histórico", icon: History, path: "/historico", adminOnly: true, tooltip: "Log de auditoria de ações no sistema" },
   { label: "Auditoria", icon: Shield, path: "/auditoria", auditorOnly: true, tooltip: "Trilha de auditoria completa" },
+  { label: "Auditoria SLA", icon: Clock, path: "/auditoria-sla", adminOnly: true, tooltip: "Detalhe do cálculo de SLA por chamado fechado" },
   { label: "Categorias", icon: LayoutList, path: "/categorias", adminOnly: true, tooltip: "Categorias hierárquicas de serviço" },
   { label: "Setores", icon: Building2, path: "/setores", adminOnly: true, tooltip: "Gerenciar setores da organização" },
   { label: "Webhook Logs", icon: Webhook, path: "/webhook-logs", adminOnly: true, tooltip: "Monitorar webhooks enviados" },

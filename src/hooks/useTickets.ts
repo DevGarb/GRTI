@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -31,6 +32,25 @@ export function useTickets() {
   const { profile, user, roles, hasRole } = useAuth();
   const orgId = profile?.organization_id;
   const userId = user?.id;
+  const queryClient = useQueryClient();
+
+  // Realtime: invalida a lista quando QUALQUER ticket muda (status, assignment, etc.)
+  useEffect(() => {
+    if (!userId) return;
+    const channel = supabase
+      .channel(`tickets-realtime-${userId}`)
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "tickets" },
+        () => {
+          queryClient.invalidateQueries({ queryKey: ["tickets"] });
+        }
+      )
+      .subscribe();
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [userId, queryClient]);
 
   const isAdmin = hasRole("admin") || hasRole("super_admin");
   const isTechnician = hasRole("tecnico") || hasRole("desenvolvedor");
