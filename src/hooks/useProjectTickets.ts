@@ -94,17 +94,28 @@ export function useLinkTicketsToProject() {
       sprintId: string | null;
       pointsByTicket: Record<string, number>;
     }) => {
-      // bulk: atualiza um por um para também aplicar story_points individual
-      for (const id of ticketIds) {
-        const { error } = await supabase
-          .from("tickets")
-          .update({
-            project_id: projectId,
-            sprint_id: sprintId,
-            story_points: pointsByTicket[id] ?? 1,
-          })
-          .eq("id", id);
-        if (error) throw error;
+      // batch paralelo; primeiro erro do trigger é propagado
+      const results = await Promise.allSettled(
+        ticketIds.map((id) =>
+          supabase
+            .from("tickets")
+            .update({
+              project_id: projectId,
+              sprint_id: sprintId,
+              story_points: pointsByTicket[id] ?? 1,
+            })
+            .eq("id", id)
+            .then((r) => {
+              if (r.error) throw r.error;
+              return id;
+            })
+        )
+      );
+      const failures = results
+        .filter((r) => r.status === "rejected")
+        .map((r: any) => r.reason?.message || String(r.reason));
+      if (failures.length) {
+        throw new Error(failures[0]);
       }
     },
     onSuccess: () => {
