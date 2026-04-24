@@ -7,6 +7,7 @@ import { useGoals } from "@/hooks/useGoals";
 import GoalsManager from "@/components/metas/GoalsManager";
 import GoalsSummaryCards from "@/components/metas/GoalsSummaryCards";
 import { calcBusinessMinutes, BUSINESS_HOURS_PER_DAY } from "@/lib/businessHours";
+import { fetchTicketResolutionEnds, getTicketWorkStart } from "@/lib/ticketTiming";
 
 interface TechnicianStats {
   userId: string;
@@ -117,6 +118,9 @@ export default function MetasTecnicos() {
 
       const evalMap = new Map(evaluations.map((e) => [e.ticket_id, e.score]));
 
+      // Mapa do "fim do atendimento técnico" (Aguardando Aprovação / Aprovado / Fechado)
+      const resolutionEndMap = await fetchTicketResolutionEnds(closedIds);
+
       const techMap = new Map<string, TechnicianStats>();
 
       for (const ticket of closedTickets) {
@@ -139,9 +143,10 @@ export default function MetasTecnicos() {
         }
 
         const tech = techMap.get(id)!;
-        // SLA: de started_at (início do atendimento) até updated_at, em horas úteis
-        const start = ticket.started_at ? new Date(ticket.started_at) : new Date(ticket.created_at);
-        const resolutionHours = Math.max(0, calcBusinessMinutes(start, new Date(ticket.updated_at)) / 60);
+        // Tempo de atendimento: started_at → momento da resolução técnica (não updated_at)
+        const start = getTicketWorkStart(ticket);
+        const end = resolutionEndMap.get(ticket.id) ?? new Date(ticket.updated_at);
+        const resolutionHours = Math.max(0, calcBusinessMinutes(start, end) / 60);
         const evalScore = evalMap.get(ticket.id) ?? null;
 
         const categoryName = ticket.category_id ? categoryMap.get(ticket.category_id) ?? null : null;

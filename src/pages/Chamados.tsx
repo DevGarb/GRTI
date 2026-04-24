@@ -11,6 +11,7 @@ import TicketDetailModal from "@/components/TicketDetailModal";
 import { supabase } from "@/integrations/supabase/client";
 import MyGoalCard from "@/components/metas/MyGoalCard";
 import { calcBusinessMinutes, formatBusinessTime, getSlaStatus } from "@/lib/businessHours";
+import { fetchTicketResolutionEnds } from "@/lib/ticketTiming";
 
 const allStatuses = ["Aberto", "Em Andamento", "Aguardando Aprovação", "Aprovado", "Fechado", "Disponível"];
 
@@ -22,10 +23,11 @@ const statusBadgeColors: Record<string, string> = {
   "Fechado": "bg-gray-300 text-gray-700 dark:bg-gray-600 dark:text-gray-200",
   "Disponível": "bg-red-600 text-white",
 };
-function SlaTimer({ ticket }: { ticket: Ticket }) {
+function SlaTimer({ ticket, resolutionEnd }: { ticket: Ticket; resolutionEnd?: Date }) {
   // SLA conta apenas o tempo de trabalho do técnico:
   // início = started_at (quando o técnico iniciou o atendimento)
-  // fim    = updated_at (quando fechado) ou agora (em aberto)
+  // fim    = momento da resolução técnica (Aguardando Aprovação/Aprovado/Fechado)
+  //          ou agora (em aberto)
   // Se ainda não foi iniciado, exibe "Aguardando"
   const isClosed = ticket.status === "Fechado";
 
@@ -41,7 +43,9 @@ function SlaTimer({ ticket }: { ticket: Ticket }) {
   const start = ticket.started_at
     ? new Date(ticket.started_at)
     : new Date(ticket.created_at); // fallback para tickets antigos sem started_at
-  const end = isClosed ? new Date(ticket.updated_at) : new Date();
+  const end = isClosed
+    ? (resolutionEnd ?? new Date(ticket.updated_at))
+    : new Date();
   const elapsed = calcBusinessMinutes(start, end);
   const label = formatBusinessTime(elapsed);
 
@@ -69,7 +73,7 @@ function SlaTimer({ ticket }: { ticket: Ticket }) {
   );
 }
 
-function TicketTable({ tickets, onSelect, scoreMap, showScore }: { tickets: Ticket[]; onSelect: (t: Ticket) => void; scoreMap?: Map<string, number>; showScore?: boolean }) {
+function TicketTable({ tickets, onSelect, scoreMap, showScore, resolutionEndMap }: { tickets: Ticket[]; onSelect: (t: Ticket) => void; scoreMap?: Map<string, number>; showScore?: boolean; resolutionEndMap?: Map<string, Date> }) {
   return (
     <div className="overflow-x-auto">
       <table className="w-full">
@@ -118,7 +122,7 @@ function TicketTable({ tickets, onSelect, scoreMap, showScore }: { tickets: Tick
                 {new Date(ticket.created_at).toLocaleDateString("pt-BR")}
               </td>
               <td className="px-4 py-3">
-                <SlaTimer ticket={ticket} />
+                <SlaTimer ticket={ticket} resolutionEnd={resolutionEndMap?.get(ticket.id)} />
               </td>
               <td className="px-4 py-3">
                 <PriorityBadge priority={ticket.priority} />
@@ -266,6 +270,13 @@ export default function Chamados() {
       });
       return map;
     },
+    enabled: closedFilteredIds.length > 0,
+  });
+
+  // Mapa "fim do atendimento técnico" para chamados fechados (não usar updated_at)
+  const { data: resolutionEndMap = new Map<string, Date>() } = useQuery({
+    queryKey: ["ticket-resolution-ends", closedFilteredIds.join(",")],
+    queryFn: () => fetchTicketResolutionEnds(closedFilteredIds),
     enabled: closedFilteredIds.length > 0,
   });
 
@@ -436,7 +447,7 @@ export default function Chamados() {
 
                 {isExpanded && (
                   <div className="border-t border-border">
-                    <TicketTable tickets={userTickets} onSelect={setSelectedTicket} scoreMap={scoreMap} showScore={isAdmin || isTech} />
+                    <TicketTable tickets={userTickets} onSelect={setSelectedTicket} scoreMap={scoreMap} showScore={isAdmin || isTech} resolutionEndMap={resolutionEndMap} />
                   </div>
                 )}
               </div>
@@ -486,7 +497,7 @@ export default function Chamados() {
                       <p className="text-xs text-muted-foreground">{assignedToMe.length} chamado{assignedToMe.length !== 1 ? 's' : ''}</p>
                     </div>
                   </div>
-                  <TicketTable tickets={assignedToMe} onSelect={setSelectedTicket} scoreMap={scoreMap} showScore={isAdmin || isTech} />
+                  <TicketTable tickets={assignedToMe} onSelect={setSelectedTicket} scoreMap={scoreMap} showScore={isAdmin || isTech} resolutionEndMap={resolutionEndMap} />
                 </div>
               )}
               {createdByMe.length > 0 && (
@@ -498,7 +509,7 @@ export default function Chamados() {
                       <p className="text-xs text-muted-foreground">{createdByMe.length} chamado{createdByMe.length !== 1 ? 's' : ''}</p>
                     </div>
                   </div>
-                  <TicketTable tickets={createdByMe} onSelect={setSelectedTicket} scoreMap={scoreMap} showScore={isAdmin || isTech} />
+                  <TicketTable tickets={createdByMe} onSelect={setSelectedTicket} scoreMap={scoreMap} showScore={isAdmin || isTech} resolutionEndMap={resolutionEndMap} />
                 </div>
               )}
               {availableTickets.length === 0 && assignedToMe.length === 0 && createdByMe.length === 0 && (
