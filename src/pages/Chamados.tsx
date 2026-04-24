@@ -11,6 +11,7 @@ import TicketDetailModal from "@/components/TicketDetailModal";
 import { supabase } from "@/integrations/supabase/client";
 import MyGoalCard from "@/components/metas/MyGoalCard";
 import { calcBusinessMinutes, formatBusinessTime, getSlaStatus } from "@/lib/businessHours";
+import { fetchTicketResolutionEnds } from "@/lib/ticketTiming";
 
 const allStatuses = ["Aberto", "Em Andamento", "Aguardando Aprovação", "Aprovado", "Fechado", "Disponível"];
 
