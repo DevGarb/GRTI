@@ -44,7 +44,7 @@ export default function AuditoriaSla() {
         .select("id, title, created_at, updated_at, started_at, assigned_to")
         .eq("status", "Fechado")
         .gte("created_at", from.toISOString())
-        .lt("created_at", to.toISOString());
+        .lte("created_at", to.toISOString());
       if (orgId) q = q.eq("organization_id", orgId);
       const { data: tickets, error } = await q;
       if (error) throw error;
