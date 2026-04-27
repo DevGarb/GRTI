@@ -51,17 +51,15 @@ export function useProjectTickets(projectId: string | undefined, sprintId?: stri
   });
 }
 
-/** Tickets disponíveis (sem projeto vinculado) na organização do usuário. */
-export function useAvailableTickets() {
+/** Tickets disponíveis para vincular/mover na organização do usuário. */
+export function useAvailableTickets(projectId?: string) {
   const { profile } = useAuth();
   const orgId = profile?.organization_id;
   return useQuery({
-    queryKey: ["available-tickets", orgId],
+    queryKey: ["available-tickets", orgId, projectId ?? "unlinked"],
     queryFn: async () => {
-      let q = supabase
-        .from("tickets")
-        .select("*, categories(score)")
-        .is("project_id", null);
+      let q = supabase.from("tickets").select("*, categories(score)");
+      q = projectId ? q.or(`project_id.is.null,project_id.eq.${projectId}`) : q.is("project_id", null);
       if (orgId) q = q.eq("organization_id", orgId);
       const { data, error } = await q.order("created_at", { ascending: false }).limit(2000);
       if (error) throw error;
