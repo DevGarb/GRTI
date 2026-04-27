@@ -43,7 +43,7 @@ export default function AddTicketsToSprintModal({
   projectId,
   defaultSprintId,
 }: Props) {
-  const { data: tickets = [], isLoading } = useAvailableTickets();
+  const { data: tickets = [], isLoading } = useAvailableTickets(projectId);
   const { data: sprints = [] } = useSprints(projectId);
   const linkMut = useLinkTicketsToProject();
 
@@ -86,6 +86,9 @@ export default function AddTicketsToSprintModal({
 
   const filtered = useMemo(() => {
     let list = tickets.filter((t) => {
+      if (t.project_id === projectId && (t.sprint_id ?? null) === (sprintId === "backlog" ? null : sprintId)) {
+        return false;
+      }
       if (statusFilter === "open" && !OPEN_STATUSES.includes(t.status)) return false;
       if (statusFilter === "closed" && !CLOSED_STATUSES.includes(t.status)) return false;
       if (priorities.size > 0 && !priorities.has(t.priority)) return false;
@@ -117,7 +120,7 @@ export default function AddTicketsToSprintModal({
       return (PRIORITY_WEIGHT[b.priority] || 0) - (PRIORITY_WEIGHT[a.priority] || 0);
     });
     return list;
-  }, [tickets, priorities, search, statusFilter, technicianId]);
+  }, [projectId, tickets, priorities, search, sprintId, statusFilter, technicianId]);
 
   function toggle(t: ProjectTicket) {
     setSelected((prev) => ({ ...prev, [t.id]: !prev[t.id] }));
