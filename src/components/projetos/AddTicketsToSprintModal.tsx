@@ -159,28 +159,43 @@ export default function AddTicketsToSprintModal({
             />
           </div>
 
-          <div className="flex flex-wrap gap-1">
-            {PRIORITIES.map((p) => {
-              const active = priorities.has(p);
-              return (
+          <div className="flex flex-wrap items-center gap-2">
+            <div className="flex items-center gap-1 border rounded-md p-0.5">
+              {(["open", "closed", "all"] as StatusFilter[]).map((f) => (
                 <Button
-                  key={p}
+                  key={f}
                   size="sm"
-                  variant={active ? "default" : "outline"}
-                  className="h-7 text-xs"
-                  onClick={() => {
-                    setPriorities((prev) => {
-                      const next = new Set(prev);
-                      if (next.has(p)) next.delete(p);
-                      else next.add(p);
-                      return next;
-                    });
-                  }}
+                  variant={statusFilter === f ? "default" : "ghost"}
+                  className="h-6 text-[11px] px-2"
+                  onClick={() => setStatusFilter(f)}
                 >
-                  {p}
+                  {f === "open" ? "Abertos" : f === "closed" ? "Fechados" : "Todos"}
                 </Button>
-              );
-            })}
+              ))}
+            </div>
+            <div className="flex flex-wrap gap-1">
+              {PRIORITIES.map((p) => {
+                const active = priorities.has(p);
+                return (
+                  <Button
+                    key={p}
+                    size="sm"
+                    variant={active ? "default" : "outline"}
+                    className="h-7 text-xs"
+                    onClick={() => {
+                      setPriorities((prev) => {
+                        const next = new Set(prev);
+                        if (next.has(p)) next.delete(p);
+                        else next.add(p);
+                        return next;
+                      });
+                    }}
+                  >
+                    {p}
+                  </Button>
+                );
+              })}
+            </div>
           </div>
 
           {/* Lista */}
