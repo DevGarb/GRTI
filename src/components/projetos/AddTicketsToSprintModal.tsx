@@ -195,6 +195,20 @@ export default function AddTicketsToSprintModal({
                 </Button>
               ))}
             </div>
+            <Select value={technicianId} onValueChange={setTechnicianId}>
+              <SelectTrigger className="h-7 text-xs w-[180px]">
+                <SelectValue placeholder="Técnico" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos os técnicos</SelectItem>
+                <SelectItem value="unassigned">Sem técnico</SelectItem>
+                {technicians.map((t) => (
+                  <SelectItem key={t.id} value={t.id}>
+                    {t.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
             <div className="flex flex-wrap gap-1">
               {PRIORITIES.map((p) => {
                 const active = priorities.has(p);
