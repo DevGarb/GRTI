@@ -24,6 +24,9 @@ interface Props {
 
 const PRIORITIES = ["Crítica", "Alta", "Média", "Baixa"];
 const PRIORITY_WEIGHT: Record<string, number> = { Crítica: 4, Alta: 3, Média: 2, Baixa: 1 };
+const OPEN_STATUSES = ["Aberto", "Em Andamento", "Disponível", "Aguardando Aprovação"];
+const CLOSED_STATUSES = ["Fechado", "Aprovado", "Cancelado"];
+type StatusFilter = "open" | "closed" | "all";
 
 function slaBucket(t: ProjectTicket): "overdue" | "soon" | "ok" {
   const sla = (t as any).sla_deadline;
@@ -46,6 +49,7 @@ export default function AddTicketsToSprintModal({
 
   const [search, setSearch] = useState("");
   const [priorities, setPriorities] = useState<Set<string>>(new Set());
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>("open");
   const [selected, setSelected] = useState<Record<string, boolean>>({});
   const [sprintId, setSprintId] = useState<string>("backlog");
 
@@ -54,6 +58,7 @@ export default function AddTicketsToSprintModal({
     setSelected({});
     setSearch("");
     setPriorities(new Set());
+    setStatusFilter("open");
 
     if (defaultSprintId) {
       setSprintId(defaultSprintId);
@@ -66,6 +71,8 @@ export default function AddTicketsToSprintModal({
 
   const filtered = useMemo(() => {
     let list = tickets.filter((t) => {
+      if (statusFilter === "open" && !OPEN_STATUSES.includes(t.status)) return false;
+      if (statusFilter === "closed" && !CLOSED_STATUSES.includes(t.status)) return false;
       if (priorities.size > 0 && !priorities.has(t.priority)) return false;
       if (search.trim()) {
         const s = search.toLowerCase();
@@ -88,7 +95,7 @@ export default function AddTicketsToSprintModal({
       return (PRIORITY_WEIGHT[b.priority] || 0) - (PRIORITY_WEIGHT[a.priority] || 0);
     });
     return list;
-  }, [tickets, priorities, search]);
+  }, [tickets, priorities, search, statusFilter]);
 
   function toggle(t: ProjectTicket) {
     setSelected((prev) => ({ ...prev, [t.id]: !prev[t.id] }));
@@ -152,28 +159,43 @@ export default function AddTicketsToSprintModal({
             />
           </div>
 
-          <div className="flex flex-wrap gap-1">
-            {PRIORITIES.map((p) => {
-              const active = priorities.has(p);
-              return (
+          <div className="flex flex-wrap items-center gap-2">
+            <div className="flex items-center gap-1 border rounded-md p-0.5">
+              {(["open", "closed", "all"] as StatusFilter[]).map((f) => (
                 <Button
-                  key={p}
+                  key={f}
                   size="sm"
-                  variant={active ? "default" : "outline"}
-                  className="h-7 text-xs"
-                  onClick={() => {
-                    setPriorities((prev) => {
-                      const next = new Set(prev);
-                      if (next.has(p)) next.delete(p);
-                      else next.add(p);
-                      return next;
-                    });
-                  }}
+                  variant={statusFilter === f ? "default" : "ghost"}
+                  className="h-6 text-[11px] px-2"
+                  onClick={() => setStatusFilter(f)}
                 >
-                  {p}
+                  {f === "open" ? "Abertos" : f === "closed" ? "Fechados" : "Todos"}
                 </Button>
-              );
-            })}
+              ))}
+            </div>
+            <div className="flex flex-wrap gap-1">
+              {PRIORITIES.map((p) => {
+                const active = priorities.has(p);
+                return (
+                  <Button
+                    key={p}
+                    size="sm"
+                    variant={active ? "default" : "outline"}
+                    className="h-7 text-xs"
+                    onClick={() => {
+                      setPriorities((prev) => {
+                        const next = new Set(prev);
+                        if (next.has(p)) next.delete(p);
+                        else next.add(p);
+                        return next;
+                      });
+                    }}
+                  >
+                    {p}
+                  </Button>
+                );
+              })}
+            </div>
           </div>
 
           {/* Lista */}

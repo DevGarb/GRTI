@@ -22,7 +22,8 @@ export interface ProjectTicket {
   categoryScore?: number | null;
 }
 
-const OPEN_STATUSES = ["Aberto", "Em Andamento", "Disponível", "Aguardando Aprovação"];
+// Inclui chamados fechados — o usuário pode querer documentar/retroalimentar sprints
+// com chamados já concluídos. Apenas excluímos os já vinculados a outro projeto.
 
 /** Tickets vinculados a um projeto (com filtro opcional por sprint). */
 export function useProjectTickets(projectId: string | undefined, sprintId?: string | null) {
@@ -60,10 +61,9 @@ export function useAvailableTickets() {
       let q = supabase
         .from("tickets")
         .select("*, categories(score)")
-        .is("project_id", null)
-        .in("status", OPEN_STATUSES);
+        .is("project_id", null);
       if (orgId) q = q.eq("organization_id", orgId);
-      const { data, error } = await q.order("created_at", { ascending: false }).limit(500);
+      const { data, error } = await q.order("created_at", { ascending: false }).limit(2000);
       if (error) throw error;
       const tickets = (data || []) as any[];
       const userIds = [...new Set(tickets.map((t) => t.assigned_to).filter(Boolean))] as string[];
