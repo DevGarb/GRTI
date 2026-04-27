@@ -71,6 +71,8 @@ export default function AddTicketsToSprintModal({
 
   const filtered = useMemo(() => {
     let list = tickets.filter((t) => {
+      if (statusFilter === "open" && !OPEN_STATUSES.includes(t.status)) return false;
+      if (statusFilter === "closed" && !CLOSED_STATUSES.includes(t.status)) return false;
       if (priorities.size > 0 && !priorities.has(t.priority)) return false;
       if (search.trim()) {
         const s = search.toLowerCase();
@@ -93,7 +95,7 @@ export default function AddTicketsToSprintModal({
       return (PRIORITY_WEIGHT[b.priority] || 0) - (PRIORITY_WEIGHT[a.priority] || 0);
     });
     return list;
-  }, [tickets, priorities, search]);
+  }, [tickets, priorities, search, statusFilter]);
 
   function toggle(t: ProjectTicket) {
     setSelected((prev) => ({ ...prev, [t.id]: !prev[t.id] }));
