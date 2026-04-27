@@ -165,8 +165,7 @@ export function useDeleteSprint() {
 export function useActivateSprint() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async ({ id, projectId }: { id: string; projectId: string }) => {
-      await supabase.from("sprints").update({ status: "planejada" }).eq("project_id", projectId).eq("status", "ativa");
+    mutationFn: async ({ id }: { id: string; projectId: string }) => {
       const { data, error } = await supabase
         .from("sprints")
         .update({ status: "ativa", activated_at: new Date().toISOString() })
