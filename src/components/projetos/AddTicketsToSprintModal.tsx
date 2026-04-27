@@ -49,6 +49,7 @@ export default function AddTicketsToSprintModal({
 
   const [search, setSearch] = useState("");
   const [priorities, setPriorities] = useState<Set<string>>(new Set());
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>("open");
   const [selected, setSelected] = useState<Record<string, boolean>>({});
   const [sprintId, setSprintId] = useState<string>("backlog");
 
@@ -57,6 +58,7 @@ export default function AddTicketsToSprintModal({
     setSelected({});
     setSearch("");
     setPriorities(new Set());
+    setStatusFilter("open");
 
     if (defaultSprintId) {
       setSprintId(defaultSprintId);
