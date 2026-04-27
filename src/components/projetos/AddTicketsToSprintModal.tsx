@@ -50,6 +50,7 @@ export default function AddTicketsToSprintModal({
   const [search, setSearch] = useState("");
   const [priorities, setPriorities] = useState<Set<string>>(new Set());
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("open");
+  const [technicianId, setTechnicianId] = useState<string>("all");
   const [selected, setSelected] = useState<Record<string, boolean>>({});
   const [sprintId, setSprintId] = useState<string>("backlog");
 
@@ -59,6 +60,7 @@ export default function AddTicketsToSprintModal({
     setSearch("");
     setPriorities(new Set());
     setStatusFilter("open");
+    setTechnicianId("all");
 
     if (defaultSprintId) {
       setSprintId(defaultSprintId);
@@ -68,6 +70,19 @@ export default function AddTicketsToSprintModal({
       setSprintId(active?.id || planned?.id || "backlog");
     }
   }, [open, defaultSprintId, sprints]);
+
+  // Lista de técnicos únicos com base nos chamados disponíveis
+  const technicians = useMemo(() => {
+    const map = new Map<string, string>();
+    tickets.forEach((t) => {
+      if (t.assigned_to && t.assignedName) {
+        map.set(t.assigned_to, t.assignedName);
+      }
+    });
+    return Array.from(map.entries())
+      .map(([id, name]) => ({ id, name }))
+      .sort((a, b) => a.name.localeCompare(b.name));
+  }, [tickets]);
 
   const filtered = useMemo(() => {
     let list = tickets.filter((t) => {
