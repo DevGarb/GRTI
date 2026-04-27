@@ -22,7 +22,8 @@ export interface ProjectTicket {
   categoryScore?: number | null;
 }
 
-const OPEN_STATUSES = ["Aberto", "Em Andamento", "Disponível", "Aguardando Aprovação"];
+// Inclui chamados fechados — o usuário pode querer documentar/retroalimentar sprints
+// com chamados já concluídos. Apenas excluímos os já vinculados a outro projeto.
 
 /** Tickets vinculados a um projeto (com filtro opcional por sprint). */
 export function useProjectTickets(projectId: string | undefined, sprintId?: string | null) {
