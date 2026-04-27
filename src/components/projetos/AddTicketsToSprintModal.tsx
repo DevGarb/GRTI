@@ -89,6 +89,13 @@ export default function AddTicketsToSprintModal({
       if (statusFilter === "open" && !OPEN_STATUSES.includes(t.status)) return false;
       if (statusFilter === "closed" && !CLOSED_STATUSES.includes(t.status)) return false;
       if (priorities.size > 0 && !priorities.has(t.priority)) return false;
+      if (technicianId !== "all") {
+        if (technicianId === "unassigned") {
+          if (t.assigned_to) return false;
+        } else if (t.assigned_to !== technicianId) {
+          return false;
+        }
+      }
       if (search.trim()) {
         const s = search.toLowerCase();
         if (
@@ -110,7 +117,7 @@ export default function AddTicketsToSprintModal({
       return (PRIORITY_WEIGHT[b.priority] || 0) - (PRIORITY_WEIGHT[a.priority] || 0);
     });
     return list;
-  }, [tickets, priorities, search, statusFilter]);
+  }, [tickets, priorities, search, statusFilter, technicianId]);
 
   function toggle(t: ProjectTicket) {
     setSelected((prev) => ({ ...prev, [t.id]: !prev[t.id] }));
