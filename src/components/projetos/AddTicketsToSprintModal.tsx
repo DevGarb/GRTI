@@ -50,6 +50,7 @@ export default function AddTicketsToSprintModal({
   const [search, setSearch] = useState("");
   const [priorities, setPriorities] = useState<Set<string>>(new Set());
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("open");
+  const [technicianId, setTechnicianId] = useState<string>("all");
   const [selected, setSelected] = useState<Record<string, boolean>>({});
   const [sprintId, setSprintId] = useState<string>("backlog");
 
@@ -59,6 +60,7 @@ export default function AddTicketsToSprintModal({
     setSearch("");
     setPriorities(new Set());
     setStatusFilter("open");
+    setTechnicianId("all");
 
     if (defaultSprintId) {
       setSprintId(defaultSprintId);
@@ -69,11 +71,31 @@ export default function AddTicketsToSprintModal({
     }
   }, [open, defaultSprintId, sprints]);
 
+  // Lista de técnicos únicos com base nos chamados disponíveis
+  const technicians = useMemo(() => {
+    const map = new Map<string, string>();
+    tickets.forEach((t) => {
+      if (t.assigned_to && t.assignedName) {
+        map.set(t.assigned_to, t.assignedName);
+      }
+    });
+    return Array.from(map.entries())
+      .map(([id, name]) => ({ id, name }))
+      .sort((a, b) => a.name.localeCompare(b.name));
+  }, [tickets]);
+
   const filtered = useMemo(() => {
     let list = tickets.filter((t) => {
       if (statusFilter === "open" && !OPEN_STATUSES.includes(t.status)) return false;
       if (statusFilter === "closed" && !CLOSED_STATUSES.includes(t.status)) return false;
       if (priorities.size > 0 && !priorities.has(t.priority)) return false;
+      if (technicianId !== "all") {
+        if (technicianId === "unassigned") {
+          if (t.assigned_to) return false;
+        } else if (t.assigned_to !== technicianId) {
+          return false;
+        }
+      }
       if (search.trim()) {
         const s = search.toLowerCase();
         if (
@@ -95,7 +117,7 @@ export default function AddTicketsToSprintModal({
       return (PRIORITY_WEIGHT[b.priority] || 0) - (PRIORITY_WEIGHT[a.priority] || 0);
     });
     return list;
-  }, [tickets, priorities, search, statusFilter]);
+  }, [tickets, priorities, search, statusFilter, technicianId]);
 
   function toggle(t: ProjectTicket) {
     setSelected((prev) => ({ ...prev, [t.id]: !prev[t.id] }));
@@ -173,6 +195,20 @@ export default function AddTicketsToSprintModal({
                 </Button>
               ))}
             </div>
+            <Select value={technicianId} onValueChange={setTechnicianId}>
+              <SelectTrigger className="h-7 text-xs w-[180px]">
+                <SelectValue placeholder="Técnico" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos os técnicos</SelectItem>
+                <SelectItem value="unassigned">Sem técnico</SelectItem>
+                {technicians.map((t) => (
+                  <SelectItem key={t.id} value={t.id}>
+                    {t.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
             <div className="flex flex-wrap gap-1">
               {PRIORITIES.map((p) => {
                 const active = priorities.has(p);
