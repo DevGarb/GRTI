@@ -637,28 +637,44 @@ function UsuariosTab() {
     if (createPassword.length < 6) { toast.error("Senha deve ter ao menos 6 caracteres."); return; }
 
     setCreating(true);
-    const { data, error } = await supabase.functions.invoke("create-user", {
-      body: {
-        username: createUsername.trim(),
-        password: createPassword,
-        full_name: createName.trim(),
-        role: createRole,
-        phone: createPhone.trim() || null,
-      },
-    });
+    try {
+      const { data, error } = await supabase.functions.invoke("create-user", {
+        body: {
+          username: createUsername.trim(),
+          password: createPassword,
+          full_name: createName.trim(),
+          role: createRole,
+          phone: createPhone.trim() || null,
+          organization_id: createOrgId || null,
+        },
+      });
 
-    if (error || data?.error) {
-      toast.error(data?.error || error?.message || "Erro ao criar usuário.");
-    } else {
-      if (createOrgId && data?.user?.id) {
-        await supabase.from("profiles").update({ organization_id: createOrgId }).eq("user_id", data.user.id);
+      // Try to extract a friendly error message from the function response body
+      let friendlyError: string | null = null;
+      if (error) {
+        const ctx = (error as { context?: Response }).context;
+        if (ctx && typeof ctx.json === "function") {
+          try {
+            const body = await ctx.clone().json();
+            if (body?.error) friendlyError = body.error as string;
+          } catch { /* ignore */ }
+        }
       }
-      toast.success("Usuário criado com sucesso!");
-      setShowCreateForm(false);
-      setCreateName(""); setCreateUsername(""); setCreatePassword(""); setCreatePhone(""); setCreateRole("admin"); setCreateOrgId("");
-      fetchData();
+      if (!friendlyError && data?.error) friendlyError = data.error;
+
+      if (error || data?.error) {
+        toast.error(friendlyError || error?.message || "Erro ao criar usuário.");
+      } else {
+        toast.success("Usuário criado com sucesso!");
+        setShowCreateForm(false);
+        setCreateName(""); setCreateUsername(""); setCreatePassword(""); setCreatePhone(""); setCreateRole("admin"); setCreateOrgId("");
+        fetchData();
+      }
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Erro ao criar usuário.");
+    } finally {
+      setCreating(false);
     }
-    setCreating(false);
   };
 
   const resetCreateForm = () => {
