@@ -24,6 +24,9 @@ interface Props {
 
 const PRIORITIES = ["Crítica", "Alta", "Média", "Baixa"];
 const PRIORITY_WEIGHT: Record<string, number> = { Crítica: 4, Alta: 3, Média: 2, Baixa: 1 };
+const OPEN_STATUSES = ["Aberto", "Em Andamento", "Disponível", "Aguardando Aprovação"];
+const CLOSED_STATUSES = ["Fechado", "Aprovado", "Cancelado"];
+type StatusFilter = "open" | "closed" | "all";
 
 function slaBucket(t: ProjectTicket): "overdue" | "soon" | "ok" {
   const sla = (t as any).sla_deadline;
