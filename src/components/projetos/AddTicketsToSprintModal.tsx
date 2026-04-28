@@ -93,8 +93,19 @@ export default function AddTicketsToSprintModal({
   }, [tickets]);
 
   const filtered = useMemo(() => {
+    const targetSprintId = sprintId === "backlog" ? null : sprintId;
     let list = tickets.filter((t) => {
-      if (t.project_id === projectId && (t.sprint_id ?? null) === (sprintId === "backlog" ? null : sprintId)) {
+      // já está exatamente no destino → ocultar
+      if (t.project_id === projectId && (t.sprint_id ?? null) === targetSprintId) {
+        return false;
+      }
+      // já vinculado a OUTRA sprint do mesmo projeto → ocultar quando filtro ativo
+      if (
+        hideLinked &&
+        t.project_id === projectId &&
+        t.sprint_id &&
+        t.sprint_id !== targetSprintId
+      ) {
         return false;
       }
       if (statusFilter === "open" && !OPEN_STATUSES.includes(t.status)) return false;
@@ -128,7 +139,7 @@ export default function AddTicketsToSprintModal({
       return (PRIORITY_WEIGHT[b.priority] || 0) - (PRIORITY_WEIGHT[a.priority] || 0);
     });
     return list;
-  }, [projectId, tickets, priorities, search, sprintId, statusFilter, technicianId]);
+  }, [projectId, tickets, priorities, search, sprintId, statusFilter, technicianId, hideLinked]);
 
   function toggle(t: ProjectTicket) {
     setSelected((prev) => ({ ...prev, [t.id]: !prev[t.id] }));
