@@ -23,22 +23,23 @@ const statusBadgeColors: Record<string, string> = {
   "Fechado": "bg-gray-300 text-gray-700 dark:bg-gray-600 dark:text-gray-200",
   "Disponível": "bg-red-600 text-white",
 };
-function SlaTimer({ ticket, resolutionEnd }: { ticket: Ticket; resolutionEnd?: Date }) {
-  // SLA conta apenas o tempo de trabalho do técnico:
-  // início = started_at (quando o técnico iniciou o atendimento)
-  // fim    = momento da resolução técnica (Aguardando Aprovação/Aprovado/Fechado)
-  //          ou agora (em aberto) — atualizado a cada minuto via ticker
+function SlaTimer({ ticket, workMinutes }: { ticket: Ticket; workMinutes?: number }) {
+  // SLA = tempo acumulado em "Em Andamento" (soma de todas as janelas, incluindo retrabalhos).
+  // Pausa em "Aguardando Aprovação"/"Aprovado"/"Fechado" e retoma de onde parou no retrabalho.
+  // O cálculo vem pronto via fetchTicketWorkMinutes (consulta o ticket_history).
   const isClosed = ticket.status === "Fechado";
+  const isWorking = ticket.status === "Em Andamento";
 
-  // Ticker para chamados em andamento: força re-render a cada 60s
+  // Ticker apenas enquanto efetivamente em atendimento (cronômetro rodando)
   const [, setTick] = useState(0);
   useEffect(() => {
-    if (isClosed) return; // chamados fechados não precisam atualizar
+    if (!isWorking) return;
     const id = setInterval(() => setTick((t) => t + 1), 60_000);
     return () => clearInterval(id);
-  }, [isClosed]);
+  }, [isWorking]);
 
-  if (!ticket.started_at && !isClosed) {
+  // Sem dado calculado ainda e ticket nunca foi atendido → "Aguardando"
+  if (workMinutes === undefined && !ticket.started_at) {
     return (
       <span className="inline-flex items-center gap-1 text-xs text-muted-foreground italic">
         <Clock className="h-3 w-3" />
@@ -47,18 +48,13 @@ function SlaTimer({ ticket, resolutionEnd }: { ticket: Ticket; resolutionEnd?: D
     );
   }
 
-  const start = ticket.started_at
-    ? new Date(ticket.started_at)
-    : new Date(ticket.created_at); // fallback para tickets antigos sem started_at
-  const end = isClosed
-    ? (resolutionEnd ?? new Date(ticket.updated_at))
-    : new Date();
-  const elapsed = calcBusinessMinutes(start, end);
+  const elapsed = workMinutes ?? 0;
   const label = formatBusinessTime(elapsed);
 
-  if (isClosed) {
+  // Status pausados ou fechados → label neutro (sem cor de SLA)
+  if (!isWorking) {
     return (
-      <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
+      <span className="inline-flex items-center gap-1 text-xs text-muted-foreground" title={isClosed ? "Tempo total de atendimento" : "Atendimento pausado"}>
         <Clock className="h-3 w-3" />
         {label}
       </span>
@@ -73,7 +69,7 @@ function SlaTimer({ ticket, resolutionEnd }: { ticket: Ticket; resolutionEnd?: D
   };
 
   return (
-    <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md border text-xs font-medium ${colors[sla]}`} title="Atualizado em tempo real">
+    <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md border text-xs font-medium ${colors[sla]}`} title="Tempo de trabalho do técnico (atualizado em tempo real)">
       <Clock className="h-3 w-3" />
       {label}
     </span>
