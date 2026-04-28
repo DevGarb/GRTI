@@ -592,13 +592,30 @@ export default function TicketDetailModal({ ticket, onClose }: Props) {
 
           {/* Technician: Finalizar Atendimento (when in progress) */}
           {isTecnico && isInProgress && (isAssigned || isAdmin) && (
-            <button
-              onClick={handleFinishService}
-              className="w-full py-3 rounded-lg bg-primary text-primary-foreground text-sm font-semibold hover:opacity-90 transition-opacity flex items-center justify-center gap-2"
-            >
-              <CheckCircle2 className="h-4 w-4" />
-              Finalizar Atendimento
-            </button>
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <button
+                  className="w-full py-3 rounded-lg bg-primary text-primary-foreground text-sm font-semibold hover:opacity-90 transition-opacity flex items-center justify-center gap-2"
+                >
+                  <CheckCircle2 className="h-4 w-4" />
+                  Finalizar Atendimento
+                </button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Finalizar atendimento?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Tem certeza que deseja finalizar este atendimento? O chamado será enviado ao solicitante para aprovação e não estará mais disponível para edição até a resposta dele.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Não, cancelar</AlertDialogCancel>
+                  <AlertDialogAction onClick={handleFinishService}>
+                    Sim, finalizar
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
           )}
 
           {/* Solicitante: Aprovar ou Reprovar (when awaiting approval) */}
