@@ -118,8 +118,8 @@ export default function MetasTecnicos() {
 
       const evalMap = new Map(evaluations.map((e) => [e.ticket_id, e.score]));
 
-      // Mapa do "fim do atendimento técnico" (Aguardando Aprovação / Aprovado / Fechado)
-      const resolutionEndMap = await fetchTicketResolutionEnds(closedIds);
+      // Tempo de trabalho acumulado (Em Andamento, somando retrabalhos)
+      const workMinutesMap = await fetchTicketWorkMinutes(closedTickets);
 
       const techMap = new Map<string, TechnicianStats>();
 
