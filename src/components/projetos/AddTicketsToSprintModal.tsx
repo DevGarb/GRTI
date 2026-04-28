@@ -254,6 +254,15 @@ export default function AddTicketsToSprintModal({
                 );
               })}
             </div>
+            <Button
+              size="sm"
+              variant={hideLinked ? "default" : "outline"}
+              className="h-7 text-xs ml-auto"
+              onClick={() => setHideLinked((v) => !v)}
+              title="Esconde chamados que já estão em outra sprint deste projeto"
+            >
+              {hideLinked ? "Ocultando já vinculados" : "Mostrando todos"}
+            </Button>
           </div>
 
           {/* Lista */}
