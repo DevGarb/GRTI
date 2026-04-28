@@ -1,0 +1,1 @@
+ALTER TABLE public.tickets ALTER COLUMN sla_deadline DROP DEFAULT;
