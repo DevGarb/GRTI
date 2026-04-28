@@ -117,11 +117,6 @@ export default function ChamadosAbertos() {
                   <p className="text-sm font-medium text-foreground truncate">{ticket.title}</p>
                   <div className="flex items-center gap-2 mt-1 flex-wrap">
                     <StatusBadge status={ticket.status} />
-                    {ticket.status === "Disponível" && (
-                      <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-semibold bg-destructive/10 text-destructive border border-destructive/30">
-                        SLA Expirado
-                      </span>
-                    )}
                     <PriorityBadge priority={ticket.priority} />
                     <span className="text-xs text-muted-foreground">
                       Solicitante: {ticket.creatorProfile?.full_name || "—"}
