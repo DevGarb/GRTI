@@ -1,4 +1,15 @@
 import { supabase } from "@/integrations/supabase/client";
+import { calcBusinessMinutes } from "@/lib/businessHours";
+
+const WORKING_STATUS = "Em Andamento";
+// Status que pausam a contagem de SLA (técnico não está trabalhando):
+const PAUSE_STATUSES = new Set([
+  "Aguardando Aprovação",
+  "Aprovado",
+  "Fechado",
+  "Disponível", // legado
+  "Aberto",
+]);
 
 /**
  * Returns a Map<ticket_id, resolution_end_date> for the given tickets.
