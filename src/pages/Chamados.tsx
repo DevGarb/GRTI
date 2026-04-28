@@ -276,11 +276,23 @@ export default function Chamados() {
     enabled: closedFilteredIds.length > 0,
   });
 
-  // Mapa "fim do atendimento técnico" para chamados fechados (não usar updated_at)
-  const { data: resolutionEndMap = new Map<string, Date>() } = useQuery({
-    queryKey: ["ticket-resolution-ends", closedFilteredIds.join(",")],
-    queryFn: () => fetchTicketResolutionEnds(closedFilteredIds),
-    enabled: closedFilteredIds.length > 0,
+  // Tempo de trabalho acumulado por ticket (soma de janelas em "Em Andamento")
+  // Re-calcula a cada minuto para refletir tickets em andamento (não-pausados).
+  const filteredIdsKey = filtered.map((t) => t.id).sort().join(",");
+  const { data: workMinutesMap = new Map<string, number>() } = useQuery({
+    queryKey: ["ticket-work-minutes", filteredIdsKey],
+    queryFn: () =>
+      fetchTicketWorkMinutes(
+        filtered.map((t) => ({
+          id: t.id,
+          started_at: t.started_at,
+          created_at: t.created_at,
+          status: t.status,
+          updated_at: t.updated_at,
+        }))
+      ),
+    enabled: filtered.length > 0,
+    refetchInterval: 60_000,
   });
 
   // Group by assigned technician (or creator if not assigned)
