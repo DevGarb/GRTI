@@ -4,7 +4,7 @@ import { Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Responsi
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useGoals } from "@/hooks/useGoals";
-import { calcBusinessMinutes, BUSINESS_HOURS_PER_DAY } from "@/lib/businessHours";
+import { BUSINESS_HOURS_PER_DAY } from "@/lib/businessHours";
 import { fetchTicketWorkMinutes } from "@/lib/ticketTiming";
 
 const METRIC_CONFIG: Record<string, { label: string; icon: typeof Target; shortLabel: string }> = {
