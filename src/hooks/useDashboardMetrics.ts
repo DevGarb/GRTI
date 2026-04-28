@@ -70,19 +70,20 @@ export function useDashboardMetrics(dateFrom?: Date, dateTo?: Date) {
         return d >= dateFrom && d <= dateTo;
       });
 
-      // Resolve "fim do atendimento técnico" para cada ticket fechado
-      // (momento em que virou "Aguardando Aprovação"/"Aprovado"/"Fechado")
+      // Resolve "fim do atendimento técnico" para agrupar por mês
       const resolutionEndMap = await fetchTicketResolutionEnds(
         closedTickets.map((t) => t.id)
       );
 
-      // Avg resolution time (started_at → momento da resolução técnica)
+      // Tempo de trabalho acumulado (soma das janelas em "Em Andamento",
+      // descontando pausas em Aguardando Aprovação e somando retrabalhos)
+      const workMinutesMap = await fetchTicketWorkMinutes(closedTickets);
+
+      // Avg resolution time = média do tempo acumulado de trabalho
       let avgResolutionMinutes = 0;
       if (closedTickets.length > 0) {
         const totalMinutes = closedTickets.reduce((sum, t) => {
-          const start = getTicketWorkStart(t);
-          const end = resolutionEndMap.get(t.id) ?? new Date(t.updated_at);
-          return sum + calcBusinessMinutes(start, end);
+          return sum + (workMinutesMap.get(t.id) ?? 0);
         }, 0);
         avgResolutionMinutes = totalMinutes / closedTickets.length;
       }
