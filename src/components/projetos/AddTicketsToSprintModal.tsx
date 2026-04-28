@@ -306,7 +306,19 @@ export default function AddTicketsToSprintModal({
                           <Checkbox checked={isSel} onCheckedChange={() => toggle(t)} />
                         </td>
                         <td className="p-2">
-                          <div className="font-medium">{t.title}</div>
+                          <div className="font-medium flex items-center gap-1.5 flex-wrap">
+                            <span>{t.title}</span>
+                            {t.project_id === projectId && t.sprint_id && t.sprint_id !== (sprintId === "backlog" ? null : sprintId) && (
+                              <Badge variant="outline" className="text-[9px] border-amber-500/60 text-amber-600 dark:text-amber-400">
+                                Sprint: {sprintNameById.get(t.sprint_id) || "outra"}
+                              </Badge>
+                            )}
+                            {t.project_id === projectId && !t.sprint_id && sprintId !== "backlog" && (
+                              <Badge variant="outline" className="text-[9px] text-muted-foreground">
+                                Backlog deste projeto
+                              </Badge>
+                            )}
+                          </div>
                           <div className="text-[10px] text-muted-foreground">
                             {t.status} · #{t.id.slice(0, 8)}
                             {bucket === "overdue" && (
