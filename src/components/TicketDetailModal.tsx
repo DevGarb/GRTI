@@ -485,8 +485,27 @@ export default function TicketDetailModal({ ticket, onClose }: Props) {
                     const newUserId = e.target.value || null;
                     const oldName = ticket.assignedProfile?.full_name || "Não atribuído";
                     const newProfile = techProfiles.find(p => p.user_id === newUserId);
-                    updateTicket.mutate({ id: ticket.id, assigned_to: newUserId });
+                    const wasUnassignedFlow = (status === "Aberto" || status === "Disponível");
+                    const shouldAutoStart = newUserId && wasUnassignedFlow;
+
+                    const updates: any = { assigned_to: newUserId };
+                    if (shouldAutoStart) {
+                      updates.status = "Em Andamento";
+                      updates.picked_at = new Date().toISOString();
+                      updates.started_at = new Date().toISOString();
+                    }
+                    updateTicket.mutate({ id: ticket.id, ...updates });
                     await addHistory("assigned_change", oldName, newProfile?.full_name || "Não atribuído");
+
+                    if (shouldAutoStart) {
+                      setStatus("Em Andamento");
+                      updateTicketStatusInCache("Em Andamento");
+                      await addHistory("status_change", status, "Em Andamento");
+                      dispatchWebhookEvent(ticket.id, "ticket_assigned");
+                      supabase.functions.invoke("send-whatsapp", {
+                        body: { ticket_id: ticket.id, event_type: "assigned" },
+                      }).catch(() => {});
+                    }
                   }}
                   className="px-3 py-2 rounded-lg border border-input bg-background text-sm text-foreground"
                 >
@@ -525,29 +544,13 @@ export default function TicketDetailModal({ ticket, onClose }: Props) {
             </div>
           )}
 
-          {/* SLA Info */}
-          {(isOpen || isDisponivel) && slaDeadline && (
-            <div className={`flex items-center gap-2 p-3 rounded-lg border ${
-              slaExpired || isDisponivel
-                ? "bg-red-50 dark:bg-red-950/20 border-red-300 dark:border-red-700"
-                : "bg-amber-50 dark:bg-amber-950/20 border-amber-200 dark:border-amber-800"
-            }`}>
-              {slaExpired || isDisponivel ? (
-                <AlertTriangle className="h-4 w-4 text-red-600 dark:text-red-400" />
-              ) : (
-                <Clock className="h-4 w-4 text-amber-600 dark:text-amber-400" />
-              )}
-              <div>
-                <p className="text-[11px] text-muted-foreground uppercase tracking-wider">SLA de Início</p>
-                <p className={`text-sm font-medium ${
-                  slaExpired || isDisponivel ? "text-red-700 dark:text-red-400" : "text-foreground"
-                }`}>
-                  {slaExpired || isDisponivel
-                    ? "SLA Expirado — chamado disponível para reatribuição"
-                    : `${slaRemainingHours}h ${slaRemainingMinutes}min restantes`
-                  }
-                </p>
-              </div>
+          {/* SLA legado: mostra apenas para chamados antigos em Disponível */}
+          {isDisponivel && (
+            <div className="flex items-center gap-2 p-3 rounded-lg border bg-red-50 dark:bg-red-950/20 border-red-300 dark:border-red-700">
+              <AlertTriangle className="h-4 w-4 text-red-600 dark:text-red-400" />
+              <p className="text-sm font-medium text-red-700 dark:text-red-400">
+                Chamado disponível para qualquer técnico assumir.
+              </p>
             </div>
           )}
 

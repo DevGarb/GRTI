@@ -1,106 +1,104 @@
-## Objetivo
+## Novo fluxo de abertura de chamados (sem técnico, sem SLA)
 
-Trazer de volta uma **Visão Geral rica** no detalhe do projeto, com cards de resumo e mini-dashboards visuais — mantendo a simplicidade já acordada (sem pontos/capacidade/eficiência/dashboards complexos).
-
----
-
-## O que aparece hoje na Visão Geral
-
-- Bloco da sprint ativa (com botão "Adicionar chamados").
-- Bloco de descrição/datas (se preenchidos).
-- Nada mais.
-
-Faltam os **números do projeto** e a **comparação visual** entre sprints e backlog.
+A partir de agora, todo chamado novo nasce **sem técnico atribuído** e cai direto em **Chamados em Aberto**, onde os próprios técnicos podem assumir. O admin continua podendo atribuir manualmente para um técnico específico pelo modal do chamado. Tickets já existentes não são alterados.
 
 ---
 
-## O que vamos adicionar
+### 1. Modal de Novo Chamado (`NewTicketModal.tsx`)
 
-### 1. Linha de KPIs (cards grandes, no topo)
+**Remover:**
+- Campo "Técnico Responsável" (select).
+- Validação `!assignedTo` que bloqueia o botão "Criar Chamado".
+- Imports não usados: `useTechnicianProfiles`.
 
-Quatro cards lado a lado, lendo dados que já existem:
+**Manter:** Título, Descrição, Prioridade, Tipo, Setor (opcional), Anexos.
 
-- **Chamados no projeto** — total + (concluídos)
-- **Tarefas manuais** — total + (concluídas)
-- **Sprints** — total + (ativas/planejadas/concluídas)
-- **Progresso geral** — % concluído (chamados + tarefas) com barra
+**Resultado:** Chamado é criado sem `assigned_to`, com status `"Aberto"`, ficando visível na aba **Chamados em Aberto** para todos os técnicos.
 
-Sem pontos, sem velocidade, sem capacidade.
+### 2. Hook `useCreateTicket` (`useTickets.ts`)
 
-### 2. Sprint ativa (mantém, melhorada)
+- Tirar `assigned_to` do tipo `CreateTicketInput`.
+- Garantir `assigned_to: null` no insert (já não recebe valor).
 
-Cartão atual continua, com:
-- Nome + meta + datas
-- Barra de progresso
-- Contagens (chamados/tarefas, concluídos)
-- Botão "Adicionar chamados"
-- **Novo:** linha "próxima sprint planejada" abaixo (se houver), com nome e contagem, link para abrir.
+### 3. Modal de Detalhes do Chamado (`TicketDetailModal.tsx`)
 
-### 3. Mini-dashboards (2 cards lado a lado)
+**Atribuição manual pelo admin:**
+- O select de "Técnico" no bloco "People" já existe e já está restrito a `canEditPeople` (admin/super_admin). Vou apenas garantir que:
+  - Admin pode trocar/atribuir o técnico mesmo quando o chamado está em status `"Aberto"` ou `"Disponível"`.
+  - Ao admin atribuir um técnico em um chamado `"Aberto"`, o status passa automaticamente para `"Em Andamento"` (igual a quando o técnico se auto-atribui via `usePickTicket`), registrando histórico `assigned`.
+  - Disparar webhook `ticket_assigned` (e WhatsApp) ao admin atribuir.
 
-**a) Status dos chamados do projeto**
-Lista compacta com contagem por status (Aberto, Em Andamento, Aguardando Aprovação, Resolvido, Fechado…), cada um com sua cor e barra proporcional. Reusa as cores já usadas no sistema.
+**Remover exibição de SLA:**
+- Tirar o bloco que mostra "SLA Expirado", contador de horas/minutos restantes e badge `Disponível por SLA`.
+- Manter o status `Disponível` apenas como compatibilidade com chamados antigos (não criamos mais novos com esse fluxo).
 
-**b) Distribuição por sprint**
-Lista das sprints (mais recentes primeiro), cada linha com: nome, status (badge), barra de progresso e "X/Y concluídos". Permite bater o olho e ver onde o trabalho está concentrado.
+### 4. Desativar a contagem de SLA (cron + edge function)
 
-### 4. Bloco "Sobre o projeto" (mantém)
+- **Desativar o cron job** `check-sla-every-minute` (`SELECT cron.unschedule('check-sla-every-minute')`).
+- **Não chamar mais** `sla_deadline` em telas novas. Coluna permanece no banco (compatibilidade), mas para tickets novos o valor default `now() + 6h` continua sendo gravado e simplesmente ignorado.
+- Manter a edge function `check-sla` no projeto (não removo, mas fica órfã, sem custo recorrente).
 
-Descrição + datas + responsável (`ownerName` já vem do hook). Só aparece se houver conteúdo.
+### 5. Limpeza de tabelas de log infladas (one-shot)
+
+Conforme o diagnóstico anterior, aplicar também:
+- `DELETE FROM cron.job_run_details WHERE start_time < now() - interval '7 days';`
+- `DELETE FROM net._http_response WHERE created < now() - interval '7 days';`
+- `DELETE FROM public.webhook_logs WHERE created_at < now() - interval '30 days';`
+- Cron diário de limpeza (`0 3 * * *`) para manter essas tabelas pequenas daqui pra frente.
+
+### 6. Aba "Chamados em Aberto"
+
+Já funciona como você descreveu (lista `Aberto` + `Disponível` com botão "Atribuir para mim"). Vou apenas:
+- Esconder o badge laranja "SLA Expirado" para chamados criados a partir de agora (mantenho para os antigos `Disponível`).
+- Reforçar título da página: continua "Chamados em Aberto", mas agora será o ponto central de distribuição.
+
+### 7. Páginas de Chamados (`Chamados.tsx`)
+
+- Verificar se há colunas/filtros de SLA visíveis na listagem do técnico/admin e ocultar (ou marcar como legado). Sem mudanças funcionais grandes — apenas remover ruído visual de SLA.
 
 ---
 
-## Layout proposto
+## O que NÃO muda
 
-```text
-┌───────────────────────────────────────────────────────────┐
-│ [Chamados] [Tarefas] [Sprints] [Progresso]   ← KPIs       │
-├───────────────────────────────────────────────────────────┤
-│ Sprint ativa  ............ [+ Adicionar chamados]         │
-│ Próxima planejada: Sprint 4 (5 chamados)  →               │
-├──────────────────────────────┬────────────────────────────┤
-│ Status dos chamados          │ Distribuição por sprint    │
-│ ▓▓▓▓ Em Andamento  12        │ Sprint 3 (ativa)  ▓▓▓ 60%  │
-│ ▓▓ Aberto           5        │ Sprint 2 (concl)  ▓▓▓ 100% │
-│ ▓ Resolvido         8        │ Sprint 1 (concl)  ▓▓▓ 100% │
-├──────────────────────────────┴────────────────────────────┤
-│ Sobre o projeto (descrição + datas + responsável)         │
-└───────────────────────────────────────────────────────────┘
+- Tickets antigos com `assigned_to` definido permanecem intactos.
+- Status, workflow (Em Andamento → Aguardando Aprovação → Aprovado → Fechado), avaliação CSAT, categorias, projetos/sprints, webhooks, WhatsApp — tudo igual.
+- Métricas de produtividade, dashboards e relatórios continuam funcionando (eles olham `assigned_to` no momento do fechamento, que ainda é preenchido quando o técnico assume).
+- Login, papéis, multi-tenant, exports — sem alteração.
+
+---
+
+## Detalhes técnicos (referência)
+
+**Arquivos a editar:**
+- `src/components/NewTicketModal.tsx` — remover select de técnico e validação.
+- `src/hooks/useTickets.ts` — limpar `CreateTicketInput`.
+- `src/components/TicketDetailModal.tsx` — esconder bloco de SLA; quando admin atribui técnico em chamado `"Aberto"`/`"Disponível"`, mover status para `"Em Andamento"` + histórico + webhook + WhatsApp.
+- `src/pages/ChamadosAbertos.tsx` — pequenas limpezas visuais de SLA.
+- `src/pages/Chamados.tsx` — remover colunas/indicadores de SLA, se houver.
+
+**Migração SQL (uma única migração):**
+```sql
+SELECT cron.unschedule('check-sla-every-minute');
+
+SELECT cron.schedule(
+  'cleanup-logs-daily',
+  '0 3 * * *',
+  $$
+    DELETE FROM cron.job_run_details WHERE start_time < now() - interval '7 days';
+    DELETE FROM net._http_response   WHERE created  < now() - interval '7 days';
+    DELETE FROM public.webhook_logs  WHERE created_at < now() - interval '30 days';
+  $$
+);
 ```
 
----
+E uma execução única dos `DELETE`s para liberar os ~62 MB já acumulados.
 
-## Detalhes técnicos
-
-**Arquivos**
-
-- `src/pages/ProjetoDetalhe.tsx` — montar a nova Visão Geral usando dados que já vêm dos hooks.
-- `src/components/projetos/ProjectOverview.tsx` *(novo)* — encapsular a aba para deixar o `ProjetoDetalhe` enxuto.
-
-**Dados reutilizados (sem novas queries pesadas)**
-- `useSprints(projectId)` → todas as sprints com `ticketCount`, `taskCount`, `completedTickets`, `completedTasks`, `donePct`, `status`.
-- `useProjectTickets(projectId)` (sem filtro de sprint) → para o agrupamento por status.
-- `useProjectTasks(projectId)` → contagem total/concluídas de tarefas manuais.
-- `useProject(projectId)` → metadados + responsável (já carregado no agregado da listagem; aqui buscamos via `useProjects` `ownerName` ou expomos o nome via `useProject` se necessário — se for o caso, ajustamos `useProject` para trazer o nome do owner em uma query simples).
-
-**Agregações (em memória, no componente)**
-- KPIs: somatórios diretos das listas.
-- Status dos chamados: `groupBy(status)` sobre `useProjectTickets`.
-- Distribuição por sprint: já vem pronto do `useSprints`.
-
-**UI**
-- Reusa `card-elevated`, `Badge`, `Progress` já existentes.
-- Cores de status: reutilizar o mapa já usado em `StatusBadge`/Kanban para manter consistência.
-- Responsivo: KPIs em grid `grid-cols-2 md:grid-cols-4`; mini-dashboards em `grid-cols-1 md:grid-cols-2`.
-
-**Sem mudanças no banco.** Nenhuma migration. Nenhum recálculo de pontos. Nenhum dashboard de eficiência/velocidade.
+**Memória do projeto:** atualizar `mem://index.md` removendo a regra "SLA: 6 hours to start. Breached tickets become 'Disponível'" e substituindo por: "Chamados nascem sem técnico em 'Aberto'; técnicos auto-atribuem ou admin atribui manualmente. Sem SLA automático."
 
 ---
 
-## O que continua FORA (conforme combinado)
+## Impacto esperado
 
-- Capacidade da sprint / por técnico
-- Story points / planejado vs entregue
-- Velocidade / previsibilidade
-- Histórico de planejamento
-- Sugestão automática de chamados
+- **UX**: solicitante abre chamado mais rápido (menos um campo).
+- **Custo Cloud**: queda drástica (cron parado + tabelas de log enxutas).
+- **Distribuição de trabalho**: técnicos puxam demanda na fila comum; admin mantém controle de roteamento direto.

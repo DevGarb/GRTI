@@ -128,7 +128,6 @@ interface CreateTicketInput {
   description: string;
   priority: string;
   type: string;
-  assigned_to?: string | null;
   sector?: string | null;
 }
 

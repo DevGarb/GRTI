@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { X, Ticket, Upload, Trash2, Image } from "lucide-react";
-import { useCreateTicket, useTechnicianProfiles } from "@/hooks/useTickets";
+import { useCreateTicket } from "@/hooks/useTickets";
 import { useSectors } from "@/hooks/useSectors";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -24,14 +24,12 @@ export default function NewTicketModal({ onClose }: Props) {
   const [description, setDescription] = useState("");
   const [priority, setPriority] = useState("Média");
   const [type, setType] = useState("Software");
-  const [assignedTo, setAssignedTo] = useState("");
   const [sector, setSector] = useState("");
   const [pendingFiles, setPendingFiles] = useState<PendingFile[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const pendingFilesRef = useRef<PendingFile[]>([]);
   const createTicket = useCreateTicket();
-  const { data: profiles = [] } = useTechnicianProfiles();
 
   useEffect(() => {
     pendingFilesRef.current = pendingFiles;
@@ -70,13 +68,13 @@ export default function NewTicketModal({ onClose }: Props) {
   };
 
   const handleSubmit = async () => {
-    if (!title.trim() || !assignedTo) return;
+    if (!title.trim()) return;
     setIsSubmitting(true);
     try {
       // Create ticket first
       const ticketData = await new Promise<any>((resolve, reject) => {
         createTicket.mutate(
-          { title, description, priority, type, assigned_to: assignedTo || null, sector: sector || null },
+          { title, description, priority, type, sector: sector || null },
           { onSuccess: (data) => resolve(data), onError: reject }
         );
       });
@@ -203,35 +201,18 @@ export default function NewTicketModal({ onClose }: Props) {
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="text-sm font-medium text-foreground">Setor</label>
-              <select
-                value={sector}
-                onChange={(e) => setSector(e.target.value)}
-                className="mt-1.5 w-full px-3 py-2.5 rounded-lg border border-input bg-background text-sm text-foreground"
-              >
-                <option value="">Selecione o setor...</option>
-                {sectors.map((s) => (
-                  <option key={s.id} value={s.name}>{s.name}</option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label className="text-sm font-medium text-foreground">Técnico Responsável *</label>
-              <select
-                value={assignedTo}
-                onChange={(e) => setAssignedTo(e.target.value)}
-                className="mt-1.5 w-full px-3 py-2.5 rounded-lg border border-input bg-background text-sm text-foreground"
-              >
-                <option value="">Selecione o técnico...</option>
-                {profiles.map((p) => (
-                  <option key={p.user_id} value={p.user_id}>
-                    {p.full_name || p.email}
-                  </option>
-                ))}
-              </select>
-            </div>
+          <div>
+            <label className="text-sm font-medium text-foreground">Setor</label>
+            <select
+              value={sector}
+              onChange={(e) => setSector(e.target.value)}
+              className="mt-1.5 w-full px-3 py-2.5 rounded-lg border border-input bg-background text-sm text-foreground"
+            >
+              <option value="">Selecione o setor...</option>
+              {sectors.map((s) => (
+                <option key={s.id} value={s.name}>{s.name}</option>
+              ))}
+            </select>
           </div>
 
           {/* File upload area */}
@@ -299,7 +280,7 @@ export default function NewTicketModal({ onClose }: Props) {
           </button>
           <button
             onClick={handleSubmit}
-            disabled={isSubmitting || createTicket.isPending || !title.trim() || !assignedTo}
+            disabled={isSubmitting || createTicket.isPending || !title.trim()}
             className="px-4 py-2.5 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 transition-opacity disabled:opacity-50"
           >
             {isSubmitting ? "Criando..." : "Criar Chamado"}
