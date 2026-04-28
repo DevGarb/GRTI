@@ -1,104 +1,112 @@
-## Novo fluxo de abertura de chamados (sem técnico, sem SLA)
+## Reduzir consumo do Cloud (pós-remoção do SLA)
 
-A partir de agora, todo chamado novo nasce **sem técnico atribuído** e cai direto em **Chamados em Aberto**, onde os próprios técnicos podem assumir. O admin continua podendo atribuir manualmente para um técnico específico pelo modal do chamado. Tickets já existentes não são alterados.
+O cron `check-sla-every-minute` já foi desativado e o `cleanup-logs-daily` está rodando — então o sangramento parou. Mas restam três fontes de custo que dá pra cortar agora:
 
----
-
-### 1. Modal de Novo Chamado (`NewTicketModal.tsx`)
-
-**Remover:**
-- Campo "Técnico Responsável" (select).
-- Validação `!assignedTo` que bloqueia o botão "Criar Chamado".
-- Imports não usados: `useTechnicianProfiles`.
-
-**Manter:** Título, Descrição, Prioridade, Tipo, Setor (opcional), Anexos.
-
-**Resultado:** Chamado é criado sem `assigned_to`, com status `"Aberto"`, ficando visível na aba **Chamados em Aberto** para todos os técnicos.
-
-### 2. Hook `useCreateTicket` (`useTickets.ts`)
-
-- Tirar `assigned_to` do tipo `CreateTicketInput`.
-- Garantir `assigned_to: null` no insert (já não recebe valor).
-
-### 3. Modal de Detalhes do Chamado (`TicketDetailModal.tsx`)
-
-**Atribuição manual pelo admin:**
-- O select de "Técnico" no bloco "People" já existe e já está restrito a `canEditPeople` (admin/super_admin). Vou apenas garantir que:
-  - Admin pode trocar/atribuir o técnico mesmo quando o chamado está em status `"Aberto"` ou `"Disponível"`.
-  - Ao admin atribuir um técnico em um chamado `"Aberto"`, o status passa automaticamente para `"Em Andamento"` (igual a quando o técnico se auto-atribui via `usePickTicket`), registrando histórico `assigned`.
-  - Disparar webhook `ticket_assigned` (e WhatsApp) ao admin atribuir.
-
-**Remover exibição de SLA:**
-- Tirar o bloco que mostra "SLA Expirado", contador de horas/minutos restantes e badge `Disponível por SLA`.
-- Manter o status `Disponível` apenas como compatibilidade com chamados antigos (não criamos mais novos com esse fluxo).
-
-### 4. Desativar a contagem de SLA (cron + edge function)
-
-- **Desativar o cron job** `check-sla-every-minute` (`SELECT cron.unschedule('check-sla-every-minute')`).
-- **Não chamar mais** `sla_deadline` em telas novas. Coluna permanece no banco (compatibilidade), mas para tickets novos o valor default `now() + 6h` continua sendo gravado e simplesmente ignorado.
-- Manter a edge function `check-sla` no projeto (não removo, mas fica órfã, sem custo recorrente).
-
-### 5. Limpeza de tabelas de log infladas (one-shot)
-
-Conforme o diagnóstico anterior, aplicar também:
-- `DELETE FROM cron.job_run_details WHERE start_time < now() - interval '7 days';`
-- `DELETE FROM net._http_response WHERE created < now() - interval '7 days';`
-- `DELETE FROM public.webhook_logs WHERE created_at < now() - interval '30 days';`
-- Cron diário de limpeza (`0 3 * * *`) para manter essas tabelas pequenas daqui pra frente.
-
-### 6. Aba "Chamados em Aberto"
-
-Já funciona como você descreveu (lista `Aberto` + `Disponível` com botão "Atribuir para mim"). Vou apenas:
-- Esconder o badge laranja "SLA Expirado" para chamados criados a partir de agora (mantenho para os antigos `Disponível`).
-- Reforçar título da página: continua "Chamados em Aberto", mas agora será o ponto central de distribuição.
-
-### 7. Páginas de Chamados (`Chamados.tsx`)
-
-- Verificar se há colunas/filtros de SLA visíveis na listagem do técnico/admin e ocultar (ou marcar como legado). Sem mudanças funcionais grandes — apenas remover ruído visual de SLA.
+1. **Espaço físico não foi devolvido ao SO** — os DELETEs anteriores reduziram linhas, mas as tabelas continuam ocupando 62 MB no disco (`cron.job_run_details` 32 MB, `net._http_response` 30 MB). Postgres só libera com `VACUUM FULL`.
+2. **Retenção de logs ainda generosa** — agora que não temos mais cron de minuto em minuto, dá pra encurtar a janela.
+3. **Artefatos órfãos do SLA** — edge function `check-sla`, coluna `sla_deadline` com default `now() + 6h`, página `AuditoriaSla`, e código que ainda lê esses campos.
 
 ---
 
-## O que NÃO muda
+### Passo 1 — Liberar espaço em disco (impacto imediato no tamanho do instance)
 
-- Tickets antigos com `assigned_to` definido permanecem intactos.
-- Status, workflow (Em Andamento → Aguardando Aprovação → Aprovado → Fechado), avaliação CSAT, categorias, projetos/sprints, webhooks, WhatsApp — tudo igual.
-- Métricas de produtividade, dashboards e relatórios continuam funcionando (eles olham `assigned_to` no momento do fechamento, que ainda é preenchido quando o técnico assume).
-- Login, papéis, multi-tenant, exports — sem alteração.
+Rodar `VACUUM FULL` nas tabelas infladas. Isso reescreve a tabela e devolve o espaço:
 
----
-
-## Detalhes técnicos (referência)
-
-**Arquivos a editar:**
-- `src/components/NewTicketModal.tsx` — remover select de técnico e validação.
-- `src/hooks/useTickets.ts` — limpar `CreateTicketInput`.
-- `src/components/TicketDetailModal.tsx` — esconder bloco de SLA; quando admin atribui técnico em chamado `"Aberto"`/`"Disponível"`, mover status para `"Em Andamento"` + histórico + webhook + WhatsApp.
-- `src/pages/ChamadosAbertos.tsx` — pequenas limpezas visuais de SLA.
-- `src/pages/Chamados.tsx` — remover colunas/indicadores de SLA, se houver.
-
-**Migração SQL (uma única migração):**
 ```sql
-SELECT cron.unschedule('check-sla-every-minute');
-
-SELECT cron.schedule(
-  'cleanup-logs-daily',
-  '0 3 * * *',
-  $$
-    DELETE FROM cron.job_run_details WHERE start_time < now() - interval '7 days';
-    DELETE FROM net._http_response   WHERE created  < now() - interval '7 days';
-    DELETE FROM public.webhook_logs  WHERE created_at < now() - interval '30 days';
-  $$
-);
+VACUUM FULL cron.job_run_details;
+VACUUM FULL net._http_response;
+VACUUM FULL public.webhook_logs;
 ```
 
-E uma execução única dos `DELETE`s para liberar os ~62 MB já acumulados.
+Resultado esperado: banco cai de ~78 MB para ~16 MB (–80%). Backups, snapshots e I/O proporcionalmente menores.
 
-**Memória do projeto:** atualizar `mem://index.md` removendo a regra "SLA: 6 hours to start. Breached tickets become 'Disponível'" e substituindo por: "Chamados nascem sem técnico em 'Aberto'; técnicos auto-atribuem ou admin atribui manualmente. Sem SLA automático."
+### Passo 2 — Encurtar retenção do `cleanup-logs-daily`
+
+Hoje guarda 7 dias de cron/net e 30 dias de webhooks. Sem o cron de minuto, 7 dias de `cron.job_run_details` é exagero — `cleanup-logs-daily` roda 1x/dia, são literalmente 7 linhas. Ajustar para:
+
+```sql
+DELETE FROM cron.job_run_details WHERE start_time < now() - interval '2 days';
+DELETE FROM net._http_response   WHERE created    < now() - interval '2 days';
+DELETE FROM public.webhook_logs  WHERE created_at < now() - interval '14 days';
+```
+
+E adicionar `VACUUM` (não FULL) ao final do job pra manter a tabela enxuta dia a dia:
+
+```sql
+VACUUM (ANALYZE) cron.job_run_details;
+VACUUM (ANALYZE) net._http_response;
+```
+
+### Passo 3 — Remover artefatos órfãos do SLA
+
+**Edge function** `supabase/functions/check-sla/index.ts` — não é mais chamada por ninguém. Deletar a função (deploy automático cuida).
+
+**Página `src/pages/AuditoriaSla.tsx`** — tela de auditoria de SLA. Verificar se ainda está roteada em `App.tsx` e no menu; se sim, remover rota + link.
+
+**Coluna `sla_deadline`** — manter para compatibilidade histórica, mas remover o default `now() + 6h` para tickets novos não gravarem mais valor inútil:
+
+```sql
+ALTER TABLE public.tickets ALTER COLUMN sla_deadline DROP DEFAULT;
+```
+
+**Coluna `original_assigned_to`** — usada só pelo fluxo antigo de "ticket virou Disponível por SLA". Manter no banco (tem dados históricos), mas não escrever mais nela em código novo.
+
+### Passo 4 — Verificar uso da função `check-sla` no código
+
+Buscar referências a `check-sla`, `sla_deadline`, `AuditoriaSla` em `src/` e remover imports/chamadas que sobraram.
+
+---
+
+## O que NÃO mexer
+
+- `ticket_history`, `audit_logs` — pequenos (<1 MB) e têm valor de auditoria. Manter sem retenção forçada.
+- Default de `sla_deadline` em tickets antigos — não tocar; é histórico.
+- Cron `cleanup-logs-daily` — manter, só ajustar o SQL interno.
 
 ---
 
 ## Impacto esperado
 
-- **UX**: solicitante abre chamado mais rápido (menos um campo).
-- **Custo Cloud**: queda drástica (cron parado + tabelas de log enxutas).
-- **Distribuição de trabalho**: técnicos puxam demanda na fila comum; admin mantém controle de roteamento direto.
+| Item | Antes | Depois |
+|---|---|---|
+| Tamanho do banco | 78 MB | ~16 MB |
+| Linhas em `cron.job_run_details` | 10.080 | <10 (cresce só com cleanup) |
+| Edge function `check-sla` | órfã, deployada | removida |
+| Default `sla_deadline` em novos tickets | now()+6h | NULL |
+
+Custo Cloud deve cair mais um degrau — principalmente storage e backup. Compute já estava baixo desde que o cron de minuto foi desligado.
+
+---
+
+## Detalhes técnicos
+
+**Migrações SQL (uma migração + um insert/script):**
+
+Migração (schema):
+```sql
+ALTER TABLE public.tickets ALTER COLUMN sla_deadline DROP DEFAULT;
+```
+
+Insert (data/manutenção, via tool de insert):
+```sql
+SELECT cron.unschedule('cleanup-logs-daily');
+SELECT cron.schedule('cleanup-logs-daily', '0 3 * * *', $$
+  DELETE FROM cron.job_run_details WHERE start_time < now() - interval '2 days';
+  DELETE FROM net._http_response   WHERE created    < now() - interval '2 days';
+  DELETE FROM public.webhook_logs  WHERE created_at < now() - interval '14 days';
+  VACUUM (ANALYZE) public.webhook_logs;
+$$);
+
+VACUUM FULL cron.job_run_details;
+VACUUM FULL net._http_response;
+VACUUM FULL public.webhook_logs;
+```
+
+**Arquivos a remover/editar:**
+- Deletar edge function `supabase/functions/check-sla/`
+- `src/pages/AuditoriaSla.tsx` — remover se não for mais usada
+- `src/App.tsx` — remover rota de AuditoriaSla
+- `src/components/AppLayout.tsx` (ou onde está o menu) — remover link
+- Qualquer leitura de `sla_deadline` em `src/pages/Chamados.tsx`, `TicketDetailModal.tsx`, hooks
+
+**Memória do projeto:** adicionar nota de que `sla_deadline` e `original_assigned_to` são colunas legadas (não escrever).
