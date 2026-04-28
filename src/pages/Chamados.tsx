@@ -295,9 +295,11 @@ export default function Chamados() {
     refetchInterval: 60_000,
   });
 
-  // Group by assigned technician (or creator if not assigned)
+  // Group by assigned technician only. Tickets sem técnico (status "Aberto")
+  // ficam num grupo separado — NÃO usar o solicitante como fallback, senão
+  // colaboradores que abrem chamados aparecem como se fossem técnicos.
   const grouped = filtered.reduce<Record<string, typeof filtered>>((acc, t) => {
-    const name = t.assignedProfile?.full_name || t.creatorProfile?.full_name || "Sem atribuição";
+    const name = t.assignedProfile?.full_name || "Sem técnico atribuído";
     (acc[name] = acc[name] || []).push(t);
     return acc;
   }, {});
