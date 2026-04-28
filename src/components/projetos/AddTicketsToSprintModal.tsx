@@ -53,6 +53,13 @@ export default function AddTicketsToSprintModal({
   const [technicianId, setTechnicianId] = useState<string>("all");
   const [selected, setSelected] = useState<Record<string, boolean>>({});
   const [sprintId, setSprintId] = useState<string>("backlog");
+  const [hideLinked, setHideLinked] = useState(true);
+
+  // Mapa id -> nome de sprint, para rotular chamados já vinculados a outras sprints do projeto
+  const sprintNameById = useMemo(
+    () => new Map(sprints.map((s) => [s.id, s.name])),
+    [sprints]
+  );
 
   useEffect(() => {
     if (!open) return;
@@ -61,6 +68,7 @@ export default function AddTicketsToSprintModal({
     setPriorities(new Set());
     setStatusFilter("open");
     setTechnicianId("all");
+    setHideLinked(true);
 
     if (defaultSprintId) {
       setSprintId(defaultSprintId);
