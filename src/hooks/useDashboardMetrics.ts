@@ -282,9 +282,7 @@ export function useDashboardMetrics(dateFrom?: Date, dateTo?: Date) {
         });
         const avgMin = monthClosed.length > 0
           ? Math.round(monthClosed.reduce((sum, t) => {
-              const start = getTicketWorkStart(t);
-              const end = allResolutionEndMap.get(t.id) ?? new Date(t.updated_at);
-              return sum + calcBusinessMinutes(start, end);
+              return sum + (allWorkMinutesMap.get(t.id) ?? 0);
             }, 0) / monthClosed.length)
           : 0;
         monthlyAvgTime.push({ month: label, value: avgMin });
