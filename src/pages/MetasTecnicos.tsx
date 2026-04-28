@@ -143,10 +143,8 @@ export default function MetasTecnicos() {
         }
 
         const tech = techMap.get(id)!;
-        // Tempo de atendimento: started_at → momento da resolução técnica (não updated_at)
-        const start = getTicketWorkStart(ticket);
-        const end = resolutionEndMap.get(ticket.id) ?? new Date(ticket.updated_at);
-        const resolutionHours = Math.max(0, calcBusinessMinutes(start, end) / 60);
+        // Tempo de atendimento: soma das janelas em "Em Andamento" (incluindo retrabalhos)
+        const resolutionHours = Math.max(0, (workMinutesMap.get(ticket.id) ?? 0) / 60);
         const evalScore = evalMap.get(ticket.id) ?? null;
 
         const categoryName = ticket.category_id ? categoryMap.get(ticket.category_id) ?? null : null;
