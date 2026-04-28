@@ -10,6 +10,17 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import TicketComments from "@/components/ticket-detail/TicketComments";
 import TicketHistory from "@/components/ticket-detail/TicketHistory";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 const allStatuses = ["Aberto", "Em Andamento", "Aguardando Aprovação", "Aprovado", "Fechado", "Disponível"];
 
@@ -581,13 +592,30 @@ export default function TicketDetailModal({ ticket, onClose }: Props) {
 
           {/* Technician: Finalizar Atendimento (when in progress) */}
           {isTecnico && isInProgress && (isAssigned || isAdmin) && (
-            <button
-              onClick={handleFinishService}
-              className="w-full py-3 rounded-lg bg-primary text-primary-foreground text-sm font-semibold hover:opacity-90 transition-opacity flex items-center justify-center gap-2"
-            >
-              <CheckCircle2 className="h-4 w-4" />
-              Finalizar Atendimento
-            </button>
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <button
+                  className="w-full py-3 rounded-lg bg-primary text-primary-foreground text-sm font-semibold hover:opacity-90 transition-opacity flex items-center justify-center gap-2"
+                >
+                  <CheckCircle2 className="h-4 w-4" />
+                  Finalizar Atendimento
+                </button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Finalizar atendimento?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Tem certeza que deseja finalizar este atendimento? O chamado será enviado ao solicitante para aprovação e não estará mais disponível para edição até a resposta dele.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Não, cancelar</AlertDialogCancel>
+                  <AlertDialogAction onClick={handleFinishService}>
+                    Sim, finalizar
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
           )}
 
           {/* Solicitante: Aprovar ou Reprovar (when awaiting approval) */}
@@ -617,14 +645,34 @@ export default function TicketDetailModal({ ticket, onClose }: Props) {
                     >
                       Cancelar
                     </button>
-                    <button
-                      onClick={handleSolicitanteReject}
-                      disabled={!rejectReason.trim()}
-                      className="flex-1 py-2 rounded-lg bg-destructive text-destructive-foreground text-sm font-semibold hover:opacity-90 transition-opacity disabled:opacity-50 flex items-center justify-center gap-2"
-                    >
-                      <ThumbsDown className="h-4 w-4" />
-                      Confirmar Reprovação
-                    </button>
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <button
+                          disabled={!rejectReason.trim()}
+                          className="flex-1 py-2 rounded-lg bg-destructive text-destructive-foreground text-sm font-semibold hover:opacity-90 transition-opacity disabled:opacity-50 flex items-center justify-center gap-2"
+                        >
+                          <ThumbsDown className="h-4 w-4" />
+                          Confirmar Reprovação
+                        </button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>Reprovar e devolver para retrabalho?</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            Tem certeza que deseja reprovar e devolver este chamado para retrabalho? O técnico será notificado e o atendimento voltará para "Em Andamento".
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Não, cancelar</AlertDialogCancel>
+                          <AlertDialogAction
+                            onClick={handleSolicitanteReject}
+                            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                          >
+                            Sim, reprovar
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
                   </div>
                 </div>
               ) : (
@@ -836,32 +884,50 @@ export default function TicketDetailModal({ ticket, onClose }: Props) {
         <div className="flex items-center justify-between p-4 border-t border-border">
           <div>
             {isAdmin && (
-              <button
-                onClick={async () => {
-                  if (!confirm("Tem certeza que deseja excluir este chamado? Essa ação não pode ser desfeita.")) return;
-                  try {
-                    const { error } = await supabase.from("tickets").delete().eq("id", ticket.id);
-                    if (error) throw error;
-                    // Audit log
-                    await supabase.from("audit_logs").insert({
-                      user_id: user!.id,
-                      entity_type: "ticket",
-                      entity_id: ticket.id,
-                      action: "delete",
-                      details: { title: ticket.title, status: ticket.status },
-                    });
-                    queryClient.invalidateQueries({ queryKey: ["tickets"] });
-                    toast.success("Chamado excluído com sucesso");
-                    onClose();
-                  } catch (e: any) {
-                    toast.error("Erro ao excluir chamado: " + e.message);
-                  }
-                }}
-                className="px-4 py-2 rounded-lg bg-destructive text-destructive-foreground text-sm font-medium hover:opacity-90 transition-opacity flex items-center gap-2"
-              >
-                <Trash2 className="h-4 w-4" />
-                Excluir Chamado
-              </button>
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <button
+                    className="px-4 py-2 rounded-lg bg-destructive text-destructive-foreground text-sm font-medium hover:opacity-90 transition-opacity flex items-center gap-2"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                    Excluir Chamado
+                  </button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Excluir chamado?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      Tem certeza que deseja excluir este chamado? Essa ação não pode ser desfeita e todos os comentários, anexos e histórico serão removidos.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Não, cancelar</AlertDialogCancel>
+                    <AlertDialogAction
+                      className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                      onClick={async () => {
+                        try {
+                          const { error } = await supabase.from("tickets").delete().eq("id", ticket.id);
+                          if (error) throw error;
+                          await supabase.from("audit_logs").insert({
+                            user_id: user!.id,
+                            entity_type: "ticket",
+                            entity_id: ticket.id,
+                            action: "delete",
+                            details: { title: ticket.title, status: ticket.status },
+                          });
+                          queryClient.invalidateQueries({ queryKey: ["tickets"] });
+                          toast.success("Chamado excluído com sucesso");
+                          onClose();
+                        } catch (e: any) {
+                          toast.error("Erro ao excluir chamado: " + e.message);
+                        }
+                      }}
+                    >
+                      Sim, excluir
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
             )}
           </div>
           <button

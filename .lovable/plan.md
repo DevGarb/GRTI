@@ -1,49 +1,46 @@
-# Identificar chamados já vinculados a sprints
+# Confirmação Sim/Não nos botões críticos do chamado
 
-## Problema confirmado
+## Diagnóstico do "anexo virou resolvido"
 
-No modal **"Adicionar chamados"** (ex.: sprint destino *Automações CearaGPS*), aparecem chamados que **já estão vinculados a outras sprints ativas** do mesmo projeto MANYCHAT (*Automações CRX*, *Automação - Resolve*) — sem nenhuma indicação visual. O usuário corre o risco de mover/duplicar trabalho que já está alocado.
+Investiguei o fluxo completo de anexos e o status do chamado:
 
-Verificação no banco confirma: vários chamados `[Manychat] - ...` listados como "disponíveis" no modal já têm `sprint_id` preenchido apontando para outra sprint do mesmo projeto.
+- O componente de anexar arquivos (`TicketComments.tsx`) **apenas insere comentários**, nunca altera o status do chamado.
+- Não existem **triggers no banco** que mudem status ao inserir comentário/anexo (verificado: só `validate_ticket_sprint_project` e `update_updated_at_column`).
+- O único caminho para o chamado ir para **"Aguardando Aprovação"** é:
+  1. Clique no botão **"Finalizar Atendimento"** (técnico), ou
+  2. Arrastar o card no Kanban da coluna *Em Andamento* → *Aguardando Aprovação*.
 
-A causa é o filtro em `AddTicketsToSprintModal.tsx` (linha 89): ele só esconde os chamados que já estão **na sprint selecionada** — qualquer outra sprint do projeto passa despercebida.
+**Causa mais provável**: clique acidental no botão *Finalizar Atendimento*, que fica logo acima da área de comentários/anexos e não pede nenhuma confirmação. Hoje só o botão *Excluir Chamado* tem `confirm()` nativo do navegador (feio e fácil de pular).
 
-## Solução
+A solução pedida (alerts de confirmação) elimina exatamente esse risco.
 
-Manter os chamados visíveis (o usuário pode querer movê-los entre sprints), mas **rotular claramente** quando já estão em outra sprint, e oferecer um filtro para esconder os já alocados.
+## O que vai mudar
 
-### Mudanças em `src/components/projetos/AddTicketsToSprintModal.tsx`
+Vou substituir cliques diretos por um `AlertDialog` (shadcn) padronizado, com botões **"Sim, confirmar"** e **"Não, cancelar"**, em três ações destrutivas/irreversíveis:
 
-1. **Buscar nomes das sprints do projeto** (já disponível via `useSprints(projectId)`) e montar um `Map<sprintId, sprintName>`.
+| Botão | Quem vê | Texto da confirmação |
+|---|---|---|
+| **Finalizar Atendimento** | Técnico em chamado *Em Andamento* | "Tem certeza que deseja finalizar este atendimento? O chamado será enviado ao solicitante para aprovação." |
+| **Excluir Chamado** | Admin (rodapé do modal) | "Tem certeza que deseja excluir este chamado? Esta ação não pode ser desfeita." |
+| **Confirmar Reprovação (Retrabalho)** | Solicitante em *Aguardando Aprovação* | "Tem certeza que deseja reprovar e devolver para retrabalho? O técnico será notificado." |
 
-2. **Badge de sprint atual** ao lado do título do chamado, quando `t.sprint_id` existir e for diferente da sprint destino selecionada:
-   - Exibir `Badge` com texto `Sprint: <nome>` (cor âmbar/warning).
-   - Exibir `Badge` com texto `Backlog` (cor neutra) quando `project_id` é igual ao atual mas `sprint_id` é `null` e o destino é uma sprint.
+Comportamento:
+- Modal centralizado, escurece o fundo, fecha com ESC ou no botão "Não".
+- Botão "Sim" usa cor destrutiva no caso de Excluir e Retrabalhar; cor primária em Finalizar.
+- Nada acontece até o usuário confirmar — se clicar fora ou em "Não", a ação é descartada.
 
-3. **Toggle de filtro "Ocultar já vinculados"** na barra de filtros:
-   - Quando ativo, esconde chamados onde `sprint_id != null && sprint_id != sprintIdSelecionada`.
-   - Padrão: **ligado** (comportamento mais seguro).
+## Arquivos afetados
 
-4. **Tooltip/aviso ao selecionar** um chamado já vinculado a outra sprint:
-   - Texto sutil abaixo do título: *"será movido de <sprint atual>"*.
-
-### ASCII de como ficará a linha
-
-```text
-[ ] [Manychat] - criar automação de live - crx     [Média]  DANILO
-    Em Andamento · #438eecfa  [Sprint: Automações CRX]
-```
-
-## Detalhes técnicos
-
-- Arquivo único: `src/components/projetos/AddTicketsToSprintModal.tsx`.
-- Reutilizar `useSprints(projectId)` que já é importado.
-- Construir `sprintNameById = new Map(sprints.map(s => [s.id, s.name]))`.
-- Adicionar estado `hideLinked: boolean` (default `true`).
-- Ajustar o `useMemo filtered` para aplicar o novo filtro.
-- Nenhuma alteração de banco, RLS, hooks ou outros componentes.
+- **`src/components/TicketDetailModal.tsx`** (único arquivo)
+  - Importar `AlertDialog`, `AlertDialogAction`, `AlertDialogCancel`, `AlertDialogContent`, `AlertDialogDescription`, `AlertDialogFooter`, `AlertDialogHeader`, `AlertDialogTitle`, `AlertDialogTrigger` de `@/components/ui/alert-dialog` (já existe no projeto).
+  - Envolver os 3 botões com `AlertDialogTrigger asChild` e renderizar o `AlertDialogContent` correspondente.
+  - Remover o `confirm(...)` nativo do botão Excluir.
+  - Não mudar nenhuma lógica de negócio, hooks, RLS, queries ou edge functions.
 
 ## Fora do escopo
 
-- Não alterar o fluxo de vinculação em si (continuará movendo de sprint quando o usuário confirmar).
-- Não mexer em `SprintItems`, `ProjectOverview` ou nas demais telas de projeto.
+- Não altero o KanbanBoard (drag-and-drop continua mudando status sem confirmação — se quiser, abro como melhoria separada).
+- Não altero o componente de comentários/anexos (já confirmado que não muda status).
+- Não mexo em status legados (`Disponível`) nem na lógica de SLA.
+
+Posso prosseguir?
