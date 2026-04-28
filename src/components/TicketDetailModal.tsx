@@ -645,14 +645,34 @@ export default function TicketDetailModal({ ticket, onClose }: Props) {
                     >
                       Cancelar
                     </button>
-                    <button
-                      onClick={handleSolicitanteReject}
-                      disabled={!rejectReason.trim()}
-                      className="flex-1 py-2 rounded-lg bg-destructive text-destructive-foreground text-sm font-semibold hover:opacity-90 transition-opacity disabled:opacity-50 flex items-center justify-center gap-2"
-                    >
-                      <ThumbsDown className="h-4 w-4" />
-                      Confirmar Reprovação
-                    </button>
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <button
+                          disabled={!rejectReason.trim()}
+                          className="flex-1 py-2 rounded-lg bg-destructive text-destructive-foreground text-sm font-semibold hover:opacity-90 transition-opacity disabled:opacity-50 flex items-center justify-center gap-2"
+                        >
+                          <ThumbsDown className="h-4 w-4" />
+                          Confirmar Reprovação
+                        </button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>Reprovar e devolver para retrabalho?</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            Tem certeza que deseja reprovar e devolver este chamado para retrabalho? O técnico será notificado e o atendimento voltará para "Em Andamento".
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Não, cancelar</AlertDialogCancel>
+                          <AlertDialogAction
+                            onClick={handleSolicitanteReject}
+                            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                          >
+                            Sim, reprovar
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
                   </div>
                 </div>
               ) : (
