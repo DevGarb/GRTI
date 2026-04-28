@@ -89,7 +89,9 @@ export default function MyGoalCard({ year, month }: Props) {
       // (descontando pausas em Aguardando Aprovação e somando retrabalhos)
       let avgResolutionHours = 0;
       if ((closedTickets || []).length > 0) {
-        const workMinutesMap = await fetchTicketWorkMinutes(closedTickets || []);
+        const workMinutesMap = await fetchTicketWorkMinutes(
+          (closedTickets || []).map((t) => ({ ...t, status: "Fechado" }))
+        );
         const totalHours = (closedTickets || []).reduce((sum, t) => {
           return sum + Math.max(0, (workMinutesMap.get(t.id) ?? 0) / 60);
         }, 0);
