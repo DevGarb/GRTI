@@ -5,7 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useGoals } from "@/hooks/useGoals";
 import { calcBusinessMinutes, BUSINESS_HOURS_PER_DAY } from "@/lib/businessHours";
-import { fetchTicketResolutionEnds, getTicketWorkStart } from "@/lib/ticketTiming";
+import { fetchTicketWorkMinutes } from "@/lib/ticketTiming";
 
 const METRIC_CONFIG: Record<string, { label: string; icon: typeof Target; shortLabel: string }> = {
   tickets_closed: { label: "Chamados Fechados", icon: TrendingUp, shortLabel: "Chamados" },
