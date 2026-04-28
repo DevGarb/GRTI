@@ -1,46 +1,37 @@
-# Confirmação Sim/Não nos botões críticos do chamado
+# Corrigir agrupamento de chamados (Bruna aparecendo como técnica)
 
-## Diagnóstico do "anexo virou resolvido"
+## Diagnóstico
 
-Investiguei o fluxo completo de anexos e o status do chamado:
+Na aba **Chamados** (admin), os cards são agrupados por técnico responsável. Em `src/pages/Chamados.tsx` (linhas 298–303) o agrupamento está assim:
 
-- O componente de anexar arquivos (`TicketComments.tsx`) **apenas insere comentários**, nunca altera o status do chamado.
-- Não existem **triggers no banco** que mudem status ao inserir comentário/anexo (verificado: só `validate_ticket_sprint_project` e `update_updated_at_column`).
-- O único caminho para o chamado ir para **"Aguardando Aprovação"** é:
-  1. Clique no botão **"Finalizar Atendimento"** (técnico), ou
-  2. Arrastar o card no Kanban da coluna *Em Andamento* → *Aguardando Aprovação*.
+```ts
+const name = t.assignedProfile?.full_name
+  || t.creatorProfile?.full_name   // ← fallback errado
+  || "Sem atribuição";
+```
 
-**Causa mais provável**: clique acidental no botão *Finalizar Atendimento*, que fica logo acima da área de comentários/anexos e não pede nenhuma confirmação. Hoje só o botão *Excluir Chamado* tem `confirm()` nativo do navegador (feio e fácil de pular).
+Esse fallback fazia sentido no fluxo antigo, quando todo chamado já nascia com técnico. Depois da mudança em que **chamados nascem em "Aberto" sem técnico**, o fallback passou a usar o nome do **solicitante** — então a Bruna (colaboradora) virou um "card de técnico" só porque abriu o chamado *teste*.
 
-A solução pedida (alerts de confirmação) elimina exatamente esse risco.
+## Correção
 
-## O que vai mudar
+Remover o fallback para `creatorProfile`. Tickets sem técnico atribuído ficam num único grupo:
 
-Vou substituir cliques diretos por um `AlertDialog` (shadcn) padronizado, com botões **"Sim, confirmar"** e **"Não, cancelar"**, em três ações destrutivas/irreversíveis:
+```ts
+const name = t.assignedProfile?.full_name || "Sem técnico atribuído";
+```
 
-| Botão | Quem vê | Texto da confirmação |
-|---|---|---|
-| **Finalizar Atendimento** | Técnico em chamado *Em Andamento* | "Tem certeza que deseja finalizar este atendimento? O chamado será enviado ao solicitante para aprovação." |
-| **Excluir Chamado** | Admin (rodapé do modal) | "Tem certeza que deseja excluir este chamado? Esta ação não pode ser desfeita." |
-| **Confirmar Reprovação (Retrabalho)** | Solicitante em *Aguardando Aprovação* | "Tem certeza que deseja reprovar e devolver para retrabalho? O técnico será notificado." |
+Resultado:
+- Bruna deixa de aparecer como técnica.
+- Todos os chamados em "Aberto" (sem técnico) ficam agrupados no card **"Sem técnico atribuído"** — útil para o admin ver de relance o backlog não atribuído.
+- Técnicos reais (Maria, Felipe, Danilo, Victor, Gabriel Caminha, Gabriel Porto) continuam com seus próprios cards normalmente.
 
-Comportamento:
-- Modal centralizado, escurece o fundo, fecha com ESC ou no botão "Não".
-- Botão "Sim" usa cor destrutiva no caso de Excluir e Retrabalhar; cor primária em Finalizar.
-- Nada acontece até o usuário confirmar — se clicar fora ou em "Não", a ação é descartada.
+## Arquivo afetado
 
-## Arquivos afetados
+- `src/pages/Chamados.tsx` — única alteração, 1 linha (remover o `|| t.creatorProfile?.full_name`).
 
-- **`src/components/TicketDetailModal.tsx`** (único arquivo)
-  - Importar `AlertDialog`, `AlertDialogAction`, `AlertDialogCancel`, `AlertDialogContent`, `AlertDialogDescription`, `AlertDialogFooter`, `AlertDialogHeader`, `AlertDialogTitle`, `AlertDialogTrigger` de `@/components/ui/alert-dialog` (já existe no projeto).
-  - Envolver os 3 botões com `AlertDialogTrigger asChild` e renderizar o `AlertDialogContent` correspondente.
-  - Remover o `confirm(...)` nativo do botão Excluir.
-  - Não mudar nenhuma lógica de negócio, hooks, RLS, queries ou edge functions.
+## Fora de escopo
 
-## Fora do escopo
+- Não mexo em RLS, queries ou outras telas.
+- Não altero a lógica do timer/SLA recém-implementada.
 
-- Não altero o KanbanBoard (drag-and-drop continua mudando status sem confirmação — se quiser, abro como melhoria separada).
-- Não altero o componente de comentários/anexos (já confirmado que não muda status).
-- Não mexo em status legados (`Disponível`) nem na lógica de SLA.
-
-Posso prosseguir?
+Posso aplicar?
