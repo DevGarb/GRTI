@@ -1,112 +1,49 @@
-## Reduzir consumo do Cloud (pós-remoção do SLA)
+# Identificar chamados já vinculados a sprints
 
-O cron `check-sla-every-minute` já foi desativado e o `cleanup-logs-daily` está rodando — então o sangramento parou. Mas restam três fontes de custo que dá pra cortar agora:
+## Problema confirmado
 
-1. **Espaço físico não foi devolvido ao SO** — os DELETEs anteriores reduziram linhas, mas as tabelas continuam ocupando 62 MB no disco (`cron.job_run_details` 32 MB, `net._http_response` 30 MB). Postgres só libera com `VACUUM FULL`.
-2. **Retenção de logs ainda generosa** — agora que não temos mais cron de minuto em minuto, dá pra encurtar a janela.
-3. **Artefatos órfãos do SLA** — edge function `check-sla`, coluna `sla_deadline` com default `now() + 6h`, página `AuditoriaSla`, e código que ainda lê esses campos.
+No modal **"Adicionar chamados"** (ex.: sprint destino *Automações CearaGPS*), aparecem chamados que **já estão vinculados a outras sprints ativas** do mesmo projeto MANYCHAT (*Automações CRX*, *Automação - Resolve*) — sem nenhuma indicação visual. O usuário corre o risco de mover/duplicar trabalho que já está alocado.
 
----
+Verificação no banco confirma: vários chamados `[Manychat] - ...` listados como "disponíveis" no modal já têm `sprint_id` preenchido apontando para outra sprint do mesmo projeto.
 
-### Passo 1 — Liberar espaço em disco (impacto imediato no tamanho do instance)
+A causa é o filtro em `AddTicketsToSprintModal.tsx` (linha 89): ele só esconde os chamados que já estão **na sprint selecionada** — qualquer outra sprint do projeto passa despercebida.
 
-Rodar `VACUUM FULL` nas tabelas infladas. Isso reescreve a tabela e devolve o espaço:
+## Solução
 
-```sql
-VACUUM FULL cron.job_run_details;
-VACUUM FULL net._http_response;
-VACUUM FULL public.webhook_logs;
+Manter os chamados visíveis (o usuário pode querer movê-los entre sprints), mas **rotular claramente** quando já estão em outra sprint, e oferecer um filtro para esconder os já alocados.
+
+### Mudanças em `src/components/projetos/AddTicketsToSprintModal.tsx`
+
+1. **Buscar nomes das sprints do projeto** (já disponível via `useSprints(projectId)`) e montar um `Map<sprintId, sprintName>`.
+
+2. **Badge de sprint atual** ao lado do título do chamado, quando `t.sprint_id` existir e for diferente da sprint destino selecionada:
+   - Exibir `Badge` com texto `Sprint: <nome>` (cor âmbar/warning).
+   - Exibir `Badge` com texto `Backlog` (cor neutra) quando `project_id` é igual ao atual mas `sprint_id` é `null` e o destino é uma sprint.
+
+3. **Toggle de filtro "Ocultar já vinculados"** na barra de filtros:
+   - Quando ativo, esconde chamados onde `sprint_id != null && sprint_id != sprintIdSelecionada`.
+   - Padrão: **ligado** (comportamento mais seguro).
+
+4. **Tooltip/aviso ao selecionar** um chamado já vinculado a outra sprint:
+   - Texto sutil abaixo do título: *"será movido de <sprint atual>"*.
+
+### ASCII de como ficará a linha
+
+```text
+[ ] [Manychat] - criar automação de live - crx     [Média]  DANILO
+    Em Andamento · #438eecfa  [Sprint: Automações CRX]
 ```
-
-Resultado esperado: banco cai de ~78 MB para ~16 MB (–80%). Backups, snapshots e I/O proporcionalmente menores.
-
-### Passo 2 — Encurtar retenção do `cleanup-logs-daily`
-
-Hoje guarda 7 dias de cron/net e 30 dias de webhooks. Sem o cron de minuto, 7 dias de `cron.job_run_details` é exagero — `cleanup-logs-daily` roda 1x/dia, são literalmente 7 linhas. Ajustar para:
-
-```sql
-DELETE FROM cron.job_run_details WHERE start_time < now() - interval '2 days';
-DELETE FROM net._http_response   WHERE created    < now() - interval '2 days';
-DELETE FROM public.webhook_logs  WHERE created_at < now() - interval '14 days';
-```
-
-E adicionar `VACUUM` (não FULL) ao final do job pra manter a tabela enxuta dia a dia:
-
-```sql
-VACUUM (ANALYZE) cron.job_run_details;
-VACUUM (ANALYZE) net._http_response;
-```
-
-### Passo 3 — Remover artefatos órfãos do SLA
-
-**Edge function** `supabase/functions/check-sla/index.ts` — não é mais chamada por ninguém. Deletar a função (deploy automático cuida).
-
-**Página `src/pages/AuditoriaSla.tsx`** — tela de auditoria de SLA. Verificar se ainda está roteada em `App.tsx` e no menu; se sim, remover rota + link.
-
-**Coluna `sla_deadline`** — manter para compatibilidade histórica, mas remover o default `now() + 6h` para tickets novos não gravarem mais valor inútil:
-
-```sql
-ALTER TABLE public.tickets ALTER COLUMN sla_deadline DROP DEFAULT;
-```
-
-**Coluna `original_assigned_to`** — usada só pelo fluxo antigo de "ticket virou Disponível por SLA". Manter no banco (tem dados históricos), mas não escrever mais nela em código novo.
-
-### Passo 4 — Verificar uso da função `check-sla` no código
-
-Buscar referências a `check-sla`, `sla_deadline`, `AuditoriaSla` em `src/` e remover imports/chamadas que sobraram.
-
----
-
-## O que NÃO mexer
-
-- `ticket_history`, `audit_logs` — pequenos (<1 MB) e têm valor de auditoria. Manter sem retenção forçada.
-- Default de `sla_deadline` em tickets antigos — não tocar; é histórico.
-- Cron `cleanup-logs-daily` — manter, só ajustar o SQL interno.
-
----
-
-## Impacto esperado
-
-| Item | Antes | Depois |
-|---|---|---|
-| Tamanho do banco | 78 MB | ~16 MB |
-| Linhas em `cron.job_run_details` | 10.080 | <10 (cresce só com cleanup) |
-| Edge function `check-sla` | órfã, deployada | removida |
-| Default `sla_deadline` em novos tickets | now()+6h | NULL |
-
-Custo Cloud deve cair mais um degrau — principalmente storage e backup. Compute já estava baixo desde que o cron de minuto foi desligado.
-
----
 
 ## Detalhes técnicos
 
-**Migrações SQL (uma migração + um insert/script):**
+- Arquivo único: `src/components/projetos/AddTicketsToSprintModal.tsx`.
+- Reutilizar `useSprints(projectId)` que já é importado.
+- Construir `sprintNameById = new Map(sprints.map(s => [s.id, s.name]))`.
+- Adicionar estado `hideLinked: boolean` (default `true`).
+- Ajustar o `useMemo filtered` para aplicar o novo filtro.
+- Nenhuma alteração de banco, RLS, hooks ou outros componentes.
 
-Migração (schema):
-```sql
-ALTER TABLE public.tickets ALTER COLUMN sla_deadline DROP DEFAULT;
-```
+## Fora do escopo
 
-Insert (data/manutenção, via tool de insert):
-```sql
-SELECT cron.unschedule('cleanup-logs-daily');
-SELECT cron.schedule('cleanup-logs-daily', '0 3 * * *', $$
-  DELETE FROM cron.job_run_details WHERE start_time < now() - interval '2 days';
-  DELETE FROM net._http_response   WHERE created    < now() - interval '2 days';
-  DELETE FROM public.webhook_logs  WHERE created_at < now() - interval '14 days';
-  VACUUM (ANALYZE) public.webhook_logs;
-$$);
-
-VACUUM FULL cron.job_run_details;
-VACUUM FULL net._http_response;
-VACUUM FULL public.webhook_logs;
-```
-
-**Arquivos a remover/editar:**
-- Deletar edge function `supabase/functions/check-sla/`
-- `src/pages/AuditoriaSla.tsx` — remover se não for mais usada
-- `src/App.tsx` — remover rota de AuditoriaSla
-- `src/components/AppLayout.tsx` (ou onde está o menu) — remover link
-- Qualquer leitura de `sla_deadline` em `src/pages/Chamados.tsx`, `TicketDetailModal.tsx`, hooks
-
-**Memória do projeto:** adicionar nota de que `sla_deadline` e `original_assigned_to` são colunas legadas (não escrever).
+- Não alterar o fluxo de vinculação em si (continuará movendo de sprint quando o usuário confirmar).
+- Não mexer em `SprintItems`, `ProjectOverview` ou nas demais telas de projeto.

@@ -53,6 +53,13 @@ export default function AddTicketsToSprintModal({
   const [technicianId, setTechnicianId] = useState<string>("all");
   const [selected, setSelected] = useState<Record<string, boolean>>({});
   const [sprintId, setSprintId] = useState<string>("backlog");
+  const [hideLinked, setHideLinked] = useState(true);
+
+  // Mapa id -> nome de sprint, para rotular chamados já vinculados a outras sprints do projeto
+  const sprintNameById = useMemo(
+    () => new Map(sprints.map((s) => [s.id, s.name])),
+    [sprints]
+  );
 
   useEffect(() => {
     if (!open) return;
@@ -61,6 +68,7 @@ export default function AddTicketsToSprintModal({
     setPriorities(new Set());
     setStatusFilter("open");
     setTechnicianId("all");
+    setHideLinked(true);
 
     if (defaultSprintId) {
       setSprintId(defaultSprintId);
@@ -85,8 +93,19 @@ export default function AddTicketsToSprintModal({
   }, [tickets]);
 
   const filtered = useMemo(() => {
+    const targetSprintId = sprintId === "backlog" ? null : sprintId;
     let list = tickets.filter((t) => {
-      if (t.project_id === projectId && (t.sprint_id ?? null) === (sprintId === "backlog" ? null : sprintId)) {
+      // já está exatamente no destino → ocultar
+      if (t.project_id === projectId && (t.sprint_id ?? null) === targetSprintId) {
+        return false;
+      }
+      // já vinculado a OUTRA sprint do mesmo projeto → ocultar quando filtro ativo
+      if (
+        hideLinked &&
+        t.project_id === projectId &&
+        t.sprint_id &&
+        t.sprint_id !== targetSprintId
+      ) {
         return false;
       }
       if (statusFilter === "open" && !OPEN_STATUSES.includes(t.status)) return false;
@@ -120,7 +139,7 @@ export default function AddTicketsToSprintModal({
       return (PRIORITY_WEIGHT[b.priority] || 0) - (PRIORITY_WEIGHT[a.priority] || 0);
     });
     return list;
-  }, [projectId, tickets, priorities, search, sprintId, statusFilter, technicianId]);
+  }, [projectId, tickets, priorities, search, sprintId, statusFilter, technicianId, hideLinked]);
 
   function toggle(t: ProjectTicket) {
     setSelected((prev) => ({ ...prev, [t.id]: !prev[t.id] }));
@@ -235,6 +254,15 @@ export default function AddTicketsToSprintModal({
                 );
               })}
             </div>
+            <Button
+              size="sm"
+              variant={hideLinked ? "default" : "outline"}
+              className="h-7 text-xs ml-auto"
+              onClick={() => setHideLinked((v) => !v)}
+              title="Esconde chamados que já estão em outra sprint deste projeto"
+            >
+              {hideLinked ? "Ocultando já vinculados" : "Mostrando todos"}
+            </Button>
           </div>
 
           {/* Lista */}
@@ -278,7 +306,19 @@ export default function AddTicketsToSprintModal({
                           <Checkbox checked={isSel} onCheckedChange={() => toggle(t)} />
                         </td>
                         <td className="p-2">
-                          <div className="font-medium">{t.title}</div>
+                          <div className="font-medium flex items-center gap-1.5 flex-wrap">
+                            <span>{t.title}</span>
+                            {t.project_id === projectId && t.sprint_id && t.sprint_id !== (sprintId === "backlog" ? null : sprintId) && (
+                              <Badge variant="outline" className="text-[9px] border-amber-500/60 text-amber-600 dark:text-amber-400">
+                                Sprint: {sprintNameById.get(t.sprint_id) || "outra"}
+                              </Badge>
+                            )}
+                            {t.project_id === projectId && !t.sprint_id && sprintId !== "backlog" && (
+                              <Badge variant="outline" className="text-[9px] text-muted-foreground">
+                                Backlog deste projeto
+                              </Badge>
+                            )}
+                          </div>
                           <div className="text-[10px] text-muted-foreground">
                             {t.status} · #{t.id.slice(0, 8)}
                             {bucket === "overdue" && (
