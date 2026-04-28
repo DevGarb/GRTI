@@ -125,7 +125,7 @@ function TicketTable({ tickets, onSelect, scoreMap, showScore, workMinutesMap }:
                 {new Date(ticket.created_at).toLocaleDateString("pt-BR")}
               </td>
               <td className="px-4 py-3">
-                <SlaTimer ticket={ticket} resolutionEnd={resolutionEndMap?.get(ticket.id)} />
+                <SlaTimer ticket={ticket} workMinutes={workMinutesMap?.get(ticket.id)} />
               </td>
               <td className="px-4 py-3">
                 <PriorityBadge priority={ticket.priority} />
