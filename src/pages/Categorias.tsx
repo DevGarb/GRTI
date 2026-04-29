@@ -35,7 +35,7 @@ export default function Categorias() {
   const [editName, setEditName] = useState("");
   const [editScore, setEditScore] = useState<number>(0);
   const queryClient = useQueryClient();
-  const { hasRole } = useAuth();
+  const { hasRole, profile } = useAuth();
   const isAdmin = hasRole("admin");
 
   const { data: categories = [], isLoading } = useQuery({
