@@ -83,12 +83,15 @@ function rgba(hex: string, alpha: number): string {
 
 type MaintHealth = "ok" | "warn" | "late" | "none";
 
+const DEFAULT_MAINT_INTERVAL_DAYS = 90;
+
 function computeMaintenanceHealth(
   lastDate: Date | null,
   intervalDays: number | null,
 ): { state: MaintHealth; nextDate: Date | null; daysLeft: number | null } {
-  if (!lastDate || !intervalDays) return { state: "none", nextDate: null, daysLeft: null };
-  const next = addDays(lastDate, intervalDays);
+  if (!lastDate) return { state: "none", nextDate: null, daysLeft: null };
+  const effective = intervalDays && intervalDays > 0 ? intervalDays : DEFAULT_MAINT_INTERVAL_DAYS;
+  const next = addDays(lastDate, effective);
   const days = differenceInDays(next, new Date());
   if (days < 0) return { state: "late", nextDate: next, daysLeft: days };
   if (days <= 15) return { state: "warn", nextDate: next, daysLeft: days };
