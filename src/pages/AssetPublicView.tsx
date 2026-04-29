@@ -3,8 +3,8 @@ import { useQuery } from "@tanstack/react-query";
 import { useState, useRef, useEffect, useMemo } from "react";
 import {
   Monitor, Laptop, Printer, Server, Wifi, Battery, Phone, MonitorSpeaker, HardDrive,
-  MapPin, User, Hash, Building2, Calendar, Package, CheckCircle2, AlertTriangle,
-  XCircle, RefreshCw, Wrench, ChevronDown, History, Clock, Activity,
+  User, Hash, Building2, Calendar, Package, CheckCircle2, AlertTriangle,
+  XCircle, RefreshCw, Wrench, ChevronDown, Clock, Activity, Timer, ListChecks,
 } from "lucide-react";
 import { format, differenceInDays, addDays, differenceInMonths } from "date-fns";
 
@@ -28,28 +28,28 @@ interface PublicAsset {
   photo_url: string | null;
   created_at: string;
   organization: { name: string; logo_url: string | null; primary_color: string | null } | null;
-  last_maintenance: { execution_date: string; responsible: string | null; notes: string | null } | null;
+  last_maintenance: { execution_date: string; responsible: string | null; notes: string | null; checklist: Record<string, unknown> | null } | null;
   maintenance_interval_days: number | null;
   relocation_history: Array<{ changed_at: string; field: string; old_value: string | null; new_value: string | null }>;
 }
 
 const typeIcons: Record<string, React.ReactNode> = {
-  Desktop: <Monitor className="h-8 w-8" />,
-  Notebook: <Laptop className="h-8 w-8" />,
-  Impressora: <Printer className="h-8 w-8" />,
-  Servidor: <Server className="h-8 w-8" />,
-  Switch: <Wifi className="h-8 w-8" />,
-  Roteador: <Wifi className="h-8 w-8" />,
-  Nobreak: <Battery className="h-8 w-8" />,
-  Monitor: <MonitorSpeaker className="h-8 w-8" />,
-  "Telefone IP": <Phone className="h-8 w-8" />,
+  Desktop: <Monitor className="h-10 w-10" />,
+  Notebook: <Laptop className="h-10 w-10" />,
+  Impressora: <Printer className="h-10 w-10" />,
+  Servidor: <Server className="h-10 w-10" />,
+  Switch: <Wifi className="h-10 w-10" />,
+  Roteador: <Wifi className="h-10 w-10" />,
+  Nobreak: <Battery className="h-10 w-10" />,
+  Monitor: <MonitorSpeaker className="h-10 w-10" />,
+  "Telefone IP": <Phone className="h-10 w-10" />,
 };
 
-const statusConfig: Record<string, { icon: React.ReactNode; color: string; bg: string }> = {
-  Ativo: { icon: <CheckCircle2 className="h-5 w-5" />, color: "text-emerald-600", bg: "bg-emerald-50 border-emerald-200" },
-  "Em manutenção": { icon: <AlertTriangle className="h-5 w-5" />, color: "text-amber-600", bg: "bg-amber-50 border-amber-200" },
-  Inativo: { icon: <XCircle className="h-5 w-5" />, color: "text-gray-500", bg: "bg-gray-50 border-gray-200" },
-  Descartado: { icon: <XCircle className="h-5 w-5" />, color: "text-red-600", bg: "bg-red-50 border-red-200" },
+const statusConfig: Record<string, { icon: React.ReactNode; color: string; bg: string; dot: string }> = {
+  Ativo: { icon: <CheckCircle2 className="h-4 w-4" />, color: "text-emerald-700", bg: "bg-emerald-50 border-emerald-200", dot: "bg-emerald-500" },
+  "Em manutenção": { icon: <AlertTriangle className="h-4 w-4" />, color: "text-amber-700", bg: "bg-amber-50 border-amber-200", dot: "bg-amber-500" },
+  Inativo: { icon: <XCircle className="h-4 w-4" />, color: "text-gray-600", bg: "bg-gray-50 border-gray-200", dot: "bg-gray-400" },
+  Descartado: { icon: <XCircle className="h-4 w-4" />, color: "text-red-700", bg: "bg-red-50 border-red-200", dot: "bg-red-500" },
 };
 
 const fieldLabels: Record<string, string> = {
@@ -143,8 +143,8 @@ export default function AssetPublicView() {
   };
   const retryDisabled = cooldown || isFetching;
 
-  const [showHistory, setShowHistory] = useState(false);
   const [showTimeline, setShowTimeline] = useState(false);
+  const [showChecklist, setShowChecklist] = useState(false);
 
   const maintHealth = useMemo(() => {
     if (!asset) return { state: "none" as MaintHealth, nextDate: null, daysLeft: null };
@@ -204,15 +204,9 @@ export default function AssetPublicView() {
   }
 
   const status = statusConfig[asset.status] || statusConfig["Inativo"];
-
-  // Visual da saúde de manutenção
-  const maintVisual: Record<MaintHealth, { label: string; color: string; bg: string; border: string; icon: React.ReactNode }> = {
-    ok: { label: "Em dia", color: "text-emerald-700", bg: "bg-emerald-50", border: "border-emerald-200", icon: <CheckCircle2 className="h-5 w-5" /> },
-    warn: { label: "Próxima do vencimento", color: "text-amber-700", bg: "bg-amber-50", border: "border-amber-200", icon: <AlertTriangle className="h-5 w-5" /> },
-    late: { label: "Atrasada", color: "text-red-700", bg: "bg-red-50", border: "border-red-200", icon: <AlertTriangle className="h-5 w-5" /> },
-    none: { label: "Sem registro", color: "text-gray-600", bg: "bg-gray-50", border: "border-gray-200", icon: <Clock className="h-5 w-5" /> },
-  };
-  const mv = maintVisual[maintHealth.state];
+  const checklistItems = asset.last_maintenance?.checklist
+    ? Object.entries(asset.last_maintenance.checklist as Record<string, unknown>)
+    : [];
 
   return (
     <div
@@ -222,18 +216,19 @@ export default function AssetPublicView() {
       }}
     >
       <div className="max-w-lg mx-auto space-y-4 pt-4 sm:pt-8">
+        {/* 1. Logo da organização */}
         {asset.organization && (
           <div className="flex items-center justify-center gap-2.5 pb-1">
             {asset.organization.logo_url ? (
               <img
                 src={asset.organization.logo_url}
                 alt={asset.organization.name}
-                className="h-8 w-8 rounded-md object-contain bg-white p-1 shadow-sm"
+                className="h-9 w-9 rounded-md object-contain bg-white p-1 shadow-sm"
                 style={{ borderTop: `2px solid ${primary}` }}
               />
             ) : (
               <div
-                className="h-8 w-8 rounded-md bg-white shadow-sm flex items-center justify-center"
+                className="h-9 w-9 rounded-md bg-white shadow-sm flex items-center justify-center"
                 style={{ borderTop: `2px solid ${primary}` }}
               >
                 <Building2 className="h-4 w-4" style={{ color: primary }} />
@@ -243,107 +238,99 @@ export default function AssetPublicView() {
           </div>
         )}
 
-        {/* Hero Card */}
+        {/* Card principal */}
         <div className="bg-white rounded-2xl shadow-xl overflow-hidden" style={{ borderTop: `3px solid ${primary}` }}>
+          {/* 2. Foto do equipamento (ou ícone) */}
           {asset.photo_url ? (
-            <div className="h-48 sm:h-56 bg-gray-100 relative">
+            <div className="h-56 sm:h-64 bg-gray-100 relative">
               <img src={asset.photo_url} alt={asset.asset_tag} className="w-full h-full object-cover" />
-              <div
-                className="absolute inset-0"
-                style={{ background: `linear-gradient(to top, ${rgba(primaryDark, 0.85)} 0%, transparent 60%)` }}
-              />
-              <div className="absolute bottom-4 left-4">
-                <p className="text-white text-2xl font-bold tracking-tight">{asset.asset_tag}</p>
-                <p className="text-white/80 text-sm">{asset.equipment_type}</p>
-              </div>
             </div>
           ) : (
-            <div className="p-8 text-white flex items-center gap-5" style={{ background: headerGradient }}>
-              <div className="h-16 w-16 rounded-2xl bg-white/20 backdrop-blur flex items-center justify-center">
-                {typeIcons[asset.equipment_type] || <HardDrive className="h-8 w-8" />}
-              </div>
-              <div>
-                <p className="text-2xl font-bold tracking-tight">{asset.asset_tag}</p>
-                <p className="text-white/80 text-sm mt-0.5">{asset.equipment_type}</p>
+            <div
+              className="h-40 sm:h-48 flex items-center justify-center text-white"
+              style={{ background: headerGradient }}
+            >
+              <div className="h-20 w-20 rounded-2xl bg-white/15 backdrop-blur flex items-center justify-center">
+                {typeIcons[asset.equipment_type] || <HardDrive className="h-10 w-10" />}
               </div>
             </div>
           )}
 
-          {/* Status */}
-          <div className={`mx-4 -mt-0 sm:mx-5 my-4 flex items-center gap-2.5 px-4 py-3 rounded-xl border ${status.bg}`}>
-            <span className={status.color}>{status.icon}</span>
-            <div>
-              <p className={`text-sm font-semibold ${status.color}`}>{asset.status}</p>
-              <p className="text-[11px] text-gray-500">Status atual do equipamento</p>
-            </div>
-          </div>
-
-          {/* Manutenção */}
-          <div className="mx-4 sm:mx-5 mb-4">
-            <div
-              className={`rounded-xl border ${mv.bg} ${mv.border} p-4`}
-              style={{ borderLeft: `3px solid ${primary}` }}
-            >
-              <div className="flex items-center gap-2.5 mb-3">
-                <span className="h-8 w-8 rounded-lg flex items-center justify-center" style={{ backgroundColor: rgba(primary, 0.1), color: primary }}>
-                  <Wrench className="h-4 w-4" />
-                </span>
-                <div className="flex-1">
-                  <p className="text-[11px] text-gray-400 uppercase tracking-wider">Manutenção preventiva</p>
-                  <div className="flex items-center gap-1.5 mt-0.5">
-                    <span className={mv.color}>{mv.icon}</span>
-                    <span className={`text-sm font-semibold ${mv.color}`}>{mv.label}</span>
-                  </div>
-                </div>
+          {/* 3-4-5. Patrimônio + Tipo + Status */}
+          <div className="px-4 sm:px-5 py-5 border-b border-gray-100">
+            <div className="flex items-start justify-between gap-3 mb-3">
+              <div className="min-w-0">
+                <p className="text-[11px] text-gray-400 uppercase tracking-wider">Nº Patrimônio</p>
+                <p className="text-3xl font-bold tracking-tight text-gray-900 leading-tight">{asset.asset_tag}</p>
+                <p className="text-sm text-gray-500 mt-1">{asset.equipment_type}</p>
               </div>
-
-              {asset.last_maintenance ? (
-                <div className="space-y-1.5 text-sm">
-                  <p className="text-gray-700">
-                    <span className="text-gray-400 text-xs uppercase tracking-wider mr-2">Última</span>
-                    {format(new Date(asset.last_maintenance.execution_date), "dd/MM/yyyy")}
-                    {asset.last_maintenance.responsible && (
-                      <span className="text-gray-500"> — {asset.last_maintenance.responsible}</span>
-                    )}
-                  </p>
-                  {maintHealth.nextDate && (
-                    <p className="text-gray-700">
-                      <span className="text-gray-400 text-xs uppercase tracking-wider mr-2">Próxima</span>
-                      {format(maintHealth.nextDate, "dd/MM/yyyy")}
-                      {maintHealth.daysLeft !== null && (
-                        <span className="text-gray-500 text-xs ml-1">
-                          ({maintHealth.daysLeft < 0
-                            ? `${Math.abs(maintHealth.daysLeft)} ${Math.abs(maintHealth.daysLeft) === 1 ? "dia" : "dias"} em atraso`
-                            : maintHealth.daysLeft === 0
-                            ? "hoje"
-                            : `em ${maintHealth.daysLeft} ${maintHealth.daysLeft === 1 ? "dia" : "dias"}`})
-                        </span>
-                      )}
-                    </p>
-                  )}
-                  {!asset.maintenance_interval_days && (
-                    <p className="text-[11px] text-gray-400">Intervalo de manutenção não configurado para este tipo.</p>
-                  )}
-                </div>
-              ) : (
-                <p className="text-sm text-gray-500">Nenhuma preventiva registrada para este patrimônio.</p>
-              )}
-            </div>
-
-            {/* Tempo de uso */}
-            <div className="flex items-center gap-2 mt-3 px-1">
-              <Activity className="h-3.5 w-3.5 text-gray-400" />
-              <p className="text-xs text-gray-500">{usageLabel(asset.created_at)}</p>
+              <span
+                className={`shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-xs font-semibold ${status.bg} ${status.color}`}
+              >
+                <span className={`h-1.5 w-1.5 rounded-full ${status.dot}`} />
+                {asset.status}
+              </span>
             </div>
           </div>
 
-          {/* Details */}
-          <div className="px-4 sm:px-5 pb-5 space-y-3">
+          {/* 6. Manutenção preventiva — DESTAQUE com countdown */}
+          <div className="px-4 sm:px-5 py-5 border-b border-gray-100">
+            <div className="flex items-center gap-2 mb-3">
+              <Wrench className="h-4 w-4" style={{ color: primary }} />
+              <p className="text-[11px] text-gray-500 uppercase tracking-wider font-semibold">Manutenção preventiva</p>
+            </div>
+            <MaintenanceCountdown
+              primary={primary}
+              health={maintHealth.state}
+              nextDate={maintHealth.nextDate}
+              daysLeft={maintHealth.daysLeft}
+              intervalDays={asset.maintenance_interval_days}
+              last={asset.last_maintenance}
+            />
+
+            {/* Checklist colapsável (se existir) */}
+            {checklistItems.length > 0 && (
+              <button
+                onClick={() => setShowChecklist((v) => !v)}
+                className="mt-3 w-full flex items-center gap-2 text-xs font-medium text-gray-600 hover:text-gray-800 transition-colors"
+                aria-expanded={showChecklist}
+              >
+                <ListChecks className="h-3.5 w-3.5" />
+                <span>Itens do checklist ({checklistItems.length})</span>
+                <ChevronDown className={`h-3.5 w-3.5 ml-auto transition-transform ${showChecklist ? "rotate-180" : ""}`} />
+              </button>
+            )}
+            {showChecklist && checklistItems.length > 0 && (
+              <ul className="mt-2 space-y-1.5 pl-1">
+                {checklistItems.map(([key, val]) => {
+                  const checked = val === true || val === "true" || val === 1;
+                  return (
+                    <li key={key} className="flex items-start gap-2 text-xs">
+                      {checked ? (
+                        <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500 mt-0.5 shrink-0" />
+                      ) : (
+                        <XCircle className="h-3.5 w-3.5 text-gray-300 mt-0.5 shrink-0" />
+                      )}
+                      <span className={checked ? "text-gray-700" : "text-gray-400 line-through"}>{key}</span>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+          </div>
+
+          {/* 7. Tempo em uso */}
+          <div className="px-4 sm:px-5 py-3 border-b border-gray-100 flex items-center gap-2">
+            <span className="h-7 w-7 rounded-lg flex items-center justify-center" style={{ backgroundColor: rgba(primary, 0.1), color: primary }}>
+              <Activity className="h-3.5 w-3.5" />
+            </span>
+            <p className="text-sm text-gray-700 font-medium">{usageLabel(asset.created_at)}</p>
+          </div>
+
+          {/* 8-11. Detalhes: Marca/Modelo, Setor, Responsável, Cadastro */}
+          <div className="px-4 sm:px-5 py-3">
             {(asset.brand || asset.model) && (
               <DetailRow accent={primary} icon={<Package className="h-4 w-4" />} label="Marca / Modelo" value={[asset.brand, asset.model].filter(Boolean).join(" ")} />
-            )}
-            {asset.serial_number && (
-              <DetailRow accent={primary} icon={<Hash className="h-4 w-4" />} label="Nº Série" value={asset.serial_number} mono />
             )}
             {asset.sector && (
               <DetailRow accent={primary} icon={<Building2 className="h-4 w-4" />} label="Setor" value={asset.sector} />
@@ -351,12 +338,12 @@ export default function AssetPublicView() {
             {asset.responsible && (
               <DetailRow accent={primary} icon={<User className="h-4 w-4" />} label="Responsável" value={asset.responsible} />
             )}
-            {asset.location && (
-              <DetailRow accent={primary} icon={<MapPin className="h-4 w-4" />} label="Localização" value={asset.location} />
-            )}
             <DetailRow accent={primary} icon={<Calendar className="h-4 w-4" />} label="Cadastrado em" value={format(new Date(asset.created_at), "dd/MM/yyyy")} />
+            {asset.serial_number && (
+              <DetailRow accent={primary} icon={<Hash className="h-4 w-4" />} label="Nº Série" value={asset.serial_number} mono />
+            )}
             {asset.notes && (
-              <div className="pt-2 border-t border-gray-100">
+              <div className="pt-3 mt-2 border-t border-gray-100">
                 <p className="text-[11px] text-gray-400 uppercase tracking-wider mb-1">Observações</p>
                 <p className="text-sm text-gray-700">{asset.notes}</p>
               </div>
@@ -364,33 +351,7 @@ export default function AssetPublicView() {
           </div>
         </div>
 
-        {/* Histórico de manutenção (colapsável) */}
-        {asset.last_maintenance && (
-          <CollapsibleCard
-            primary={primary}
-            open={showHistory}
-            onToggle={() => setShowHistory((v) => !v)}
-            icon={<History className="h-4 w-4" />}
-            title="Histórico de manutenção"
-            count={1}
-          >
-            <div className="space-y-2 pt-2">
-              <div className="text-sm text-gray-700">
-                <p className="font-medium">
-                  {format(new Date(asset.last_maintenance.execution_date), "dd/MM/yyyy")}
-                  {asset.last_maintenance.responsible && (
-                    <span className="text-gray-500 font-normal"> — {asset.last_maintenance.responsible}</span>
-                  )}
-                </p>
-                {asset.last_maintenance.notes && (
-                  <p className="text-xs text-gray-500 mt-1">{asset.last_maintenance.notes}</p>
-                )}
-              </div>
-            </div>
-          </CollapsibleCard>
-        )}
-
-        {/* Linha do tempo do equipamento (colapsável) */}
+        {/* 12. Linha do tempo (colapsável) */}
         <CollapsibleCard
           primary={primary}
           open={showTimeline}
@@ -430,6 +391,116 @@ export default function AssetPublicView() {
           Gerado automaticamente pelo sistema de gestão de patrimônio
         </p>
       </div>
+    </div>
+  );
+}
+
+/* ──────────────── Subcomponentes ──────────────── */
+
+function MaintenanceCountdown({
+  primary,
+  health,
+  nextDate,
+  daysLeft,
+  intervalDays,
+  last,
+}: {
+  primary: string;
+  health: MaintHealth;
+  nextDate: Date | null;
+  daysLeft: number | null;
+  intervalDays: number | null;
+  last: { execution_date: string; responsible: string | null; notes: string | null } | null;
+}) {
+  // Cores por estado
+  const palette: Record<MaintHealth, { bg: string; ring: string; text: string; bar: string; label: string }> = {
+    ok:   { bg: "bg-emerald-50",  ring: "border-emerald-200", text: "text-emerald-700", bar: "bg-emerald-500", label: "Em dia" },
+    warn: { bg: "bg-amber-50",    ring: "border-amber-200",   text: "text-amber-700",   bar: "bg-amber-500",   label: "Próxima do vencimento" },
+    late: { bg: "bg-red-50",      ring: "border-red-200",     text: "text-red-700",     bar: "bg-red-500",     label: "Atrasada" },
+    none: { bg: "bg-gray-50",     ring: "border-gray-200",    text: "text-gray-600",    bar: "bg-gray-400",    label: "Sem registro" },
+  };
+  const p = palette[health];
+
+  // Progresso da barra (% do intervalo já decorrido)
+  let progress = 0;
+  if (intervalDays && daysLeft !== null) {
+    const elapsed = intervalDays - daysLeft;
+    progress = Math.max(0, Math.min(100, (elapsed / intervalDays) * 100));
+  }
+  if (health === "late") progress = 100;
+
+  // Texto do contador
+  let bigText = "—";
+  let subText = "Sem dados";
+  if (health === "none" && !last) {
+    bigText = "Nenhuma";
+    subText = "preventiva registrada";
+  } else if (health === "none" && last) {
+    bigText = "Sem intervalo";
+    subText = "configurado para este tipo";
+  } else if (daysLeft !== null) {
+    if (daysLeft < 0) {
+      const d = Math.abs(daysLeft);
+      bigText = `${d}`;
+      subText = `${d === 1 ? "dia" : "dias"} em atraso`;
+    } else if (daysLeft === 0) {
+      bigText = "Hoje";
+      subText = "Vence hoje";
+    } else {
+      bigText = `${daysLeft}`;
+      subText = `${daysLeft === 1 ? "dia restante" : "dias restantes"}`;
+    }
+  }
+
+  return (
+    <div className={`rounded-2xl border ${p.bg} ${p.ring} p-4`} style={{ borderLeft: `3px solid ${primary}` }}>
+      {/* Header com label do estado */}
+      <div className="flex items-center justify-between mb-3">
+        <span className={`inline-flex items-center gap-1.5 text-xs font-semibold ${p.text}`}>
+          <Timer className="h-3.5 w-3.5" />
+          {p.label}
+        </span>
+        {nextDate && (
+          <span className="text-[11px] text-gray-500">
+            Próxima: <span className="font-semibold text-gray-700">{format(nextDate, "dd/MM/yyyy")}</span>
+          </span>
+        )}
+      </div>
+
+      {/* Contador grande */}
+      <div className="flex items-baseline gap-2 mb-3">
+        <span className={`text-4xl font-bold leading-none ${p.text}`}>{bigText}</span>
+        <span className="text-sm text-gray-500">{subText}</span>
+      </div>
+
+      {/* Barra de progresso */}
+      {intervalDays && health !== "none" && (
+        <div className="h-1.5 w-full bg-white/60 rounded-full overflow-hidden mb-3">
+          <div
+            className={`h-full ${p.bar} transition-all duration-500`}
+            style={{ width: `${progress}%` }}
+          />
+        </div>
+      )}
+
+      {/* Última preventiva */}
+      {last ? (
+        <div className="flex items-center gap-2 text-xs text-gray-600 pt-2 border-t border-white/60">
+          <Calendar className="h-3.5 w-3.5 text-gray-400" />
+          <span>
+            Última: <span className="font-semibold text-gray-700">{format(new Date(last.execution_date), "dd/MM/yyyy")}</span>
+            {last.responsible && <span className="text-gray-500"> por {last.responsible}</span>}
+          </span>
+        </div>
+      ) : (
+        <p className="text-xs text-gray-500 pt-2 border-t border-white/60">
+          Nenhuma preventiva registrada para este patrimônio.
+        </p>
+      )}
+
+      {last?.notes && (
+        <p className="text-xs text-gray-500 mt-2 italic">"{last.notes}"</p>
+      )}
     </div>
   );
 }

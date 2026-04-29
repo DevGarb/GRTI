@@ -72,11 +72,12 @@ Deno.serve(async (req) => {
       execution_date: string;
       responsible: string | null;
       notes: string | null;
+      checklist: Record<string, unknown> | null;
     } | null = null;
     {
       let q = supabase
         .from("preventive_maintenance")
-        .select("execution_date, responsible, notes")
+        .select("execution_date, responsible, notes, checklist")
         .eq("asset_tag", data.asset_tag)
         .order("execution_date", { ascending: false })
         .limit(1);
