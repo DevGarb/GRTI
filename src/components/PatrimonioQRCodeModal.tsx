@@ -26,10 +26,11 @@ export default function PatrimonioQRCodeModal({ patrimonio, onClose }: Props) {
 
   useEffect(() => {
     QRCode.toDataURL(assetUrl, {
-      width: 512,
-      margin: 2,
+      width: 1024,
+      margin: 1,
       color: { dark: "#000000", light: "#ffffff" },
       errorCorrectionLevel: "H",
+      rendererOpts: { quality: 1 },
     }).then(setQrDataUrl);
   }, [assetUrl]);
 
@@ -44,7 +45,7 @@ export default function PatrimonioQRCodeModal({ patrimonio, onClose }: Props) {
   const downloadCard = () => {
     if (!cardRef.current) return;
     import("html2canvas").then(({ default: html2canvas }) => {
-      html2canvas(cardRef.current!, { scale: 4, backgroundColor: "#ffffff" }).then((canvas) => {
+      html2canvas(cardRef.current!, { scale: 8, backgroundColor: "#ffffff", imageTimeout: 0, useCORS: true }).then((canvas) => {
         const a = document.createElement("a");
         a.href = canvas.toDataURL("image/png");
         a.download = `Etiqueta_${patrimonio.asset_tag}_${labelSize}.png`;
