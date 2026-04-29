@@ -30,6 +30,7 @@ interface PublicAsset {
   organization: { name: string; logo_url: string | null; primary_color: string | null } | null;
   last_maintenance: { execution_date: string; responsible: string | null; notes: string | null; checklist: Record<string, unknown> | null } | null;
   maintenance_interval_days: number | null;
+  maintenance_interval_source?: "configured" | "default";
   relocation_history: Array<{ changed_at: string; field: string; old_value: string | null; new_value: string | null }>;
 }
 
@@ -82,12 +83,15 @@ function rgba(hex: string, alpha: number): string {
 
 type MaintHealth = "ok" | "warn" | "late" | "none";
 
+const DEFAULT_MAINT_INTERVAL_DAYS = 90;
+
 function computeMaintenanceHealth(
   lastDate: Date | null,
   intervalDays: number | null,
 ): { state: MaintHealth; nextDate: Date | null; daysLeft: number | null } {
-  if (!lastDate || !intervalDays) return { state: "none", nextDate: null, daysLeft: null };
-  const next = addDays(lastDate, intervalDays);
+  if (!lastDate) return { state: "none", nextDate: null, daysLeft: null };
+  const effective = intervalDays && intervalDays > 0 ? intervalDays : DEFAULT_MAINT_INTERVAL_DAYS;
+  const next = addDays(lastDate, effective);
   const days = differenceInDays(next, new Date());
   if (days < 0) return { state: "late", nextDate: next, daysLeft: days };
   if (days <= 15) return { state: "warn", nextDate: next, daysLeft: days };
@@ -284,7 +288,8 @@ export default function AssetPublicView() {
               health={maintHealth.state}
               nextDate={maintHealth.nextDate}
               daysLeft={maintHealth.daysLeft}
-              intervalDays={asset.maintenance_interval_days}
+              intervalDays={asset.maintenance_interval_days ?? DEFAULT_MAINT_INTERVAL_DAYS}
+              intervalSource={asset.maintenance_interval_source ?? "default"}
               last={asset.last_maintenance}
             />
 
@@ -403,6 +408,7 @@ function MaintenanceCountdown({
   nextDate,
   daysLeft,
   intervalDays,
+  intervalSource,
   last,
 }: {
   primary: string;
@@ -410,6 +416,7 @@ function MaintenanceCountdown({
   nextDate: Date | null;
   daysLeft: number | null;
   intervalDays: number | null;
+  intervalSource: "configured" | "default";
   last: { execution_date: string; responsible: string | null; notes: string | null } | null;
 }) {
   // Cores por estado
@@ -475,12 +482,19 @@ function MaintenanceCountdown({
 
       {/* Barra de progresso */}
       {intervalDays && health !== "none" && (
-        <div className="h-1.5 w-full bg-white/60 rounded-full overflow-hidden mb-3">
+        <div className="h-1.5 w-full bg-white/60 rounded-full overflow-hidden mb-2">
           <div
             className={`h-full ${p.bar} transition-all duration-500`}
             style={{ width: `${progress}%` }}
           />
         </div>
+      )}
+
+      {/* Microcopy: intervalo padrão */}
+      {intervalSource === "default" && health !== "none" && (
+        <p className="text-[11px] text-gray-400 mb-2">
+          Intervalo padrão de {intervalDays} dias. Personalize em Preventivas › Intervalos.
+        </p>
       )}
 
       {/* Última preventiva */}

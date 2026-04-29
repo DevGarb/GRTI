@@ -86,15 +86,21 @@ Deno.serve(async (req) => {
       if (maint) last_maintenance = maint;
     }
 
-    // Intervalo de manutenção por tipo de equipamento
-    let maintenance_interval_days: number | null = null;
+    // Intervalo de manutenção por tipo de equipamento.
+    // Regra: se o tipo não tem intervalo cadastrado, assume-se 90 dias por padrão.
+    const DEFAULT_INTERVAL_DAYS = 90;
+    let maintenance_interval_days: number = DEFAULT_INTERVAL_DAYS;
+    let maintenance_interval_source: "configured" | "default" = "default";
     {
       const { data: itv } = await supabase
         .from("maintenance_intervals")
         .select("interval_days")
         .eq("equipment_type", data.equipment_type)
         .maybeSingle();
-      if (itv?.interval_days) maintenance_interval_days = itv.interval_days;
+      if (itv?.interval_days) {
+        maintenance_interval_days = itv.interval_days;
+        maintenance_interval_source = "configured";
+      }
     }
 
     // Linha do tempo de realocações (até 10)
@@ -120,6 +126,7 @@ Deno.serve(async (req) => {
       organization,
       last_maintenance,
       maintenance_interval_days,
+      maintenance_interval_source,
       relocation_history,
     });
   } catch (e) {
