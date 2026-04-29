@@ -1,79 +1,40 @@
-## Objetivo
+## Problema
 
-Reescrever o layout da tela `/asset/:id` (aberta pelo QR Code) seguindo a ordem exata pedida, com destaque para um relógio/contador decrescente da próxima manutenção preventiva.
+No modal/tela do QR Code (`/asset/:id`), quando há preventiva registrada mas o tipo do equipamento ainda **não tem intervalo cadastrado** em `maintenance_intervals`, o card de manutenção mostra **"Sem intervalo configurado"** em vez de iniciar a contagem regressiva.
 
-Bom: o backend (`get-public-asset`) já entrega todos os dados necessários (foto, manutenção, intervalo, histórico, criação). **Nenhuma alteração de banco ou edge function é necessária** — só refatoração visual em `src/pages/AssetPublicView.tsx`.
+Confirmado: a tabela `maintenance_intervals` está vazia hoje, então **todo** patrimônio cai nesse fallback.
 
-## Nova ordem visual (de cima para baixo)
+A regra de negócio definida é: ao registrar a primeira preventiva, deve começar a contagem de **90 dias** automaticamente para a próxima — ou seja, 90 dias é o padrão quando não houver intervalo específico.
 
-```
-┌─────────────────────────────────────┐
-│  [Logo da organização + nome]       │  cabeçalho discreto
-├─────────────────────────────────────┤
-│                                     │
-│       [Foto do equipamento]         │  hero: foto se houver,
-│       (ou ícone do tipo)            │       senão ícone grande
-│                                     │
-├─────────────────────────────────────┤
-│  Nº Patrimônio (OS):  PAT-001234    │  destaque tipográfico
-│  Tipo:                Notebook      │
-│  Status:              [Ativo]       │  badge colorido
-├─────────────────────────────────────┤
-│  ⚙ MANUTENÇÃO PREVENTIVA            │
-│  ┌─────────────────────────────┐    │
-│  │  ⏱  Próxima em  80 dias     │    │  contador grande
-│  │     17/07/2026              │    │
-│  │  ━━━━━━━━━━━━━━━━━━━━━━━━━  │    │  barra de progresso
-│  │  Última: 27/04/2026         │    │  (verde→amarelo→vermelho)
-│  │         por João Silva  
-│  │. Itens do Checklist :
-│  └─────────────────────────────┘    │
-├─────────────────────────────────────┤
-│  🕐 Em uso há 1 ano e 3 meses       │
-├─────────────────────────────────────┤
-│  Marca / Modelo:    Dell Latitude…  │
-│  Setor:             TI              │
-│  Responsável:       Maria Souza     │
-│  Cadastrado em:     27/01/2025      │
-├─────────────────────────────────────┤
-│  ▼ Linha do tempo (5)               │  colapsável
-└─────────────────────────────────────┘
-```
+## Solução
 
-&nbsp;
+Tratar 90 dias como **valor padrão implícito** sempre que `maintenance_intervals` não tiver registro para aquele `equipment_type`. A coluna `interval_days` já tem `DEFAULT 90` no banco, então não há mudança de schema — só de lógica.
 
-Itens removidos do layout atual: bloco "Histórico de manutenção" colapsável (a info da última preventiva já está no card destacado), Nº Série e Localização (não estavam na lista pedida — manter ocultos por padrão).
+### 1. Edge function `get-public-asset`
 
-## Detalhes do contador de preventiva (destaque)
+Em `supabase/functions/get-public-asset/index.ts`, ao consultar o intervalo:
 
-É o elemento visual principal da tela. Comportamento:
+- Se `maintenance_intervals` não retornar linha para o `equipment_type` do patrimônio, devolver `maintenance_interval_days = 90` (em vez de `null`).
+- Adicionar um campo opcional `maintenance_interval_source: 'configured' | 'default'` para o frontend poder sinalizar visualmente que o valor é o padrão (útil mais tarde, sem alterar comportamento).
 
-- **Em dia (>15 dias)**: fundo verde claro, texto "Próxima em N dias", barra de progresso verde mostrando % do intervalo já decorrido.
-- **Próxima do vencimento (1–15 dias)**: fundo âmbar, ícone de alerta, texto "Próxima em N dias".
-- **Vencida (<0)**: fundo vermelho, texto "Atrasada há N dias", barra cheia vermelha.
-- **Sem registro**: fundo cinza, texto "Nenhuma preventiva registrada", sem contador.
-- **Sem intervalo configurado**: mostra apenas última data, com nota "Intervalo não configurado".
+### 2. Frontend `AssetPublicView.tsx`
 
-A barra de progresso usa `(intervalo - dias_restantes) / intervalo`, clamped 0–100%.
+Como agora o intervalo nunca virá `null` (sempre vem 90 no mínimo), o caminho `health === "none" && last` (que produzia "Sem intervalo / configurado para este tipo") deixa de ser alcançado. Mantemos defesa redundante:
 
-Cálculo já existe em `computeMaintenanceHealth()` — reutilizar.
+- Em `computeMaintenanceHealth`, se `intervalDays` vier `null/undefined`, assumir `90` antes do cálculo.
+- Quando o intervalo for o padrão de 90 dias e não houver registro em `maintenance_intervals`, exibir um pequeno texto auxiliar logo abaixo da próxima data: **"Intervalo padrão (90 dias) — configure em Preventivas › Intervalos para personalizar."** (somente se `maintenance_interval_source === 'default'`).
 
-## Mudanças no arquivo
+### 3. Sem migrations
 
-**Único arquivo editado**: `src/pages/AssetPublicView.tsx`
+Nada muda no schema. A tabela `maintenance_intervals` continua opcional — passa a funcionar como override do padrão de 90 dias.
 
-1. Reorganizar o JSX do return (~linhas 217–430) na ordem nova.
-2. Criar um componente interno `MaintenanceCountdown` que renderiza o card destacado com a barra de progresso.
-3. Remover o estado `showHistory` e o `<CollapsibleCard>` de "Histórico de manutenção".
-4. Manter o `<CollapsibleCard>` de "Linha do tempo" no final.
-5. Reordenar os `<DetailRow>` para: Marca/Modelo → Setor → Responsável → Cadastrado em.
-6. Mover Nº Patrimônio + Tipo + Status para um bloco dedicado logo abaixo da foto (não mais em cima dela), com tipografia grande no asset_tag.
+## Comportamento resultante
 
-Estados, queries, edge function, tipos e helpers (`computeMaintenanceHealth`, `usageLabel`, `shade`, `rgba`) ficam intactos.
+- Patrimônio **com preventiva** + tipo **sem intervalo cadastrado** → conta regressiva de 90 dias a partir da última preventiva (ex.: "prox em 80 dias"), com nota discreta de que é o padrão.
+- Patrimônio **com preventiva** + tipo **com intervalo cadastrado** → comportamento atual (usa o valor configurado).
+- Patrimônio **sem nenhuma preventiva** → continua mostrando "Nenhuma preventiva registrada" (como hoje).
 
-## O que NÃO muda
+## Arquivos a alterar
 
-- Edge function `get-public-asset` — sem alterações.
-- Banco de dados — sem migrações.
-- Cores da organização (`primary_color`) continuam aplicadas.
-- Lógica de retry/cooldown e estado de erro continuam iguais.
+- `supabase/functions/get-public-asset/index.ts` — fallback para 90 e novo campo `maintenance_interval_source`.
+- `src/pages/AssetPublicView.tsx` — defesa redundante no helper, leitura do novo campo, microcopy auxiliar.
