@@ -167,9 +167,9 @@ export default function PatrimonioQRCodeModal({ patrimonio, onClose }: Props) {
                       flexDirection: "column",
                       alignItems: labelSize === "12x40" ? "flex-start" : "center",
                       justifyContent: "center",
-                      overflow: "hidden",
-                      lineHeight: 1.1,
+                      lineHeight: 1.15,
                       minWidth: 0,
+                      gap: "2px",
                     }}
                   >
                     <span
@@ -179,6 +179,7 @@ export default function PatrimonioQRCodeModal({ patrimonio, onClose }: Props) {
                         letterSpacing: "-0.02em",
                         whiteSpace: "nowrap",
                         color: "#000000",
+                        lineHeight: 1,
                       }}
                     >
                       {patrimonio.asset_tag}
@@ -191,7 +192,9 @@ export default function PatrimonioQRCodeModal({ patrimonio, onClose }: Props) {
                           whiteSpace: "nowrap",
                           overflow: "hidden",
                           textOverflow: "ellipsis",
-                          maxWidth: labelSize === "12x40" ? "120px" : "100%",
+                          maxWidth: labelSize === "12x40" ? "140px" : "100%",
+                          lineHeight: 1.2,
+                          display: "block",
                         }}
                       >
                         {patrimonio.equipment_type}
