@@ -288,7 +288,8 @@ export default function AssetPublicView() {
               health={maintHealth.state}
               nextDate={maintHealth.nextDate}
               daysLeft={maintHealth.daysLeft}
-              intervalDays={asset.maintenance_interval_days}
+              intervalDays={asset.maintenance_interval_days ?? DEFAULT_MAINT_INTERVAL_DAYS}
+              intervalSource={asset.maintenance_interval_source ?? "default"}
               last={asset.last_maintenance}
             />
 
