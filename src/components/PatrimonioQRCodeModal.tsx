@@ -10,10 +10,49 @@ interface Props {
 
 type LabelSize = "12x40" | "15x30" | "12x22";
 
-const labelDimensions: Record<LabelSize, { w: string; h: string; qr: string; fontSize: string }> = {
-  "12x40": { w: "320px", h: "96px", qr: "72px", fontSize: "14px" },
-  "15x30": { w: "240px", h: "120px", qr: "80px", fontSize: "13px" },
-  "12x22": { w: "176px", h: "96px", qr: "64px", fontSize: "11px" },
+const labelDimensions: Record<
+  LabelSize,
+  {
+    w: string;
+    h: string;
+    qr: string;
+    gap: string;
+    padding: string;
+    assetFontSize: string;
+    typeFontSize: string;
+    typeMaxWidth: string;
+  }
+> = {
+  "12x40": {
+    w: "320px",
+    h: "96px",
+    qr: "68px",
+    gap: "6px",
+    padding: "6px 8px",
+    assetFontSize: "21px",
+    typeFontSize: "15px",
+    typeMaxWidth: "150px",
+  },
+  "15x30": {
+    w: "240px",
+    h: "120px",
+    qr: "76px",
+    gap: "6px",
+    padding: "8px",
+    assetFontSize: "19px",
+    typeFontSize: "14px",
+    typeMaxWidth: "100%",
+  },
+  "12x22": {
+    w: "176px",
+    h: "96px",
+    qr: "64px",
+    gap: "2px",
+    padding: "4px",
+    assetFontSize: "12px",
+    typeFontSize: "0px",
+    typeMaxWidth: "100%",
+  },
 };
 
 export default function PatrimonioQRCodeModal({ patrimonio, onClose }: Props) {
@@ -142,8 +181,8 @@ export default function PatrimonioQRCodeModal({ patrimonio, onClose }: Props) {
                     flexDirection: labelSize === "12x40" ? "row" : "column",
                     alignItems: "center",
                     justifyContent: "center",
-                    gap: labelSize === "12x22" ? "2px" : "6px",
-                    padding: labelSize === "12x22" ? "4px" : "6px",
+                     gap: labelDimensions[labelSize].gap,
+                     padding: labelDimensions[labelSize].padding,
                     fontFamily: "Arial, Helvetica, sans-serif",
                     color: "#000000",
                     boxSizing: "border-box" as const,
@@ -168,16 +207,19 @@ export default function PatrimonioQRCodeModal({ patrimonio, onClose }: Props) {
                       flexDirection: "column",
                       alignItems: labelSize === "12x40" ? "flex-start" : "center",
                       justifyContent: "center",
-                      lineHeight: 1.15,
+                       lineHeight: 1.05,
                       minWidth: 0,
-                      gap: "2px",
+                       gap: labelSize === "12x40" ? "1px" : "2px",
+                       flex: labelSize === "12x40" ? 1 : undefined,
+                       height: "100%",
+                       overflow: "visible",
                     }}
                   >
                     <span
                       style={{
-                        fontSize: labelDimensions[labelSize].fontSize,
+                         fontSize: labelDimensions[labelSize].assetFontSize,
                         fontWeight: 900,
-                        letterSpacing: "-0.02em",
+                         letterSpacing: "0",
                         whiteSpace: "nowrap",
                         color: "#000000",
                         lineHeight: 1,
@@ -188,13 +230,14 @@ export default function PatrimonioQRCodeModal({ patrimonio, onClose }: Props) {
                     {labelSize !== "12x22" && (
                       <span
                         style={{
-                          fontSize: `${parseInt(labelDimensions[labelSize].fontSize) - 3}px`,
+                           fontSize: labelDimensions[labelSize].typeFontSize,
+                           fontWeight: 600,
                           color: "#555555",
                           whiteSpace: "nowrap",
-                          overflow: "hidden",
-                          textOverflow: "ellipsis",
-                          maxWidth: labelSize === "12x40" ? "140px" : "100%",
-                          lineHeight: 1.2,
+                           overflow: "visible",
+                           textOverflow: "clip",
+                           maxWidth: labelDimensions[labelSize].typeMaxWidth,
+                           lineHeight: 1.05,
                           display: "block",
                         }}
                       >
