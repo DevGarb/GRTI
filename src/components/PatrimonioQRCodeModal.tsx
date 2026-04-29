@@ -26,10 +26,11 @@ export default function PatrimonioQRCodeModal({ patrimonio, onClose }: Props) {
 
   useEffect(() => {
     QRCode.toDataURL(assetUrl, {
-      width: 512,
-      margin: 2,
+      width: 1024,
+      margin: 1,
       color: { dark: "#000000", light: "#ffffff" },
       errorCorrectionLevel: "H",
+      rendererOpts: { quality: 1 },
     }).then(setQrDataUrl);
   }, [assetUrl]);
 
