@@ -482,12 +482,19 @@ function MaintenanceCountdown({
 
       {/* Barra de progresso */}
       {intervalDays && health !== "none" && (
-        <div className="h-1.5 w-full bg-white/60 rounded-full overflow-hidden mb-3">
+        <div className="h-1.5 w-full bg-white/60 rounded-full overflow-hidden mb-2">
           <div
             className={`h-full ${p.bar} transition-all duration-500`}
             style={{ width: `${progress}%` }}
           />
         </div>
+      )}
+
+      {/* Microcopy: intervalo padrão */}
+      {intervalSource === "default" && health !== "none" && (
+        <p className="text-[11px] text-gray-400 mb-2">
+          Intervalo padrão de {intervalDays} dias. Personalize em Preventivas › Intervalos.
+        </p>
       )}
 
       {/* Última preventiva */}
