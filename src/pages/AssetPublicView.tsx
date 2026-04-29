@@ -1,8 +1,27 @@
 import { useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
 import { Monitor, Laptop, Printer, Server, Wifi, Battery, Phone, MonitorSpeaker, HardDrive, MapPin, User, Hash, Building2, Calendar, Package, CheckCircle2, AlertTriangle, XCircle } from "lucide-react";
 import { format } from "date-fns";
+
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string;
+const SUPABASE_ANON = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY as string;
+
+interface PublicAsset {
+  id: string;
+  asset_tag: string;
+  equipment_type: string;
+  brand: string | null;
+  model: string | null;
+  serial_number: string | null;
+  sector: string | null;
+  responsible: string | null;
+  location: string | null;
+  status: string;
+  notes: string | null;
+  photo_url: string | null;
+  created_at: string;
+  organization: { name: string; logo_url: string | null; primary_color: string | null } | null;
+}
 
 const typeIcons: Record<string, React.ReactNode> = {
   Desktop: <Monitor className="h-8 w-8" />,
@@ -26,18 +45,20 @@ const statusConfig: Record<string, { icon: React.ReactNode; color: string; bg: s
 export default function AssetPublicView() {
   const { id } = useParams<{ id: string }>();
 
-  const { data: asset, isLoading, error } = useQuery({
+  const { data: asset, isLoading, error } = useQuery<PublicAsset>({
     queryKey: ["asset-public", id],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("patrimonio")
-        .select("*")
-        .eq("id", id!)
-        .single();
-      if (error) throw error;
-      return data;
+      const r = await fetch(`${SUPABASE_URL}/functions/v1/get-public-asset?id=${id}`, {
+        headers: {
+          apikey: SUPABASE_ANON,
+          Authorization: `Bearer ${SUPABASE_ANON}`,
+        },
+      });
+      if (!r.ok) throw new Error("not_found");
+      return r.json();
     },
     enabled: !!id,
+    retry: false,
   });
 
   if (isLoading) {
