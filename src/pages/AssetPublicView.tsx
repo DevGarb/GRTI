@@ -1,8 +1,27 @@
 import { useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
 import { Monitor, Laptop, Printer, Server, Wifi, Battery, Phone, MonitorSpeaker, HardDrive, MapPin, User, Hash, Building2, Calendar, Package, CheckCircle2, AlertTriangle, XCircle } from "lucide-react";
 import { format } from "date-fns";
+
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string;
+const SUPABASE_ANON = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY as string;
+
+interface PublicAsset {
+  id: string;
+  asset_tag: string;
+  equipment_type: string;
+  brand: string | null;
+  model: string | null;
+  serial_number: string | null;
+  sector: string | null;
+  responsible: string | null;
+  location: string | null;
+  status: string;
+  notes: string | null;
+  photo_url: string | null;
+  created_at: string;
+  organization: { name: string; logo_url: string | null; primary_color: string | null } | null;
+}
 
 const typeIcons: Record<string, React.ReactNode> = {
   Desktop: <Monitor className="h-8 w-8" />,
@@ -26,18 +45,20 @@ const statusConfig: Record<string, { icon: React.ReactNode; color: string; bg: s
 export default function AssetPublicView() {
   const { id } = useParams<{ id: string }>();
 
-  const { data: asset, isLoading, error } = useQuery({
+  const { data: asset, isLoading, error } = useQuery<PublicAsset>({
     queryKey: ["asset-public", id],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("patrimonio")
-        .select("*")
-        .eq("id", id!)
-        .single();
-      if (error) throw error;
-      return data;
+      const r = await fetch(`${SUPABASE_URL}/functions/v1/get-public-asset?id=${id}`, {
+        headers: {
+          apikey: SUPABASE_ANON,
+          Authorization: `Bearer ${SUPABASE_ANON}`,
+        },
+      });
+      if (!r.ok) throw new Error("not_found");
+      return r.json();
     },
     enabled: !!id,
+    retry: false,
   });
 
   if (isLoading) {
@@ -65,6 +86,19 @@ export default function AssetPublicView() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-slate-100 p-4 sm:p-6">
       <div className="max-w-lg mx-auto space-y-4 pt-4 sm:pt-8">
+        {asset.organization && (
+          <div className="flex items-center justify-center gap-2.5 pb-1">
+            {asset.organization.logo_url ? (
+              <img src={asset.organization.logo_url} alt={asset.organization.name} className="h-8 w-8 rounded-md object-contain bg-white p-1 shadow-sm" />
+            ) : (
+              <div className="h-8 w-8 rounded-md bg-white shadow-sm flex items-center justify-center">
+                <Building2 className="h-4 w-4 text-gray-500" />
+              </div>
+            )}
+            <span className="text-sm font-semibold text-gray-700">{asset.organization.name}</span>
+          </div>
+        )}
+
         {/* Hero Card */}
         <div className="bg-white rounded-2xl shadow-xl overflow-hidden">
           {/* Photo or icon header */}
