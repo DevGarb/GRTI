@@ -126,6 +126,7 @@ Deno.serve(async (req) => {
       organization,
       last_maintenance,
       maintenance_interval_days,
+      maintenance_interval_source,
       relocation_history,
     });
   } catch (e) {
