@@ -407,6 +407,39 @@ export type Database = {
           },
         ]
       }
+      patrimonio_history: {
+        Row: {
+          changed_at: string
+          changed_by: string | null
+          field: string
+          id: string
+          new_value: string | null
+          old_value: string | null
+          organization_id: string | null
+          patrimonio_id: string
+        }
+        Insert: {
+          changed_at?: string
+          changed_by?: string | null
+          field: string
+          id?: string
+          new_value?: string | null
+          old_value?: string | null
+          organization_id?: string | null
+          patrimonio_id: string
+        }
+        Update: {
+          changed_at?: string
+          changed_by?: string | null
+          field?: string
+          id?: string
+          new_value?: string | null
+          old_value?: string | null
+          organization_id?: string | null
+          patrimonio_id?: string
+        }
+        Relationships: []
+      }
       performance_goals: {
         Row: {
           created_at: string

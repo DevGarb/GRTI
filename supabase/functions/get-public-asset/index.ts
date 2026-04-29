@@ -51,6 +51,7 @@ Deno.serve(async (req) => {
     }
     if (!data) return json({ error: "not_found" }, 404);
 
+    // Branding da organização
     let organization: {
       name: string;
       logo_url: string | null;
@@ -66,8 +67,60 @@ Deno.serve(async (req) => {
       if (org) organization = org;
     }
 
+    // Última manutenção preventiva (asset_tag + organization_id)
+    let last_maintenance: {
+      execution_date: string;
+      responsible: string | null;
+      notes: string | null;
+    } | null = null;
+    {
+      let q = supabase
+        .from("preventive_maintenance")
+        .select("execution_date, responsible, notes")
+        .eq("asset_tag", data.asset_tag)
+        .order("execution_date", { ascending: false })
+        .limit(1);
+      if (data.organization_id) q = q.eq("organization_id", data.organization_id);
+      const { data: maint } = await q.maybeSingle();
+      if (maint) last_maintenance = maint;
+    }
+
+    // Intervalo de manutenção por tipo de equipamento
+    let maintenance_interval_days: number | null = null;
+    {
+      const { data: itv } = await supabase
+        .from("maintenance_intervals")
+        .select("interval_days")
+        .eq("equipment_type", data.equipment_type)
+        .maybeSingle();
+      if (itv?.interval_days) maintenance_interval_days = itv.interval_days;
+    }
+
+    // Linha do tempo de realocações (até 10)
+    let relocation_history: Array<{
+      changed_at: string;
+      field: string;
+      old_value: string | null;
+      new_value: string | null;
+    }> = [];
+    {
+      const { data: hist } = await supabase
+        .from("patrimonio_history")
+        .select("changed_at, field, old_value, new_value")
+        .eq("patrimonio_id", data.id)
+        .order("changed_at", { ascending: false })
+        .limit(10);
+      if (hist) relocation_history = hist;
+    }
+
     const { organization_id: _omit, ...safe } = data;
-    return json({ ...safe, organization });
+    return json({
+      ...safe,
+      organization,
+      last_maintenance,
+      maintenance_interval_days,
+      relocation_history,
+    });
   } catch (e) {
     console.error("get-public-asset crash", e);
     return json({ error: "server_error" }, 500);
