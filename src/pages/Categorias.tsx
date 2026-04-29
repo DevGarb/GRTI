@@ -52,9 +52,10 @@ export default function Categorias() {
 
   const createCategory = useMutation({
     mutationFn: async ({ name, parentId, level, score }: { name: string; parentId: string | null; level: string; score?: number }) => {
+      if (!profile?.organization_id) throw new Error("Usuário sem organização");
       const { error } = await supabase
         .from("categories")
-        .insert({ name, parent_id: parentId, level, score: level === "item" ? (score ?? 0) : null });
+        .insert({ name, parent_id: parentId, level, score: level === "item" ? (score ?? 0) : null, organization_id: profile.organization_id });
       if (error) throw error;
     },
     onSuccess: () => {
