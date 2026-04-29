@@ -95,7 +95,7 @@ export type Database = {
           is_active: boolean
           level: string
           name: string
-          organization_id: string | null
+          organization_id: string
           parent_id: string | null
           score: number | null
           updated_at: string
@@ -106,7 +106,7 @@ export type Database = {
           is_active?: boolean
           level?: string
           name: string
-          organization_id?: string | null
+          organization_id: string
           parent_id?: string | null
           score?: number | null
           updated_at?: string
@@ -117,7 +117,7 @@ export type Database = {
           is_active?: boolean
           level?: string
           name?: string
-          organization_id?: string | null
+          organization_id?: string
           parent_id?: string | null
           score?: number | null
           updated_at?: string
