@@ -1,78 +1,85 @@
-## Problema
+## Objetivo
 
-Ao escanear o QR Code do patrimônio sem estar logado, a página `/asset/:id` mostra "Patrimônio não encontrado". Causa: a rota é pública, mas o `select` na tabela `patrimonio` é feito com a chave anon do Supabase, e a RLS exige `authenticated` (super_admin ou mesma organização). Logo, nenhum dado retorna.
+Enriquecer a tela pública aberta pelo QR Code (`/asset/:id`) com informações operacionais úteis em campo, sem expor dados sensíveis e sem exigir login.
 
-## Solução
+## Blocos a incluir
 
-Criar uma edge function pública (`get-public-asset`) que usa o `service_role` para buscar o patrimônio por ID e retorna apenas campos seguros para exibição mobile. A página `AssetPublicView` passa a consumir essa função em vez de consultar a tabela diretamente.
+1. **Última manutenção preventiva** — data, responsável e observações.
+2. **Status de manutenção** — badge "Em dia" / "Próxima do vencimento" (≤15 dias) / "Atrasada", calculado por `maintenance_intervals.interval_days` para o `equipment_type`. Mostra "Próxima prevista: dd/mm/yyyy".
+3. **Histórico de manutenções** — bloco colapsável mostrando a última manutenção registrada (data + responsável + obs).
+4. **Tempo de uso + linha do tempo de realocação** — "Em uso há X meses" calculado de `created_at`, seguido de timeline com cada mudança de responsável/setor/localização.
 
-Não vamos relaxar a RLS da tabela `patrimonio` (manteria dados expostos a qualquer um com a anon key). A edge function é o ponto único de exposição controlada.
+Sem botão de copiar tag, sem botão de abrir chamado.
 
-## Alterações
+## Mudanças no banco (migração)
 
-### 1. Edge function `supabase/functions/get-public-asset/index.ts` (nova)
-- `verify_jwt = false` (já é o padrão)
-- Aceita `GET /get-public-asset?id=<uuid>` ou `POST { id }`
-- Valida UUID com Zod
-- Usa `SUPABASE_SERVICE_ROLE_KEY` para ler `patrimonio` por id
-- Retorna apenas: `id`, `asset_tag`, `equipment_type`, `brand`, `model`, `serial_number`, `sector`, `responsible`, `location`, `status`, `notes`, `photo_url`, `created_at`, e `organization: { name, logo_url, primary_color }` (join leve em `organizations` para branding)
-- Não retorna `created_by`, `updated_at`, `organization_id` cru
-- 404 se não encontrar; CORS liberado
+Nova tabela `patrimonio_history` para registrar realocações:
 
-### 2. `src/pages/AssetPublicView.tsx`
-- Substituir o `supabase.from("patrimonio").select(...)` por `fetch` direto na URL pública da função (`https://<project>.supabase.co/functions/v1/get-public-asset?id=...`) com header `apikey` = anon key. Não usar `supabase.functions.invoke` para evitar exigência de sessão.
-- Exibir logo + nome da organização no topo do card quando vierem na resposta
-- Manter o layout mobile-first atual (já está bom: hero card, status badge, detalhes em rows)
-- Pequenos ajustes: garantir `viewport` correto (já vem do index.html) e melhorar mensagem de erro
-
-### 3. Memória
-- Atualizar `mem://features/multi-tenancy` notando que `/asset/:id` é endpoint público via edge function `get-public-asset` (somente leitura, campos restritos).
-
-## Detalhes técnicos
-
-```ts
-// edge function
-const url = new URL(req.url);
-const id = url.searchParams.get("id") ?? (await req.json().catch(() => ({}))).id;
-const parsed = z.string().uuid().safeParse(id);
-if (!parsed.success) return json({ error: "invalid id" }, 400);
-
-const supabase = createClient(SUPABASE_URL, SERVICE_ROLE_KEY);
-const { data, error } = await supabase
-  .from("patrimonio")
-  .select("id, asset_tag, equipment_type, brand, model, serial_number, sector, responsible, location, status, notes, photo_url, created_at, organization_id")
-  .eq("id", parsed.data)
-  .maybeSingle();
-if (!data) return json({ error: "not_found" }, 404);
-
-let org = null;
-if (data.organization_id) {
-  const { data: o } = await supabase
-    .from("organizations")
-    .select("name, logo_url, primary_color")
-    .eq("id", data.organization_id)
-    .maybeSingle();
-  org = o;
-}
-const { organization_id, ...safe } = data;
-return json({ ...safe, organization: org });
+```text
+patrimonio_history
+  id              uuid pk
+  patrimonio_id   uuid (referência lógica, sem FK por padrão do projeto)
+  organization_id uuid
+  changed_at      timestamptz default now()
+  changed_by      uuid (nullable — pode ser sistema)
+  field           text  ('responsible' | 'sector' | 'location' | 'status')
+  old_value       text
+  new_value       text
 ```
 
-```ts
-// AssetPublicView.tsx
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
-const ANON = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+- RLS: SELECT permitido para mesma organização (igual `patrimonio`); INSERT só via trigger (sem policy de INSERT pública).
+- Trigger `BEFORE UPDATE ON patrimonio` que, para cada um dos 4 campos, insere uma linha em `patrimonio_history` quando o valor muda. `changed_by = auth.uid()`.
+- A timeline começa a partir da implantação (registros antigos não terão histórico — fica explícito na UI).
 
-queryFn: async () => {
-  const r = await fetch(`${SUPABASE_URL}/functions/v1/get-public-asset?id=${id}`, {
-    headers: { apikey: ANON, Authorization: `Bearer ${ANON}` },
-  });
-  if (!r.ok) throw new Error("not_found");
-  return r.json();
-}
+## Edge function `supabase/functions/get-public-asset/index.ts`
+
+Estender o retorno (mantendo público, sem auth, continuando a omitir `organization_id` e campos sensíveis):
+
+- `last_maintenance`: última linha de `preventive_maintenance` por `asset_tag` + `organization_id` (campos: `execution_date`, `responsible`, `notes`).
+- `maintenance_interval_days`: lookup em `maintenance_intervals` por `equipment_type` (nullable se não houver).
+- `relocation_history`: até 10 linhas de `patrimonio_history` por `patrimonio_id`, ordenadas desc (campos: `changed_at`, `field`, `old_value`, `new_value`).
+
+Cálculo de "próxima prevista" e badge fica no frontend (a partir de `last_maintenance.execution_date + maintenance_interval_days`).
+
+## Frontend `src/pages/AssetPublicView.tsx`
+
+Inserir blocos entre o card de Status e o de Detalhes:
+
+- **Card "Manutenção"**: badge colorida (verde/amarelo/vermelho) tingida com `primary_color` no contorno; linhas "Última: dd/mm/yyyy — NOME" e "Próxima prevista: dd/mm/yyyy". Se não há `last_maintenance`, mostra "Sem preventiva registrada".
+- **"Em uso há X meses"**: linha discreta abaixo do card de Manutenção, calculada de `created_at`.
+- **Bloco colapsável "Histórico de manutenção"**: mostra a última manutenção (data + responsável + observações).
+- **Bloco colapsável "Linha do tempo do equipamento"**: lista cronológica das realocações registradas (`changed_at` + ícone do campo + "de X para Y"). Se vazio, exibe nota "Sem alterações registradas desde a implantação do histórico".
+
+Manter intacto: skeleton, cooldown do "Tentar novamente", branding via `primary_color`, layout mobile-first.
+
+## Layout final (mobile)
+
+```text
+┌─────────────────────┐
+│ [Logo] Organização  │
+├─────────────────────┤
+│ Foto / Header       │
+│ 10072 • Notebook    │
+├─────────────────────┤
+│ ● Status: Ativo     │
+├─────────────────────┤
+│ 🛠 Manutenção       │
+│  Em dia ✓           │
+│  Última: 27/04/26   │
+│         FELIPE A.   │
+│  Próxima: 27/07/26  │
+├─────────────────────┤
+│ Em uso há 14 meses  │
+├─────────────────────┤
+│ Detalhes (atual)    │
+├─────────────────────┤
+│ ⌄ Histórico manut.  │
+├─────────────────────┤
+│ ⌄ Linha do tempo    │
+└─────────────────────┘
 ```
 
-## Resultado
+## Memória a atualizar
 
-- Qualquer pessoa que escanear o QR Code (logada ou não, no celular) verá uma tela mobile-friendly com os dados do patrimônio e a marca da organização.
-- A tabela `patrimonio` continua protegida por RLS — apenas a edge function expõe campos selecionados.
+- `mem://features/preventive-maintenance` — anotar que a tela pública mostra última preventiva + status calculado por `maintenance_intervals`.
+- `mem://features/multi-tenancy` — anotar nova tabela `patrimonio_history` com RLS por organização e trigger automático em `patrimonio`.
