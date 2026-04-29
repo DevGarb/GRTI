@@ -1,37 +1,54 @@
-# Corrigir agrupamento de chamados (Bruna aparecendo como técnica)
+## Problema
 
-## Diagnóstico
+A organização **OPERACIONAL** está vendo as categorias do **Grupo Ramos**.
 
-Na aba **Chamados** (admin), os cards são agrupados por técnico responsável. Em `src/pages/Chamados.tsx` (linhas 298–303) o agrupamento está assim:
+**Causa raiz:** todas as 179 categorias existentes no banco têm `organization_id = NULL`. A política RLS atual (`organization_id IS NULL OR is_same_organization(...)`) trata `NULL` como "categoria global", então qualquer organização nova (KONFIA, OPERACIONAL) enxerga todas elas.
 
-```ts
-const name = t.assignedProfile?.full_name
-  || t.creatorProfile?.full_name   // ← fallback errado
-  || "Sem atribuição";
+Além disso, o código em `src/pages/Categorias.tsx` cria novas categorias **sem** preencher `organization_id`, perpetuando o problema.
+
+Outras tabelas (sectors, patrimonio, tickets, projects) já estão corretas — todos os registros têm `organization_id` preenchido.
+
+## Solução
+
+### 1. Backfill das categorias órfãs (migração de dados)
+Atribuir todas as 179 categorias existentes ao **Grupo Ramos** (organização original onde foram criadas):
+
+```sql
+UPDATE categories
+SET organization_id = 'a543a17b-0def-4ceb-acf5-91017f2b0ad3'
+WHERE organization_id IS NULL;
 ```
 
-Esse fallback fazia sentido no fluxo antigo, quando todo chamado já nascia com técnico. Depois da mudança em que **chamados nascem em "Aberto" sem técnico**, o fallback passou a usar o nome do **solicitante** — então a Bruna (colaboradora) virou um "card de técnico" só porque abriu o chamado *teste*.
+### 2. Tornar `organization_id` obrigatório (migração de schema)
+Para evitar regressão futura:
 
-## Correção
-
-Remover o fallback para `creatorProfile`. Tickets sem técnico atribuído ficam num único grupo:
-
-```ts
-const name = t.assignedProfile?.full_name || "Sem técnico atribuído";
+```sql
+ALTER TABLE categories
+  ALTER COLUMN organization_id SET NOT NULL;
 ```
 
-Resultado:
-- Bruna deixa de aparecer como técnica.
-- Todos os chamados em "Aberto" (sem técnico) ficam agrupados no card **"Sem técnico atribuído"** — útil para o admin ver de relance o backlog não atribuído.
-- Técnicos reais (Maria, Felipe, Danilo, Victor, Gabriel Caminha, Gabriel Porto) continuam com seus próprios cards normalmente.
+### 3. Endurecer a política RLS de SELECT
+Remover a brecha do `IS NULL`:
 
-## Arquivo afetado
+```sql
+DROP POLICY "Users can view org categories" ON categories;
+CREATE POLICY "Users can view org categories" ON categories
+FOR SELECT TO authenticated
+USING (is_super_admin(auth.uid()) OR is_same_organization(organization_id));
+```
 
-- `src/pages/Chamados.tsx` — única alteração, 1 linha (remover o `|| t.creatorProfile?.full_name`).
+### 4. Corrigir `src/pages/Categorias.tsx`
+No `createCategory.mutationFn`, incluir `organization_id: profile?.organization_id` no insert (usando `useAuth`). Sem isso, novas categorias continuariam quebrando o NOT NULL.
 
-## Fora de escopo
+## Resultado esperado
 
-- Não mexo em RLS, queries ou outras telas.
-- Não altero a lógica do timer/SLA recém-implementada.
+- **Grupo Ramos**: continua vendo as 179 categorias (agora marcadas como dele).
+- **KONFIA** e **OPERACIONAL**: começam zeradas, e cada admin cria as próprias.
+- Super admin: continua vendo tudo via filtro de organização.
+- Novas categorias sempre nascem vinculadas à organização do criador.
 
-Posso aplicar?
+## Arquivos afetados
+
+- Nova migração SQL (backfill + NOT NULL + RLS)
+- `src/pages/Categorias.tsx` (incluir `organization_id` no insert)
+- `mem://features/multi-tenancy` (registrar que categorias agora também são auto-associadas)
