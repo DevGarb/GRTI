@@ -93,17 +93,25 @@ export default function AssetPublicView() {
   const primaryDark = shade(primary, 0.25);
   const headerGradient = `linear-gradient(135deg, ${primary} 0%, ${primaryDark} 100%)`;
 
-  // Cooldown to prevent spam clicks on "Tentar novamente"
+  // Debounce + cooldown to guarantee a single refetch even on rapid clicks.
+  // Uses a synchronous ref guard so multiple clicks in the same tick are blocked
+  // before React commits the cooldown state.
   const RETRY_COOLDOWN_MS = 2000;
   const [cooldown, setCooldown] = useState(false);
+  const lockedRef = useRef(false);
   const cooldownTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   useEffect(() => () => { if (cooldownTimer.current) clearTimeout(cooldownTimer.current); }, []);
 
   const handleRetry = () => {
-    if (cooldown || isFetching) return;
+    if (lockedRef.current || isFetching) return;
+    lockedRef.current = true;
     setCooldown(true);
     refetch();
-    cooldownTimer.current = setTimeout(() => setCooldown(false), RETRY_COOLDOWN_MS);
+    if (cooldownTimer.current) clearTimeout(cooldownTimer.current);
+    cooldownTimer.current = setTimeout(() => {
+      lockedRef.current = false;
+      setCooldown(false);
+    }, RETRY_COOLDOWN_MS);
   };
   const retryDisabled = cooldown || isFetching;
 
