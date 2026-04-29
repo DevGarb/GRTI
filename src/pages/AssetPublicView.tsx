@@ -86,6 +86,19 @@ export default function AssetPublicView() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-slate-100 p-4 sm:p-6">
       <div className="max-w-lg mx-auto space-y-4 pt-4 sm:pt-8">
+        {asset.organization && (
+          <div className="flex items-center justify-center gap-2.5 pb-1">
+            {asset.organization.logo_url ? (
+              <img src={asset.organization.logo_url} alt={asset.organization.name} className="h-8 w-8 rounded-md object-contain bg-white p-1 shadow-sm" />
+            ) : (
+              <div className="h-8 w-8 rounded-md bg-white shadow-sm flex items-center justify-center">
+                <Building2 className="h-4 w-4 text-gray-500" />
+              </div>
+            )}
+            <span className="text-sm font-semibold text-gray-700">{asset.organization.name}</span>
+          </div>
+        )}
+
         {/* Hero Card */}
         <div className="bg-white rounded-2xl shadow-xl overflow-hidden">
           {/* Photo or icon header */}
