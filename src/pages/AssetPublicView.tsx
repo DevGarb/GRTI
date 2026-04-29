@@ -1,5 +1,6 @@
 import { useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
+import { useState, useRef, useEffect } from "react";
 import { Monitor, Laptop, Printer, Server, Wifi, Battery, Phone, MonitorSpeaker, HardDrive, MapPin, User, Hash, Building2, Calendar, Package, CheckCircle2, AlertTriangle, XCircle, RefreshCw } from "lucide-react";
 import { format } from "date-fns";
 
