@@ -30,6 +30,7 @@ interface PublicAsset {
   organization: { name: string; logo_url: string | null; primary_color: string | null } | null;
   last_maintenance: { execution_date: string; responsible: string | null; notes: string | null; checklist: Record<string, unknown> | null } | null;
   maintenance_interval_days: number | null;
+  maintenance_interval_source?: "configured" | "default";
   relocation_history: Array<{ changed_at: string; field: string; old_value: string | null; new_value: string | null }>;
 }
 
