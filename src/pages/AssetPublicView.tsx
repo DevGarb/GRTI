@@ -1,6 +1,6 @@
 import { useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { Monitor, Laptop, Printer, Server, Wifi, Battery, Phone, MonitorSpeaker, HardDrive, MapPin, User, Hash, Building2, Calendar, Package, CheckCircle2, AlertTriangle, XCircle } from "lucide-react";
+import { Monitor, Laptop, Printer, Server, Wifi, Battery, Phone, MonitorSpeaker, HardDrive, MapPin, User, Hash, Building2, Calendar, Package, CheckCircle2, AlertTriangle, XCircle, RefreshCw } from "lucide-react";
 import { format } from "date-fns";
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string;
@@ -45,7 +45,7 @@ const statusConfig: Record<string, { icon: React.ReactNode; color: string; bg: s
 export default function AssetPublicView() {
   const { id } = useParams<{ id: string }>();
 
-  const { data: asset, isLoading, error } = useQuery<PublicAsset>({
+  const { data: asset, isLoading, isFetching, error, refetch } = useQuery<PublicAsset>({
     queryKey: ["asset-public", id],
     queryFn: async () => {
       const r = await fetch(`${SUPABASE_URL}/functions/v1/get-public-asset?id=${id}`, {
@@ -64,7 +64,7 @@ export default function AssetPublicView() {
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 flex items-center justify-center">
-        <div className="h-10 w-10 border-3 border-blue-600 border-t-transparent rounded-full animate-spin" />
+        <div className="h-10 w-10 border-[3px] border-blue-600 border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }
@@ -72,10 +72,34 @@ export default function AssetPublicView() {
   if (error || !asset) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 flex items-center justify-center p-6">
-        <div className="bg-white rounded-2xl shadow-xl p-10 text-center max-w-sm">
-          <Package className="h-12 w-12 text-gray-300 mx-auto mb-4" />
+        <div className="bg-white rounded-2xl shadow-xl p-8 sm:p-10 text-center max-w-sm w-full">
+          <div className="h-16 w-16 rounded-2xl bg-amber-50 border border-amber-100 mx-auto mb-5 flex items-center justify-center">
+            <Package className="h-8 w-8 text-amber-500" />
+          </div>
           <h1 className="text-xl font-bold text-gray-800 mb-2">Patrimônio não encontrado</h1>
-          <p className="text-sm text-gray-500">O QR Code escaneado não corresponde a nenhum equipamento cadastrado.</p>
+          <p className="text-sm text-gray-500 mb-6">
+            O QR Code escaneado não corresponde a nenhum equipamento cadastrado, ou o patrimônio pode ter sido removido.
+          </p>
+          <button
+            onClick={() => refetch()}
+            disabled={isFetching}
+            className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-lg bg-blue-600 text-white text-sm font-medium hover:bg-blue-700 transition-colors disabled:opacity-60 disabled:cursor-not-allowed w-full"
+          >
+            {isFetching ? (
+              <>
+                <div className="h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                Tentando...
+              </>
+            ) : (
+              <>
+                <RefreshCw className="h-4 w-4" />
+                Tentar novamente
+              </>
+            )}
+          </button>
+          <p className="text-[11px] text-gray-400 mt-4">
+            Se o problema persistir, entre em contato com o setor de TI.
+          </p>
         </div>
       </div>
     );
