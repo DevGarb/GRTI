@@ -1,5 +1,6 @@
 import { useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
+import { useState, useRef, useEffect } from "react";
 import { Monitor, Laptop, Printer, Server, Wifi, Battery, Phone, MonitorSpeaker, HardDrive, MapPin, User, Hash, Building2, Calendar, Package, CheckCircle2, AlertTriangle, XCircle, RefreshCw } from "lucide-react";
 import { format } from "date-fns";
 
@@ -92,6 +93,20 @@ export default function AssetPublicView() {
   const primaryDark = shade(primary, 0.25);
   const headerGradient = `linear-gradient(135deg, ${primary} 0%, ${primaryDark} 100%)`;
 
+  // Cooldown to prevent spam clicks on "Tentar novamente"
+  const RETRY_COOLDOWN_MS = 2000;
+  const [cooldown, setCooldown] = useState(false);
+  const cooldownTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => () => { if (cooldownTimer.current) clearTimeout(cooldownTimer.current); }, []);
+
+  const handleRetry = () => {
+    if (cooldown || isFetching) return;
+    setCooldown(true);
+    refetch();
+    cooldownTimer.current = setTimeout(() => setCooldown(false), RETRY_COOLDOWN_MS);
+  };
+  const retryDisabled = cooldown || isFetching;
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 flex items-center justify-center">
@@ -126,9 +141,10 @@ export default function AssetPublicView() {
                 O QR Code escaneado não corresponde a nenhum equipamento cadastrado, ou o patrimônio pode ter sido removido.
               </p>
               <button
-                onClick={() => refetch()}
+                onClick={handleRetry}
+                disabled={retryDisabled}
                 style={{ backgroundColor: primary }}
-                className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-lg text-white text-sm font-medium hover:opacity-90 transition-opacity w-full"
+                className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-lg text-white text-sm font-medium hover:opacity-90 transition-opacity w-full disabled:opacity-60 disabled:cursor-not-allowed"
               >
                 <RefreshCw className="h-4 w-4" />
                 Tentar novamente
