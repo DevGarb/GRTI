@@ -408,6 +408,7 @@ function MaintenanceCountdown({
   nextDate,
   daysLeft,
   intervalDays,
+  intervalSource,
   last,
 }: {
   primary: string;
@@ -415,6 +416,7 @@ function MaintenanceCountdown({
   nextDate: Date | null;
   daysLeft: number | null;
   intervalDays: number | null;
+  intervalSource: "configured" | "default";
   last: { execution_date: string; responsible: string | null; notes: string | null } | null;
 }) {
   // Cores por estado
