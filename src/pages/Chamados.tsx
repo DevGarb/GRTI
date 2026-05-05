@@ -226,9 +226,10 @@ export default function Chamados() {
     const matchStatus = statusFilter === "Todos Status" || t.status === statusFilter;
     const d = new Date(t.created_at);
     const matchMonth = d >= monthFrom && d <= monthTo;
-    const isDisponivel = t.status === "Disponível";
+    const PENDING_STATUSES = ["Aberto", "Em Andamento", "Aguardando Aprovação", "Disponível"];
+    const isPending = PENDING_STATUSES.includes(t.status);
     const matchRework = !reworkFilter || (t.reworkCount || 0) > 0;
-    return matchSearch && matchStatus && (matchMonth || isDisponivel) && matchRework;
+    return matchSearch && matchStatus && (matchMonth || isPending) && matchRework;
   });
 
   // Pontuação: tickets criados no mês, atribuídos ao técnico e fechados (mesma base da Auditoria)
