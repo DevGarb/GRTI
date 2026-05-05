@@ -76,7 +76,7 @@ function SlaTimer({ ticket, workMinutes }: { ticket: Ticket; workMinutes?: numbe
   );
 }
 
-function TicketTable({ tickets, onSelect, scoreMap, showScore, workMinutesMap }: { tickets: Ticket[]; onSelect: (t: Ticket) => void; scoreMap?: Map<string, number>; showScore?: boolean; workMinutesMap?: Map<string, number> }) {
+function TicketTable({ tickets, onSelect, scoreMap, showScore, workMinutesMap, monthFrom, monthTo }: { tickets: Ticket[]; onSelect: (t: Ticket) => void; scoreMap?: Map<string, number>; showScore?: boolean; workMinutesMap?: Map<string, number>; monthFrom?: Date; monthTo?: Date }) {
   return (
     <div className="overflow-x-auto">
       <table className="w-full">
@@ -95,6 +95,8 @@ function TicketTable({ tickets, onSelect, scoreMap, showScore, workMinutesMap }:
         <tbody>
           {tickets.map((ticket) => {
             const score = scoreMap?.get(ticket.id);
+            const createdAt = new Date(ticket.created_at);
+            const isFromOtherMonth = !!(monthFrom && monthTo) && (createdAt < monthFrom || createdAt > monthTo);
             return (
             <tr
               key={ticket.id}
@@ -106,6 +108,15 @@ function TicketTable({ tickets, onSelect, scoreMap, showScore, workMinutesMap }:
                   <span className="text-sm font-medium text-foreground truncate block max-w-[250px]">
                     {ticket.title}
                   </span>
+                  {isFromOtherMonth && (
+                    <span
+                      className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-semibold bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400 border border-blue-200 dark:border-blue-800 shrink-0"
+                      title={`Pendente de ${createdAt.toLocaleDateString("pt-BR", { month: "long", year: "numeric" })}`}
+                    >
+                      <Clock className="h-2.5 w-2.5" />
+                      {createdAt.toLocaleDateString("pt-BR", { month: "short" }).replace(".", "")}/{String(createdAt.getFullYear()).slice(-2)}
+                    </span>
+                  )}
                   {(ticket.reworkCount || 0) > 0 && (
                     <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-semibold bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400 border border-orange-200 dark:border-orange-800 shrink-0">
                       <RefreshCw className="h-2.5 w-2.5" />
@@ -465,7 +476,7 @@ export default function Chamados() {
 
                 {isExpanded && (
                   <div className="border-t border-border">
-                    <TicketTable tickets={userTickets} onSelect={setSelectedTicket} scoreMap={scoreMap} showScore={isAdmin || isTech} workMinutesMap={workMinutesMap} />
+                    <TicketTable tickets={userTickets} onSelect={setSelectedTicket} scoreMap={scoreMap} showScore={isAdmin || isTech} workMinutesMap={workMinutesMap} monthFrom={monthFrom} monthTo={monthTo} />
                   </div>
                 )}
               </div>
@@ -515,7 +526,7 @@ export default function Chamados() {
                       <p className="text-xs text-muted-foreground">{assignedToMe.length} chamado{assignedToMe.length !== 1 ? 's' : ''}</p>
                     </div>
                   </div>
-                  <TicketTable tickets={assignedToMe} onSelect={setSelectedTicket} scoreMap={scoreMap} showScore={isAdmin || isTech} workMinutesMap={workMinutesMap} />
+                  <TicketTable tickets={assignedToMe} onSelect={setSelectedTicket} scoreMap={scoreMap} showScore={isAdmin || isTech} workMinutesMap={workMinutesMap} monthFrom={monthFrom} monthTo={monthTo} />
                 </div>
               )}
               {createdByMe.length > 0 && (
@@ -527,7 +538,7 @@ export default function Chamados() {
                       <p className="text-xs text-muted-foreground">{createdByMe.length} chamado{createdByMe.length !== 1 ? 's' : ''}</p>
                     </div>
                   </div>
-                  <TicketTable tickets={createdByMe} onSelect={setSelectedTicket} scoreMap={scoreMap} showScore={isAdmin || isTech} workMinutesMap={workMinutesMap} />
+                  <TicketTable tickets={createdByMe} onSelect={setSelectedTicket} scoreMap={scoreMap} showScore={isAdmin || isTech} workMinutesMap={workMinutesMap} monthFrom={monthFrom} monthTo={monthTo} />
                 </div>
               )}
               {availableTickets.length === 0 && assignedToMe.length === 0 && createdByMe.length === 0 && (
