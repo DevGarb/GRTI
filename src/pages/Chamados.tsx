@@ -476,7 +476,7 @@ export default function Chamados() {
 
                 {isExpanded && (
                   <div className="border-t border-border">
-                    <TicketTable tickets={userTickets} onSelect={setSelectedTicket} scoreMap={scoreMap} showScore={isAdmin || isTech} workMinutesMap={workMinutesMap} />
+                    <TicketTable tickets={userTickets} onSelect={setSelectedTicket} scoreMap={scoreMap} showScore={isAdmin || isTech} workMinutesMap={workMinutesMap} monthFrom={monthFrom} monthTo={monthTo} />
                   </div>
                 )}
               </div>
@@ -526,7 +526,7 @@ export default function Chamados() {
                       <p className="text-xs text-muted-foreground">{assignedToMe.length} chamado{assignedToMe.length !== 1 ? 's' : ''}</p>
                     </div>
                   </div>
-                  <TicketTable tickets={assignedToMe} onSelect={setSelectedTicket} scoreMap={scoreMap} showScore={isAdmin || isTech} workMinutesMap={workMinutesMap} />
+                  <TicketTable tickets={assignedToMe} onSelect={setSelectedTicket} scoreMap={scoreMap} showScore={isAdmin || isTech} workMinutesMap={workMinutesMap} monthFrom={monthFrom} monthTo={monthTo} />
                 </div>
               )}
               {createdByMe.length > 0 && (
@@ -538,7 +538,7 @@ export default function Chamados() {
                       <p className="text-xs text-muted-foreground">{createdByMe.length} chamado{createdByMe.length !== 1 ? 's' : ''}</p>
                     </div>
                   </div>
-                  <TicketTable tickets={createdByMe} onSelect={setSelectedTicket} scoreMap={scoreMap} showScore={isAdmin || isTech} workMinutesMap={workMinutesMap} />
+                  <TicketTable tickets={createdByMe} onSelect={setSelectedTicket} scoreMap={scoreMap} showScore={isAdmin || isTech} workMinutesMap={workMinutesMap} monthFrom={monthFrom} monthTo={monthTo} />
                 </div>
               )}
               {availableTickets.length === 0 && assignedToMe.length === 0 && createdByMe.length === 0 && (
