@@ -7,6 +7,8 @@ import { useTodos } from "@/hooks/useTodos";
 import { useAuth } from "@/contexts/AuthContext";
 import NewTodoModal from "@/components/todos/NewTodoModal";
 import TodoCard from "@/components/todos/TodoCard";
+import TodoDetailModal from "@/components/todos/TodoDetailModal";
+import type { TodoWithAuthor } from "@/hooks/useTodos";
 
 export default function Todos() {
   const { user } = useAuth();
