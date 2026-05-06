@@ -117,5 +117,5 @@ export function useTodos() {
     fetchTodos();
   };
 
-  return { todos, loading, createTodo, updateTodo, toggleStatus, deleteTodo, refetch: fetchTodos };
+  return { todos, loading, createTodo, updateTodo, toggleStatus, setCompleted, deleteTodo, refetch: fetchTodos };
 }
