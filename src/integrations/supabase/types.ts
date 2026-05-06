@@ -1053,6 +1053,79 @@ export type Database = {
         }
         Relationships: []
       }
+      user_todo_comments: {
+        Row: {
+          content: string
+          created_at: string
+          id: string
+          todo_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          id?: string
+          todo_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          id?: string
+          todo_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_todo_comments_todo_id_fkey"
+            columns: ["todo_id"]
+            isOneToOne: false
+            referencedRelation: "user_todos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_todo_history: {
+        Row: {
+          created_at: string
+          field: string
+          id: string
+          new_value: string | null
+          old_value: string | null
+          todo_id: string
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          field: string
+          id?: string
+          new_value?: string | null
+          old_value?: string | null
+          todo_id: string
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          field?: string
+          id?: string
+          new_value?: string | null
+          old_value?: string | null
+          todo_id?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_todo_history_todo_id_fkey"
+            columns: ["todo_id"]
+            isOneToOne: false
+            referencedRelation: "user_todos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_todos: {
         Row: {
           completed_at: string | null

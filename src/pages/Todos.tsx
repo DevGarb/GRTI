@@ -7,11 +7,14 @@ import { useTodos } from "@/hooks/useTodos";
 import { useAuth } from "@/contexts/AuthContext";
 import NewTodoModal from "@/components/todos/NewTodoModal";
 import TodoCard from "@/components/todos/TodoCard";
+import TodoDetailModal from "@/components/todos/TodoDetailModal";
+import type { TodoWithAuthor } from "@/hooks/useTodos";
 
 export default function Todos() {
   const { user } = useAuth();
   const { todos, loading, createTodo, toggleStatus, deleteTodo } = useTodos();
   const [open, setOpen] = useState(false);
+  const [selected, setSelected] = useState<TodoWithAuthor | null>(null);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [authorFilter, setAuthorFilter] = useState<string>("all");
@@ -107,6 +110,7 @@ export default function Todos() {
                       isOwner={t.user_id === user?.id}
                       onToggle={() => toggleStatus(t)}
                       onDelete={() => deleteTodo(t.id)}
+                      onOpen={() => setSelected(t)}
                     />
                   ))}
                 </div>
@@ -117,6 +121,7 @@ export default function Todos() {
       )}
 
       <NewTodoModal open={open} onOpenChange={setOpen} onCreate={createTodo} />
+      <TodoDetailModal todo={selected} open={!!selected} onOpenChange={(v) => !v && setSelected(null)} />
     </div>
   );
 }

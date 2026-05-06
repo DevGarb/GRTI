@@ -2,7 +2,7 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Check, Trash2, Calendar, Play, RotateCcw } from "lucide-react";
+import { Check, Trash2, Calendar, Play, RotateCcw, MessageSquare } from "lucide-react";
 import type { TodoWithAuthor } from "@/hooks/useTodos";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -12,6 +12,7 @@ interface Props {
   isOwner: boolean;
   onToggle: () => void;
   onDelete: () => void;
+  onOpen: () => void;
 }
 
 const priorityVariant = {
@@ -32,20 +33,24 @@ const statusVariant = {
   concluido: "bg-green-500/10 text-green-700 dark:text-green-400",
 } as const;
 
-export default function TodoCard({ todo, isOwner, onToggle, onDelete }: Props) {
+export default function TodoCard({ todo, isOwner, onToggle, onDelete, onOpen }: Props) {
   const ToggleIcon = todo.status === "pendente" ? Play : todo.status === "andamento" ? Check : RotateCcw;
   const toggleLabel =
     todo.status === "pendente" ? "Iniciar" : todo.status === "andamento" ? "Concluir" : "Reabrir";
+  const stop = (fn: () => void) => (e: React.MouseEvent) => { e.stopPropagation(); fn(); };
 
   return (
-    <Card className={`p-4 space-y-3 ${todo.status === "concluido" ? "opacity-60" : ""}`}>
+    <Card
+      onClick={onOpen}
+      className={`p-4 space-y-3 cursor-pointer hover:border-primary/40 transition-colors ${todo.status === "concluido" ? "opacity-60" : ""}`}
+    >
       <div className="flex items-start justify-between gap-3">
         <div className="flex-1 min-w-0">
           <h4 className={`font-semibold leading-snug ${todo.status === "concluido" ? "line-through" : ""}`}>
             {todo.title}
           </h4>
           {todo.description && (
-            <p className="text-sm text-muted-foreground mt-1 whitespace-pre-wrap">{todo.description}</p>
+            <p className="text-sm text-muted-foreground mt-1 whitespace-pre-wrap line-clamp-2">{todo.description}</p>
           )}
         </div>
         <Badge variant="outline" className={priorityVariant[todo.priority]}>
@@ -63,6 +68,9 @@ export default function TodoCard({ todo, isOwner, onToggle, onDelete }: Props) {
             {format(new Date(todo.due_date), "dd/MM/yyyy", { locale: ptBR })}
           </span>
         )}
+        <span className="flex items-center gap-1">
+          <MessageSquare className="h-3 w-3" /> comentários
+        </span>
         <div className="flex items-center gap-2 ml-auto">
           <Avatar className="h-5 w-5">
             <AvatarImage src={todo.author_avatar || undefined} />
@@ -76,10 +84,10 @@ export default function TodoCard({ todo, isOwner, onToggle, onDelete }: Props) {
 
       {isOwner && (
         <div className="flex gap-2 pt-1">
-          <Button size="sm" variant="outline" onClick={onToggle} className="flex-1">
+          <Button size="sm" variant="outline" onClick={stop(onToggle)} className="flex-1">
             <ToggleIcon className="h-3.5 w-3.5 mr-1" /> {toggleLabel}
           </Button>
-          <Button size="sm" variant="outline" onClick={onDelete}>
+          <Button size="sm" variant="outline" onClick={stop(onDelete)}>
             <Trash2 className="h-3.5 w-3.5" />
           </Button>
         </div>
