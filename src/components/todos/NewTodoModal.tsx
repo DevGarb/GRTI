@@ -63,7 +63,7 @@ export default function NewTodoModal({ open, onOpenChange, onCreate }: Props) {
               </Select>
             </div>
             <div>
-              <Label>Prazo</Label>
+              <Label>Prazo <span className="text-muted-foreground font-normal">(opcional)</span></Label>
               <Input type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} />
             </div>
           </div>
