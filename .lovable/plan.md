@@ -1,74 +1,55 @@
-# Modularização de Menus por Usuário
+## Menu TODO List por usuário
 
-Implementar controle híbrido de acesso aos menus: as regras atuais por papel (admin, técnico, super_admin etc.) continuam como **padrão**, mas o admin poderá **liberar** ou **bloquear** menus específicos por usuário através de um modal.
+Criar uma nova área "TODO List" onde cada usuário gerencia suas próprias tarefas pessoais, com visibilidade segmentada por papel.
 
-## 1. Banco de dados
+### Regras de visibilidade
 
-Nova tabela `user_menu_overrides`:
+- **Admin / Técnico / Desenvolvedor**: veem os TODOs de todos os técnicos, desenvolvedores e admins da mesma organização (e os seus próprios).
+- **Colaborador (solicitante)**: vê apenas os próprios TODOs. Não enxerga TODOs de técnicos nem admins.
+- **Super admin**: vê tudo (padrão do sistema).
+- Cada usuário só pode criar/editar/excluir os próprios itens.
 
-| coluna | tipo | descrição |
-|---|---|---|
-| `id` | uuid PK | |
-| `user_id` | uuid | usuário alvo |
-| `menu_key` | text | identificador estável do menu (ex: `dashboard`, `chamados`, `patrimonio`) |
-| `granted` | boolean | `true` = libera mesmo sem ter o papel; `false` = bloqueia mesmo tendo o papel |
-| `organization_id` | uuid | tenant |
-| `created_by`, `created_at` | | auditoria |
+### Estrutura da página `/todos`
 
-Constraint UNIQUE (`user_id`, `menu_key`).
+- Cabeçalho com botão "Novo TODO" e filtro por técnico (apenas para quem tem visão ampla).
+- Agrupamento visual por responsável (cards/colunas), com contador de pendentes.
+- Cada item exibe: título, descrição curta, prioridade (Baixa/Média/Alta), status (Pendente/Em andamento/Concluído), data limite opcional, autor.
+- Ações inline: marcar como concluído, editar, excluir (somente dono).
+- Filtros: status, prioridade, "somente meus".
 
-**RLS**:
-- SELECT: próprio usuário (para o frontend filtrar) + admins da mesma organização + super_admin.
-- INSERT/UPDATE/DELETE: somente admins da mesma organização ou super_admin.
+### Banco de dados
 
-## 2. Frontend — fonte única de menus
+Nova tabela `user_todos`:
 
-Extrair `navItems` de `src/components/AppLayout.tsx` para `src/config/menuItems.ts`, adicionando um campo `key` estável em cada item (ex: `dashboard`, `chamados`, `chamados-abertos`, `usuarios`, `avaliacoes`, `metas`, `historico`, `auditoria`, `categorias`, `setores`, `webhook-logs`, `preventivas`, `patrimonio`, `projetos`, `super-admin`, `planos`, `migracao`, `white-label`, `integracoes`, `documentacao`, `configuracoes`).
+```text
+id, user_id, organization_id, title, description,
+priority ('baixa'|'media'|'alta'), status ('pendente'|'andamento'|'concluido'),
+due_date (nullable), created_at, updated_at, completed_at
+```
 
-## 3. Hook de permissões
+RLS:
+- **SELECT**: dono OU (mesma org E (admin/tecnico/desenvolvedor solicitando E dono é admin/tecnico/desenvolvedor)) OU super admin.
+- **INSERT**: `user_id = auth.uid()` e organization_id da org do usuário.
+- **UPDATE/DELETE**: somente dono (ou super admin).
 
-Novo `src/hooks/useMenuAccess.ts`:
-- Carrega overrides do usuário logado via `supabase.from("user_menu_overrides").select().eq("user_id", user.id)`.
-- Expõe `canAccess(menuKey)` que aplica:
-  1. Se existe override `granted=false` → bloqueia.
-  2. Se existe override `granted=true` → libera.
-  3. Caso contrário, aplica regra padrão atual (`adminOnly`, `techAllowed`, `superAdminOnly`, `auditorOnly`).
-- Super admin sempre vê tudo.
+A regra de "colaborador não vê dos técnicos" é garantida no SELECT: colaborador só passa pelo ramo "dono = auth.uid()".
 
-`AppLayout.tsx` passa a usar esse hook para filtrar `visibleNavItems`.
+### Integração com sistema de menus
 
-## 4. Proteção de rotas
+- Adicionar entrada `todos` em `src/config/menuItems.ts` (ícone CheckSquare, path `/todos`, sem `adminOnly`/`techAllowed` — visível a todos por padrão, pois colaboradores também acessam, com filtragem feita no servidor).
+- Registrar rota em `src/App.tsx` com `MenuGuard`.
+- Permissões granulares já podem ser ajustadas pelo modal de overrides existente.
 
-`AdminRoute` e a futura proteção de cada rota também consultarão `canAccess(key)` para evitar acesso direto via URL quando o menu estiver bloqueado. Para manter o escopo enxuto, criar um wrapper único `MenuGuard` reaproveitado em `App.tsx`.
+### Arquivos
 
-## 5. UI de gestão — Modal em Usuários
+Novos:
+- `src/pages/Todos.tsx`
+- `src/components/todos/TodoCard.tsx`
+- `src/components/todos/NewTodoModal.tsx`
+- `src/hooks/useTodos.ts`
 
-Em `src/pages/Usuarios.tsx`, adicionar botão **"Permissões"** em cada linha que abre um novo `UserPermissionsModal`:
-- Lista todos os menus (de `menuItems.ts`) com indicação do estado padrão para o papel daquele usuário (Liberado/Bloqueado por padrão).
-- Para cada menu, um Select com 3 estados: **Padrão**, **Liberar**, **Bloquear**.
-- Salvar faz upsert/delete na tabela `user_menu_overrides`.
-- Itens marcados como `superAdminOnly` ficam desabilitados (não overrideáveis por admin comum).
+Editados:
+- `src/config/menuItems.ts` (adicionar item)
+- `src/App.tsx` (rota)
 
-## 6. Detalhes técnicos
-
-- Cache: invalidar overrides ao logar/trocar de organização.
-- O hook `useMenuAccess` retorna `loading`; durante o loading, o sidebar pode usar apenas as regras padrão para evitar flicker.
-- Documentar as `menu keys` em `mem://features/user-management`.
-
-## Arquivos a criar / editar
-
-**Criar**
-- `src/config/menuItems.ts`
-- `src/hooks/useMenuAccess.ts`
-- `src/components/usuarios/UserPermissionsModal.tsx`
-
-**Editar**
-- `src/components/AppLayout.tsx` — usa novo config e hook
-- `src/App.tsx` — `MenuGuard` por rota (opcional, mas recomendado)
-- `src/pages/Usuarios.tsx` — botão e modal de permissões
-
-**Migration**
-- Tabela `user_menu_overrides` + RLS
-
-## Fora de escopo
-- Permissões granulares dentro de páginas (ex: esconder botões). Apenas visibilidade/acesso aos menus/rotas.
+Migração SQL: criar tabela `user_todos` + RLS + trigger `update_updated_at_column`.
