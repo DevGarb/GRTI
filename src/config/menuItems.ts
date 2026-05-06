@@ -18,6 +18,7 @@ import {
   BookOpen,
   Database,
   Package,
+  CheckSquare,
 } from "lucide-react";
 
 export interface MenuItem {
