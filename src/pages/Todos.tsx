@@ -110,6 +110,7 @@ export default function Todos() {
                       isOwner={t.user_id === user?.id}
                       onToggle={() => toggleStatus(t)}
                       onDelete={() => deleteTodo(t.id)}
+                      onOpen={() => setSelected(t)}
                     />
                   ))}
                 </div>
