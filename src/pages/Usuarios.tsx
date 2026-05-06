@@ -301,20 +301,22 @@ export default function Usuarios() {
                           {new Date(user.created_at).toLocaleDateString("pt-BR")}
                         </span>
                         {isAdmin && !isSuperAdminUser(user) && (
-                          <button
-                            onClick={() => openEdit(user)}
-                            className="p-1.5 rounded-md hover:bg-muted text-muted-foreground transition-colors"
-                            title="Editar"
-                          >
-                            <Pencil className="h-3.5 w-3.5" />
-                          </button>
-                          <button
-                            onClick={() => setPermissionsUser({ ...user, roles: [role] })}
-                            className="p-1.5 rounded-md hover:bg-muted text-muted-foreground transition-colors"
-                            title="Permissões de menu"
-                          >
-                            <KeyRound className="h-3.5 w-3.5" />
-                          </button>
+                          <>
+                            <button
+                              onClick={() => openEdit(user)}
+                              className="p-1.5 rounded-md hover:bg-muted text-muted-foreground transition-colors"
+                              title="Editar"
+                            >
+                              <Pencil className="h-3.5 w-3.5" />
+                            </button>
+                            <button
+                              onClick={() => setPermissionsUser({ ...user, roles: [role] })}
+                              className="p-1.5 rounded-md hover:bg-muted text-muted-foreground transition-colors"
+                              title="Permissões de menu"
+                            >
+                              <KeyRound className="h-3.5 w-3.5" />
+                            </button>
+                          </>
                         )}
                         {isSuperAdmin && isSuperAdminUser(user) && (
                           <span className="text-[10px] text-amber-600 dark:text-amber-400 font-medium">
