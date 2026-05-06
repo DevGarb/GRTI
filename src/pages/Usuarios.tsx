@@ -304,8 +304,16 @@ export default function Usuarios() {
                           <button
                             onClick={() => openEdit(user)}
                             className="p-1.5 rounded-md hover:bg-muted text-muted-foreground transition-colors"
+                            title="Editar"
                           >
                             <Pencil className="h-3.5 w-3.5" />
+                          </button>
+                          <button
+                            onClick={() => setPermissionsUser({ ...user, roles: [role] })}
+                            className="p-1.5 rounded-md hover:bg-muted text-muted-foreground transition-colors"
+                            title="Permissões de menu"
+                          >
+                            <KeyRound className="h-3.5 w-3.5" />
                           </button>
                         )}
                         {isSuperAdmin && isSuperAdminUser(user) && (
