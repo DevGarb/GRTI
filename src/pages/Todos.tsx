@@ -121,6 +121,7 @@ export default function Todos() {
       )}
 
       <NewTodoModal open={open} onOpenChange={setOpen} onCreate={createTodo} />
+      <TodoDetailModal todo={selected} open={!!selected} onOpenChange={(v) => !v && setSelected(null)} />
     </div>
   );
 }
