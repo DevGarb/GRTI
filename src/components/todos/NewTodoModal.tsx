@@ -47,12 +47,12 @@ export default function NewTodoModal({ open, onOpenChange, onCreate }: Props) {
             <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="O que precisa ser feito?" />
           </div>
           <div>
-            <Label>Descrição</Label>
+            <Label>Descrição <span className="text-muted-foreground font-normal">(opcional)</span></Label>
             <Textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={3} />
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <Label>Prioridade</Label>
+              <Label>Prioridade <span className="text-muted-foreground font-normal">(opcional)</span></Label>
               <Select value={priority} onValueChange={(v: any) => setPriority(v)}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
@@ -63,7 +63,7 @@ export default function NewTodoModal({ open, onOpenChange, onCreate }: Props) {
               </Select>
             </div>
             <div>
-              <Label>Prazo</Label>
+              <Label>Prazo <span className="text-muted-foreground font-normal">(opcional)</span></Label>
               <Input type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} />
             </div>
           </div>

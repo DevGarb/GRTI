@@ -1,55 +1,51 @@
-## Menu TODO List por usuário
+## Simplificar TODO List
 
-Criar uma nova área "TODO List" onde cada usuário gerencia suas próprias tarefas pessoais, com visibilidade segmentada por papel.
+Transformar a lista atual (cards com prioridade/status/ações múltiplas) em uma lista enxuta, em cascata, dividida em duas colunas: **Pendentes** | **Concluídos**.
 
-### Regras de visibilidade
+### Mudanças
 
-- **Admin / Técnico / Desenvolvedor**: veem os TODOs de todos os técnicos, desenvolvedores e admins da mesma organização (e os seus próprios).
-- **Colaborador (solicitante)**: vê apenas os próprios TODOs. Não enxerga TODOs de técnicos nem admins.
-- **Super admin**: vê tudo (padrão do sistema).
-- Cada usuário só pode criar/editar/excluir os próprios itens.
+**1. Criação de TODO (`NewTodoModal.tsx`)**
+- Apenas o **título** continua obrigatório.
+- **Descrição**, **prioridade** e **prazo** passam a ser opcionais (sem validação, sem default visual obrigatório).
+- Manter o modal simples; campos opcionais ficam recolhidos ou claramente marcados como "(opcional)".
 
-### Estrutura da página `/todos`
+**2. Página `Todos.tsx`**
+- Remover o agrupamento por autor em cards.
+- Layout em **duas colunas** (grid 50/50, vira 1 coluna no mobile):
+  - Esquerda: **Pendentes** (status `pendente` + `andamento` unificados como "não concluído").
+  - Direita: **Concluídos** (status `concluido`).
+- Cada coluna lista os TODOs em **cascata** (linhas empilhadas, não cards), separados por divisórias sutis.
+- Cabeçalho de cada coluna mostra contagem.
+- Para staff (admin/técnico/dev), mostrar pequeno avatar/nome do autor inline em cada linha (mantém visibilidade cruzada já existente).
 
-- Cabeçalho com botão "Novo TODO" e filtro por técnico (apenas para quem tem visão ampla).
-- Agrupamento visual por responsável (cards/colunas), com contador de pendentes.
-- Cada item exibe: título, descrição curta, prioridade (Baixa/Média/Alta), status (Pendente/Em andamento/Concluído), data limite opcional, autor.
-- Ações inline: marcar como concluído, editar, excluir (somente dono).
-- Filtros: status, prioridade, "somente meus".
+**3. Substituir `TodoCard.tsx` por `TodoRow.tsx`**
+- Linha enxuta com:
+  - **Checkbox** à esquerda → marca/desmarca conclusão (toggle direto entre `pendente` ↔ `concluido`).
+  - **Título** (riscado quando concluído).
+  - Indicadores opcionais à direita só aparecem se preenchidos: data do prazo, badge de prioridade discreta.
+  - Ícone de comentário (abre modal de detalhe existente).
+  - Botão lixeira (apenas para o dono).
+- Sem botões "Iniciar/Concluir/Reabrir" — o checkbox cobre tudo.
+- Clique na linha (fora do checkbox/lixeira) abre o `TodoDetailModal` para comentários/histórico.
 
-### Banco de dados
+**4. Hook `useTodos.ts`**
+- Adicionar helper `setCompleted(todo, boolean)` que define `status` para `concluido`/`pendente` e atualiza `completed_at`.
+- Manter `toggleStatus` legado se necessário para compatibilidade ou remover.
 
-Nova tabela `user_todos`:
+**5. Sem mudanças em**
+- Banco de dados (`user_todos`, comentários, histórico, RLS): inalterados.
+- Permissões de menu, rota, visibilidade entre papéis: inalterados.
+- Modal de detalhe (`TodoDetailModal`): inalterado.
+
+### Resultado visual
 
 ```text
-id, user_id, organization_id, title, description,
-priority ('baixa'|'media'|'alta'), status ('pendente'|'andamento'|'concluido'),
-due_date (nullable), created_at, updated_at, completed_at
+┌─────────────────────────────┬─────────────────────────────┐
+│ Pendentes (4)               │ Concluídos (12)             │
+├─────────────────────────────┼─────────────────────────────┤
+│ ☐ Revisar contrato          │ ☑ Atualizar firewall        │
+│ ☐ Trocar HD do servidor 🔴  │ ☑ Backup mensal             │
+│ ☐ Ligar para fornecedor     │ ☑ Reset senha João          │
+│ ☐ Documentar API   📅 10/05 │ ...                          │
+└─────────────────────────────┴─────────────────────────────┘
 ```
-
-RLS:
-- **SELECT**: dono OU (mesma org E (admin/tecnico/desenvolvedor solicitando E dono é admin/tecnico/desenvolvedor)) OU super admin.
-- **INSERT**: `user_id = auth.uid()` e organization_id da org do usuário.
-- **UPDATE/DELETE**: somente dono (ou super admin).
-
-A regra de "colaborador não vê dos técnicos" é garantida no SELECT: colaborador só passa pelo ramo "dono = auth.uid()".
-
-### Integração com sistema de menus
-
-- Adicionar entrada `todos` em `src/config/menuItems.ts` (ícone CheckSquare, path `/todos`, sem `adminOnly`/`techAllowed` — visível a todos por padrão, pois colaboradores também acessam, com filtragem feita no servidor).
-- Registrar rota em `src/App.tsx` com `MenuGuard`.
-- Permissões granulares já podem ser ajustadas pelo modal de overrides existente.
-
-### Arquivos
-
-Novos:
-- `src/pages/Todos.tsx`
-- `src/components/todos/TodoCard.tsx`
-- `src/components/todos/NewTodoModal.tsx`
-- `src/hooks/useTodos.ts`
-
-Editados:
-- `src/config/menuItems.ts` (adicionar item)
-- `src/App.tsx` (rota)
-
-Migração SQL: criar tabela `user_todos` + RLS + trigger `update_updated_at_column`.
