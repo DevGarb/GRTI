@@ -14,6 +14,7 @@ export default function Todos() {
   const { user } = useAuth();
   const { todos, loading, createTodo, toggleStatus, deleteTodo } = useTodos();
   const [open, setOpen] = useState(false);
+  const [selected, setSelected] = useState<TodoWithAuthor | null>(null);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [authorFilter, setAuthorFilter] = useState<string>("all");
