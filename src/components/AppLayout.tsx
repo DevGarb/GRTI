@@ -119,16 +119,8 @@ export default function AppLayout({ children }: AppLayoutProps) {
     if (roles.includes("tecnico")) return "tecnico";
     return "solicitante";
   };
-
-
-  const isTech = roles.includes("tecnico") || roles.includes("desenvolvedor");
-  const visibleNavItems = navItems.filter((item) => {
-    if ((item as any).superAdminOnly) return isSuperAdmin;
-    if ((item as any).auditorOnly) return isAdmin || roles.includes("auditor" as any);
-    if ((item as any).techAllowed) return isAdmin || isTech;
-    if ((item as any).adminOnly) return isAdmin;
-    return true;
-  });
+  const { canAccess } = useMenuAccess();
+  const visibleNavItems = menuItems.filter((item) => canAccess(item.key));
 
   const toggleDark = () => {
     setDarkMode(prev => !prev);
