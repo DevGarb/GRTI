@@ -61,6 +61,13 @@ function AdminRoute({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
+function MenuGuard({ menuKey, children }: { menuKey: string; children: React.ReactNode }) {
+  const { canAccess, loading } = useMenuAccess();
+  if (loading) return null;
+  if (!canAccess(menuKey)) return <Navigate to="/chamados" replace />;
+  return <>{children}</>;
+}
+
 function AuthRoute({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
   if (loading) return null;
