@@ -38,6 +38,7 @@ export const menuItems: MenuItem[] = [
   { key: "dashboard", label: "Dashboard", icon: LayoutDashboard, path: "/", adminOnly: true, tooltip: "Visão geral com métricas e indicadores" },
   { key: "chamados", label: "Chamados", icon: Ticket, path: "/chamados", tooltip: "Abrir e gerenciar chamados técnicos" },
   { key: "chamados-abertos", label: "Chamados Abertos", icon: Clock, path: "/chamados-abertos", techAllowed: true, tooltip: "Ver todos os chamados em aberto e atribuir para si" },
+  { key: "todos", label: "TODO List", icon: CheckSquare, path: "/todos", tooltip: "Tarefas pessoais; técnicos e admins compartilham visibilidade" },
   { key: "usuarios", label: "Usuários", icon: Users, path: "/usuarios", adminOnly: true, tooltip: "Gerenciar usuários da organização" },
   { key: "avaliacoes", label: "Avaliações", icon: Star, path: "/avaliacoes", adminOnly: true, tooltip: "Avaliações de atendimento dos chamados" },
   { key: "metas", label: "Metas", icon: Target, path: "/metas", techAllowed: true, tooltip: "Metas de desempenho dos técnicos" },
