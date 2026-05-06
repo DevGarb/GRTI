@@ -12,6 +12,7 @@ interface Props {
   isOwner: boolean;
   onToggle: () => void;
   onDelete: () => void;
+  onOpen: () => void;
 }
 
 const priorityVariant = {
