@@ -2,7 +2,7 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Check, Trash2, Calendar, Play, RotateCcw } from "lucide-react";
+import { Check, Trash2, Calendar, Play, RotateCcw, MessageSquare } from "lucide-react";
 import type { TodoWithAuthor } from "@/hooks/useTodos";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
