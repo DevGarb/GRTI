@@ -100,6 +100,13 @@ export function useTodos() {
     });
   };
 
+  const setCompleted = async (todo: Todo, completed: boolean) => {
+    await updateTodo(todo.id, {
+      status: completed ? "concluido" : "pendente",
+      completed_at: completed ? new Date().toISOString() : null,
+    });
+  };
+
   const deleteTodo = async (id: string) => {
     const { error } = await supabase.from("user_todos").delete().eq("id", id);
     if (error) {
