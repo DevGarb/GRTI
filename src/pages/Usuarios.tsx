@@ -517,6 +517,13 @@ export default function Usuarios() {
         onClose={() => setShowImportModal(false)}
         onSuccess={() => queryClient.invalidateQueries({ queryKey: ["admin-users"] })}
       />
+
+      {permissionsUser && (
+        <UserPermissionsModal
+          user={permissionsUser}
+          onClose={() => setPermissionsUser(null)}
+        />
+      )}
     </div>
   );
 }
