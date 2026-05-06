@@ -1,6 +1,7 @@
 import { useState } from "react";
-import { Users, Shield, Search, UserPlus, ChevronDown, ChevronRight, Pencil, X, User, Crown, FileUp, Download, Code } from "lucide-react";
+import { Users, Shield, Search, UserPlus, ChevronDown, ChevronRight, Pencil, X, User, Crown, FileUp, Download, Code, KeyRound } from "lucide-react";
 import ImportUsersModal from "@/components/usuarios/ImportUsersModal";
+import UserPermissionsModal from "@/components/usuarios/UserPermissionsModal";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -61,6 +62,7 @@ export default function Usuarios() {
   const [search, setSearch] = useState("");
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set(roleGroupOrder));
   const [editingUser, setEditingUser] = useState<ProfileWithRoles | null>(null);
+  const [permissionsUser, setPermissionsUser] = useState<ProfileWithRoles | null>(null);
   const [editForm, setEditForm] = useState({ full_name: "", role: "solicitante", password: "", phone: "" });
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showImportModal, setShowImportModal] = useState(false);
@@ -299,12 +301,22 @@ export default function Usuarios() {
                           {new Date(user.created_at).toLocaleDateString("pt-BR")}
                         </span>
                         {isAdmin && !isSuperAdminUser(user) && (
-                          <button
-                            onClick={() => openEdit(user)}
-                            className="p-1.5 rounded-md hover:bg-muted text-muted-foreground transition-colors"
-                          >
-                            <Pencil className="h-3.5 w-3.5" />
-                          </button>
+                          <>
+                            <button
+                              onClick={() => openEdit(user)}
+                              className="p-1.5 rounded-md hover:bg-muted text-muted-foreground transition-colors"
+                              title="Editar"
+                            >
+                              <Pencil className="h-3.5 w-3.5" />
+                            </button>
+                            <button
+                              onClick={() => setPermissionsUser({ ...user, roles: [role] })}
+                              className="p-1.5 rounded-md hover:bg-muted text-muted-foreground transition-colors"
+                              title="Permissões de menu"
+                            >
+                              <KeyRound className="h-3.5 w-3.5" />
+                            </button>
+                          </>
                         )}
                         {isSuperAdmin && isSuperAdminUser(user) && (
                           <span className="text-[10px] text-amber-600 dark:text-amber-400 font-medium">
@@ -505,6 +517,13 @@ export default function Usuarios() {
         onClose={() => setShowImportModal(false)}
         onSuccess={() => queryClient.invalidateQueries({ queryKey: ["admin-users"] })}
       />
+
+      {permissionsUser && (
+        <UserPermissionsModal
+          user={permissionsUser}
+          onClose={() => setPermissionsUser(null)}
+        />
+      )}
     </div>
   );
 }

@@ -4,6 +4,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
+import { useMenuAccess } from "@/hooks/useMenuAccess";
 import AppLayout from "@/components/AppLayout";
 import Dashboard from "@/pages/Dashboard";
 import Chamados from "@/pages/Chamados";
@@ -60,6 +61,13 @@ function AdminRoute({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
+function MenuGuard({ menuKey, children }: { menuKey: string; children: React.ReactNode }) {
+  const { canAccess, loading } = useMenuAccess();
+  if (loading) return null;
+  if (!canAccess(menuKey)) return <Navigate to="/chamados" replace />;
+  return <>{children}</>;
+}
+
 function AuthRoute({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
   if (loading) return null;
@@ -83,29 +91,29 @@ const App = () => (
                 <ProtectedRoute>
                   <AppLayout>
                     <Routes>
-                      <Route path="/" element={<AdminRoute><Dashboard /></AdminRoute>} />
-                      <Route path="/chamados" element={<Chamados />} />
-                      <Route path="/chamados-abertos" element={<ChamadosAbertos />} />
-                      <Route path="/usuarios" element={<AdminRoute><Usuarios /></AdminRoute>} />
-                      <Route path="/avaliacoes" element={<AdminRoute><Avaliacoes /></AdminRoute>} />
-                      <Route path="/metas" element={<MetasTecnicos />} />
-                      <Route path="/historico" element={<AdminRoute><Historico /></AdminRoute>} />
-                      <Route path="/auditoria" element={<AdminRoute><Auditoria /></AdminRoute>} />
-                      
-                      <Route path="/categorias" element={<AdminRoute><Categorias /></AdminRoute>} />
-                      <Route path="/webhook-logs" element={<AdminRoute><WebhookLogs /></AdminRoute>} />
-                      <Route path="/preventivas" element={<Preventivas />} />
-                      <Route path="/patrimonio" element={<AdminRoute><Patrimonio /></AdminRoute>} />
-                      <Route path="/projetos" element={<AdminRoute><Projetos /></AdminRoute>} />
-                      <Route path="/projetos/:id" element={<AdminRoute><ProjetoDetalhe /></AdminRoute>} />
-                      <Route path="/configuracoes" element={<Configuracoes />} />
-                      <Route path="/white-label" element={<AdminRoute><WhiteLabel /></AdminRoute>} />
-                      <Route path="/integracoes" element={<AdminRoute><Integracoes /></AdminRoute>} />
-                      <Route path="/planos" element={<AdminRoute><Planos /></AdminRoute>} />
-                      <Route path="/super-admin" element={<AdminRoute><SuperAdmin /></AdminRoute>} />
-                      <Route path="/migracao" element={<AdminRoute><Migracao /></AdminRoute>} />
-                      <Route path="/documentacao" element={<AdminRoute><Documentacao /></AdminRoute>} />
-                      <Route path="/setores" element={<AdminRoute><Setores /></AdminRoute>} />
+                      <Route path="/" element={<MenuGuard menuKey="dashboard"><AdminRoute><Dashboard /></AdminRoute></MenuGuard>} />
+                      <Route path="/chamados" element={<MenuGuard menuKey="chamados"><Chamados /></MenuGuard>} />
+                      <Route path="/chamados-abertos" element={<MenuGuard menuKey="chamados-abertos"><ChamadosAbertos /></MenuGuard>} />
+                      <Route path="/usuarios" element={<MenuGuard menuKey="usuarios"><AdminRoute><Usuarios /></AdminRoute></MenuGuard>} />
+                      <Route path="/avaliacoes" element={<MenuGuard menuKey="avaliacoes"><AdminRoute><Avaliacoes /></AdminRoute></MenuGuard>} />
+                      <Route path="/metas" element={<MenuGuard menuKey="metas"><MetasTecnicos /></MenuGuard>} />
+                      <Route path="/historico" element={<MenuGuard menuKey="historico"><AdminRoute><Historico /></AdminRoute></MenuGuard>} />
+                      <Route path="/auditoria" element={<MenuGuard menuKey="auditoria"><AdminRoute><Auditoria /></AdminRoute></MenuGuard>} />
+
+                      <Route path="/categorias" element={<MenuGuard menuKey="categorias"><AdminRoute><Categorias /></AdminRoute></MenuGuard>} />
+                      <Route path="/webhook-logs" element={<MenuGuard menuKey="webhook-logs"><AdminRoute><WebhookLogs /></AdminRoute></MenuGuard>} />
+                      <Route path="/preventivas" element={<MenuGuard menuKey="preventivas"><Preventivas /></MenuGuard>} />
+                      <Route path="/patrimonio" element={<MenuGuard menuKey="patrimonio"><AdminRoute><Patrimonio /></AdminRoute></MenuGuard>} />
+                      <Route path="/projetos" element={<MenuGuard menuKey="projetos"><AdminRoute><Projetos /></AdminRoute></MenuGuard>} />
+                      <Route path="/projetos/:id" element={<MenuGuard menuKey="projetos"><AdminRoute><ProjetoDetalhe /></AdminRoute></MenuGuard>} />
+                      <Route path="/configuracoes" element={<MenuGuard menuKey="configuracoes"><Configuracoes /></MenuGuard>} />
+                      <Route path="/white-label" element={<MenuGuard menuKey="white-label"><AdminRoute><WhiteLabel /></AdminRoute></MenuGuard>} />
+                      <Route path="/integracoes" element={<MenuGuard menuKey="integracoes"><AdminRoute><Integracoes /></AdminRoute></MenuGuard>} />
+                      <Route path="/planos" element={<MenuGuard menuKey="planos"><AdminRoute><Planos /></AdminRoute></MenuGuard>} />
+                      <Route path="/super-admin" element={<MenuGuard menuKey="super-admin"><AdminRoute><SuperAdmin /></AdminRoute></MenuGuard>} />
+                      <Route path="/migracao" element={<MenuGuard menuKey="migracao"><AdminRoute><Migracao /></AdminRoute></MenuGuard>} />
+                      <Route path="/documentacao" element={<MenuGuard menuKey="documentacao"><AdminRoute><Documentacao /></AdminRoute></MenuGuard>} />
+                      <Route path="/setores" element={<MenuGuard menuKey="setores"><AdminRoute><Setores /></AdminRoute></MenuGuard>} />
                       <Route path="*" element={<NotFound />} />
                     </Routes>
                   </AppLayout>
