@@ -115,10 +115,20 @@ export default function UserPermissionsModal({ user, onClose }: Props) {
                       const Icons = { default: Minus, grant: Check, block: Ban };
                       const Icon = Icons[s];
                       const active = current === s;
+                      const reflectsDefault =
+                        current === "default" && ((s === "grant" && def) || (s === "block" && !def));
                       const colors = {
                         default: active ? "bg-muted text-foreground" : "text-muted-foreground hover:bg-muted/50",
-                        grant: active ? "bg-emerald-500 text-white" : "text-muted-foreground hover:bg-emerald-500/10",
-                        block: active ? "bg-red-500 text-white" : "text-muted-foreground hover:bg-red-500/10",
+                        grant: active
+                          ? "bg-emerald-500 text-white"
+                          : reflectsDefault
+                          ? "bg-emerald-500/15 text-emerald-600 ring-1 ring-emerald-500/30"
+                          : "text-muted-foreground hover:bg-emerald-500/10",
+                        block: active
+                          ? "bg-red-500 text-white"
+                          : reflectsDefault
+                          ? "bg-red-500/15 text-red-600 ring-1 ring-red-500/30"
+                          : "text-muted-foreground hover:bg-red-500/10",
                       };
                       return (
                         <button
