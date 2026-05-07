@@ -124,7 +124,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
   const orgSlug = orgData?.slug;
   const visibleNavItems = menuItems.filter((item) => {
     if (item.orgSlugs && (!orgSlug || !item.orgSlugs.includes(orgSlug))) return false;
-    if (orgSlug === "operacional") {
+    if (orgSlug === "cgps-operacional") {
       const universal = ["configuracoes", "todos", "usuarios", "white-label", "integracoes", "documentacao", "super-admin", "planos", "migracao"];
       if (!item.key.startsWith("op-") && !universal.includes(item.key)) return false;
     }
