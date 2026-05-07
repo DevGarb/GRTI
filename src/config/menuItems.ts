@@ -20,6 +20,7 @@ import {
   Package,
   CheckSquare,
   Truck,
+  HardHat,
 } from "lucide-react";
 
 export interface MenuItem {
