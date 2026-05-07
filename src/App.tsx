@@ -125,6 +125,7 @@ const App = () => (
                       <Route path="/op/cadastros" element={<MenuGuard menuKey="op-cadastros"><OpCadastros /></MenuGuard>} />
                       <Route path="/op/entregas" element={<MenuGuard menuKey="op-entregas"><OpEntregas /></MenuGuard>} />
                       <Route path="/op/oficina" element={<MenuGuard menuKey="op-oficina"><OpOficina /></MenuGuard>} />
+                      <Route path="/op/manutencao" element={<MenuGuard menuKey="op-manutencao"><OpManutencao /></MenuGuard>} />
                       <Route path="*" element={<NotFound />} />
                     </Routes>
                   </AppLayout>
