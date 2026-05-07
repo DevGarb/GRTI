@@ -201,6 +201,102 @@ export type Database = {
         }
         Relationships: []
       }
+      op_checklist_executions: {
+        Row: {
+          created_at: string
+          executed_at: string
+          executed_by: string
+          id: string
+          notes: string | null
+          organization_id: string
+          responses: Json
+          site_id: string | null
+          template_id: string
+        }
+        Insert: {
+          created_at?: string
+          executed_at?: string
+          executed_by: string
+          id?: string
+          notes?: string | null
+          organization_id: string
+          responses?: Json
+          site_id?: string | null
+          template_id: string
+        }
+        Update: {
+          created_at?: string
+          executed_at?: string
+          executed_by?: string
+          id?: string
+          notes?: string | null
+          organization_id?: string
+          responses?: Json
+          site_id?: string | null
+          template_id?: string
+        }
+        Relationships: []
+      }
+      op_checklist_items: {
+        Row: {
+          created_at: string
+          id: string
+          label: string
+          position: number
+          template_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          label: string
+          position?: number
+          template_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          label?: string
+          position?: number
+          template_id?: string
+        }
+        Relationships: []
+      }
+      op_checklist_templates: {
+        Row: {
+          created_at: string
+          created_by: string
+          description: string | null
+          id: string
+          is_active: boolean
+          name: string
+          organization_id: string
+          site_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          name: string
+          organization_id: string
+          site_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          name?: string
+          organization_id?: string
+          site_id?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       op_companies: {
         Row: {
           contact_name: string | null
@@ -333,6 +429,93 @@ export type Database = {
           phone?: string | null
           updated_at?: string
           user_id?: string | null
+        }
+        Relationships: []
+      }
+      op_maintenance_orders: {
+        Row: {
+          category: string
+          created_at: string
+          created_by: string
+          deadline: string | null
+          description: string | null
+          finished_at: string | null
+          id: string
+          notes: string | null
+          om_number: number
+          opened_at: string
+          organization_id: string
+          priority: string
+          responsible: string | null
+          site_id: string | null
+          status: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          category?: string
+          created_at?: string
+          created_by: string
+          deadline?: string | null
+          description?: string | null
+          finished_at?: string | null
+          id?: string
+          notes?: string | null
+          om_number?: number
+          opened_at?: string
+          organization_id: string
+          priority?: string
+          responsible?: string | null
+          site_id?: string | null
+          status?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          created_by?: string
+          deadline?: string | null
+          description?: string | null
+          finished_at?: string | null
+          id?: string
+          notes?: string | null
+          om_number?: number
+          opened_at?: string
+          organization_id?: string
+          priority?: string
+          responsible?: string | null
+          site_id?: string | null
+          status?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      op_maintenance_photos: {
+        Row: {
+          created_at: string
+          id: string
+          maintenance_order_id: string
+          photo_type: string
+          photo_url: string
+          uploaded_by: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          maintenance_order_id: string
+          photo_type?: string
+          photo_url: string
+          uploaded_by: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          maintenance_order_id?: string
+          photo_type?: string
+          photo_url?: string
+          uploaded_by?: string
         }
         Relationships: []
       }
@@ -541,6 +724,45 @@ export type Database = {
           vehicle_id?: string | null
           vehicle_model?: string | null
           vehicle_plate?: string | null
+        }
+        Relationships: []
+      }
+      op_sites: {
+        Row: {
+          address: string | null
+          created_at: string
+          created_by: string
+          id: string
+          is_active: boolean
+          name: string
+          organization_id: string
+          phone: string | null
+          responsible: string | null
+          updated_at: string
+        }
+        Insert: {
+          address?: string | null
+          created_at?: string
+          created_by: string
+          id?: string
+          is_active?: boolean
+          name: string
+          organization_id: string
+          phone?: string | null
+          responsible?: string | null
+          updated_at?: string
+        }
+        Update: {
+          address?: string | null
+          created_at?: string
+          created_by?: string
+          id?: string
+          is_active?: boolean
+          name?: string
+          organization_id?: string
+          phone?: string | null
+          responsible?: string | null
+          updated_at?: string
         }
         Relationships: []
       }
