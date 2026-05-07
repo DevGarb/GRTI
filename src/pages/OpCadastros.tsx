@@ -141,3 +141,65 @@ function VehiclesTab() {
     </div>
   );
 }
+
+function MechanicsTab() {
+  const { items, add, remove } = useMechanics();
+  const [name, setName] = useState(""); const [phone, setPhone] = useState(""); const [specialty, setSpecialty] = useState("");
+  return (
+    <div className="space-y-4">
+      <div className="bg-card border rounded-lg p-4 grid gap-3 md:grid-cols-[1fr_180px_1fr_auto]">
+        <div><Label>Nome</Label><Input value={name} onChange={e => setName(e.target.value)} placeholder="Nome do mecânico" /></div>
+        <div><Label>Telefone</Label><Input value={phone} onChange={e => setPhone(e.target.value)} /></div>
+        <div><Label>Especialidade</Label><Input value={specialty} onChange={e => setSpecialty(e.target.value)} placeholder="Ex.: Motor, elétrica" /></div>
+        <div className="flex items-end">
+          <Button onClick={() => { if (!name) return; add({ name, phone, specialty }); setName(""); setPhone(""); setSpecialty(""); }}>
+            <Plus className="h-4 w-4 mr-1" /> Adicionar
+          </Button>
+        </div>
+      </div>
+      <div className="bg-card border rounded-lg divide-y">
+        {items.length === 0 && <div className="p-8 text-center text-muted-foreground">Nenhum mecânico cadastrado</div>}
+        {items.map(m => (
+          <div key={m.id} className="p-3 flex items-center gap-3">
+            <div className="flex-1">
+              <div className="font-medium">{m.name}</div>
+              <div className="text-xs text-muted-foreground">{m.phone || "—"}{m.specialty ? ` · ${m.specialty}` : ""}</div>
+            </div>
+            <Button variant="ghost" size="icon" onClick={() => remove(m.id)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function PartsTab() {
+  const { items, add, remove } = useParts();
+  const [name, setName] = useState(""); const [code, setCode] = useState(""); const [price, setPrice] = useState("0");
+  return (
+    <div className="space-y-4">
+      <div className="bg-card border rounded-lg p-4 grid gap-3 md:grid-cols-[1fr_180px_140px_auto]">
+        <div><Label>Nome da peça</Label><Input value={name} onChange={e => setName(e.target.value)} placeholder="Ex.: Pastilha de freio" /></div>
+        <div><Label>Código</Label><Input value={code} onChange={e => setCode(e.target.value)} placeholder="Opcional" /></div>
+        <div><Label>Preço padrão</Label><Input type="number" step="0.01" min="0" value={price} onChange={e => setPrice(e.target.value)} /></div>
+        <div className="flex items-end">
+          <Button onClick={() => { if (!name) return; add({ name, code, default_price: Number(price) }); setName(""); setCode(""); setPrice("0"); }}>
+            <Plus className="h-4 w-4 mr-1" /> Adicionar
+          </Button>
+        </div>
+      </div>
+      <div className="bg-card border rounded-lg divide-y">
+        {items.length === 0 && <div className="p-8 text-center text-muted-foreground">Nenhuma peça cadastrada</div>}
+        {items.map(p => (
+          <div key={p.id} className="p-3 flex items-center gap-3">
+            <div className="flex-1">
+              <div className="font-medium">{p.name}</div>
+              <div className="text-xs text-muted-foreground">{p.code || "—"} · R$ {Number(p.default_price).toFixed(2)}</div>
+            </div>
+            <Button variant="ghost" size="icon" onClick={() => remove(p.id)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
