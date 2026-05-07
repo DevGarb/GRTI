@@ -3,12 +3,22 @@ import { Plus, ChevronDown, ChevronRight, User, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useTodos } from "@/hooks/useTodos";
 import { useAuth } from "@/contexts/AuthContext";
 import NewTodoModal from "@/components/todos/NewTodoModal";
 import TodoRow from "@/components/todos/TodoRow";
 import TodoDetailModal from "@/components/todos/TodoDetailModal";
 import type { TodoWithAuthor } from "@/hooks/useTodos";
+
+type ViewTab = "hoje" | "historico";
+
+const isToday = (iso?: string | null) => {
+  if (!iso) return false;
+  const d = new Date(iso);
+  const n = new Date();
+  return d.getFullYear() === n.getFullYear() && d.getMonth() === n.getMonth() && d.getDate() === n.getDate();
+};
 
 export default function Todos() {
   const { user } = useAuth();
@@ -17,12 +27,36 @@ export default function Todos() {
   const [selected, setSelected] = useState<TodoWithAuthor | null>(null);
   const [search, setSearch] = useState("");
   const [expandedUser, setExpandedUser] = useState<string | null>(user?.id ?? null);
+  const [tab, setTab] = useState<ViewTab>("hoje");
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
+
+  const tabFiltered = useMemo(() => {
+    if (tab === "hoje") {
+      return todos.filter((t) => t.status !== "concluido" || isToday(t.completed_at));
+    }
+    // histórico: apenas concluídos, com filtro opcional de período
+    return todos.filter((t) => {
+      if (t.status !== "concluido") return false;
+      if (!t.completed_at) return false;
+      const d = new Date(t.completed_at);
+      if (dateFrom) {
+        const from = new Date(dateFrom + "T00:00:00");
+        if (d < from) return false;
+      }
+      if (dateTo) {
+        const to = new Date(dateTo + "T23:59:59");
+        if (d > to) return false;
+      }
+      return true;
+    });
+  }, [todos, tab, dateFrom, dateTo]);
 
   const filtered = useMemo(() => {
-    if (!search) return todos;
+    if (!search) return tabFiltered;
     const q = search.toLowerCase();
-    return todos.filter((t) => `${t.title} ${t.description ?? ""}`.toLowerCase().includes(q));
-  }, [todos, search]);
+    return tabFiltered.filter((t) => `${t.title} ${t.description ?? ""}`.toLowerCase().includes(q));
+  }, [tabFiltered, search]);
 
   const groups = useMemo(() => {
     const map = new Map<string, { userId: string; name: string; avatar: string | null; items: TodoWithAuthor[] }>();
@@ -41,23 +75,32 @@ export default function Todos() {
   }, [filtered, user?.id]);
 
   const handleExport = () => {
-    const lines: string[] = ["RESUMO DE TODOs", "================", ""];
+    const titulo = tab === "hoje" ? "RESUMO DE TODOs (HOJE)" : "RESUMO DE TODOs (HISTÓRICO)";
+    const lines: string[] = [titulo, "=".repeat(titulo.length), ""];
     for (const g of groups) {
       const pendentes = g.items.filter((t) => t.status !== "concluido");
       const concluidos = g.items.filter((t) => t.status === "concluido");
       lines.push(g.name.toUpperCase());
       lines.push("-".repeat(g.name.length));
-      lines.push(`Pendentes (${pendentes.length}):`);
-      pendentes.forEach((t) => lines.push(`  [ ] ${t.title}`));
-      lines.push(`Concluídos (${concluidos.length}):`);
-      concluidos.forEach((t) => lines.push(`  [x] ${t.title}`));
+      if (tab === "hoje") {
+        lines.push(`Pendentes (${pendentes.length}):`);
+        pendentes.forEach((t) => lines.push(`  [ ] ${t.title}`));
+        lines.push(`Concluídos hoje (${concluidos.length}):`);
+        concluidos.forEach((t) => lines.push(`  [x] ${t.title}`));
+      } else {
+        lines.push(`Concluídos (${concluidos.length}):`);
+        concluidos.forEach((t) => {
+          const d = t.completed_at ? new Date(t.completed_at).toLocaleDateString("pt-BR") : "";
+          lines.push(`  [x] ${t.title}${d ? ` — ${d}` : ""}`);
+        });
+      }
       lines.push("");
     }
     const blob = new Blob([lines.join("\n")], { type: "text/plain;charset=utf-8" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `todos-${new Date().toISOString().slice(0, 10)}.txt`;
+    a.download = `todos-${tab}-${new Date().toISOString().slice(0, 10)}.txt`;
     a.click();
     URL.revokeObjectURL(url);
   };
@@ -67,7 +110,11 @@ export default function Todos() {
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">TODO List</h1>
-          <p className="text-muted-foreground">Tarefas pendentes e concluídas, agrupadas por pessoa.</p>
+          <p className="text-muted-foreground">
+            {tab === "hoje"
+              ? "Pendentes e concluídos de hoje, agrupados por pessoa."
+              : "Histórico completo de TODOs concluídos."}
+          </p>
         </div>
         <div className="flex gap-2">
           <Button variant="outline" onClick={handleExport} disabled={groups.length === 0}>
@@ -79,12 +126,36 @@ export default function Todos() {
         </div>
       </div>
 
-      <Input
-        placeholder="Buscar..."
-        value={search}
-        onChange={(e) => setSearch(e.target.value)}
-        className="max-w-xs"
-      />
+      <Tabs value={tab} onValueChange={(v) => setTab(v as ViewTab)}>
+        <TabsList>
+          <TabsTrigger value="hoje">Hoje</TabsTrigger>
+          <TabsTrigger value="historico">Histórico</TabsTrigger>
+        </TabsList>
+      </Tabs>
+
+      <div className="flex flex-wrap gap-3 items-end">
+        <Input
+          placeholder="Buscar..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          className="max-w-xs"
+        />
+        {tab === "historico" && (
+          <>
+            <div>
+              <label className="text-xs text-muted-foreground block mb-1">De</label>
+              <Input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} />
+            </div>
+            <div>
+              <label className="text-xs text-muted-foreground block mb-1">Até</label>
+              <Input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} />
+            </div>
+            {(dateFrom || dateTo) && (
+              <Button variant="ghost" onClick={() => { setDateFrom(""); setDateTo(""); }}>Limpar</Button>
+            )}
+          </>
+        )}
+      </div>
 
       {loading ? (
         <div className="text-muted-foreground">Carregando...</div>
@@ -122,14 +193,14 @@ export default function Todos() {
                     <p className="text-[12px] text-muted-foreground">{g.items.length} TODO{g.items.length !== 1 ? "s" : ""}</p>
                   </div>
                   <div className="flex gap-1.5 flex-wrap justify-end">
-                    {pendentes.length > 0 && (
+                    {tab === "hoje" && pendentes.length > 0 && (
                       <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-medium bg-amber-500/15 text-amber-600 dark:text-amber-400">
                         Pendentes: {pendentes.length}
                       </span>
                     )}
                     {concluidos.length > 0 && (
                       <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-medium bg-emerald-500/15 text-emerald-600 dark:text-emerald-400">
-                        Concluídos: {concluidos.length}
+                        {tab === "hoje" ? "Concluídos hoje" : "Concluídos"}: {concluidos.length}
                       </span>
                     )}
                   </div>
@@ -137,27 +208,31 @@ export default function Todos() {
 
                 {isExpanded && (
                   <div className="border-t border-border">
-                    <div className="px-4 py-2 text-xs font-semibold text-muted-foreground uppercase tracking-wide bg-muted/30">
-                      Pendentes ({pendentes.length})
-                    </div>
-                    {pendentes.length === 0 ? (
-                      <div className="px-4 py-3 text-sm text-muted-foreground">Nada pendente.</div>
-                    ) : (
-                      pendentes.map((t) => (
-                        <TodoRow
-                          key={t.id}
-                          todo={t}
-                          isOwner={t.user_id === user?.id}
-                          showAuthor={false}
-                          onToggleComplete={(v) => setCompleted(t, v)}
-                          onDelete={() => deleteTodo(t.id)}
-                          onOpen={() => setSelected(t)}
-                        />
-                      ))
+                    {tab === "hoje" && (
+                      <>
+                        <div className="px-4 py-2 text-xs font-semibold text-muted-foreground uppercase tracking-wide bg-muted/30">
+                          Pendentes ({pendentes.length})
+                        </div>
+                        {pendentes.length === 0 ? (
+                          <div className="px-4 py-3 text-sm text-muted-foreground">Nada pendente.</div>
+                        ) : (
+                          pendentes.map((t) => (
+                            <TodoRow
+                              key={t.id}
+                              todo={t}
+                              isOwner={t.user_id === user?.id}
+                              showAuthor={false}
+                              onToggleComplete={(v) => setCompleted(t, v)}
+                              onDelete={() => deleteTodo(t.id)}
+                              onOpen={() => setSelected(t)}
+                            />
+                          ))
+                        )}
+                      </>
                     )}
 
-                    <div className="px-4 py-2 text-xs font-semibold text-muted-foreground uppercase tracking-wide bg-muted/30 border-t border-border">
-                      Concluídos ({concluidos.length})
+                    <div className={`px-4 py-2 text-xs font-semibold text-muted-foreground uppercase tracking-wide bg-muted/30 ${tab === "hoje" ? "border-t border-border" : ""}`}>
+                      {tab === "hoje" ? `Concluídos hoje (${concluidos.length})` : `Concluídos (${concluidos.length})`}
                     </div>
                     {concluidos.length === 0 ? (
                       <div className="px-4 py-3 text-sm text-muted-foreground">Nenhum concluído.</div>
