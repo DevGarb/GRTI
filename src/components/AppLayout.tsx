@@ -2,12 +2,13 @@ import { useState, useEffect } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { supabase } from "@/integrations/supabase/client";
-import { LogOut, Menu, Moon, Sun, HelpCircle } from "lucide-react";
+import { LogOut, Menu, Moon, Sun, HelpCircle, Repeat } from "lucide-react";
 import { cn } from "@/lib/utils";
 import OrgSwitcher from "@/components/OrgSwitcher";
 import { useAuth } from "@/contexts/AuthContext";
 import { menuItems } from "@/config/menuItems";
 import { useMenuAccess } from "@/hooks/useMenuAccess";
+import { useUserOrganizations } from "@/hooks/useUserOrganizations";
 
 interface AppLayoutProps {
   children: React.ReactNode;
@@ -226,6 +227,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
             >
               {darkMode ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
             </button>
+            <SwitchOrgButton />
             <button
               onClick={signOut}
               className="p-1.5 rounded-md hover:bg-sidebar-accent/50 text-sidebar-muted transition-colors"
