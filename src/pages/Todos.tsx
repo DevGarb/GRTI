@@ -40,6 +40,28 @@ export default function Todos() {
     return arr;
   }, [filtered, user?.id]);
 
+  const handleExport = () => {
+    const lines: string[] = ["RESUMO DE TODOs", "================", ""];
+    for (const g of groups) {
+      const pendentes = g.items.filter((t) => t.status !== "concluido");
+      const concluidos = g.items.filter((t) => t.status === "concluido");
+      lines.push(g.name.toUpperCase());
+      lines.push("-".repeat(g.name.length));
+      lines.push(`Pendentes (${pendentes.length}):`);
+      pendentes.forEach((t) => lines.push(`  [ ] ${t.title}`));
+      lines.push(`Concluídos (${concluidos.length}):`);
+      concluidos.forEach((t) => lines.push(`  [x] ${t.title}`));
+      lines.push("");
+    }
+    const blob = new Blob([lines.join("\n")], { type: "text/plain;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `todos-${new Date().toISOString().slice(0, 10)}.txt`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
   return (
     <div className="p-6 space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-4">
@@ -47,9 +69,14 @@ export default function Todos() {
           <h1 className="text-3xl font-bold tracking-tight">TODO List</h1>
           <p className="text-muted-foreground">Tarefas pendentes e concluídas, agrupadas por pessoa.</p>
         </div>
-        <Button onClick={() => setOpen(true)}>
-          <Plus className="h-4 w-4 mr-2" /> Novo TODO
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={handleExport} disabled={groups.length === 0}>
+            <Download className="h-4 w-4 mr-2" /> Exportar TXT
+          </Button>
+          <Button onClick={() => setOpen(true)}>
+            <Plus className="h-4 w-4 mr-2" /> Novo TODO
+          </Button>
+        </div>
       </div>
 
       <Input
