@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { Plus, ChevronDown, ChevronRight, User } from "lucide-react";
+import { Plus, ChevronDown, ChevronRight, User, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
