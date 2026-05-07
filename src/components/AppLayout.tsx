@@ -121,7 +121,15 @@ export default function AppLayout({ children }: AppLayoutProps) {
     return "solicitante";
   };
   const { canAccess } = useMenuAccess();
-  const visibleNavItems = menuItems.filter((item) => canAccess(item.key));
+  const orgSlug = orgData?.slug;
+  const visibleNavItems = menuItems.filter((item) => {
+    if (item.orgSlugs && (!orgSlug || !item.orgSlugs.includes(orgSlug))) return false;
+    if (orgSlug === "operacional") {
+      const universal = ["configuracoes", "todos", "usuarios", "white-label", "integracoes", "documentacao", "super-admin", "planos", "migracao"];
+      if (!item.key.startsWith("op-") && !universal.includes(item.key)) return false;
+    }
+    return canAccess(item.key);
+  });
 
   const toggleDark = () => {
     setDarkMode(prev => !prev);
