@@ -1,40 +1,49 @@
 ## Objetivo
+Transformar a tela de TODOs em uma visão diária, mantendo todo o histórico no banco. Por padrão mostra os pendentes (todos, independente da data) + concluídos de hoje. Um botão "Histórico" dá acesso ao restante.
 
-Agrupar a TODO List por usuário (autor), com dropdowns expansíveis — mesmo padrão visual usado na aba **Chamados** (admin view), onde cada técnico vira uma linha clicável que expande mostrando seus itens.
+## Comportamento
 
-## Mudanças
+**Aba "Hoje" (padrão)**
+- Pendentes: todos (não somem com o tempo, continuam visíveis até serem concluídos).
+- Concluídos: apenas os concluídos hoje (filtrado por `completed_at` no dia atual).
+- Mantém o agrupamento por usuário com accordion já existente.
 
-### `src/pages/Todos.tsx` (refatorar layout)
+**Aba "Histórico"**
+- Mostra todos os concluídos (sem filtro de data) agrupados por usuário.
+- Inclui um seletor opcional de período (data início / data fim) para filtrar.
+- Pendentes não aparecem aqui (eles vivem na aba Hoje).
 
-Substituir as duas colunas atuais (Pendentes / Concluídos lado a lado) por uma **lista vertical de pessoas**, cada uma com dropdown:
+**Sem perda de dados**
+- Nenhuma alteração de schema ou exclusão. `user_todos` já tem `completed_at`, `status` e `created_at` — apenas filtramos no front.
+
+## Mudanças técnicas
+
+**`src/pages/Todos.tsx`**
+- Adicionar `Tabs` (shadcn) com "Hoje" e "Histórico".
+- Filtrar `todos` antes de agrupar, conforme a aba ativa:
+  - Hoje: `status !== 'concluido'` OR (`status === 'concluido'` AND `completed_at` no dia atual).
+  - Histórico: `status === 'concluido'` (com filtro opcional de intervalo de datas).
+- Ajustar os contadores nos badges do header de cada usuário para refletirem a aba atual.
+- Export TXT respeita a aba ativa.
+
+**`src/hooks/useTodos.ts`**
+- Sem mudanças. Já retorna todos os registros do usuário/staff.
+
+## Estrutura visual
 
 ```text
-[v] GABRIEL PORTO          [Pendentes: 5] [Concluídos: 2]
-    ├─ Pendentes
-    │   ( ) Refatorar fluxo NPS
-    │   ( ) Corrigir album do ADMIN
-    └─ Concluídos
-        (x) Tarefa antiga
+[ Hoje ] [ Histórico ]
 
-[>] VICTOR HUGO            [Pendentes: 1]
+(Hoje)
+v USER             [Pendentes: 5] [Concluídos hoje: 2]
+   Pendentes (5)   ...
+   Concluídos hoje (2) ...
+
+(Histórico)
+[ Data início ] [ Data fim ]  (opcional)
+v USER             [Concluídos: 47]
+   ...
 ```
 
-Detalhes:
-- Agrupar `todos` por `user_id` → usar `author_name` / `author_avatar` no header.
-- Header clicável (mesmo estilo de `Chamados.tsx` linhas 448-475): chevron, avatar, nome em uppercase, contadores como badges (Pendentes em azul/âmbar, Concluídos em verde).
-- Estado `expandedUser` (string | null) — apenas um aberto por vez, igual em Chamados.
-- Dentro do expand, manter o split em duas mini-seções: **Pendentes** (acima) e **Concluídos** (abaixo, recolhível ou só listado), reutilizando o componente `TodoRow` já existente.
-- Ordenar grupos: usuário logado primeiro, depois alfabético.
-- Manter busca global (filtra antes de agrupar — esconde grupos vazios).
-- Manter botão "Novo TODO" e modal de detalhes inalterados.
-
-### Sem mudanças em
-
-- `useTodos.ts` (RLS já garante visibilidade correta por papel)
-- `TodoRow.tsx`, `NewTodoModal.tsx`, `TodoDetailModal.tsx`
-- Banco / migrations
-
-## Notas
-
-- Para colaborador, normalmente só verá o próprio grupo (RLS), então o accordion fica natural.
-- Avatar no header usa `Avatar` do shadcn com fallback nas iniciais (mesmo padrão de `TodoRow`).
+## Arquivos a editar
+- `src/pages/Todos.tsx`
