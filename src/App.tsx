@@ -35,6 +35,7 @@ import Todos from "@/pages/Todos";
 import EscolherOrganizacao from "@/pages/EscolherOrganizacao";
 import OpCadastros from "@/pages/OpCadastros";
 import OpEntregas from "@/pages/OpEntregas";
+import OpOficina from "@/pages/OpOficina";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -122,6 +123,7 @@ const App = () => (
                       <Route path="/setores" element={<MenuGuard menuKey="setores"><AdminRoute><Setores /></AdminRoute></MenuGuard>} />
                       <Route path="/op/cadastros" element={<MenuGuard menuKey="op-cadastros"><OpCadastros /></MenuGuard>} />
                       <Route path="/op/entregas" element={<MenuGuard menuKey="op-entregas"><OpEntregas /></MenuGuard>} />
+                      <Route path="/op/oficina" element={<MenuGuard menuKey="op-oficina"><OpOficina /></MenuGuard>} />
                       <Route path="*" element={<NotFound />} />
                     </Routes>
                   </AppLayout>
