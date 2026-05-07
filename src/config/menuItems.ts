@@ -62,6 +62,7 @@ export const menuItems: MenuItem[] = [
   { key: "configuracoes", label: "Configurações", icon: Settings, path: "/configuracoes", tooltip: "Preferências e configurações gerais" },
   { key: "op-cadastros", label: "Cadastros", icon: Users, path: "/op/cadastros", orgSlugs: ["cgps-operacional"], tooltip: "Cadastros do módulo Operacional: motoristas, empresas e veículos" },
   { key: "op-entregas", label: "Entregas", icon: Truck, path: "/op/entregas", orgSlugs: ["cgps-operacional"], tooltip: "Controle de entregas externas" },
+  { key: "op-oficina", label: "Oficina", icon: Wrench, path: "/op/oficina", orgSlugs: ["cgps-operacional"], tooltip: "Ordens de serviço da oficina" },
 ];
 
 export type Roles = {
