@@ -7,8 +7,8 @@ import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 
 const ORG_DESCRIPTIONS: Record<string, { subtitle: string; sector: string }> = {
-  grti: { subtitle: "Suporte e Help Desk", sector: "Setor de T.I" },
-  operacional: { subtitle: "Entregas, Oficina e Manutenção", sector: "Setor de Operações" },
+  "grupo-ramos": { subtitle: "Suporte e Help Desk", sector: "Setor de T.I" },
+  "cgps-operacional": { subtitle: "Entregas, Oficina e Manutenção", sector: "Setor de Operações" },
 };
 
 export default function EscolherOrganizacao() {
