@@ -336,6 +336,214 @@ export type Database = {
         }
         Relationships: []
       }
+      op_mechanics: {
+        Row: {
+          created_at: string
+          created_by: string
+          id: string
+          is_active: boolean
+          name: string
+          organization_id: string
+          phone: string | null
+          specialty: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          id?: string
+          is_active?: boolean
+          name: string
+          organization_id: string
+          phone?: string | null
+          specialty?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          id?: string
+          is_active?: boolean
+          name?: string
+          organization_id?: string
+          phone?: string | null
+          specialty?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      op_parts: {
+        Row: {
+          code: string | null
+          created_at: string
+          created_by: string
+          default_price: number
+          id: string
+          is_active: boolean
+          name: string
+          organization_id: string
+          updated_at: string
+        }
+        Insert: {
+          code?: string | null
+          created_at?: string
+          created_by: string
+          default_price?: number
+          id?: string
+          is_active?: boolean
+          name: string
+          organization_id: string
+          updated_at?: string
+        }
+        Update: {
+          code?: string | null
+          created_at?: string
+          created_by?: string
+          default_price?: number
+          id?: string
+          is_active?: boolean
+          name?: string
+          organization_id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      op_service_order_parts: {
+        Row: {
+          created_at: string
+          id: string
+          part_id: string | null
+          part_name: string
+          quantity: number
+          service_order_id: string
+          unit_price: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          part_id?: string | null
+          part_name: string
+          quantity?: number
+          service_order_id: string
+          unit_price?: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          part_id?: string | null
+          part_name?: string
+          quantity?: number
+          service_order_id?: string
+          unit_price?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "op_service_order_parts_service_order_id_fkey"
+            columns: ["service_order_id"]
+            isOneToOne: false
+            referencedRelation: "op_service_orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      op_service_order_photos: {
+        Row: {
+          created_at: string
+          id: string
+          photo_type: string
+          photo_url: string
+          service_order_id: string
+          uploaded_by: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          photo_type?: string
+          photo_url: string
+          service_order_id: string
+          uploaded_by: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          photo_type?: string
+          photo_url?: string
+          service_order_id?: string
+          uploaded_by?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "op_service_order_photos_service_order_id_fkey"
+            columns: ["service_order_id"]
+            isOneToOne: false
+            referencedRelation: "op_service_orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      op_service_orders: {
+        Row: {
+          company_id: string | null
+          created_at: string
+          created_by: string
+          description: string | null
+          diagnosis: string | null
+          finished_at: string | null
+          id: string
+          mechanic_id: string | null
+          notes: string | null
+          opened_at: string
+          organization_id: string
+          os_number: number
+          status: string
+          total_cost: number
+          updated_at: string
+          vehicle_id: string | null
+          vehicle_model: string | null
+          vehicle_plate: string | null
+        }
+        Insert: {
+          company_id?: string | null
+          created_at?: string
+          created_by: string
+          description?: string | null
+          diagnosis?: string | null
+          finished_at?: string | null
+          id?: string
+          mechanic_id?: string | null
+          notes?: string | null
+          opened_at?: string
+          organization_id: string
+          os_number?: number
+          status?: string
+          total_cost?: number
+          updated_at?: string
+          vehicle_id?: string | null
+          vehicle_model?: string | null
+          vehicle_plate?: string | null
+        }
+        Update: {
+          company_id?: string | null
+          created_at?: string
+          created_by?: string
+          description?: string | null
+          diagnosis?: string | null
+          finished_at?: string | null
+          id?: string
+          mechanic_id?: string | null
+          notes?: string | null
+          opened_at?: string
+          organization_id?: string
+          os_number?: number
+          status?: string
+          total_cost?: number
+          updated_at?: string
+          vehicle_id?: string | null
+          vehicle_model?: string | null
+          vehicle_plate?: string | null
+        }
+        Relationships: []
+      }
       op_vehicles: {
         Row: {
           created_at: string
