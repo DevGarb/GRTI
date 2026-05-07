@@ -19,6 +19,7 @@ import {
   Database,
   Package,
   CheckSquare,
+  Truck,
 } from "lucide-react";
 
 export interface MenuItem {
@@ -57,6 +58,8 @@ export const menuItems: MenuItem[] = [
   { key: "integracoes", label: "Integrações", icon: MessageSquare, path: "/integracoes", adminOnly: true, tooltip: "Configurar integrações externas (WhatsApp)" },
   { key: "documentacao", label: "Documentação", icon: BookOpen, path: "/documentacao", adminOnly: true, tooltip: "Guias e manuais do sistema" },
   { key: "configuracoes", label: "Configurações", icon: Settings, path: "/configuracoes", tooltip: "Preferências e configurações gerais" },
+  { key: "op-cadastros", label: "Cadastros (Op)", icon: Users, path: "/op/cadastros", tooltip: "Cadastros do módulo Operacional: motoristas, empresas e veículos" },
+  { key: "op-entregas", label: "Entregas", icon: Truck, path: "/op/entregas", tooltip: "Controle de entregas externas" },
 ];
 
 export type Roles = {
