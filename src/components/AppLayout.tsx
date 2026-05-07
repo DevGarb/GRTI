@@ -54,13 +54,13 @@ export default function AppLayout({ children }: AppLayoutProps) {
   }, [darkMode]);
 
   // Fetch and apply white-label org data
-  const [orgData, setOrgData] = useState<{ name: string; logo_url: string | null; primary_color: string | null; secondary_color: string | null; favicon_url?: string | null } | null>(null);
+  const [orgData, setOrgData] = useState<{ name: string; slug: string; logo_url: string | null; primary_color: string | null; secondary_color: string | null; favicon_url?: string | null } | null>(null);
 
   useEffect(() => {
     if (!profile?.organization_id) return;
     supabase
       .from("organizations")
-      .select("name, logo_url, primary_color, secondary_color, favicon_url")
+      .select("name, slug, logo_url, primary_color, secondary_color, favicon_url")
       .eq("id", profile.organization_id)
       .single()
       .then(({ data }) => {
