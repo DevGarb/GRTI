@@ -201,6 +201,177 @@ export type Database = {
         }
         Relationships: []
       }
+      op_companies: {
+        Row: {
+          contact_name: string | null
+          contact_phone: string | null
+          created_at: string
+          created_by: string
+          id: string
+          is_active: boolean
+          name: string
+          organization_id: string
+          updated_at: string
+        }
+        Insert: {
+          contact_name?: string | null
+          contact_phone?: string | null
+          created_at?: string
+          created_by: string
+          id?: string
+          is_active?: boolean
+          name: string
+          organization_id: string
+          updated_at?: string
+        }
+        Update: {
+          contact_name?: string | null
+          contact_phone?: string | null
+          created_at?: string
+          created_by?: string
+          id?: string
+          is_active?: boolean
+          name?: string
+          organization_id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      op_deliveries: {
+        Row: {
+          address: string | null
+          associated_name: string | null
+          company_id: string | null
+          contact_name: string | null
+          contact_phone: string | null
+          created_at: string
+          created_by: string
+          driver_id: string | null
+          id: string
+          notes: string | null
+          organization_id: string
+          period: string
+          scheduled_date: string
+          status: string
+          type: string
+          updated_at: string
+          vehicle_id: string | null
+        }
+        Insert: {
+          address?: string | null
+          associated_name?: string | null
+          company_id?: string | null
+          contact_name?: string | null
+          contact_phone?: string | null
+          created_at?: string
+          created_by: string
+          driver_id?: string | null
+          id?: string
+          notes?: string | null
+          organization_id: string
+          period?: string
+          scheduled_date: string
+          status?: string
+          type?: string
+          updated_at?: string
+          vehicle_id?: string | null
+        }
+        Update: {
+          address?: string | null
+          associated_name?: string | null
+          company_id?: string | null
+          contact_name?: string | null
+          contact_phone?: string | null
+          created_at?: string
+          created_by?: string
+          driver_id?: string | null
+          id?: string
+          notes?: string | null
+          organization_id?: string
+          period?: string
+          scheduled_date?: string
+          status?: string
+          type?: string
+          updated_at?: string
+          vehicle_id?: string | null
+        }
+        Relationships: []
+      }
+      op_drivers: {
+        Row: {
+          created_at: string
+          created_by: string
+          default_vehicle_type: string
+          id: string
+          is_active: boolean
+          name: string
+          organization_id: string
+          phone: string | null
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          default_vehicle_type?: string
+          id?: string
+          is_active?: boolean
+          name: string
+          organization_id: string
+          phone?: string | null
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          default_vehicle_type?: string
+          id?: string
+          is_active?: boolean
+          name?: string
+          organization_id?: string
+          phone?: string | null
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      op_vehicles: {
+        Row: {
+          created_at: string
+          created_by: string
+          id: string
+          is_active: boolean
+          model: string | null
+          organization_id: string
+          plate: string
+          updated_at: string
+          vehicle_type: string
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          id?: string
+          is_active?: boolean
+          model?: string | null
+          organization_id: string
+          plate: string
+          updated_at?: string
+          vehicle_type?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          id?: string
+          is_active?: boolean
+          model?: string | null
+          organization_id?: string
+          plate?: string
+          updated_at?: string
+          vehicle_type?: string
+        }
+        Relationships: []
+      }
       organization_integrations: {
         Row: {
           api_token: string | null
@@ -1031,6 +1202,27 @@ export type Database = {
           menu_key?: string
           organization_id?: string | null
           updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_organizations: {
+        Row: {
+          created_at: string
+          id: string
+          organization_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          organization_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          organization_id?: string
           user_id?: string
         }
         Relationships: []

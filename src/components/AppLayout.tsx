@@ -2,12 +2,13 @@ import { useState, useEffect } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { supabase } from "@/integrations/supabase/client";
-import { LogOut, Menu, Moon, Sun, HelpCircle } from "lucide-react";
+import { LogOut, Menu, Moon, Sun, HelpCircle, Repeat } from "lucide-react";
 import { cn } from "@/lib/utils";
 import OrgSwitcher from "@/components/OrgSwitcher";
 import { useAuth } from "@/contexts/AuthContext";
 import { menuItems } from "@/config/menuItems";
 import { useMenuAccess } from "@/hooks/useMenuAccess";
+import { useUserOrganizations } from "@/hooks/useUserOrganizations";
 
 interface AppLayoutProps {
   children: React.ReactNode;
@@ -53,13 +54,13 @@ export default function AppLayout({ children }: AppLayoutProps) {
   }, [darkMode]);
 
   // Fetch and apply white-label org data
-  const [orgData, setOrgData] = useState<{ name: string; logo_url: string | null; primary_color: string | null; secondary_color: string | null; favicon_url?: string | null } | null>(null);
+  const [orgData, setOrgData] = useState<{ name: string; slug: string; logo_url: string | null; primary_color: string | null; secondary_color: string | null; favicon_url?: string | null } | null>(null);
 
   useEffect(() => {
     if (!profile?.organization_id) return;
     supabase
       .from("organizations")
-      .select("name, logo_url, primary_color, secondary_color, favicon_url")
+      .select("name, slug, logo_url, primary_color, secondary_color, favicon_url")
       .eq("id", profile.organization_id)
       .single()
       .then(({ data }) => {
@@ -120,7 +121,15 @@ export default function AppLayout({ children }: AppLayoutProps) {
     return "solicitante";
   };
   const { canAccess } = useMenuAccess();
-  const visibleNavItems = menuItems.filter((item) => canAccess(item.key));
+  const orgSlug = orgData?.slug;
+  const visibleNavItems = menuItems.filter((item) => {
+    if (item.orgSlugs && (!orgSlug || !item.orgSlugs.includes(orgSlug))) return false;
+    if (orgSlug === "cgps-operacional") {
+      const universal = ["configuracoes", "todos", "usuarios", "white-label", "integracoes", "documentacao", "super-admin", "planos", "migracao"];
+      if (!item.key.startsWith("op-") && !universal.includes(item.key)) return false;
+    }
+    return canAccess(item.key);
+  });
 
   const toggleDark = () => {
     setDarkMode(prev => !prev);
@@ -226,6 +235,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
             >
               {darkMode ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
             </button>
+            <SwitchOrgButton />
             <button
               onClick={signOut}
               className="p-1.5 rounded-md hover:bg-sidebar-accent/50 text-sidebar-muted transition-colors"
@@ -249,5 +259,20 @@ export default function AppLayout({ children }: AppLayoutProps) {
         <main className="flex-1 p-4 lg:p-8 overflow-auto">{children}</main>
       </div>
     </div>
+  );
+}
+
+function SwitchOrgButton() {
+  const navigate = useNavigate();
+  const { orgs } = useUserOrganizations();
+  if (orgs.length <= 1) return null;
+  return (
+    <button
+      onClick={() => navigate("/escolher-organizacao")}
+      title="Trocar organização"
+      className="p-1.5 rounded-md hover:bg-sidebar-accent/50 text-sidebar-muted transition-colors"
+    >
+      <Repeat className="h-4 w-4" />
+    </button>
   );
 }

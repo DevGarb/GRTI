@@ -32,6 +32,9 @@ import Documentacao from "@/pages/Documentacao";
 import Setores from "@/pages/Setores";
 import AssetPublicView from "@/pages/AssetPublicView";
 import Todos from "@/pages/Todos";
+import EscolherOrganizacao from "@/pages/EscolherOrganizacao";
+import OpCadastros from "@/pages/OpCadastros";
+import OpEntregas from "@/pages/OpEntregas";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -85,6 +88,7 @@ const App = () => (
         <AuthProvider>
           <Routes>
             <Route path="/login" element={<AuthRoute><Login /></AuthRoute>} />
+            <Route path="/escolher-organizacao" element={<ProtectedRoute><EscolherOrganizacao /></ProtectedRoute>} />
             <Route path="/asset/:id" element={<AssetPublicView />} />
             <Route
               path="/*"
@@ -116,6 +120,8 @@ const App = () => (
                       <Route path="/migracao" element={<MenuGuard menuKey="migracao"><AdminRoute><Migracao /></AdminRoute></MenuGuard>} />
                       <Route path="/documentacao" element={<MenuGuard menuKey="documentacao"><AdminRoute><Documentacao /></AdminRoute></MenuGuard>} />
                       <Route path="/setores" element={<MenuGuard menuKey="setores"><AdminRoute><Setores /></AdminRoute></MenuGuard>} />
+                      <Route path="/op/cadastros" element={<MenuGuard menuKey="op-cadastros"><OpCadastros /></MenuGuard>} />
+                      <Route path="/op/entregas" element={<MenuGuard menuKey="op-entregas"><OpEntregas /></MenuGuard>} />
                       <Route path="*" element={<NotFound />} />
                     </Routes>
                   </AppLayout>

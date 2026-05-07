@@ -23,13 +23,21 @@ export default function Login() {
       // Check roles to determine redirect
       const { data: { session } } = await supabase.auth.getSession();
       if (session?.user) {
-        const { data: userRoles } = await supabase
-          .from("user_roles")
-          .select("role")
+        const { data: memberships } = await supabase
+          .from("user_organizations")
+          .select("organization_id")
           .eq("user_id", session.user.id);
-        const roles = (userRoles || []).map(r => r.role);
-        const isAdmin = roles.includes("admin") || roles.includes("super_admin");
-        navigate(isAdmin ? "/" : "/chamados");
+        if ((memberships || []).length > 1) {
+          navigate("/escolher-organizacao");
+        } else {
+          const { data: userRoles } = await supabase
+            .from("user_roles")
+            .select("role")
+            .eq("user_id", session.user.id);
+          const roles = (userRoles || []).map(r => r.role);
+          const isAdmin = roles.includes("admin") || roles.includes("super_admin");
+          navigate(isAdmin ? "/" : "/chamados");
+        }
       } else {
         navigate("/chamados");
       }
