@@ -253,3 +253,18 @@ export default function AppLayout({ children }: AppLayoutProps) {
     </div>
   );
 }
+
+function SwitchOrgButton() {
+  const navigate = useNavigate();
+  const { orgs } = useUserOrganizations();
+  if (orgs.length <= 1) return null;
+  return (
+    <button
+      onClick={() => navigate("/escolher-organizacao")}
+      title="Trocar organização"
+      className="p-1.5 rounded-md hover:bg-sidebar-accent/50 text-sidebar-muted transition-colors"
+    >
+      <Repeat className="h-4 w-4" />
+    </button>
+  );
+}
