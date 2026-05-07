@@ -43,10 +43,32 @@ export function useUserOrganizations() {
 
   const switchToOrg = async (orgId: string) => {
     if (!user) return { error: new Error("not authenticated") };
+    const { data: prev } = await supabase
+      .from("profiles")
+      .select("organization_id")
+      .eq("user_id", user.id)
+      .maybeSingle();
+    const previousOrgId = prev?.organization_id ?? null;
     const { error } = await supabase
       .from("profiles")
       .update({ organization_id: orgId })
       .eq("user_id", user.id);
+    if (!error) {
+      const target = orgs.find((o) => o.id === orgId);
+      await supabase.from("audit_logs").insert({
+        user_id: user.id,
+        action: "switch_organization",
+        entity_type: "organization",
+        entity_id: orgId,
+        details: {
+          previous_organization_id: previousOrgId,
+          new_organization_id: orgId,
+          new_organization_slug: target?.slug ?? null,
+          new_organization_name: target?.name ?? null,
+          source: "escolher-organizacao",
+        },
+      });
+    }
     return { error };
   };
 
