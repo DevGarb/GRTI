@@ -233,10 +233,18 @@ export default function OpEntregas() {
 
       {/* KPIs */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
-        <Kpi title="Total no Mês" value={kpis.total} icon={ClipboardList} />
-        <Kpi title="Pendentes" value={kpis.pendentes} icon={Clock} />
-        <Kpi title="Em Rota" value={kpis.emRota} icon={MapPin} />
-        <Kpi title="Finalizados" value={kpis.finalizados} icon={CheckCircle2} />
+        <Kpi title="Total no Mês" value={kpis.total} icon={ClipboardList}
+          active={statusFilter === "all"}
+          onClick={() => setStatusFilter("all")} />
+        <Kpi title="Pendentes" value={kpis.pendentes} icon={Clock}
+          active={statusFilter === "Pendente"}
+          onClick={() => setStatusFilter(statusFilter === "Pendente" ? "all" : "Pendente")} />
+        <Kpi title="Em Rota" value={kpis.emRota} icon={MapPin}
+          active={statusFilter === "Em rota"}
+          onClick={() => setStatusFilter(statusFilter === "Em rota" ? "all" : "Em rota")} />
+        <Kpi title="Finalizados" value={kpis.finalizados} icon={CheckCircle2}
+          active={statusFilter === "Finalizado"}
+          onClick={() => { setStatusFilter(statusFilter === "Finalizado" ? "all" : "Finalizado"); setHideFinalized(false); }} />
       </div>
 
       {/* Driver tabs */}
