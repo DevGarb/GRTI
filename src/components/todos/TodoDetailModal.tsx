@@ -51,6 +51,7 @@ const fieldLabel: Record<string, string> = {
 
 export default function TodoDetailModal({ todo, open, onOpenChange }: Props) {
   const { user } = useAuth();
+  const { updateTodo } = useTodos();
   const [comments, setComments] = useState<Comment[]>([]);
   const [history, setHistory] = useState<HistoryEntry[]>([]);
   const [text, setText] = useState("");
