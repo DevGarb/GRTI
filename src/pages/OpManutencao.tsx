@@ -331,6 +331,13 @@ export default function OpManutencao() {
       <ExecuteModal open={execOpen} onOpenChange={setExecOpen} template={execTpl} sites={sites.items} hook={tpls} />
 
       <PhotosModal open={!!photoOmId} onClose={() => setPhotoOmId(null)} omId={photoOmId} hook={orders} />
+
+      <OpClosureDialog
+        open={!!closing}
+        onOpenChange={(o) => !o && setClosing(null)}
+        title="Concluir ordem de manutenção"
+        onConfirm={confirmClosure}
+      />
     </div>
   );
 }
