@@ -136,6 +136,7 @@ export default function Todos() {
       <Tabs value={tab} onValueChange={(v) => setTab(v as ViewTab)}>
         <TabsList>
           <TabsTrigger value="hoje">Hoje</TabsTrigger>
+          <TabsTrigger value="matriz">Matriz</TabsTrigger>
           <TabsTrigger value="historico">Histórico</TabsTrigger>
         </TabsList>
       </Tabs>
