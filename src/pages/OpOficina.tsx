@@ -287,12 +287,20 @@ export default function OpOficina() {
   );
 }
 
-function Kpi({ label, value }: { label: string; value: any }) {
+function Kpi({ label, value, active, onClick }: { label: string; value: any; active?: boolean; onClick?: () => void }) {
+  const Cmp: any = onClick ? "button" : "div";
   return (
-    <div className="bg-card border rounded-lg p-3">
+    <Cmp
+      onClick={onClick}
+      className={cn(
+        "bg-card border rounded-lg p-3 text-left transition",
+        onClick && "hover:border-primary/60 hover:shadow-sm cursor-pointer",
+        active && "border-primary ring-2 ring-primary/30 bg-primary/5"
+      )}
+    >
       <div className="text-xs text-muted-foreground">{label}</div>
       <div className="text-xl font-bold mt-1">{value}</div>
-    </div>
+    </Cmp>
   );
 }
 
