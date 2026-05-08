@@ -171,6 +171,66 @@ export default function Todos() {
 
       {loading ? (
         <div className="text-muted-foreground">Carregando...</div>
+      ) : tab === "matriz" ? (
+        <div className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {QUADRANTS.map((q) => {
+              const items = filtered.filter((t) => t.eisenhower_quadrant === q.id);
+              return (
+                <div key={q.id} className={`rounded-xl border ${q.cls} p-4`}>
+                  <div className="flex items-center gap-2 mb-3">
+                    <span className={`inline-flex items-center justify-center h-6 w-6 rounded-full text-xs font-bold ${q.numeralCls}`}>
+                      {q.id === 1 ? "I" : q.id === 2 ? "II" : q.id === 3 ? "III" : "IV"}
+                    </span>
+                    <div>
+                      <div className="text-sm font-semibold text-foreground">{q.title}</div>
+                      <div className="text-[11px] text-muted-foreground">{q.subtitle}</div>
+                    </div>
+                  </div>
+                  <div className="space-y-1 bg-card rounded-lg border border-border overflow-hidden min-h-[60px]">
+                    {items.length === 0 ? (
+                      <div className="px-3 py-4 text-xs text-muted-foreground text-center">Sem tarefas</div>
+                    ) : (
+                      items.map((t) => (
+                        <TodoRow
+                          key={t.id}
+                          todo={t}
+                          isOwner={t.user_id === user?.id}
+                          showAuthor={false}
+                          onToggleComplete={(v) => setCompleted(t, v)}
+                          onDelete={() => deleteTodo(t.id)}
+                          onOpen={() => setSelected(t)}
+                        />
+                      ))
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+          {(() => {
+            const semClass = filtered.filter((t) => !t.eisenhower_quadrant);
+            if (semClass.length === 0) return null;
+            return (
+              <div className="rounded-xl border border-border bg-card p-4">
+                <div className="text-sm font-semibold mb-2">Sem classificação ({semClass.length})</div>
+                <div className="border border-border rounded-lg overflow-hidden">
+                  {semClass.map((t) => (
+                    <TodoRow
+                      key={t.id}
+                      todo={t}
+                      isOwner={t.user_id === user?.id}
+                      showAuthor={false}
+                      onToggleComplete={(v) => setCompleted(t, v)}
+                      onDelete={() => deleteTodo(t.id)}
+                      onOpen={() => setSelected(t)}
+                    />
+                  ))}
+                </div>
+              </div>
+            );
+          })()}
+        </div>
       ) : groups.length === 0 ? (
         <div className="text-muted-foreground text-center py-12">Nenhum TODO encontrado.</div>
       ) : (
