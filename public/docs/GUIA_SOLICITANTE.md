@@ -30,10 +30,12 @@ Como **Solicitante** no In Demands, seu papel é **registrar problemas e solicit
 ## 2. Acesso e Login
 
 1. Acesse a URL da plataforma fornecida pelo administrador
-2. Insira seu **e-mail** e **senha**
+2. Insira seu **login** (formato `NOME.SOBRENOME`) e **senha**
 3. Clique em **Entrar**
+4. Selecione a **organização** na tela que aparece em seguida
 
 ### Dicas
+- Se você pertencer a mais de uma organização (ex.: Grupo Ramos e CGPS Operacional), poderá trocar a qualquer momento pelo seletor no topo do menu
 - Use o botão 🌙/☀️ no rodapé do menu para alternar entre **modo claro** e **modo escuro**
 - Para sair, clique no ícone de **logout** no rodapé do menu
 
