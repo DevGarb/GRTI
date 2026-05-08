@@ -36,7 +36,16 @@ const PRIORITY_COLORS: Record<string, string> = {
 
 function todayISO() { return new Date().toISOString().slice(0, 10); }
 
+const KANBAN_COLUMNS: { id: string; label: string; color: string }[] = [
+  { id: "Aberta", label: "Aberta", color: "bg-amber-500" },
+  { id: "Em execução", label: "Em execução", color: "bg-blue-500" },
+  { id: "Concluída", label: "Concluída", color: "bg-emerald-600" },
+  { id: "Cancelada", label: "Cancelada", color: "bg-rose-500" },
+];
+const TERMINAL = "Concluída";
+
 export default function OpManutencao() {
+  const { user } = useAuth();
   const sites = useSites();
   const orders = useMaintenanceOrders();
   const tpls = useChecklistTemplates();
@@ -44,6 +53,9 @@ export default function OpManutencao() {
   const [activeMonth, setActiveMonth] = useState(() => new Date().toISOString().slice(0, 7));
   const [activeSite, setActiveSite] = useState<string>("all");
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
+  const [view, setView] = useState<"lista" | "kanban">("kanban");
+  const [hideFinalized, setHideFinalized] = useState(true);
+  const [closing, setClosing] = useState<MaintenanceOrder | null>(null);
 
   const [omOpen, setOmOpen] = useState(false);
   const [editing, setEditing] = useState<MaintenanceOrder | null>(null);
@@ -81,6 +93,58 @@ export default function OpManutencao() {
   }, [filtered, today]);
 
   const siteName = (id: string | null) => sites.items.find(s => s.id === id)?.name || "—";
+  const siteOf = (id: string | null) => sites.items.find(s => s.id === id);
+
+  const filteredKanban = useMemo(() =>
+    filtered.filter(o => !(hideFinalized && o.status === "Concluída")),
+  [filtered, hideFinalized]);
+
+  const itemsByCol = useMemo(() => {
+    const map: Record<string, MaintenanceOrder[]> = {};
+    KANBAN_COLUMNS.forEach(c => { map[c.id] = []; });
+    filteredKanban.forEach(o => { (map[o.status] ||= []).push(o); });
+    return map;
+  }, [filteredKanban]);
+
+  const handleStatusChange = (om: MaintenanceOrder, newStatus: string) => {
+    if (newStatus === om.status) return;
+    if (newStatus === TERMINAL) { setClosing(om); return; }
+    orders.update(om.id, { status: newStatus, finished_at: null });
+  };
+
+  const confirmClosure = async (payload: { closure_summary: string; closed_at: string }) => {
+    if (!closing) return;
+    await orders.update(closing.id, {
+      status: TERMINAL,
+      closure_summary: payload.closure_summary,
+      finished_at: payload.closed_at,
+      closed_by: user?.id || null,
+    });
+    setClosing(null);
+  };
+
+  const renderCard = (om: MaintenanceOrder) => {
+    const overdue = om.deadline && om.deadline < today && !["Concluída", "Cancelada"].includes(om.status);
+    const site = siteOf(om.site_id);
+    return (
+      <div onClick={() => { setEditing(om); setOmOpen(true); }}>
+        <div className="flex items-center gap-1 flex-wrap mb-2">
+          <span className="font-mono text-[10px] px-1.5 py-0.5 bg-muted rounded">#{om.om_number}</span>
+          <Badge variant="outline" className={cn("text-[10px]", PRIORITY_COLORS[om.priority])}>{om.priority}</Badge>
+          {overdue && <Badge variant="destructive" className="text-[10px]"><AlertTriangle className="h-3 w-3 mr-0.5" />Atrasada</Badge>}
+        </div>
+        <div className="font-semibold text-sm line-clamp-2">{om.title}</div>
+        <div className="text-[11px] text-muted-foreground mt-1 flex flex-wrap gap-x-2">
+          <span><Building2 className="h-3 w-3 inline mr-0.5" />{siteName(om.site_id)}</span>
+          {om.deadline && <span className={cn(overdue && "text-rose-600 font-medium")}>📅 {om.deadline}</span>}
+        </div>
+        <div className="flex items-center justify-between mt-2">
+          <Badge variant="secondary" className="text-[10px]">{om.category}</Badge>
+          <OpQuickActions phone={site?.phone} address={site?.address} size="icon" />
+        </div>
+      </div>
+    );
+  };
 
   return (
     <div className="space-y-6 p-6">
@@ -92,7 +156,18 @@ export default function OpManutencao() {
             <p className="text-sm text-muted-foreground">Ordens, sedes e checklists de inspeção</p>
           </div>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 items-center flex-wrap">
+          <Tabs value={view} onValueChange={(v) => setView(v as any)}>
+            <TabsList>
+              <TabsTrigger value="kanban"><LayoutGrid className="h-4 w-4 mr-1" />Kanban</TabsTrigger>
+              <TabsTrigger value="lista"><List className="h-4 w-4 mr-1" />Lista</TabsTrigger>
+            </TabsList>
+          </Tabs>
+          {view === "kanban" && (
+            <Button size="sm" variant="outline" onClick={() => setHideFinalized(v => !v)}>
+              {hideFinalized ? <><EyeOff className="h-3 w-3 mr-1" />Ocultos</> : <><Eye className="h-3 w-3 mr-1" />Todos</>}
+            </Button>
+          )}
           <Input type="month" value={activeMonth} onChange={e => setActiveMonth(e.target.value)} className="w-40" />
           <Button onClick={() => { setEditing(null); setOmOpen(true); }}>
             <Plus className="h-4 w-4 mr-1" /> Nova OM
@@ -137,48 +212,63 @@ export default function OpManutencao() {
             </TabsList>
           </Tabs>
 
-          <div className="space-y-2">
-            {orders.loading && <div className="text-center py-8 text-muted-foreground">Carregando...</div>}
-            {!orders.loading && filtered.length === 0 && (
-              <div className="text-center py-12 text-muted-foreground">Nenhuma ordem para os filtros atuais.</div>
-            )}
-            {filtered.map(om => {
-              const overdue = om.deadline && om.deadline < today && !["Concluída", "Cancelada"].includes(om.status);
-              return (
-                <div key={om.id} className="border rounded-lg p-4 bg-card hover:shadow-md transition">
-                  <div className="flex items-start justify-between gap-3 flex-wrap">
-                    <div className="flex-1 min-w-[220px]">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <span className="font-mono text-xs px-2 py-0.5 bg-muted rounded">OM #{om.om_number}</span>
-                        <Badge className={cn(STATUS_COLORS[om.status])}>{om.status}</Badge>
-                        <Badge variant="outline" className={cn(PRIORITY_COLORS[om.priority])}>{om.priority}</Badge>
-                        <Badge variant="secondary">{om.category}</Badge>
-                        {overdue && <Badge variant="destructive"><AlertTriangle className="h-3 w-3 mr-1" />Atrasada</Badge>}
+          {orders.loading ? (
+            <div className="text-center py-8 text-muted-foreground">Carregando...</div>
+          ) : view === "kanban" ? (
+            <OpKanbanBoard<MaintenanceOrder>
+              columns={KANBAN_COLUMNS}
+              itemsByColumn={itemsByCol}
+              renderCard={renderCard}
+              resolveItem={(id) => filtered.find(x => x.id === id)}
+              isAllowed={() => true}
+              onMove={(item, _from, to) => handleStatusChange(item, to)}
+              emptyText="Sem ordens"
+            />
+          ) : (
+            <div className="space-y-2">
+              {filtered.length === 0 && (
+                <div className="text-center py-12 text-muted-foreground">Nenhuma ordem para os filtros atuais.</div>
+              )}
+              {filtered.map(om => {
+                const overdue = om.deadline && om.deadline < today && !["Concluída", "Cancelada"].includes(om.status);
+                const site = siteOf(om.site_id);
+                return (
+                  <div key={om.id} className="border rounded-lg p-4 bg-card hover:shadow-md transition">
+                    <div className="flex items-start justify-between gap-3 flex-wrap">
+                      <div className="flex-1 min-w-[220px]">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="font-mono text-xs px-2 py-0.5 bg-muted rounded">OM #{om.om_number}</span>
+                          <Badge className={cn(STATUS_COLORS[om.status])}>{om.status}</Badge>
+                          <Badge variant="outline" className={cn(PRIORITY_COLORS[om.priority])}>{om.priority}</Badge>
+                          <Badge variant="secondary">{om.category}</Badge>
+                          {overdue && <Badge variant="destructive"><AlertTriangle className="h-3 w-3 mr-1" />Atrasada</Badge>}
+                        </div>
+                        <div className="font-semibold mt-2">{om.title}</div>
+                        {om.description && <div className="text-sm text-muted-foreground mt-1 line-clamp-2">{om.description}</div>}
+                        <div className="text-xs text-muted-foreground mt-2 flex flex-wrap gap-x-4 gap-y-1">
+                          <span><Building2 className="h-3 w-3 inline mr-1" />{siteName(om.site_id)}</span>
+                          {om.responsible && <span>Resp: {om.responsible}</span>}
+                          <span>Aberta: {om.opened_at}</span>
+                          {om.deadline && <span className={cn(overdue && "text-rose-600 font-medium")}>Prazo: {om.deadline}</span>}
+                          {om.finished_at && <span>Concluída: {om.finished_at}</span>}
+                        </div>
                       </div>
-                      <div className="font-semibold mt-2">{om.title}</div>
-                      {om.description && <div className="text-sm text-muted-foreground mt-1 line-clamp-2">{om.description}</div>}
-                      <div className="text-xs text-muted-foreground mt-2 flex flex-wrap gap-x-4 gap-y-1">
-                        <span><Building2 className="h-3 w-3 inline mr-1" />{siteName(om.site_id)}</span>
-                        {om.responsible && <span>Resp: {om.responsible}</span>}
-                        <span>Aberta: {om.opened_at}</span>
-                        {om.deadline && <span className={cn(overdue && "text-rose-600 font-medium")}>Prazo: {om.deadline}</span>}
-                        {om.finished_at && <span>Concluída: {om.finished_at}</span>}
+                      <div className="flex gap-1 items-center">
+                        <OpQuickActions phone={site?.phone} address={site?.address} />
+                        <Select value={om.status} onValueChange={v => handleStatusChange(om, v)}>
+                          <SelectTrigger className="w-36 h-8"><SelectValue /></SelectTrigger>
+                          <SelectContent>{MAINT_STATUSES.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
+                        </Select>
+                        <Button size="icon" variant="ghost" onClick={() => setPhotoOmId(om.id)} title="Fotos"><ImageIcon className="h-4 w-4" /></Button>
+                        <Button size="icon" variant="ghost" onClick={() => { setEditing(om); setOmOpen(true); }}><Pencil className="h-4 w-4" /></Button>
+                        <Button size="icon" variant="ghost" onClick={() => { if (confirm("Excluir esta OM?")) orders.remove(om.id); }}><Trash2 className="h-4 w-4 text-destructive" /></Button>
                       </div>
-                    </div>
-                    <div className="flex gap-1">
-                      <Select value={om.status} onValueChange={v => orders.update(om.id, { status: v, finished_at: v === "Concluída" ? todayISO() : null })}>
-                        <SelectTrigger className="w-36 h-8"><SelectValue /></SelectTrigger>
-                        <SelectContent>{MAINT_STATUSES.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
-                      </Select>
-                      <Button size="icon" variant="ghost" onClick={() => setPhotoOmId(om.id)} title="Fotos"><ImageIcon className="h-4 w-4" /></Button>
-                      <Button size="icon" variant="ghost" onClick={() => { setEditing(om); setOmOpen(true); }}><Pencil className="h-4 w-4" /></Button>
-                      <Button size="icon" variant="ghost" onClick={() => { if (confirm("Excluir esta OM?")) orders.remove(om.id); }}><Trash2 className="h-4 w-4 text-destructive" /></Button>
                     </div>
                   </div>
-                </div>
-              );
-            })}
-          </div>
+                );
+              })}
+            </div>
+          )}
         </TabsContent>
 
         {/* SEDES */}
@@ -241,6 +331,13 @@ export default function OpManutencao() {
       <ExecuteModal open={execOpen} onOpenChange={setExecOpen} template={execTpl} sites={sites.items} hook={tpls} />
 
       <PhotosModal open={!!photoOmId} onClose={() => setPhotoOmId(null)} omId={photoOmId} hook={orders} />
+
+      <OpClosureDialog
+        open={!!closing}
+        onOpenChange={(o) => !o && setClosing(null)}
+        title="Concluir ordem de manutenção"
+        onConfirm={confirmClosure}
+      />
     </div>
   );
 }
