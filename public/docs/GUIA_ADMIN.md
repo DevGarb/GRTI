@@ -39,11 +39,15 @@ O In Demands é um sistema de gestão de chamados técnicos (helpdesk) com supor
 
 ### Como acessar
 1. Acesse a URL da plataforma
-2. Insira seu **e-mail** e **senha**
+2. Insira seu **login** (formato `NOME.SOBRENOME`) e **senha**
 3. Clique em **Entrar**
+4. Selecione a **organização** desejada na tela `/escolher-organizacao` (Grupo Ramos ou CGPS Operacional)
+
+> Para detalhes sobre multi-organização, troca de tenant, módulo Operacional e auditoria por organização, consulte a aba **Organizações** desta documentação.
 
 ### Navegação
-O menu lateral esquerdo contém todas as seções disponíveis para seu perfil. No rodapé do menu você encontra:
+O menu lateral esquerdo contém todas as seções disponíveis para seu perfil **e para a organização ativa**. No rodapé do menu você encontra:
+- **OrgSwitcher**: troca rápida entre organizações às quais você pertence
 - **Botão de tema**: Alterna entre modo claro e escuro
 - **Botão de ajuda**: Abre a documentação diretamente na aba do seu perfil
 - **Botão de logout**: Encerra sua sessão
