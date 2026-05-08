@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { Wrench, Plus, Search, Trash2, Upload, FileText, X } from "lucide-react";
+import { Wrench, Plus, Search, Trash2, Upload, FileText, X, LayoutGrid, List, Eye, EyeOff, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -8,33 +8,60 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
+import { useAuth } from "@/contexts/AuthContext";
 import { useServiceOrders, useServiceOrderDetails, useMechanics, useParts, type ServiceOrder } from "@/hooks/useOficina";
 import { useCompanies, useVehicles } from "@/hooks/useOperacional";
+import OpKanbanBoard, { type KanbanColumn } from "@/components/operacional/OpKanbanBoard";
+import OpClosureDialog from "@/components/operacional/OpClosureDialog";
+import OpQuickActions from "@/components/operacional/OpQuickActions";
+import OpNotesPanel from "@/components/operacional/OpNotesPanel";
+import { cn } from "@/lib/utils";
 
-const STATUS_LIST = ["Aberta", "Em execução", "Aguardando peça", "Finalizada", "Cancelada"];
+const STATUS_LIST = ["Pendente", "Aguardando peças", "Em andamento", "Finalizado", "Cancelada"];
+const TERMINAL = "Finalizado";
+
 const statusColor: Record<string, string> = {
-  "Aberta": "bg-blue-500/10 text-blue-700 dark:text-blue-300",
-  "Em execução": "bg-amber-500/10 text-amber-700 dark:text-amber-300",
-  "Aguardando peça": "bg-purple-500/10 text-purple-700 dark:text-purple-300",
-  "Finalizada": "bg-green-500/10 text-green-700 dark:text-green-300",
+  "Pendente": "bg-blue-500/10 text-blue-700 dark:text-blue-300",
+  "Aguardando peças": "bg-purple-500/10 text-purple-700 dark:text-purple-300",
+  "Em andamento": "bg-amber-500/10 text-amber-700 dark:text-amber-300",
+  "Finalizado": "bg-green-500/10 text-green-700 dark:text-green-300",
   "Cancelada": "bg-red-500/10 text-red-700 dark:text-red-300",
 };
+
+// Kanban includes a derived "Em atraso" column (computed from deadline)
+const KANBAN_COLUMNS: KanbanColumn[] = [
+  { id: "Pendente", label: "Pendente", color: "bg-blue-500" },
+  { id: "Aguardando peças", label: "Aguardando peças", color: "bg-purple-500" },
+  { id: "Em andamento", label: "Em andamento", color: "bg-amber-500" },
+  { id: "Em atraso", label: "Em atraso", color: "bg-rose-600" },
+  { id: "Finalizado", label: "Finalizado", color: "bg-emerald-600" },
+];
 
 function fmtMoney(v: number) {
   return v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 }
 
+function todayISO() { return new Date().toISOString().slice(0, 10); }
+
+function isOverdue(o: ServiceOrder): boolean {
+  return !!o.deadline && o.deadline < todayISO() && o.status !== "Finalizado" && o.status !== "Cancelada";
+}
+
 export default function OpOficina() {
+  const { user } = useAuth();
   const { items, add, update, remove } = useServiceOrders();
   const { items: mechanics } = useMechanics();
   const { items: companies } = useCompanies();
   const { items: vehicles } = useVehicles();
 
+  const [view, setView] = useState<"lista" | "kanban">("kanban");
+  const [hideFinalized, setHideFinalized] = useState(true);
   const [month, setMonth] = useState(new Date().toISOString().slice(0, 7));
   const [mechFilter, setMechFilter] = useState<string>("all");
   const [search, setSearch] = useState("");
   const [openNew, setOpenNew] = useState(false);
   const [selected, setSelected] = useState<ServiceOrder | null>(null);
+  const [closing, setClosing] = useState<ServiceOrder | null>(null);
 
   const filtered = useMemo(() => {
     return items.filter(o => {
@@ -46,25 +73,82 @@ export default function OpOficina() {
               (o.vehicle_plate || "").toLowerCase().includes(s) ||
               (o.description || "").toLowerCase().includes(s))) return false;
       }
+      if (hideFinalized && view === "kanban" && o.status === "Finalizado") return false;
       return true;
     });
-  }, [items, month, mechFilter, search]);
+  }, [items, month, mechFilter, search, hideFinalized, view]);
 
   const kpis = useMemo(() => {
-    const abertas = filtered.filter(o => o.status === "Aberta").length;
-    const exec = filtered.filter(o => o.status === "Em execução" || o.status === "Aguardando peça").length;
-    const finalizadas = filtered.filter(o => o.status === "Finalizada").length;
+    const pendentes = filtered.filter(o => o.status === "Pendente").length;
+    const exec = filtered.filter(o => o.status === "Em andamento" || o.status === "Aguardando peças").length;
+    const finalizadas = filtered.filter(o => o.status === "Finalizado").length;
+    const atrasadas = filtered.filter(isOverdue).length;
     const total = filtered.length;
-    const custo = filtered.filter(o => o.status === "Finalizada").reduce((s, o) => s + Number(o.total_cost || 0), 0);
-    return { abertas, exec, finalizadas, total, custo };
+    const custo = filtered.filter(o => o.status === "Finalizado").reduce((s, o) => s + Number(o.total_cost || 0), 0);
+    return { pendentes, exec, finalizadas, atrasadas, total, custo };
+  }, [filtered]);
+
+  const itemsByCol = useMemo(() => {
+    const map: Record<string, ServiceOrder[]> = {};
+    KANBAN_COLUMNS.forEach(c => { map[c.id] = []; });
+    filtered.forEach(o => {
+      if (isOverdue(o)) map["Em atraso"].push(o);
+      else if (map[o.status]) map[o.status].push(o);
+    });
+    return map;
   }, [filtered]);
 
   const mechName = (id: string | null) => mechanics.find(m => m.id === id)?.name || "—";
   const companyName = (id: string | null) => companies.find(c => c.id === id)?.name || "—";
+  const companyPhone = (id: string | null) => companies.find(c => c.id === id)?.contact_phone || null;
+
+  const handleStatusChange = (o: ServiceOrder, newStatus: string) => {
+    if (newStatus === o.status) return;
+    if (newStatus === TERMINAL) { setClosing(o); return; }
+    update(o.id, { status: newStatus });
+  };
+
+  const confirmClosure = async (payload: { closure_summary: string; closed_at: string; total_cost?: number }) => {
+    if (!closing) return;
+    await update(closing.id, {
+      status: TERMINAL,
+      finished_at: payload.closed_at,
+      closure_summary: payload.closure_summary,
+      closed_by: user?.id || null,
+      ...(payload.total_cost != null ? { total_cost: payload.total_cost } : {}),
+    });
+    setClosing(null);
+  };
+
+  const renderCard = (o: ServiceOrder) => {
+    const overdue = isOverdue(o);
+    return (
+      <div onClick={() => setSelected(o)}>
+        <div className="flex items-start gap-2 mb-1">
+          <span className="font-mono text-[11px] bg-muted px-1.5 py-0.5 rounded">#{o.os_number}</span>
+          <span className="text-xs text-muted-foreground truncate flex-1">{companyName(o.company_id)}</span>
+          {overdue && <Badge variant="destructive" className="text-[10px]"><AlertTriangle className="h-3 w-3 mr-0.5" />Atraso</Badge>}
+        </div>
+        <div className="text-sm font-medium line-clamp-2">{o.description || "Sem descrição"}</div>
+        <div className="text-[11px] text-muted-foreground mt-1 truncate">
+          {o.vehicle_plate || "—"} · Mec.: {mechName(o.mechanic_id)}
+        </div>
+        {o.deadline && (
+          <div className={cn("text-[11px] mt-1", overdue ? "text-rose-600 font-medium" : "text-muted-foreground")}>
+            Prazo: {new Date(o.deadline).toLocaleDateString("pt-BR")}
+          </div>
+        )}
+        <div className="flex items-center justify-between mt-2">
+          <span className="text-xs font-semibold">{fmtMoney(Number(o.total_cost || 0))}</span>
+          <OpQuickActions phone={companyPhone(o.company_id)} size="icon" />
+        </div>
+      </div>
+    );
+  };
 
   return (
     <div className="p-6 max-w-7xl mx-auto space-y-4">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between flex-wrap gap-3">
         <div className="flex items-center gap-3">
           <div className="h-10 w-10 rounded-lg bg-primary text-primary-foreground flex items-center justify-center">
             <Wrench className="h-5 w-5" />
@@ -74,12 +158,21 @@ export default function OpOficina() {
             <p className="text-sm text-muted-foreground">Ordens de serviço, peças e fotos</p>
           </div>
         </div>
-        <Button onClick={() => setOpenNew(true)}><Plus className="h-4 w-4 mr-1" /> Nova OS</Button>
+        <div className="flex items-center gap-2">
+          <Tabs value={view} onValueChange={(v) => setView(v as any)}>
+            <TabsList>
+              <TabsTrigger value="kanban"><LayoutGrid className="h-4 w-4 mr-1" />Kanban</TabsTrigger>
+              <TabsTrigger value="lista"><List className="h-4 w-4 mr-1" />Lista</TabsTrigger>
+            </TabsList>
+          </Tabs>
+          <Button onClick={() => setOpenNew(true)}><Plus className="h-4 w-4 mr-1" /> Nova OS</Button>
+        </div>
       </div>
 
-      <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
-        <Kpi label="Abertas" value={kpis.abertas} />
+      <div className="grid grid-cols-2 md:grid-cols-6 gap-3">
+        <Kpi label="Pendentes" value={kpis.pendentes} />
         <Kpi label="Em execução" value={kpis.exec} />
+        <Kpi label="Em atraso" value={kpis.atrasadas} />
         <Kpi label="Finalizadas" value={kpis.finalizadas} />
         <Kpi label="Total no mês" value={kpis.total} />
         <Kpi label="Custo finalizadas" value={fmtMoney(kpis.custo)} />
@@ -97,6 +190,11 @@ export default function OpOficina() {
             <Input value={search} onChange={e => setSearch(e.target.value)} placeholder="OS, placa, descrição" className="pl-8" />
           </div>
         </div>
+        {view === "kanban" && (
+          <Button size="sm" variant="outline" onClick={() => setHideFinalized(v => !v)}>
+            {hideFinalized ? <><EyeOff className="h-3 w-3 mr-1" />Ocultando finalizadas</> : <><Eye className="h-3 w-3 mr-1" />Mostrando todas</>}
+          </Button>
+        )}
       </div>
 
       <Tabs value={mechFilter} onValueChange={setMechFilter}>
@@ -108,31 +206,67 @@ export default function OpOficina() {
         </TabsList>
       </Tabs>
 
-      <div className="bg-card border rounded-lg divide-y">
-        {filtered.length === 0 && (
-          <div className="p-12 text-center text-muted-foreground">Nenhuma OS no período</div>
-        )}
-        {filtered.map(o => (
-          <button key={o.id} onClick={() => setSelected(o)} className="w-full text-left p-4 hover:bg-muted/40 transition flex items-center gap-4">
-            <div className="font-mono text-sm bg-muted px-2 py-1 rounded">#{o.os_number}</div>
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2 flex-wrap">
-                <span className="font-medium truncate">{o.description || "Sem descrição"}</span>
-                <Badge className={statusColor[o.status] || ""} variant="secondary">{o.status}</Badge>
-              </div>
-              <div className="text-xs text-muted-foreground mt-0.5">
-                {o.vehicle_plate || "—"} · {companyName(o.company_id)} · Mec.: {mechName(o.mechanic_id)} · {new Date(o.opened_at).toLocaleDateString("pt-BR")}
-              </div>
-            </div>
-            <div className="text-right">
-              <div className="font-semibold">{fmtMoney(Number(o.total_cost || 0))}</div>
-            </div>
-          </button>
-        ))}
-      </div>
+      {view === "kanban" ? (
+        <OpKanbanBoard<ServiceOrder>
+          columns={KANBAN_COLUMNS}
+          itemsByColumn={itemsByCol}
+          renderCard={renderCard}
+          resolveItem={(id) => filtered.find(o => o.id === id)}
+          // "Em atraso" is derived; dropping there is not allowed
+          isAllowed={(_item, _from, to) => to !== "Em atraso"}
+          onMove={(item, _from, to) => handleStatusChange(item, to)}
+          emptyText="Sem OS"
+        />
+      ) : (
+        <div className="bg-card border rounded-lg divide-y">
+          {filtered.length === 0 && (
+            <div className="p-12 text-center text-muted-foreground">Nenhuma OS no período</div>
+          )}
+          {filtered.map(o => {
+            const overdue = isOverdue(o);
+            return (
+              <button key={o.id} onClick={() => setSelected(o)} className="w-full text-left p-4 hover:bg-muted/40 transition flex items-center gap-4">
+                <div className="font-mono text-sm bg-muted px-2 py-1 rounded">#{o.os_number}</div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="font-medium truncate">{o.description || "Sem descrição"}</span>
+                    <Badge className={statusColor[o.status] || ""} variant="secondary">{o.status}</Badge>
+                    {overdue && <Badge variant="destructive"><AlertTriangle className="h-3 w-3 mr-0.5" />Em atraso</Badge>}
+                  </div>
+                  <div className="text-xs text-muted-foreground mt-0.5">
+                    {o.vehicle_plate || "—"} · {companyName(o.company_id)} · Mec.: {mechName(o.mechanic_id)} · {new Date(o.opened_at).toLocaleDateString("pt-BR")}
+                    {o.deadline && <> · Prazo: {new Date(o.deadline).toLocaleDateString("pt-BR")}</>}
+                  </div>
+                </div>
+                <div className="text-right">
+                  <div className="font-semibold">{fmtMoney(Number(o.total_cost || 0))}</div>
+                </div>
+              </button>
+            );
+          })}
+        </div>
+      )}
 
       {openNew && <NewOsDialog onClose={() => setOpenNew(false)} onCreate={async (input) => { const r = await add(input); if (r) { setOpenNew(false); setSelected(r as ServiceOrder); } }} />}
-      {selected && <OsDetailDialog os={selected} onClose={() => setSelected(null)} onUpdate={(p) => update(selected.id, p)} onDelete={() => { remove(selected.id); setSelected(null); }} />}
+      {selected && (
+        <OsDetailDialog
+          os={selected}
+          onClose={() => setSelected(null)}
+          onUpdate={(p) => update(selected.id, p)}
+          onDelete={() => { remove(selected.id); setSelected(null); }}
+          onRequestClose={(o) => { setSelected(null); setClosing(o); }}
+          companyPhone={companyPhone(selected.company_id)}
+        />
+      )}
+
+      <OpClosureDialog
+        open={!!closing}
+        onOpenChange={(o) => !o && setClosing(null)}
+        title={closing ? `Finalizar OS #${closing.os_number}` : "Finalizar"}
+        showCost
+        initialCost={closing?.total_cost}
+        onConfirm={confirmClosure}
+      />
     </div>
   );
 }
@@ -151,7 +285,7 @@ function NewOsDialog({ onClose, onCreate }: { onClose: () => void; onCreate: (in
   const { items: vehicles } = useVehicles();
   const { items: mechanics } = useMechanics();
   const [form, setForm] = useState<Partial<ServiceOrder>>({
-    status: "Aberta",
+    status: "Pendente",
     opened_at: new Date().toISOString().slice(0, 10),
   });
   const setF = (p: Partial<ServiceOrder>) => setForm(prev => ({ ...prev, ...p }));
@@ -197,6 +331,10 @@ function NewOsDialog({ onClose, onCreate }: { onClose: () => void; onCreate: (in
             <Label>Data abertura</Label>
             <Input type="date" value={form.opened_at || ""} onChange={e => setF({ opened_at: e.target.value })} />
           </div>
+          <div>
+            <Label>Prazo</Label>
+            <Input type="date" value={form.deadline || ""} onChange={e => setF({ deadline: e.target.value })} />
+          </div>
           <div className="md:col-span-2">
             <Label>Descrição do problema</Label>
             <Textarea value={form.description || ""} onChange={e => setF({ description: e.target.value })} rows={3} />
@@ -211,7 +349,14 @@ function NewOsDialog({ onClose, onCreate }: { onClose: () => void; onCreate: (in
   );
 }
 
-function OsDetailDialog({ os, onClose, onUpdate, onDelete }: { os: ServiceOrder; onClose: () => void; onUpdate: (p: Partial<ServiceOrder>) => void; onDelete: () => void }) {
+function OsDetailDialog({ os, onClose, onUpdate, onDelete, onRequestClose, companyPhone }: {
+  os: ServiceOrder;
+  onClose: () => void;
+  onUpdate: (p: Partial<ServiceOrder>) => void;
+  onDelete: () => void;
+  onRequestClose: (o: ServiceOrder) => void;
+  companyPhone: string | null;
+}) {
   const { parts, photos, addPart, removePart, uploadPhoto, removePhoto } = useServiceOrderDetails(os.id);
   const { items: partsCatalog } = useParts();
   const { items: mechanics } = useMechanics();
@@ -220,6 +365,7 @@ function OsDetailDialog({ os, onClose, onUpdate, onDelete }: { os: ServiceOrder;
   const [status, setStatus] = useState(os.status);
   const [diagnosis, setDiagnosis] = useState(os.diagnosis || "");
   const [notes, setNotes] = useState(os.notes || "");
+  const [deadline, setDeadline] = useState(os.deadline || "");
 
   const [partName, setPartName] = useState(""); const [qty, setQty] = useState("1"); const [price, setPrice] = useState("0");
 
@@ -230,8 +376,16 @@ function OsDetailDialog({ os, onClose, onUpdate, onDelete }: { os: ServiceOrder;
       status,
       diagnosis,
       notes,
-      finished_at: status === "Finalizada" ? (os.finished_at || new Date().toISOString().slice(0, 10)) : null,
+      deadline: deadline || null,
     });
+  };
+
+  const handleStatusSelect = (v: string) => {
+    if (v === TERMINAL && os.status !== TERMINAL) {
+      onRequestClose(os);
+      return;
+    }
+    setStatus(v);
   };
 
   const handlePhoto = async (e: React.ChangeEvent<HTMLInputElement>, type: "antes" | "depois") => {
@@ -276,18 +430,31 @@ function OsDetailDialog({ os, onClose, onUpdate, onDelete }: { os: ServiceOrder;
           <DialogTitle className="flex items-center gap-2">
             <span className="font-mono bg-muted px-2 py-1 rounded text-sm">#{os.os_number}</span>
             Ordem de Serviço
+            <div className="ml-auto"><OpQuickActions phone={companyPhone} /></div>
           </DialogTitle>
         </DialogHeader>
+
+        {os.closure_summary && (
+          <div className="bg-emerald-500/10 border border-emerald-500/30 rounded-md p-3 text-sm">
+            <div className="font-medium mb-1">Resumo de conclusão</div>
+            <div className="whitespace-pre-wrap text-muted-foreground">{os.closure_summary}</div>
+            {os.finished_at && <div className="text-xs text-muted-foreground mt-1">Finalizada em {new Date(os.finished_at).toLocaleDateString("pt-BR")}</div>}
+          </div>
+        )}
 
         <div className="grid gap-3 md:grid-cols-2">
           <div>
             <Label>Status</Label>
-            <Select value={status} onValueChange={setStatus}>
+            <Select value={status} onValueChange={handleStatusSelect}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>{STATUS_LIST.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
             </Select>
           </div>
-          <div className="text-sm pt-6">
+          <div>
+            <Label>Prazo</Label>
+            <Input type="date" value={deadline} onChange={e => setDeadline(e.target.value)} />
+          </div>
+          <div className="text-sm md:col-span-2">
             <div><b>Cliente:</b> {companies.find(c => c.id === os.company_id)?.name || "—"}</div>
             <div><b>Veículo:</b> {os.vehicle_plate || "—"} · {os.vehicle_model || "—"}</div>
             <div><b>Mecânico:</b> {mechanics.find(m => m.id === os.mechanic_id)?.name || "—"}</div>
@@ -301,7 +468,7 @@ function OsDetailDialog({ os, onClose, onUpdate, onDelete }: { os: ServiceOrder;
             <Textarea rows={3} value={diagnosis} onChange={e => setDiagnosis(e.target.value)} />
           </div>
           <div className="md:col-span-2">
-            <Label>Observações</Label>
+            <Label>Observações iniciais</Label>
             <Textarea rows={2} value={notes} onChange={e => setNotes(e.target.value)} />
           </div>
         </div>
@@ -361,6 +528,11 @@ function OsDetailDialog({ os, onClose, onUpdate, onDelete }: { os: ServiceOrder;
               </div>
             ))}
           </div>
+        </div>
+
+        <div className="border-t pt-3">
+          <h3 className="font-medium mb-2">Observações da equipe</h3>
+          <OpNotesPanel module="service_order" cardId={os.id} />
         </div>
 
         <DialogFooter className="flex-wrap gap-2">
