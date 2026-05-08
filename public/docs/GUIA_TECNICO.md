@@ -39,10 +39,12 @@ Como **Técnico** no In Demands, seu papel principal é **atender e resolver cha
 ## 2. Acesso e Login
 
 1. Acesse a URL da plataforma fornecida pelo seu administrador
-2. Insira seu **e-mail** e **senha**
+2. Insira seu **login** (formato `NOME.SOBRENOME`) e **senha**
 3. Clique em **Entrar**
+4. Selecione a **organização** (Grupo Ramos = GRTI Helpdesk, CGPS Operacional = entregas/oficina/manutenção)
 
 ### Dicas
+- Use o **OrgSwitcher** no topo do menu para alternar entre organizações sem deslogar
 - Use o botão 🌙/☀️ no rodapé do menu para alternar entre **modo claro** e **modo escuro**
 - Para sair, clique no botão de **logout** (ícone de porta) no rodapé do menu
 
