@@ -233,10 +233,18 @@ export default function OpEntregas() {
 
       {/* KPIs */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
-        <Kpi title="Total no Mês" value={kpis.total} icon={ClipboardList} />
-        <Kpi title="Pendentes" value={kpis.pendentes} icon={Clock} />
-        <Kpi title="Em Rota" value={kpis.emRota} icon={MapPin} />
-        <Kpi title="Finalizados" value={kpis.finalizados} icon={CheckCircle2} />
+        <Kpi title="Total no Mês" value={kpis.total} icon={ClipboardList}
+          active={statusFilter === "all"}
+          onClick={() => setStatusFilter("all")} />
+        <Kpi title="Pendentes" value={kpis.pendentes} icon={Clock}
+          active={statusFilter === "Pendente"}
+          onClick={() => setStatusFilter(statusFilter === "Pendente" ? "all" : "Pendente")} />
+        <Kpi title="Em Rota" value={kpis.emRota} icon={MapPin}
+          active={statusFilter === "Em rota"}
+          onClick={() => setStatusFilter(statusFilter === "Em rota" ? "all" : "Em rota")} />
+        <Kpi title="Finalizados" value={kpis.finalizados} icon={CheckCircle2}
+          active={statusFilter === "Finalizado"}
+          onClick={() => { setStatusFilter(statusFilter === "Finalizado" ? "all" : "Finalizado"); setHideFinalized(false); }} />
       </div>
 
       {/* Driver tabs */}
@@ -361,15 +369,22 @@ export default function OpEntregas() {
   );
 }
 
-function Kpi({ title, value, icon: Icon }: { title: string; value: number; icon: any }) {
+function Kpi({ title, value, icon: Icon, active, onClick }: { title: string; value: number; icon: any; active?: boolean; onClick?: () => void }) {
   return (
-    <div className="bg-card border rounded-lg p-4 flex items-center justify-between">
+    <button
+      type="button"
+      onClick={onClick}
+      className={cn(
+        "bg-card border rounded-lg p-4 flex items-center justify-between text-left transition hover:shadow-md hover:border-primary/50",
+        active && "border-primary ring-2 ring-primary/30"
+      )}
+    >
       <div>
         <div className="text-xs text-muted-foreground">{title}</div>
         <div className="text-3xl font-bold mt-1">{value}</div>
       </div>
       <Icon className="h-5 w-5 text-muted-foreground" />
-    </div>
+    </button>
   );
 }
 
