@@ -16,11 +16,18 @@ interface Props {
   onOpenChange: (b: boolean) => void;
   title?: string;
   showCost?: boolean;
+  hideDate?: boolean;
+  confirmLabel?: string;
+  placeholder?: string;
   initialCost?: number;
   onConfirm: (payload: ClosurePayload) => Promise<void> | void;
 }
 
-export default function OpClosureDialog({ open, onOpenChange, title = "Concluir", showCost, initialCost, onConfirm }: Props) {
+export default function OpClosureDialog({
+  open, onOpenChange, title = "Concluir", showCost, hideDate,
+  confirmLabel = "Concluir", placeholder = "Descreva brevemente a conclusão...",
+  initialCost, onConfirm,
+}: Props) {
   const [summary, setSummary] = useState("");
   const [date, setDate] = useState(() => new Date().toISOString().slice(0, 10));
   const [cost, setCost] = useState<string>("");
@@ -54,13 +61,15 @@ export default function OpClosureDialog({ open, onOpenChange, title = "Concluir"
       <DialogContent>
         <DialogHeader><DialogTitle>{title}</DialogTitle></DialogHeader>
         <div className="space-y-3">
+          {!hideDate && (
+            <div>
+              <Label>Data de conclusão</Label>
+              <Input type="date" value={date} onChange={e => setDate(e.target.value)} />
+            </div>
+          )}
           <div>
-            <Label>Data de conclusão</Label>
-            <Input type="date" value={date} onChange={e => setDate(e.target.value)} />
-          </div>
-          <div>
-            <Label>Resumo do que foi feito *</Label>
-            <Textarea rows={4} value={summary} onChange={e => setSummary(e.target.value)} placeholder="Descreva brevemente a conclusão..." />
+            <Label>Descrição *</Label>
+            <Textarea rows={4} value={summary} onChange={e => setSummary(e.target.value)} placeholder={placeholder} />
           </div>
           {showCost && (
             <div>
@@ -71,7 +80,7 @@ export default function OpClosureDialog({ open, onOpenChange, title = "Concluir"
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)} disabled={busy}>Cancelar</Button>
-          <Button onClick={submit} disabled={!summary.trim() || busy}>{busy ? "Salvando..." : "Concluir"}</Button>
+          <Button onClick={submit} disabled={!summary.trim() || busy}>{busy ? "Salvando..." : confirmLabel}</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

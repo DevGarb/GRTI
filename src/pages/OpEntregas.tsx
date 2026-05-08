@@ -362,7 +362,10 @@ export default function OpEntregas() {
       <OpClosureDialog
         open={!!closing}
         onOpenChange={(o) => !o && setClosing(null)}
-        title="Concluir entrega"
+        title="O que foi feito?"
+        confirmLabel="Finalizar"
+        placeholder="Descreva o que foi realizado nesta entrega..."
+        hideDate
         onConfirm={confirmClosure}
       />
     </div>
