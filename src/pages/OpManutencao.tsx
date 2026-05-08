@@ -357,12 +357,20 @@ export default function OpManutencao() {
   );
 }
 
-function KpiCard({ label, value, color, icon }: { label: string; value: number; color?: string; icon?: React.ReactNode }) {
+function KpiCard({ label, value, color, icon, active, onClick }: { label: string; value: number; color?: string; icon?: React.ReactNode; active?: boolean; onClick?: () => void }) {
+  const Cmp: any = onClick ? "button" : "div";
   return (
-    <div className="border rounded-lg p-4 bg-card">
+    <Cmp
+      onClick={onClick}
+      className={cn(
+        "border rounded-lg p-4 bg-card text-left transition w-full",
+        onClick && "hover:border-primary/60 hover:shadow-sm cursor-pointer",
+        active && "border-primary ring-2 ring-primary/30 bg-primary/5"
+      )}
+    >
       <div className="text-xs text-muted-foreground flex items-center gap-1">{icon}{label}</div>
       <div className={cn("text-2xl font-bold mt-1", color)}>{value}</div>
-    </div>
+    </Cmp>
   );
 }
 
