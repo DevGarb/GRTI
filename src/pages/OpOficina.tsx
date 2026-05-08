@@ -59,11 +59,12 @@ export default function OpOficina() {
   const [month, setMonth] = useState(new Date().toISOString().slice(0, 7));
   const [mechFilter, setMechFilter] = useState<string>("all");
   const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState<"all" | "Pendente" | "exec" | "atraso" | "Finalizado">("all");
   const [openNew, setOpenNew] = useState(false);
   const [selected, setSelected] = useState<ServiceOrder | null>(null);
   const [closing, setClosing] = useState<ServiceOrder | null>(null);
 
-  const filtered = useMemo(() => {
+  const baseFiltered = useMemo(() => {
     return items.filter(o => {
       if (!o.opened_at.startsWith(month)) return false;
       if (mechFilter !== "all" && o.mechanic_id !== mechFilter) return false;
@@ -73,20 +74,35 @@ export default function OpOficina() {
               (o.vehicle_plate || "").toLowerCase().includes(s) ||
               (o.description || "").toLowerCase().includes(s))) return false;
       }
-      if (hideFinalized && view === "kanban" && o.status === "Finalizado") return false;
       return true;
     });
-  }, [items, month, mechFilter, search, hideFinalized, view]);
+  }, [items, month, mechFilter, search]);
+
+  const filtered = useMemo(() => {
+    return baseFiltered.filter(o => {
+      if (statusFilter === "Pendente" && o.status !== "Pendente") return false;
+      if (statusFilter === "exec" && !(o.status === "Em andamento" || o.status === "Aguardando peças")) return false;
+      if (statusFilter === "atraso" && !isOverdue(o)) return false;
+      if (statusFilter === "Finalizado" && o.status !== "Finalizado") return false;
+      if (statusFilter === "all" && hideFinalized && view === "kanban" && o.status === "Finalizado") return false;
+      return true;
+    });
+  }, [baseFiltered, statusFilter, hideFinalized, view]);
 
   const kpis = useMemo(() => {
-    const pendentes = filtered.filter(o => o.status === "Pendente").length;
-    const exec = filtered.filter(o => o.status === "Em andamento" || o.status === "Aguardando peças").length;
-    const finalizadas = filtered.filter(o => o.status === "Finalizado").length;
-    const atrasadas = filtered.filter(isOverdue).length;
-    const total = filtered.length;
-    const custo = filtered.filter(o => o.status === "Finalizado").reduce((s, o) => s + Number(o.total_cost || 0), 0);
+    const pendentes = baseFiltered.filter(o => o.status === "Pendente").length;
+    const exec = baseFiltered.filter(o => o.status === "Em andamento" || o.status === "Aguardando peças").length;
+    const finalizadas = baseFiltered.filter(o => o.status === "Finalizado").length;
+    const atrasadas = baseFiltered.filter(isOverdue).length;
+    const total = baseFiltered.length;
+    const custo = baseFiltered.filter(o => o.status === "Finalizado").reduce((s, o) => s + Number(o.total_cost || 0), 0);
     return { pendentes, exec, finalizadas, atrasadas, total, custo };
-  }, [filtered]);
+  }, [baseFiltered]);
+
+  const toggleStatus = (s: typeof statusFilter) => {
+    setStatusFilter(prev => prev === s ? "all" : s);
+    if (s === "Finalizado") setHideFinalized(false);
+  };
 
   const itemsByCol = useMemo(() => {
     const map: Record<string, ServiceOrder[]> = {};
@@ -170,11 +186,11 @@ export default function OpOficina() {
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-6 gap-3">
-        <Kpi label="Pendentes" value={kpis.pendentes} />
-        <Kpi label="Em execução" value={kpis.exec} />
-        <Kpi label="Em atraso" value={kpis.atrasadas} />
-        <Kpi label="Finalizadas" value={kpis.finalizadas} />
-        <Kpi label="Total no mês" value={kpis.total} />
+        <Kpi label="Pendentes" value={kpis.pendentes} active={statusFilter === "Pendente"} onClick={() => toggleStatus("Pendente")} />
+        <Kpi label="Em execução" value={kpis.exec} active={statusFilter === "exec"} onClick={() => toggleStatus("exec")} />
+        <Kpi label="Em atraso" value={kpis.atrasadas} active={statusFilter === "atraso"} onClick={() => toggleStatus("atraso")} />
+        <Kpi label="Finalizadas" value={kpis.finalizadas} active={statusFilter === "Finalizado"} onClick={() => toggleStatus("Finalizado")} />
+        <Kpi label="Total no mês" value={kpis.total} active={statusFilter === "all"} onClick={() => setStatusFilter("all")} />
         <Kpi label="Custo finalizadas" value={fmtMoney(kpis.custo)} />
       </div>
 
@@ -271,12 +287,20 @@ export default function OpOficina() {
   );
 }
 
-function Kpi({ label, value }: { label: string; value: any }) {
+function Kpi({ label, value, active, onClick }: { label: string; value: any; active?: boolean; onClick?: () => void }) {
+  const Cmp: any = onClick ? "button" : "div";
   return (
-    <div className="bg-card border rounded-lg p-3">
+    <Cmp
+      onClick={onClick}
+      className={cn(
+        "bg-card border rounded-lg p-3 text-left transition",
+        onClick && "hover:border-primary/60 hover:shadow-sm cursor-pointer",
+        active && "border-primary ring-2 ring-primary/30 bg-primary/5"
+      )}
+    >
       <div className="text-xs text-muted-foreground">{label}</div>
       <div className="text-xl font-bold mt-1">{value}</div>
-    </div>
+    </Cmp>
   );
 }
 

@@ -53,6 +53,7 @@ export default function OpManutencao() {
   const [activeMonth, setActiveMonth] = useState(() => new Date().toISOString().slice(0, 7));
   const [activeSite, setActiveSite] = useState<string>("all");
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
+  const [statusFilter, setStatusFilter] = useState<"all" | "Aberta" | "Em execução" | "Concluída" | "atraso">("all");
   const [view, setView] = useState<"lista" | "kanban">("kanban");
   const [hideFinalized, setHideFinalized] = useState(true);
   const [closing, setClosing] = useState<MaintenanceOrder | null>(null);
@@ -72,7 +73,7 @@ export default function OpManutencao() {
 
   const today = todayISO();
 
-  const filtered = useMemo(() => {
+  const baseFiltered = useMemo(() => {
     return orders.items.filter(o => {
       if (!o.opened_at.startsWith(activeMonth)) return false;
       if (activeSite !== "all" && o.site_id !== activeSite) return false;
@@ -81,23 +82,37 @@ export default function OpManutencao() {
     });
   }, [orders.items, activeMonth, activeSite, categoryFilter]);
 
+  const filtered = useMemo(() => {
+    return baseFiltered.filter(o => {
+      const overdue = !!o.deadline && o.deadline < today && !["Concluída", "Cancelada"].includes(o.status);
+      if (statusFilter === "atraso" && !overdue) return false;
+      if (statusFilter !== "all" && statusFilter !== "atraso" && o.status !== statusFilter) return false;
+      return true;
+    });
+  }, [baseFiltered, statusFilter, today]);
+
   const kpis = useMemo(() => {
-    const overdue = filtered.filter(o => o.deadline && o.deadline < today && !["Concluída", "Cancelada"].includes(o.status)).length;
+    const overdue = baseFiltered.filter(o => o.deadline && o.deadline < today && !["Concluída", "Cancelada"].includes(o.status)).length;
     return {
-      abertas: filtered.filter(o => o.status === "Aberta").length,
-      execucao: filtered.filter(o => o.status === "Em execução").length,
-      concluidas: filtered.filter(o => o.status === "Concluída").length,
-      total: filtered.length,
+      abertas: baseFiltered.filter(o => o.status === "Aberta").length,
+      execucao: baseFiltered.filter(o => o.status === "Em execução").length,
+      concluidas: baseFiltered.filter(o => o.status === "Concluída").length,
+      total: baseFiltered.length,
       atrasadas: overdue,
     };
-  }, [filtered, today]);
+  }, [baseFiltered, today]);
+
+  const toggleStatus = (s: typeof statusFilter) => {
+    setStatusFilter(prev => prev === s ? "all" : s);
+    if (s === "Concluída") setHideFinalized(false);
+  };
 
   const siteName = (id: string | null) => sites.items.find(s => s.id === id)?.name || "—";
   const siteOf = (id: string | null) => sites.items.find(s => s.id === id);
 
   const filteredKanban = useMemo(() =>
-    filtered.filter(o => !(hideFinalized && o.status === "Concluída")),
-  [filtered, hideFinalized]);
+    filtered.filter(o => !(hideFinalized && statusFilter !== "Concluída" && o.status === "Concluída")),
+  [filtered, hideFinalized, statusFilter]);
 
   const itemsByCol = useMemo(() => {
     const map: Record<string, MaintenanceOrder[]> = {};
@@ -185,11 +200,11 @@ export default function OpManutencao() {
         {/* ORDENS */}
         <TabsContent value="ordens" className="space-y-4">
           <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
-            <KpiCard label="Abertas" value={kpis.abertas} color="text-amber-600" />
-            <KpiCard label="Em execução" value={kpis.execucao} color="text-blue-600" />
-            <KpiCard label="Concluídas" value={kpis.concluidas} color="text-emerald-600" />
-            <KpiCard label="Total no mês" value={kpis.total} />
-            <KpiCard label="Atrasadas" value={kpis.atrasadas} color="text-rose-600" icon={<AlertTriangle className="h-4 w-4" />} />
+            <KpiCard label="Abertas" value={kpis.abertas} color="text-amber-600" active={statusFilter === "Aberta"} onClick={() => toggleStatus("Aberta")} />
+            <KpiCard label="Em execução" value={kpis.execucao} color="text-blue-600" active={statusFilter === "Em execução"} onClick={() => toggleStatus("Em execução")} />
+            <KpiCard label="Concluídas" value={kpis.concluidas} color="text-emerald-600" active={statusFilter === "Concluída"} onClick={() => toggleStatus("Concluída")} />
+            <KpiCard label="Total no mês" value={kpis.total} active={statusFilter === "all"} onClick={() => setStatusFilter("all")} />
+            <KpiCard label="Atrasadas" value={kpis.atrasadas} color="text-rose-600" icon={<AlertTriangle className="h-4 w-4" />} active={statusFilter === "atraso"} onClick={() => toggleStatus("atraso")} />
           </div>
 
           <div className="flex flex-wrap gap-2 items-center">
@@ -342,12 +357,20 @@ export default function OpManutencao() {
   );
 }
 
-function KpiCard({ label, value, color, icon }: { label: string; value: number; color?: string; icon?: React.ReactNode }) {
+function KpiCard({ label, value, color, icon, active, onClick }: { label: string; value: number; color?: string; icon?: React.ReactNode; active?: boolean; onClick?: () => void }) {
+  const Cmp: any = onClick ? "button" : "div";
   return (
-    <div className="border rounded-lg p-4 bg-card">
+    <Cmp
+      onClick={onClick}
+      className={cn(
+        "border rounded-lg p-4 bg-card text-left transition w-full",
+        onClick && "hover:border-primary/60 hover:shadow-sm cursor-pointer",
+        active && "border-primary ring-2 ring-primary/30 bg-primary/5"
+      )}
+    >
       <div className="text-xs text-muted-foreground flex items-center gap-1">{icon}{label}</div>
       <div className={cn("text-2xl font-bold mt-1", color)}>{value}</div>
-    </div>
+    </Cmp>
   );
 }
 
