@@ -156,7 +156,18 @@ export default function OpManutencao() {
             <p className="text-sm text-muted-foreground">Ordens, sedes e checklists de inspeção</p>
           </div>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 items-center flex-wrap">
+          <Tabs value={view} onValueChange={(v) => setView(v as any)}>
+            <TabsList>
+              <TabsTrigger value="kanban"><LayoutGrid className="h-4 w-4 mr-1" />Kanban</TabsTrigger>
+              <TabsTrigger value="lista"><List className="h-4 w-4 mr-1" />Lista</TabsTrigger>
+            </TabsList>
+          </Tabs>
+          {view === "kanban" && (
+            <Button size="sm" variant="outline" onClick={() => setHideFinalized(v => !v)}>
+              {hideFinalized ? <><EyeOff className="h-3 w-3 mr-1" />Ocultos</> : <><Eye className="h-3 w-3 mr-1" />Todos</>}
+            </Button>
+          )}
           <Input type="month" value={activeMonth} onChange={e => setActiveMonth(e.target.value)} className="w-40" />
           <Button onClick={() => { setEditing(null); setOmOpen(true); }}>
             <Plus className="h-4 w-4 mr-1" /> Nova OM
