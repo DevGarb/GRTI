@@ -186,11 +186,11 @@ export default function OpOficina() {
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-6 gap-3">
-        <Kpi label="Pendentes" value={kpis.pendentes} />
-        <Kpi label="Em execução" value={kpis.exec} />
-        <Kpi label="Em atraso" value={kpis.atrasadas} />
-        <Kpi label="Finalizadas" value={kpis.finalizadas} />
-        <Kpi label="Total no mês" value={kpis.total} />
+        <Kpi label="Pendentes" value={kpis.pendentes} active={statusFilter === "Pendente"} onClick={() => toggleStatus("Pendente")} />
+        <Kpi label="Em execução" value={kpis.exec} active={statusFilter === "exec"} onClick={() => toggleStatus("exec")} />
+        <Kpi label="Em atraso" value={kpis.atrasadas} active={statusFilter === "atraso"} onClick={() => toggleStatus("atraso")} />
+        <Kpi label="Finalizadas" value={kpis.finalizadas} active={statusFilter === "Finalizado"} onClick={() => toggleStatus("Finalizado")} />
+        <Kpi label="Total no mês" value={kpis.total} active={statusFilter === "all"} onClick={() => setStatusFilter("all")} />
         <Kpi label="Custo finalizadas" value={fmtMoney(kpis.custo)} />
       </div>
 
