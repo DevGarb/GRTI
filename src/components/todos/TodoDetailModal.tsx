@@ -7,10 +7,13 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Trash2, Send } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { toast } from "sonner";
 import type { TodoWithAuthor } from "@/hooks/useTodos";
+import { useTodos } from "@/hooks/useTodos";
+import { QUADRANT_LABEL } from "./NewTodoModal";
 
 interface Props {
   todo: TodoWithAuthor | null;
