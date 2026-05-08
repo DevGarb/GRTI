@@ -42,6 +42,10 @@ export default function Todos() {
     if (tab === "hoje") {
       return todos.filter((t) => t.status !== "concluido" || isToday(t.completed_at));
     }
+    if (tab === "matriz") {
+      // Apenas TODOs do usuário logado, não concluídos
+      return todos.filter((t) => t.user_id === user?.id && t.status !== "concluido");
+    }
     // histórico: apenas concluídos, com filtro opcional de período
     return todos.filter((t) => {
       if (t.status !== "concluido") return false;
@@ -57,7 +61,7 @@ export default function Todos() {
       }
       return true;
     });
-  }, [todos, tab, dateFrom, dateTo]);
+  }, [todos, tab, dateFrom, dateTo, user?.id]);
 
   const filtered = useMemo(() => {
     if (!search) return tabFiltered;
