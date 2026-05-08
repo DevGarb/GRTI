@@ -20,8 +20,11 @@ export interface ServiceOrder {
   status: string;
   opened_at: string;
   finished_at: string | null;
+  deadline?: string | null;
   total_cost: number;
   notes: string | null;
+  closure_summary?: string | null;
+  closed_by?: string | null;
   created_by: string;
   created_at: string;
 }

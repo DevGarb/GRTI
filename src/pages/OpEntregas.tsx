@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { Truck, Plus, Pencil, Trash2, Clock, MapPin, ClipboardList, CheckCircle2, Calendar as CalIcon, Search } from "lucide-react";
+import { Truck, Plus, Pencil, Trash2, Clock, MapPin, ClipboardList, CheckCircle2, Calendar as CalIcon, Search, LayoutGrid, List, Eye, EyeOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -7,13 +7,20 @@ import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useAuth } from "@/contexts/AuthContext";
 import { useDeliveries, type Delivery } from "@/hooks/useDeliveries";
 import { useDrivers, useCompanies, useVehicles } from "@/hooks/useOperacional";
 import { cn } from "@/lib/utils";
+import OpKanbanBoard, { type KanbanColumn } from "@/components/operacional/OpKanbanBoard";
+import OpClosureDialog from "@/components/operacional/OpClosureDialog";
+import OpQuickActions from "@/components/operacional/OpQuickActions";
+import OpNotesPanel from "@/components/operacional/OpNotesPanel";
 
 const TYPES = ["Entrega", "Vistoria", "Retirada", "Outro"];
 const PERIODS = ["Manhã", "Tarde", "Noite"];
 const STATUSES = ["Pendente", "Em rota", "Finalizado", "Cancelado"];
+const TERMINAL = "Finalizado";
 
 const STATUS_COLORS: Record<string, string> = {
   "Pendente": "bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300",
@@ -21,6 +28,13 @@ const STATUS_COLORS: Record<string, string> = {
   "Finalizado": "bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300",
   "Cancelado": "bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300",
 };
+
+const KANBAN_COLUMNS: KanbanColumn[] = [
+  { id: "Pendente", label: "Pendente", color: "bg-amber-500" },
+  { id: "Em rota", label: "Em rota", color: "bg-blue-500" },
+  { id: "Finalizado", label: "Finalizado", color: "bg-emerald-600" },
+  { id: "Cancelado", label: "Cancelado", color: "bg-rose-500" },
+];
 
 type FilterMode = "tudo" | "hoje" | "semana" | "data";
 
@@ -35,11 +49,14 @@ function weekday(iso: string) {
 function todayISO() { return new Date().toISOString().slice(0, 10); }
 
 export default function OpEntregas() {
+  const { user } = useAuth();
   const { items, loading, add, update, remove } = useDeliveries();
   const { items: drivers } = useDrivers();
   const { items: companies } = useCompanies();
   const { items: vehicles } = useVehicles();
 
+  const [view, setView] = useState<"lista" | "kanban">("kanban");
+  const [hideFinalized, setHideFinalized] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<Delivery | null>(null);
   const [filterMode, setFilterMode] = useState<FilterMode>("tudo");
@@ -50,7 +67,9 @@ export default function OpEntregas() {
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [typeFilter, setTypeFilter] = useState<string>("all");
 
-  // Apply month + filterMode + driver + search
+  // Closure flow
+  const [closing, setClosing] = useState<Delivery | null>(null);
+
   const filtered = useMemo(() => {
     const today = todayISO();
     const start = new Date(); start.setDate(start.getDate() - 7);
@@ -64,6 +83,7 @@ export default function OpEntregas() {
       if (activeDriver !== "all" && d.driver_id !== activeDriver) return false;
       if (statusFilter !== "all" && d.status !== statusFilter) return false;
       if (typeFilter !== "all" && d.type !== typeFilter) return false;
+      if (hideFinalized && view === "kanban" && d.status === "Finalizado") return false;
       if (search) {
         const s = search.toLowerCase();
         const company = companies.find(c => c.id === d.company_id)?.name?.toLowerCase() || "";
@@ -73,7 +93,7 @@ export default function OpEntregas() {
       }
       return true;
     });
-  }, [items, activeMonth, filterMode, filterDate, activeDriver, statusFilter, typeFilter, search, companies, drivers]);
+  }, [items, activeMonth, filterMode, filterDate, activeDriver, statusFilter, typeFilter, search, companies, drivers, hideFinalized, view]);
 
   const monthItems = useMemo(() => items.filter(d => d.scheduled_date.startsWith(activeMonth)), [items, activeMonth]);
   const kpis = useMemo(() => ({
@@ -93,13 +113,19 @@ export default function OpEntregas() {
     return Array.from(map.entries());
   }, [filtered]);
 
+  const itemsByCol = useMemo(() => {
+    const map: Record<string, Delivery[]> = {};
+    KANBAN_COLUMNS.forEach(c => { map[c.id] = []; });
+    filtered.forEach(d => { (map[d.status] ||= []).push(d); });
+    return map;
+  }, [filtered]);
+
   const driverCounts = useMemo(() => {
     const counts: Record<string, number> = { all: monthItems.length };
     drivers.forEach(d => { counts[d.id] = monthItems.filter(x => x.driver_id === d.id).length; });
     return counts;
   }, [monthItems, drivers]);
 
-  // Build month options (current year)
   const monthOptions = useMemo(() => {
     const opts: { value: string; label: string }[] = [];
     const now = new Date();
@@ -114,9 +140,56 @@ export default function OpEntregas() {
   const openNew = () => { setEditing(null); setModalOpen(true); };
   const openEdit = (d: Delivery) => { setEditing(d); setModalOpen(true); };
 
+  const handleStatusChange = (d: Delivery, newStatus: string) => {
+    if (newStatus === d.status) return;
+    if (newStatus === TERMINAL) { setClosing(d); return; }
+    update(d.id, { status: newStatus });
+  };
+
+  const confirmClosure = async (payload: { closure_summary: string; closed_at: string }) => {
+    if (!closing) return;
+    await update(closing.id, {
+      status: TERMINAL,
+      closure_summary: payload.closure_summary,
+      closed_at: new Date(payload.closed_at).toISOString(),
+      closed_by: user?.id || null,
+    });
+    setClosing(null);
+  };
+
+  const renderKanbanCard = (d: Delivery) => {
+    const company = companies.find(c => c.id === d.company_id);
+    const driver = drivers.find(x => x.id === d.driver_id);
+    return (
+      <div onClick={() => openEdit(d)}>
+        <div className="flex items-start gap-2 mb-2">
+          <div className="flex-1 min-w-0">
+            <div className="font-semibold text-sm truncate">{company?.name || "Sem empresa"}</div>
+            <div className="text-[11px] text-muted-foreground truncate">
+              {formatDateBR(d.scheduled_date)} · {d.period}
+            </div>
+          </div>
+          <Badge variant="outline" className="text-[10px]">{d.type}</Badge>
+        </div>
+        {d.address && (
+          <div className="text-xs text-muted-foreground line-clamp-2 mb-1">📍 {d.address}</div>
+        )}
+        {(d.contact_name || driver) && (
+          <div className="text-[11px] text-muted-foreground truncate mb-2">
+            {driver?.name && `🛵 ${driver.name}`}{driver && d.contact_name ? " · " : ""}{d.contact_name}
+          </div>
+        )}
+        <div className="flex items-center justify-between">
+          <Badge className={cn("text-[10px] font-normal", STATUS_COLORS[d.status])}>{d.status}</Badge>
+          <OpQuickActions phone={d.contact_phone} address={d.address} size="icon" />
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div className="p-4 md:p-6 max-w-7xl mx-auto">
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
         <div className="flex items-center gap-3">
           <div className="h-10 w-10 rounded-lg bg-primary text-primary-foreground flex items-center justify-center">
             <Truck className="h-5 w-5" />
@@ -126,7 +199,15 @@ export default function OpEntregas() {
             <p className="text-sm text-muted-foreground">Controle de Entregas</p>
           </div>
         </div>
-        <Button onClick={openNew}><Plus className="h-4 w-4 mr-1" /> Nova Entrega</Button>
+        <div className="flex gap-2">
+          <Tabs value={view} onValueChange={(v) => setView(v as any)}>
+            <TabsList>
+              <TabsTrigger value="kanban"><LayoutGrid className="h-4 w-4 mr-1" />Kanban</TabsTrigger>
+              <TabsTrigger value="lista"><List className="h-4 w-4 mr-1" />Lista</TabsTrigger>
+            </TabsList>
+          </Tabs>
+          <Button onClick={openNew}><Plus className="h-4 w-4 mr-1" /> Nova</Button>
+        </div>
       </div>
 
       {/* Month + filter chips */}
@@ -142,6 +223,11 @@ export default function OpEntregas() {
         ))}
         {filterMode === "data" && (
           <Input type="date" value={filterDate} onChange={e => setFilterDate(e.target.value)} className="w-[160px]" />
+        )}
+        {view === "kanban" && (
+          <Button size="sm" variant="outline" onClick={() => setHideFinalized(v => !v)}>
+            {hideFinalized ? <><EyeOff className="h-3 w-3 mr-1" />Ocultos finalizados</> : <><Eye className="h-3 w-3 mr-1" />Mostrando todos</>}
+          </Button>
         )}
       </div>
 
@@ -183,9 +269,19 @@ export default function OpEntregas() {
         </Select>
       </div>
 
-      {/* Grouped list */}
+      {/* View */}
       {loading ? (
         <div className="text-center text-muted-foreground py-12">Carregando...</div>
+      ) : view === "kanban" ? (
+        <OpKanbanBoard<Delivery>
+          columns={KANBAN_COLUMNS}
+          itemsByColumn={itemsByCol}
+          renderCard={renderKanbanCard}
+          resolveItem={(id) => filtered.find(x => x.id === id)}
+          isAllowed={() => true}
+          onMove={(item, _from, to) => handleStatusChange(item, to)}
+          emptyText="Sem entregas"
+        />
       ) : grouped.length === 0 ? (
         <div className="text-center text-muted-foreground py-12 bg-card border rounded-lg">Nenhuma entrega encontrada</div>
       ) : (
@@ -201,7 +297,7 @@ export default function OpEntregas() {
                   const driver = drivers.find(x => x.id === d.driver_id);
                   const vehicle = vehicles.find(v => v.id === d.vehicle_id);
                   return (
-                    <div key={d.id} className="bg-card border rounded-lg p-4">
+                    <div key={d.id} className="bg-card border rounded-lg p-4 cursor-pointer hover:shadow-md transition" onClick={() => openEdit(d)}>
                       <div className="flex items-start justify-between gap-3 flex-wrap">
                         <div className="flex-1 min-w-[260px]">
                           <div className="flex items-center gap-2 flex-wrap mb-2">
@@ -218,8 +314,9 @@ export default function OpEntregas() {
                           </div>
                           {d.notes && <p className="text-sm italic text-muted-foreground mt-2">{d.notes}</p>}
                         </div>
-                        <div className="flex items-center gap-2">
-                          <Select value={d.status} onValueChange={(v) => update(d.id, { status: v })}>
+                        <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
+                          <OpQuickActions phone={d.contact_phone} address={d.address} />
+                          <Select value={d.status} onValueChange={(v) => handleStatusChange(d, v)}>
                             <SelectTrigger className="w-[130px] h-9"><SelectValue /></SelectTrigger>
                             <SelectContent>{STATUSES.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
                           </Select>
@@ -245,11 +342,20 @@ export default function OpEntregas() {
         drivers={drivers}
         companies={companies}
         vehicles={vehicles}
+        onStatusChange={handleStatusChange}
+        onDelete={(id) => { remove(id); setModalOpen(false); }}
         onSubmit={async (payload) => {
           if (editing) await update(editing.id, payload);
           else await add(payload);
           setModalOpen(false);
         }}
+      />
+
+      <OpClosureDialog
+        open={!!closing}
+        onOpenChange={(o) => !o && setClosing(null)}
+        title="Concluir entrega"
+        onConfirm={confirmClosure}
       />
     </div>
   );
@@ -275,10 +381,12 @@ function DriverChip({ active, onClick, label }: { active: boolean; onClick: () =
   );
 }
 
-function DeliveryModal({ open, onOpenChange, editing, drivers, companies, vehicles, onSubmit }: {
+function DeliveryModal({ open, onOpenChange, editing, drivers, companies, vehicles, onSubmit, onStatusChange, onDelete }: {
   open: boolean; onOpenChange: (b: boolean) => void; editing: Delivery | null;
   drivers: any[]; companies: any[]; vehicles: any[];
   onSubmit: (p: Partial<Delivery>) => Promise<void>;
+  onStatusChange: (d: Delivery, newStatus: string) => void;
+  onDelete: (id: string) => void;
 }) {
   const [form, setForm] = useState<Partial<Delivery>>({});
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -292,8 +400,30 @@ function DeliveryModal({ open, onOpenChange, editing, drivers, companies, vehicl
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl">
-        <DialogHeader><DialogTitle>{editing ? "Editar entrega" : "Nova entrega"}</DialogTitle></DialogHeader>
+      <DialogContent className="max-w-2xl max-h-[92vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle className="flex items-center justify-between gap-2 pr-6">
+            <span>{editing ? "Detalhes da entrega" : "Nova entrega"}</span>
+            {editing && (
+              <div className="flex items-center gap-2">
+                <OpQuickActions phone={editing.contact_phone} address={editing.address} />
+              </div>
+            )}
+          </DialogTitle>
+        </DialogHeader>
+
+        {editing?.closure_summary && (
+          <div className="bg-emerald-500/10 border border-emerald-500/30 rounded-md p-3 text-sm">
+            <div className="font-medium mb-1">Resumo de conclusão</div>
+            <div className="whitespace-pre-wrap text-muted-foreground">{editing.closure_summary}</div>
+            {editing.closed_at && (
+              <div className="text-xs text-muted-foreground mt-1">
+                Fechada em {new Date(editing.closed_at).toLocaleString("pt-BR")}
+              </div>
+            )}
+          </div>
+        )}
+
         <div className="grid gap-3 md:grid-cols-2">
           <div><Label>Empresa</Label>
             <Select value={form.company_id || ""} onValueChange={v => setF("company_id", v)}>
@@ -341,17 +471,39 @@ function DeliveryModal({ open, onOpenChange, editing, drivers, companies, vehicl
             <Input value={form.contact_phone || ""} onChange={e => setF("contact_phone", e.target.value)} />
           </div>
           <div><Label>Status</Label>
-            <Select value={form.status} onValueChange={v => setF("status", v)}>
+            <Select
+              value={form.status}
+              onValueChange={v => {
+                if (editing && v === TERMINAL && editing.status !== TERMINAL) {
+                  onStatusChange(editing, v);
+                  return;
+                }
+                setF("status", v);
+              }}
+            >
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>{STATUSES.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
             </Select>
           </div>
-          <div className="md:col-span-2"><Label>Observações</Label>
-            <Textarea value={form.notes || ""} onChange={e => setF("notes", e.target.value)} rows={3} />
+          <div className="md:col-span-2"><Label>Observações iniciais</Label>
+            <Textarea value={form.notes || ""} onChange={e => setF("notes", e.target.value)} rows={2} />
           </div>
         </div>
-        <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>Cancelar</Button>
+
+        {editing && (
+          <div className="border-t pt-3 mt-3">
+            <div className="font-medium text-sm mb-2">Observações da equipe</div>
+            <OpNotesPanel module="delivery" cardId={editing.id} />
+          </div>
+        )}
+
+        <DialogFooter className="gap-2">
+          {editing && (
+            <Button variant="ghost" className="text-destructive mr-auto" onClick={() => { if (confirm("Excluir entrega?")) onDelete(editing.id); }}>
+              <Trash2 className="h-4 w-4 mr-1" /> Excluir
+            </Button>
+          )}
+          <Button variant="outline" onClick={() => onOpenChange(false)}>Fechar</Button>
           <Button onClick={() => { if (!form.scheduled_date) return; onSubmit(form); }}>{editing ? "Salvar" : "Criar"}</Button>
         </DialogFooter>
       </DialogContent>

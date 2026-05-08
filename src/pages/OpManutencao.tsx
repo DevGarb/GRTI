@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Wrench, Plus, Pencil, Trash2, AlertTriangle, Building2, ListChecks, Image as ImageIcon, X } from "lucide-react";
+import { Wrench, Plus, Pencil, Trash2, AlertTriangle, Building2, ListChecks, Image as ImageIcon, X, LayoutGrid, List, Eye, EyeOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -9,11 +9,16 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
+import { useAuth } from "@/contexts/AuthContext";
 import {
   useSites, useMaintenanceOrders, useChecklistTemplates,
   MAINT_CATEGORIES, MAINT_PRIORITIES, MAINT_STATUSES,
   type MaintenanceOrder, type Site, type ChecklistTemplate, type ChecklistItem, type MaintenancePhoto,
 } from "@/hooks/useManutencao";
+import OpKanbanBoard, { type KanbanColumn } from "@/components/operacional/OpKanbanBoard";
+import OpClosureDialog from "@/components/operacional/OpClosureDialog";
+import OpQuickActions from "@/components/operacional/OpQuickActions";
+import OpNotesPanel from "@/components/operacional/OpNotesPanel";
 import { cn } from "@/lib/utils";
 
 const STATUS_COLORS: Record<string, string> = {

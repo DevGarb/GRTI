@@ -19,6 +19,9 @@ export interface Delivery {
   notes: string | null;
   status: string;
   created_at: string;
+  closure_summary?: string | null;
+  closed_at?: string | null;
+  closed_by?: string | null;
 }
 
 export function useDeliveries() {
