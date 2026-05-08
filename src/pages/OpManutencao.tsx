@@ -212,48 +212,63 @@ export default function OpManutencao() {
             </TabsList>
           </Tabs>
 
-          <div className="space-y-2">
-            {orders.loading && <div className="text-center py-8 text-muted-foreground">Carregando...</div>}
-            {!orders.loading && filtered.length === 0 && (
-              <div className="text-center py-12 text-muted-foreground">Nenhuma ordem para os filtros atuais.</div>
-            )}
-            {filtered.map(om => {
-              const overdue = om.deadline && om.deadline < today && !["Concluída", "Cancelada"].includes(om.status);
-              return (
-                <div key={om.id} className="border rounded-lg p-4 bg-card hover:shadow-md transition">
-                  <div className="flex items-start justify-between gap-3 flex-wrap">
-                    <div className="flex-1 min-w-[220px]">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <span className="font-mono text-xs px-2 py-0.5 bg-muted rounded">OM #{om.om_number}</span>
-                        <Badge className={cn(STATUS_COLORS[om.status])}>{om.status}</Badge>
-                        <Badge variant="outline" className={cn(PRIORITY_COLORS[om.priority])}>{om.priority}</Badge>
-                        <Badge variant="secondary">{om.category}</Badge>
-                        {overdue && <Badge variant="destructive"><AlertTriangle className="h-3 w-3 mr-1" />Atrasada</Badge>}
+          {orders.loading ? (
+            <div className="text-center py-8 text-muted-foreground">Carregando...</div>
+          ) : view === "kanban" ? (
+            <OpKanbanBoard<MaintenanceOrder>
+              columns={KANBAN_COLUMNS}
+              itemsByColumn={itemsByCol}
+              renderCard={renderCard}
+              resolveItem={(id) => filtered.find(x => x.id === id)}
+              isAllowed={() => true}
+              onMove={(item, _from, to) => handleStatusChange(item, to)}
+              emptyText="Sem ordens"
+            />
+          ) : (
+            <div className="space-y-2">
+              {filtered.length === 0 && (
+                <div className="text-center py-12 text-muted-foreground">Nenhuma ordem para os filtros atuais.</div>
+              )}
+              {filtered.map(om => {
+                const overdue = om.deadline && om.deadline < today && !["Concluída", "Cancelada"].includes(om.status);
+                const site = siteOf(om.site_id);
+                return (
+                  <div key={om.id} className="border rounded-lg p-4 bg-card hover:shadow-md transition">
+                    <div className="flex items-start justify-between gap-3 flex-wrap">
+                      <div className="flex-1 min-w-[220px]">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="font-mono text-xs px-2 py-0.5 bg-muted rounded">OM #{om.om_number}</span>
+                          <Badge className={cn(STATUS_COLORS[om.status])}>{om.status}</Badge>
+                          <Badge variant="outline" className={cn(PRIORITY_COLORS[om.priority])}>{om.priority}</Badge>
+                          <Badge variant="secondary">{om.category}</Badge>
+                          {overdue && <Badge variant="destructive"><AlertTriangle className="h-3 w-3 mr-1" />Atrasada</Badge>}
+                        </div>
+                        <div className="font-semibold mt-2">{om.title}</div>
+                        {om.description && <div className="text-sm text-muted-foreground mt-1 line-clamp-2">{om.description}</div>}
+                        <div className="text-xs text-muted-foreground mt-2 flex flex-wrap gap-x-4 gap-y-1">
+                          <span><Building2 className="h-3 w-3 inline mr-1" />{siteName(om.site_id)}</span>
+                          {om.responsible && <span>Resp: {om.responsible}</span>}
+                          <span>Aberta: {om.opened_at}</span>
+                          {om.deadline && <span className={cn(overdue && "text-rose-600 font-medium")}>Prazo: {om.deadline}</span>}
+                          {om.finished_at && <span>Concluída: {om.finished_at}</span>}
+                        </div>
                       </div>
-                      <div className="font-semibold mt-2">{om.title}</div>
-                      {om.description && <div className="text-sm text-muted-foreground mt-1 line-clamp-2">{om.description}</div>}
-                      <div className="text-xs text-muted-foreground mt-2 flex flex-wrap gap-x-4 gap-y-1">
-                        <span><Building2 className="h-3 w-3 inline mr-1" />{siteName(om.site_id)}</span>
-                        {om.responsible && <span>Resp: {om.responsible}</span>}
-                        <span>Aberta: {om.opened_at}</span>
-                        {om.deadline && <span className={cn(overdue && "text-rose-600 font-medium")}>Prazo: {om.deadline}</span>}
-                        {om.finished_at && <span>Concluída: {om.finished_at}</span>}
+                      <div className="flex gap-1 items-center">
+                        <OpQuickActions phone={site?.phone} address={site?.address} />
+                        <Select value={om.status} onValueChange={v => handleStatusChange(om, v)}>
+                          <SelectTrigger className="w-36 h-8"><SelectValue /></SelectTrigger>
+                          <SelectContent>{MAINT_STATUSES.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
+                        </Select>
+                        <Button size="icon" variant="ghost" onClick={() => setPhotoOmId(om.id)} title="Fotos"><ImageIcon className="h-4 w-4" /></Button>
+                        <Button size="icon" variant="ghost" onClick={() => { setEditing(om); setOmOpen(true); }}><Pencil className="h-4 w-4" /></Button>
+                        <Button size="icon" variant="ghost" onClick={() => { if (confirm("Excluir esta OM?")) orders.remove(om.id); }}><Trash2 className="h-4 w-4 text-destructive" /></Button>
                       </div>
-                    </div>
-                    <div className="flex gap-1">
-                      <Select value={om.status} onValueChange={v => orders.update(om.id, { status: v, finished_at: v === "Concluída" ? todayISO() : null })}>
-                        <SelectTrigger className="w-36 h-8"><SelectValue /></SelectTrigger>
-                        <SelectContent>{MAINT_STATUSES.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
-                      </Select>
-                      <Button size="icon" variant="ghost" onClick={() => setPhotoOmId(om.id)} title="Fotos"><ImageIcon className="h-4 w-4" /></Button>
-                      <Button size="icon" variant="ghost" onClick={() => { setEditing(om); setOmOpen(true); }}><Pencil className="h-4 w-4" /></Button>
-                      <Button size="icon" variant="ghost" onClick={() => { if (confirm("Excluir esta OM?")) orders.remove(om.id); }}><Trash2 className="h-4 w-4 text-destructive" /></Button>
                     </div>
                   </div>
-                </div>
-              );
-            })}
-          </div>
+                );
+              })}
+            </div>
+          )}
         </TabsContent>
 
         {/* SEDES */}
