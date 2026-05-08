@@ -11,7 +11,14 @@ import TodoRow from "@/components/todos/TodoRow";
 import TodoDetailModal from "@/components/todos/TodoDetailModal";
 import type { TodoWithAuthor } from "@/hooks/useTodos";
 
-type ViewTab = "hoje" | "historico";
+type ViewTab = "hoje" | "matriz" | "historico";
+
+const QUADRANTS: { id: 1 | 2 | 3 | 4; title: string; subtitle: string; cls: string; numeralCls: string }[] = [
+  { id: 1, title: "Urgente e Importante", subtitle: "Faça agora — Crises", cls: "border-red-500/30 bg-red-500/5", numeralCls: "bg-red-500 text-white" },
+  { id: 2, title: "Não Urgente e Importante", subtitle: "Planeje / Agende — Foco", cls: "border-amber-500/30 bg-amber-500/5", numeralCls: "bg-amber-500 text-white" },
+  { id: 3, title: "Urgente e Não Importante", subtitle: "Delegue — Interrupções", cls: "border-blue-500/30 bg-blue-500/5", numeralCls: "bg-blue-500 text-white" },
+  { id: 4, title: "Não Urgente e Não Importante", subtitle: "Elimine — Distrações", cls: "border-emerald-500/30 bg-emerald-500/5", numeralCls: "bg-emerald-500 text-white" },
+];
 
 const isToday = (iso?: string | null) => {
   if (!iso) return false;
