@@ -1,68 +1,49 @@
-## Objetivo
+## Diagnóstico
 
-Adicionar classificação no estilo **Matriz de Eisenhower** ao módulo TODO List, com nova prioridade "sem prioridade" e uma visão de matriz (4 quadrantes) além da visão atual.
+Verifiquei o erro "RLS em op_service_orders" ao abrir uma OS na Oficina. O usuário **Gabriel Porto** tem perfil em `grupo-ramos` com role `admin` e está vinculado a 2 organizações (`grupo-ramos` e `cgps-operacional`). As policies atuais funcionam apenas via `is_same_organization()`, que olha somente para `profiles.organization_id` — o que falha em vários cenários (membros multi-org, sessão recém-trocada, super_admin com org nula).
 
-## O que muda
+Além disso, as policies dos módulos operacionais foram criadas como um único `FOR ALL` por tabela, o que dificulta diferenciar visualização (todos da org) de escrita (apenas staff). Isso gera inconsistências e erros silenciosos em inserções de filhos (peças, fotos, checklist).
 
-### 1. Novo campo de prioridade
+## O que vou fazer
 
-- Valores: `alta`, `media`, `baixa`, `sem` (nova opção "sem prioridade")
-- Aplicado no modal de criação e edição
+### 1. Corrigir o root cause de RLS (uma migração)
 
-### 2. Novo campo "Quadrante de Eisenhower"
+Criar/atualizar funções `SECURITY DEFINER`:
+- `public.is_member_of_org(_org uuid)` — true se o usuário tem o org como `profiles.organization_id` **ou** vínculo em `user_organizations` (ou é super_admin).
+- `public.is_op_staff(_org uuid)` — true se for super_admin **ou** (membro do org **e** com role admin/tecnico/desenvolvedor).
 
-Selecionável ao criar/editar TODO, com 4 opções:
+Reescrever todas as policies das tabelas `op_*` separando claramente:
+- `SELECT` → `is_member_of_org(organization_id)` (qualquer membro do org vê).
+- `INSERT/UPDATE/DELETE` → `is_op_staff(organization_id)`.
 
-- **I — Urgente e Importante** (Faça agora — Crises) — vermelho
-- **II — Não Urgente e Importante** (Planeje/Agende — Foco) — laranja
-- **III — Urgente e Não Importante** (Delegue — Interrupções) — verde
-- **IV — Não Urgente e Não Importante** (Elimine — Distrações) — cinza
+Tabelas cobertas: `op_service_orders`, `op_service_order_parts`, `op_service_order_photos`, `op_maintenance_orders`, `op_maintenance_photos`, `op_deliveries`, `op_companies`, `op_drivers`, `op_vehicles`, `op_mechanics`, `op_parts`, `op_sites`, `op_checklist_templates`, `op_checklist_items`, `op_checklist_executions`, `op_card_notes`.
 
-Campo é opcional (TODOs antigos ficam sem quadrante).
+Para tabelas filhas (parts/photos/items) o `is_op_staff` é avaliado via `EXISTS` no pai usando o `organization_id` da OS/OM/template.
 
-### 3. Nova aba "Matriz" na página de TODOs
+### 2. Varredura nos módulos do Operacional (frontend)
 
-Além de **Hoje** e **Histórico**, adicionar aba **Matriz** que renderiza um grid 2x2 com os 4 quadrantes, mostrando os TODOs do usuário logado em cada um (estilo da referência iOS enviada). Sem quadrante = exibido em uma seção separada abaixo.
+Para cada módulo (`OpOficina`, `OpManutencao`, `OpEntregas`, `OpCadastros`):
+- Garantir que **todo insert** envia `organization_id = profile.organization_id` e `created_by = user.id`, com early-return + toast quando esses valores estiverem ausentes (evita erros 42501 silenciosos).
+- Padronizar o tratamento de erro: exibir `error.message` no toast em todas as mutações dos hooks `useOficina`, `useManutencao`, `useDeliveries`, `useOperacional` (alguns updates/removes hoje silenciam erros de RLS).
+- Verificar o fluxo de **fechamento** (modal "O que foi feito?") nos 3 módulos para usar o mesmo padrão.
+- Conferir o upload de fotos no Storage `op-service-orders` e `patrimonio-photos` (path com `organization_id` quando aplicável) — não mexer nas policies de Storage agora se não houver erro.
 
-### 4. Banco de dados
+### 3. Validação
 
-Migration na tabela `user_todos`:
+- Após a migração, confirmar via SQL que todas as tabelas `op_*` têm policies SELECT + INSERT + UPDATE + DELETE corretas (sem `FOR ALL` ambíguo).
+- Pedir ao usuário para tentar abrir uma OS novamente e reportar.
 
-- Permitir valor `sem` no enum/check de `priority` (ou mudar para texto livre validado)
-- Adicionar coluna `eisenhower_quadrant` (smallint, nullable, valores 1–4)
+## Arquivos afetados
 
-### 5. UI/Componentes alterados
+- **Nova migração**: `supabase/migrations/<timestamp>_op_rls_overhaul.sql` (funções + recriação de policies de todas as tabelas `op_*`).
+- **Frontend (apenas tratamento de erro / guards)**: 
+  - `src/hooks/useOficina.ts`
+  - `src/hooks/useManutencao.ts`
+  - `src/hooks/useDeliveries.ts`
+  - `src/hooks/useOperacional.ts`
+- Páginas dos módulos não devem precisar de alteração estrutural; só ajustes pontuais se algum insert estiver enviando org errada.
 
-- `NewTodoModal.tsx` — adicionar opção "Sem prioridade" e selector de quadrante
-- `TodoDetailModal.tsx` — exibir/editar quadrante e nova prioridade
-- `TodoRow.tsx` — badge do quadrante (I/II/III/IV colorido)
-- `useTodos.ts` — incluir `eisenhower_quadrant` no insert/update e tipo
-- `Todos.tsx` — nova aba "Matriz" com grid 2x2
+## Observações
 
-## Detalhes técnicos
-
-```text
-user_todos
-├─ priority: text  (alta | media | baixa | sem)
-└─ eisenhower_quadrant: smallint NULL  (1 | 2 | 3 | 4)
-```
-
-Visão Matriz (layout):
-
-```text
-┌──────────────────────┬──────────────────────┐
-│ I  Urgente+Important │ II  Importante       │
-│   (Faça agora)       │   (Planeje)          │
-├──────────────────────┼──────────────────────┤
-│ III Urgente          │ IV  Nem/Nem          │
-│   (Delegue)          │   (Elimine)          │
-└──────────────────────┴──────────────────────┘
-```
-
-## Validação após implementar
-
-1. Criar TODOs com cada uma das 4 prioridades novas e cada quadrante.
-2. Conferir aba Matriz: cards aparecem no quadrante correto.
-3. Editar TODO existente e mover entre quadrantes.
-4. TODOs antigos (sem quadrante) continuam visíveis em Hoje/Histórico.
-5. Build sem erros de tipo.
+- Não vou alterar regras de negócio dos status, kanban ou modais — apenas RLS e guards de erro.
+- A nova função `is_member_of_org` resolve de uma vez o problema de usuários multi-org (que já causou o bug dos TODOs do Gabriel aparecerem na org operacional).

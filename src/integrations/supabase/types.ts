@@ -1915,6 +1915,8 @@ export type Database = {
         }
         Returns: boolean
       }
+      is_member_of_org: { Args: { _org: string }; Returns: boolean }
+      is_op_staff: { Args: { _org: string }; Returns: boolean }
       is_same_organization: {
         Args: { _organization_id: string }
         Returns: boolean
