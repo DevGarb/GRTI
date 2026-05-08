@@ -1,131 +1,68 @@
 ## Objetivo
 
-Modernizar os módulos **Entregas**, **Oficina** e **Manutenção Predial** com visualização Kanban, fluxo de fechamento controlado e ações rápidas (telefone, WhatsApp, mapa). As três telas vão compartilhar a mesma base de componentes para reduzir bugs e facilitar testes.
+Adicionar classificação no estilo **Matriz de Eisenhower** ao módulo TODO List, com nova prioridade "sem prioridade" e uma visão de matriz (4 quadrantes) além da visão atual.
 
----
+## O que muda
 
-## 1. Componentes compartilhados (novos, em `src/components/operacional/`)
+### 1. Novo campo de prioridade
 
-- **`OpKanbanBoard.tsx`** — board genérico que recebe `columns`, `items`, `renderCard`, `onMove`, `allowedTransitions`. Reutiliza o `@hello-pangea/dnd` já presente no projeto (mesmo do `KanbanBoard` de chamados).
-- **`OpCard.tsx`** — cartão compacto com título, badges (status/prioridade/categoria), e linha de ações rápidas (ver abaixo).
-- **`OpDetailDrawer.tsx`** — painel lateral (Sheet) que abre ao clicar no cartão, mostrando todas as informações + abas (Detalhes / Observações / Fotos quando aplicável).
-- **`OpClosureDialog.tsx`** — modal de fechamento, exigido sempre que o usuário marca o card como **Finalizado/Concluído**. Campos:
-  - Data de conclusão (default hoje)
-  - Resumo do que foi feito (obrigatório)
-  - Custo final (apenas Oficina)
-  - Anexar fotos depois (opcional, apenas Oficina/Manutenção)
-- **`OpQuickActions.tsx`** — botões pequenos de:
-  - **Ligar** (`tel:` se houver telefone)
-  - **WhatsApp** (`https://wa.me/55<num>` limpando máscara)
-  - **Endereço**: tenta abrir Google Maps (`https://www.google.com/maps/search/?api=1&query=...`); botão secundário "Copiar endereço" usando `navigator.clipboard`
-- **`OpNotesPanel.tsx`** — lista de observações/comentários por card, com `@menção` (autocomplete dos usuários da organização). Salva em nova tabela `op_card_notes`.
+- Valores: `alta`, `media`, `baixa`, `sem` (nova opção "sem prioridade")
+- Aplicado no modal de criação e edição
 
----
+### 2. Novo campo "Quadrante de Eisenhower"
 
-## 2. Mudanças por módulo
+Selecionável ao criar/editar TODO, com 4 opções:
 
-### 2.1 Entregas (`OpEntregas.tsx`)
-- Adicionar **toggle "Lista | Kanban"**; manter lista existente como fallback
-- Colunas Kanban: **Pendente → Em rota → Finalizado** (Cancelado fica visível mas em coluna separada recolhível)
-- Clique no card → `OpDetailDrawer`
-- Filtro **"Ocultar finalizados"** ligado por padrão na visão Kanban
-- Quick actions no card: Ligar, WhatsApp (`contact_phone`), Maps (`address`)
-- Ao mover para Finalizado → abre `OpClosureDialog`
-- Aba "Observações" no drawer
+- **I — Urgente e Importante** (Faça agora — Crises) — vermelho
+- **II — Não Urgente e Importante** (Planeje/Agende — Foco) — laranja
+- **III — Urgente e Não Importante** (Delegue — Interrupções) — verde
+- **IV — Não Urgente e Não Importante** (Elimine — Distrações) — cinza
 
-### 2.2 Oficina (`OpOficina.tsx`)
-- Padronizar status para: **Pendente, Aguardando peças, Em andamento, Finalizado, Cancelada** (migra os atuais "Aberta"/"Em execução"/"Aguardando peça"/"Finalizada" via SQL update)
-- Coluna **"Em atraso"** = computada (tem `deadline` < hoje e não finalizado) — derivada, não persistida
-- Adicionar campo `deadline date` na tabela `op_service_orders` (hoje não existe)
-- Toggle Lista/Kanban; ocultar finalizados por padrão
-- Drawer expansível com peças/fotos/notas
-- Closure dialog inclui custo final (atualiza `total_cost`) e `finished_at`
-- Quick actions: telefone/WhatsApp do contato da empresa (via `op_companies.contact_phone`)
+Campo é opcional (TODOs antigos ficam sem quadrante).
 
-### 2.3 Manutenção Predial (`OpManutencao.tsx`)
-- Toggle Lista/Kanban na aba "Ordens de Manutenção"
-- Colunas: **Aberta → Em execução → Concluída**, com indicador "Atrasada" em cards (badge vermelho)
-- Drawer com fotos antes/depois e observações
-- Closure dialog ao concluir
-- Quick actions: telefone do responsável da sede + endereço da sede no Maps
+### 3. Nova aba "Matriz" na página de TODOs
 
----
+Além de **Hoje** e **Histórico**, adicionar aba **Matriz** que renderiza um grid 2x2 com os 4 quadrantes, mostrando os TODOs do usuário logado em cada um (estilo da referência iOS enviada). Sem quadrante = exibido em uma seção separada abaixo.
 
-## 3. Banco de dados
+### 4. Banco de dados
 
-Migrations necessárias:
+Migration na tabela `user_todos`:
 
-```sql
--- Campos de fechamento (todos os 3 módulos)
-ALTER TABLE op_deliveries
-  ADD COLUMN closure_summary text,
-  ADD COLUMN closed_at timestamptz,
-  ADD COLUMN closed_by uuid;
+- Permitir valor `sem` no enum/check de `priority` (ou mudar para texto livre validado)
+- Adicionar coluna `eisenhower_quadrant` (smallint, nullable, valores 1–4)
 
-ALTER TABLE op_service_orders
-  ADD COLUMN deadline date,
-  ADD COLUMN closure_summary text,
-  ADD COLUMN closed_by uuid;
+### 5. UI/Componentes alterados
 
-ALTER TABLE op_maintenance_orders
-  ADD COLUMN closure_summary text,
-  ADD COLUMN closed_by uuid;
-
--- Tabela única de observações/menções por card
-CREATE TABLE op_card_notes (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  organization_id uuid NOT NULL,
-  module text NOT NULL CHECK (module IN ('delivery','service_order','maintenance')),
-  card_id uuid NOT NULL,
-  author_id uuid NOT NULL,
-  body text NOT NULL,
-  mentioned_users uuid[] DEFAULT '{}',
-  created_at timestamptz DEFAULT now()
-);
-ALTER TABLE op_card_notes ENABLE ROW LEVEL SECURITY;
--- RLS: staff da mesma org pode ler/inserir; só autor apaga
-```
-
-Update de status na Oficina para o novo vocabulário (`UPDATE` via tool de insert).
-
----
-
-## 4. Hooks
-
-- Estender `useDeliveries`, `useServiceOrders`, `useMaintenanceOrders` com `closeCard(id, payload)`.
-- Novo `useCardNotes(module, cardId)` para CRUD em `op_card_notes` + busca de usuários para menções.
-
----
-
-## 5. Validação após cada etapa
-
-1. Compilar e verificar tipos — sem erros TS
-2. Testar arrastar entre colunas em cada módulo (todas as transições válidas)
-3. Testar fluxo de fechamento (não deixar passar para Finalizado sem resumo)
-4. Testar ações rápidas: telefone abre dialer, WhatsApp abre wa.me, endereço abre Maps e copia fallback
-5. Testar `@menção` em observações
-6. Testar filtro "Ocultar finalizados"
-7. Verificar RLS em `op_card_notes` (super admin / staff / outros)
-
----
-
-## 6. Ordem de implementação (commits incrementais)
-
-1. **Migration de schema** (campos de fechamento + `op_card_notes` + RLS)
-2. **Componentes compartilhados** (`OpKanbanBoard`, `OpCard`, `OpDetailDrawer`, `OpClosureDialog`, `OpQuickActions`, `OpNotesPanel`)
-3. **Hook `useCardNotes`** + extensão dos hooks existentes
-4. **Entregas** com Kanban + drawer + closure + quick actions + notas → validar
-5. **Oficina** com migration de status + Kanban → validar
-6. **Manutenção** com Kanban + closure → validar
-7. Atualizar documentação em `public/docs/` (Operacional)
-
----
+- `NewTodoModal.tsx` — adicionar opção "Sem prioridade" e selector de quadrante
+- `TodoDetailModal.tsx` — exibir/editar quadrante e nova prioridade
+- `TodoRow.tsx` — badge do quadrante (I/II/III/IV colorido)
+- `useTodos.ts` — incluir `eisenhower_quadrant` no insert/update e tipo
+- `Todos.tsx` — nova aba "Matriz" com grid 2x2
 
 ## Detalhes técnicos
 
-- Reusar `@hello-pangea/dnd` (já no projeto)
-- Endereço → Maps: detectar mobile e usar `geo:` quando possível, senão URL universal
-- Telefone limpo via regex `\D` antes de gerar `tel:` / `wa.me`
-- Menções: parser simples `@nome` resolvido para `user_id` ao salvar; renderizar como link
-- Status "Em atraso" é UI-only (não persiste); ordenação no Kanban respeita `deadline asc`
-- Closure dialog é o ÚNICO caminho para chegar em Finalizado/Concluído (no select e no drag-and-drop)
+```text
+user_todos
+├─ priority: text  (alta | media | baixa | sem)
+└─ eisenhower_quadrant: smallint NULL  (1 | 2 | 3 | 4)
+```
+
+Visão Matriz (layout):
+
+```text
+┌──────────────────────┬──────────────────────┐
+│ I  Urgente+Important │ II  Importante       │
+│   (Faça agora)       │   (Planeje)          │
+├──────────────────────┼──────────────────────┤
+│ III Urgente          │ IV  Nem/Nem          │
+│   (Delegue)          │   (Elimine)          │
+└──────────────────────┴──────────────────────┘
+```
+
+## Validação após implementar
+
+1. Criar TODOs com cada uma das 4 prioridades novas e cada quadrante.
+2. Conferir aba Matriz: cards aparecem no quadrante correto.
+3. Editar TODO existente e mover entre quadrantes.
+4. TODOs antigos (sem quadrante) continuam visíveis em Hoje/Histórico.
+5. Build sem erros de tipo.
