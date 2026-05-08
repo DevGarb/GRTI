@@ -93,6 +93,58 @@ export default function OpManutencao() {
   }, [filtered, today]);
 
   const siteName = (id: string | null) => sites.items.find(s => s.id === id)?.name || "—";
+  const siteOf = (id: string | null) => sites.items.find(s => s.id === id);
+
+  const filteredKanban = useMemo(() =>
+    filtered.filter(o => !(hideFinalized && o.status === "Concluída")),
+  [filtered, hideFinalized]);
+
+  const itemsByCol = useMemo(() => {
+    const map: Record<string, MaintenanceOrder[]> = {};
+    KANBAN_COLUMNS.forEach(c => { map[c.id] = []; });
+    filteredKanban.forEach(o => { (map[o.status] ||= []).push(o); });
+    return map;
+  }, [filteredKanban]);
+
+  const handleStatusChange = (om: MaintenanceOrder, newStatus: string) => {
+    if (newStatus === om.status) return;
+    if (newStatus === TERMINAL) { setClosing(om); return; }
+    orders.update(om.id, { status: newStatus, finished_at: null });
+  };
+
+  const confirmClosure = async (payload: { closure_summary: string; closed_at: string }) => {
+    if (!closing) return;
+    await orders.update(closing.id, {
+      status: TERMINAL,
+      closure_summary: payload.closure_summary,
+      finished_at: payload.closed_at,
+      closed_by: user?.id || null,
+    });
+    setClosing(null);
+  };
+
+  const renderCard = (om: MaintenanceOrder) => {
+    const overdue = om.deadline && om.deadline < today && !["Concluída", "Cancelada"].includes(om.status);
+    const site = siteOf(om.site_id);
+    return (
+      <div onClick={() => { setEditing(om); setOmOpen(true); }}>
+        <div className="flex items-center gap-1 flex-wrap mb-2">
+          <span className="font-mono text-[10px] px-1.5 py-0.5 bg-muted rounded">#{om.om_number}</span>
+          <Badge variant="outline" className={cn("text-[10px]", PRIORITY_COLORS[om.priority])}>{om.priority}</Badge>
+          {overdue && <Badge variant="destructive" className="text-[10px]"><AlertTriangle className="h-3 w-3 mr-0.5" />Atrasada</Badge>}
+        </div>
+        <div className="font-semibold text-sm line-clamp-2">{om.title}</div>
+        <div className="text-[11px] text-muted-foreground mt-1 flex flex-wrap gap-x-2">
+          <span><Building2 className="h-3 w-3 inline mr-0.5" />{siteName(om.site_id)}</span>
+          {om.deadline && <span className={cn(overdue && "text-rose-600 font-medium")}>📅 {om.deadline}</span>}
+        </div>
+        <div className="flex items-center justify-between mt-2">
+          <Badge variant="secondary" className="text-[10px]">{om.category}</Badge>
+          <OpQuickActions phone={site?.phone} address={site?.address} size="icon" />
+        </div>
+      </div>
+    );
+  };
 
   return (
     <div className="space-y-6 p-6">
