@@ -369,15 +369,22 @@ export default function OpEntregas() {
   );
 }
 
-function Kpi({ title, value, icon: Icon }: { title: string; value: number; icon: any }) {
+function Kpi({ title, value, icon: Icon, active, onClick }: { title: string; value: number; icon: any; active?: boolean; onClick?: () => void }) {
   return (
-    <div className="bg-card border rounded-lg p-4 flex items-center justify-between">
+    <button
+      type="button"
+      onClick={onClick}
+      className={cn(
+        "bg-card border rounded-lg p-4 flex items-center justify-between text-left transition hover:shadow-md hover:border-primary/50",
+        active && "border-primary ring-2 ring-primary/30"
+      )}
+    >
       <div>
         <div className="text-xs text-muted-foreground">{title}</div>
         <div className="text-3xl font-bold mt-1">{value}</div>
       </div>
       <Icon className="h-5 w-5 text-muted-foreground" />
-    </div>
+    </button>
   );
 }
 
