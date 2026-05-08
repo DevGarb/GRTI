@@ -90,7 +90,7 @@ export function useTodos() {
   };
 
   const updateTodo = async (id: string, patch: Partial<Todo>) => {
-    const { error } = await supabase.from("user_todos").update(patch).eq("id", id);
+    const { error } = await supabase.from("user_todos").update(patch as any).eq("id", id);
     if (error) {
       toast.error("Erro ao atualizar");
       return;
