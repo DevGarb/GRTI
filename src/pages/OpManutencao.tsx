@@ -200,11 +200,11 @@ export default function OpManutencao() {
         {/* ORDENS */}
         <TabsContent value="ordens" className="space-y-4">
           <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
-            <KpiCard label="Abertas" value={kpis.abertas} color="text-amber-600" />
-            <KpiCard label="Em execução" value={kpis.execucao} color="text-blue-600" />
-            <KpiCard label="Concluídas" value={kpis.concluidas} color="text-emerald-600" />
-            <KpiCard label="Total no mês" value={kpis.total} />
-            <KpiCard label="Atrasadas" value={kpis.atrasadas} color="text-rose-600" icon={<AlertTriangle className="h-4 w-4" />} />
+            <KpiCard label="Abertas" value={kpis.abertas} color="text-amber-600" active={statusFilter === "Aberta"} onClick={() => toggleStatus("Aberta")} />
+            <KpiCard label="Em execução" value={kpis.execucao} color="text-blue-600" active={statusFilter === "Em execução"} onClick={() => toggleStatus("Em execução")} />
+            <KpiCard label="Concluídas" value={kpis.concluidas} color="text-emerald-600" active={statusFilter === "Concluída"} onClick={() => toggleStatus("Concluída")} />
+            <KpiCard label="Total no mês" value={kpis.total} active={statusFilter === "all"} onClick={() => setStatusFilter("all")} />
+            <KpiCard label="Atrasadas" value={kpis.atrasadas} color="text-rose-600" icon={<AlertTriangle className="h-4 w-4" />} active={statusFilter === "atraso"} onClick={() => toggleStatus("atraso")} />
           </div>
 
           <div className="flex flex-wrap gap-2 items-center">
