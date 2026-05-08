@@ -9,10 +9,11 @@ export interface Todo {
   organization_id: string | null;
   title: string;
   description: string | null;
-  priority: "baixa" | "media" | "alta";
+  priority: "baixa" | "media" | "alta" | "sem";
   status: "pendente" | "andamento" | "concluido";
   due_date: string | null;
   completed_at: string | null;
+  eisenhower_quadrant: 1 | 2 | 3 | 4 | null;
   created_at: string;
   updated_at: string;
 }
