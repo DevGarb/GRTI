@@ -9,10 +9,11 @@ export interface Todo {
   organization_id: string | null;
   title: string;
   description: string | null;
-  priority: "baixa" | "media" | "alta";
+  priority: "baixa" | "media" | "alta" | "sem";
   status: "pendente" | "andamento" | "concluido";
   due_date: string | null;
   completed_at: string | null;
+  eisenhower_quadrant: 1 | 2 | 3 | 4 | null;
   created_at: string;
   updated_at: string;
 }
@@ -68,6 +69,7 @@ export function useTodos() {
     description?: string;
     priority?: Todo["priority"];
     due_date?: string | null;
+    eisenhower_quadrant?: Todo["eisenhower_quadrant"];
   }) => {
     if (!user) return;
     const { error } = await supabase.from("user_todos").insert({
@@ -77,7 +79,8 @@ export function useTodos() {
       description: input.description ?? null,
       priority: input.priority ?? "media",
       due_date: input.due_date ?? null,
-    });
+      eisenhower_quadrant: input.eisenhower_quadrant ?? null,
+    } as any);
     if (error) {
       toast.error("Erro ao criar TODO");
       return;
@@ -87,7 +90,7 @@ export function useTodos() {
   };
 
   const updateTodo = async (id: string, patch: Partial<Todo>) => {
-    const { error } = await supabase.from("user_todos").update(patch).eq("id", id);
+    const { error } = await supabase.from("user_todos").update(patch as any).eq("id", id);
     if (error) {
       toast.error("Erro ao atualizar");
       return;

@@ -1814,6 +1814,7 @@ export type Database = {
           created_at: string
           description: string | null
           due_date: string | null
+          eisenhower_quadrant: number | null
           id: string
           organization_id: string | null
           priority: string
@@ -1827,6 +1828,7 @@ export type Database = {
           created_at?: string
           description?: string | null
           due_date?: string | null
+          eisenhower_quadrant?: number | null
           id?: string
           organization_id?: string | null
           priority?: string
@@ -1840,6 +1842,7 @@ export type Database = {
           created_at?: string
           description?: string | null
           due_date?: string | null
+          eisenhower_quadrant?: number | null
           id?: string
           organization_id?: string | null
           priority?: string

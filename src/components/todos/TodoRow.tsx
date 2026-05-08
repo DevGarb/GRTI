@@ -16,15 +16,24 @@ interface Props {
   onOpen: () => void;
 }
 
-const priorityDot = {
+const priorityDot: Record<string, string> = {
   baixa: "bg-muted-foreground/40",
   media: "bg-blue-500",
   alta: "bg-red-500",
-} as const;
+  sem: "bg-transparent border border-muted-foreground/40",
+};
+
+const quadrantStyles: Record<number, { label: string; cls: string }> = {
+  1: { label: "I", cls: "bg-red-500/15 text-red-600 dark:text-red-400 border-red-500/30" },
+  2: { label: "II", cls: "bg-amber-500/15 text-amber-600 dark:text-amber-400 border-amber-500/30" },
+  3: { label: "III", cls: "bg-blue-500/15 text-blue-600 dark:text-blue-400 border-blue-500/30" },
+  4: { label: "IV", cls: "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/30" },
+};
 
 export default function TodoRow({ todo, isOwner, showAuthor, onToggleComplete, onDelete, onOpen }: Props) {
   const completed = todo.status === "concluido";
   const stop = (fn: () => void) => (e: React.MouseEvent) => { e.stopPropagation(); fn(); };
+  const q = todo.eisenhower_quadrant;
 
   return (
     <div
@@ -41,7 +50,12 @@ export default function TodoRow({ todo, isOwner, showAuthor, onToggleComplete, o
           completed && "line-through text-muted-foreground",
         )}
       >
-        <span className={cn("inline-block h-2 w-2 rounded-full mr-2 align-middle", priorityDot[todo.priority])} />
+        <span className={cn("inline-block h-2 w-2 rounded-full mr-2 align-middle", priorityDot[todo.priority] || priorityDot.sem)} />
+        {q && (
+          <span className={cn("inline-flex items-center justify-center h-4 min-w-[18px] px-1 rounded text-[10px] font-semibold border mr-2 align-middle", quadrantStyles[q].cls)}>
+            {quadrantStyles[q].label}
+          </span>
+        )}
         {todo.title}
       </span>
 
