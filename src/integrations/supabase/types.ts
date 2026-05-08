@@ -204,6 +204,39 @@ export type Database = {
         }
         Relationships: []
       }
+      op_card_notes: {
+        Row: {
+          author_id: string
+          body: string
+          card_id: string
+          created_at: string
+          id: string
+          mentioned_users: string[]
+          module: string
+          organization_id: string
+        }
+        Insert: {
+          author_id: string
+          body: string
+          card_id: string
+          created_at?: string
+          id?: string
+          mentioned_users?: string[]
+          module: string
+          organization_id: string
+        }
+        Update: {
+          author_id?: string
+          body?: string
+          card_id?: string
+          created_at?: string
+          id?: string
+          mentioned_users?: string[]
+          module?: string
+          organization_id?: string
+        }
+        Relationships: []
+      }
       op_checklist_executions: {
         Row: {
           created_at: string
@@ -340,6 +373,9 @@ export type Database = {
         Row: {
           address: string | null
           associated_name: string | null
+          closed_at: string | null
+          closed_by: string | null
+          closure_summary: string | null
           company_id: string | null
           contact_name: string | null
           contact_phone: string | null
@@ -359,6 +395,9 @@ export type Database = {
         Insert: {
           address?: string | null
           associated_name?: string | null
+          closed_at?: string | null
+          closed_by?: string | null
+          closure_summary?: string | null
           company_id?: string | null
           contact_name?: string | null
           contact_phone?: string | null
@@ -378,6 +417,9 @@ export type Database = {
         Update: {
           address?: string | null
           associated_name?: string | null
+          closed_at?: string | null
+          closed_by?: string | null
+          closure_summary?: string | null
           company_id?: string | null
           contact_name?: string | null
           contact_phone?: string | null
@@ -438,6 +480,8 @@ export type Database = {
       op_maintenance_orders: {
         Row: {
           category: string
+          closed_by: string | null
+          closure_summary: string | null
           created_at: string
           created_by: string
           deadline: string | null
@@ -457,6 +501,8 @@ export type Database = {
         }
         Insert: {
           category?: string
+          closed_by?: string | null
+          closure_summary?: string | null
           created_at?: string
           created_by: string
           deadline?: string | null
@@ -476,6 +522,8 @@ export type Database = {
         }
         Update: {
           category?: string
+          closed_by?: string | null
+          closure_summary?: string | null
           created_at?: string
           created_by?: string
           deadline?: string | null
@@ -669,9 +717,12 @@ export type Database = {
       }
       op_service_orders: {
         Row: {
+          closed_by: string | null
+          closure_summary: string | null
           company_id: string | null
           created_at: string
           created_by: string
+          deadline: string | null
           description: string | null
           diagnosis: string | null
           finished_at: string | null
@@ -689,9 +740,12 @@ export type Database = {
           vehicle_plate: string | null
         }
         Insert: {
+          closed_by?: string | null
+          closure_summary?: string | null
           company_id?: string | null
           created_at?: string
           created_by: string
+          deadline?: string | null
           description?: string | null
           diagnosis?: string | null
           finished_at?: string | null
@@ -709,9 +763,12 @@ export type Database = {
           vehicle_plate?: string | null
         }
         Update: {
+          closed_by?: string | null
+          closure_summary?: string | null
           company_id?: string | null
           created_at?: string
           created_by?: string
+          deadline?: string | null
           description?: string | null
           diagnosis?: string | null
           finished_at?: string | null

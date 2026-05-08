@@ -1,43 +1,131 @@
-## Diagnóstico
+## Objetivo
 
-Hoje a tela `/escolher-organizacao` só aparece quando o usuário tem 2+ vínculos em `user_organizations`. A maioria (incluindo BRUNA.JOPLIN) só está vinculada a `grupo-ramos`, então o login redireciona direto.
+Modernizar os módulos **Entregas**, **Oficina** e **Manutenção Predial** com visualização Kanban, fluxo de fechamento controlado e ações rápidas (telefone, WhatsApp, mapa). As três telas vão compartilhar a mesma base de componentes para reduzir bugs e facilitar testes.
 
-## O que será feito
+---
 
-### 1. Vincular todos os usuários existentes às duas organizações
-Migration que insere em `user_organizations` o vínculo com `cgps-operacional` para todos os usuários que ainda não têm — preservando os vínculos atuais com `grupo-ramos`.
+## 1. Componentes compartilhados (novos, em `src/components/operacional/`)
+
+- **`OpKanbanBoard.tsx`** — board genérico que recebe `columns`, `items`, `renderCard`, `onMove`, `allowedTransitions`. Reutiliza o `@hello-pangea/dnd` já presente no projeto (mesmo do `KanbanBoard` de chamados).
+- **`OpCard.tsx`** — cartão compacto com título, badges (status/prioridade/categoria), e linha de ações rápidas (ver abaixo).
+- **`OpDetailDrawer.tsx`** — painel lateral (Sheet) que abre ao clicar no cartão, mostrando todas as informações + abas (Detalhes / Observações / Fotos quando aplicável).
+- **`OpClosureDialog.tsx`** — modal de fechamento, exigido sempre que o usuário marca o card como **Finalizado/Concluído**. Campos:
+  - Data de conclusão (default hoje)
+  - Resumo do que foi feito (obrigatório)
+  - Custo final (apenas Oficina)
+  - Anexar fotos depois (opcional, apenas Oficina/Manutenção)
+- **`OpQuickActions.tsx`** — botões pequenos de:
+  - **Ligar** (`tel:` se houver telefone)
+  - **WhatsApp** (`https://wa.me/55<num>` limpando máscara)
+  - **Endereço**: tenta abrir Google Maps (`https://www.google.com/maps/search/?api=1&query=...`); botão secundário "Copiar endereço" usando `navigator.clipboard`
+- **`OpNotesPanel.tsx`** — lista de observações/comentários por card, com `@menção` (autocomplete dos usuários da organização). Salva em nova tabela `op_card_notes`.
+
+---
+
+## 2. Mudanças por módulo
+
+### 2.1 Entregas (`OpEntregas.tsx`)
+- Adicionar **toggle "Lista | Kanban"**; manter lista existente como fallback
+- Colunas Kanban: **Pendente → Em rota → Finalizado** (Cancelado fica visível mas em coluna separada recolhível)
+- Clique no card → `OpDetailDrawer`
+- Filtro **"Ocultar finalizados"** ligado por padrão na visão Kanban
+- Quick actions no card: Ligar, WhatsApp (`contact_phone`), Maps (`address`)
+- Ao mover para Finalizado → abre `OpClosureDialog`
+- Aba "Observações" no drawer
+
+### 2.2 Oficina (`OpOficina.tsx`)
+- Padronizar status para: **Pendente, Aguardando peças, Em andamento, Finalizado, Cancelada** (migra os atuais "Aberta"/"Em execução"/"Aguardando peça"/"Finalizada" via SQL update)
+- Coluna **"Em atraso"** = computada (tem `deadline` < hoje e não finalizado) — derivada, não persistida
+- Adicionar campo `deadline date` na tabela `op_service_orders` (hoje não existe)
+- Toggle Lista/Kanban; ocultar finalizados por padrão
+- Drawer expansível com peças/fotos/notas
+- Closure dialog inclui custo final (atualiza `total_cost`) e `finished_at`
+- Quick actions: telefone/WhatsApp do contato da empresa (via `op_companies.contact_phone`)
+
+### 2.3 Manutenção Predial (`OpManutencao.tsx`)
+- Toggle Lista/Kanban na aba "Ordens de Manutenção"
+- Colunas: **Aberta → Em execução → Concluída**, com indicador "Atrasada" em cards (badge vermelho)
+- Drawer com fotos antes/depois e observações
+- Closure dialog ao concluir
+- Quick actions: telefone do responsável da sede + endereço da sede no Maps
+
+---
+
+## 3. Banco de dados
+
+Migrations necessárias:
 
 ```sql
-INSERT INTO user_organizations (user_id, organization_id)
-SELECT p.user_id, (SELECT id FROM organizations WHERE slug = 'cgps-operacional')
-FROM profiles p
-WHERE NOT EXISTS (
-  SELECT 1 FROM user_organizations uo
-  WHERE uo.user_id = p.user_id
-    AND uo.organization_id = (SELECT id FROM organizations WHERE slug = 'cgps-operacional')
-)
-ON CONFLICT DO NOTHING;
+-- Campos de fechamento (todos os 3 módulos)
+ALTER TABLE op_deliveries
+  ADD COLUMN closure_summary text,
+  ADD COLUMN closed_at timestamptz,
+  ADD COLUMN closed_by uuid;
+
+ALTER TABLE op_service_orders
+  ADD COLUMN deadline date,
+  ADD COLUMN closure_summary text,
+  ADD COLUMN closed_by uuid;
+
+ALTER TABLE op_maintenance_orders
+  ADD COLUMN closure_summary text,
+  ADD COLUMN closed_by uuid;
+
+-- Tabela única de observações/menções por card
+CREATE TABLE op_card_notes (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  organization_id uuid NOT NULL,
+  module text NOT NULL CHECK (module IN ('delivery','service_order','maintenance')),
+  card_id uuid NOT NULL,
+  author_id uuid NOT NULL,
+  body text NOT NULL,
+  mentioned_users uuid[] DEFAULT '{}',
+  created_at timestamptz DEFAULT now()
+);
+ALTER TABLE op_card_notes ENABLE ROW LEVEL SECURITY;
+-- RLS: staff da mesma org pode ler/inserir; só autor apaga
 ```
 
-Idem garantindo vínculo com `grupo-ramos` para qualquer usuário órfão.
+Update de status na Oficina para o novo vocabulário (`UPDATE` via tool de insert).
 
-### 2. Garantir vínculo automático para novos usuários
-Atualizar o trigger `handle_new_user` (ou criar trigger complementar) para inserir automaticamente o novo usuário em ambas as organizações em `user_organizations`, além do `profiles`/`user_roles` que já cria.
+---
 
-### 3. Login sempre vai para a tela de escolha
-Em `src/pages/Login.tsx`, simplificar o redirect pós-login: se o usuário tem 1+ org, mandar para `/escolher-organizacao` (em vez de exigir 2+). Isso garante que mesmo usuários com uma única vinculação passem pela tela — embora, com a etapa 1, todos terão duas.
+## 4. Hooks
 
-Alternativa equivalente: manter a regra "1 org = pula tela" mas, como todos passarão a ter 2, o efeito é o mesmo. Vou pelo caminho mais robusto: **sempre mostrar** quando houver mais de 1 org disponível (regra atual), e deixar o auto-vínculo das etapas 1+2 garantir que isso aconteça para todos.
+- Estender `useDeliveries`, `useServiceOrders`, `useMaintenanceOrders` com `closeCard(id, payload)`.
+- Novo `useCardNotes(module, cardId)` para CRUD em `op_card_notes` + busca de usuários para menções.
 
-### 4. Visibilidade de menus por organização (sem mudança)
-A lógica de menus por `orgSlugs` em `menuItems.ts` já filtra o que cada org vê — então BRUNA, ao escolher "grupo-ramos", verá apenas o helpdesk; ao escolher "cgps-operacional", verá Entregas/Oficina/Manutenção.
+---
 
-## Resumo técnico
+## 5. Validação após cada etapa
 
-- **Migration**: backfill de `user_organizations` + atualização do trigger `handle_new_user` para inserir nas duas orgs.
-- **Frontend**: ajuste mínimo (ou nenhum) em `Login.tsx` — a tela de escolha já existe e funciona.
-- Sem mudanças de RLS, roles ou UI da tela de escolha.
+1. Compilar e verificar tipos — sem erros TS
+2. Testar arrastar entre colunas em cada módulo (todas as transições válidas)
+3. Testar fluxo de fechamento (não deixar passar para Finalizado sem resumo)
+4. Testar ações rápidas: telefone abre dialer, WhatsApp abre wa.me, endereço abre Maps e copia fallback
+5. Testar `@menção` em observações
+6. Testar filtro "Ocultar finalizados"
+7. Verificar RLS em `op_card_notes` (super admin / staff / outros)
 
-## Observação
+---
 
-Se algum usuário no futuro precisar ficar restrito a apenas uma organização, isso será feito removendo manualmente o vínculo em `user_organizations` (ou via uma futura tela de admin).
+## 6. Ordem de implementação (commits incrementais)
+
+1. **Migration de schema** (campos de fechamento + `op_card_notes` + RLS)
+2. **Componentes compartilhados** (`OpKanbanBoard`, `OpCard`, `OpDetailDrawer`, `OpClosureDialog`, `OpQuickActions`, `OpNotesPanel`)
+3. **Hook `useCardNotes`** + extensão dos hooks existentes
+4. **Entregas** com Kanban + drawer + closure + quick actions + notas → validar
+5. **Oficina** com migration de status + Kanban → validar
+6. **Manutenção** com Kanban + closure → validar
+7. Atualizar documentação em `public/docs/` (Operacional)
+
+---
+
+## Detalhes técnicos
+
+- Reusar `@hello-pangea/dnd` (já no projeto)
+- Endereço → Maps: detectar mobile e usar `geo:` quando possível, senão URL universal
+- Telefone limpo via regex `\D` antes de gerar `tel:` / `wa.me`
+- Menções: parser simples `@nome` resolvido para `user_id` ao salvar; renderizar como link
+- Status "Em atraso" é UI-only (não persiste); ordenação no Kanban respeita `deadline asc`
+- Closure dialog é o ÚNICO caminho para chegar em Finalizado/Concluído (no select e no drag-and-drop)
