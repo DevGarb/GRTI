@@ -30,10 +30,14 @@ export function useTodos() {
   const fetchTodos = useCallback(async () => {
     if (!user) return;
     setLoading(true);
-    const { data, error } = await supabase
+    let query = supabase
       .from("user_todos")
       .select("*")
       .order("created_at", { ascending: false });
+    if (profile?.organization_id) {
+      query = query.eq("organization_id", profile.organization_id);
+    }
+    const { data, error } = await query;
     if (error) {
       toast.error("Erro ao carregar TODOs");
       setLoading(false);
