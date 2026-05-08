@@ -57,7 +57,7 @@ export function useTodos() {
       })),
     );
     setLoading(false);
-  }, [user?.id]);
+  }, [user?.id, profile?.organization_id]);
 
   useEffect(() => {
     fetchTodos();
