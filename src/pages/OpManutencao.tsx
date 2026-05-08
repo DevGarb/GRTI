@@ -36,7 +36,16 @@ const PRIORITY_COLORS: Record<string, string> = {
 
 function todayISO() { return new Date().toISOString().slice(0, 10); }
 
+const KANBAN_COLUMNS: { id: string; label: string; color: string }[] = [
+  { id: "Aberta", label: "Aberta", color: "bg-amber-500" },
+  { id: "Em execução", label: "Em execução", color: "bg-blue-500" },
+  { id: "Concluída", label: "Concluída", color: "bg-emerald-600" },
+  { id: "Cancelada", label: "Cancelada", color: "bg-rose-500" },
+];
+const TERMINAL = "Concluída";
+
 export default function OpManutencao() {
+  const { user } = useAuth();
   const sites = useSites();
   const orders = useMaintenanceOrders();
   const tpls = useChecklistTemplates();
@@ -44,6 +53,9 @@ export default function OpManutencao() {
   const [activeMonth, setActiveMonth] = useState(() => new Date().toISOString().slice(0, 7));
   const [activeSite, setActiveSite] = useState<string>("all");
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
+  const [view, setView] = useState<"lista" | "kanban">("kanban");
+  const [hideFinalized, setHideFinalized] = useState(true);
+  const [closing, setClosing] = useState<MaintenanceOrder | null>(null);
 
   const [omOpen, setOmOpen] = useState(false);
   const [editing, setEditing] = useState<MaintenanceOrder | null>(null);
