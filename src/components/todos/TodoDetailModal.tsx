@@ -125,6 +125,41 @@ export default function TodoDetailModal({ todo, open, onOpenChange }: Props) {
         {todo.description && (
           <p className="text-sm text-muted-foreground whitespace-pre-wrap">{todo.description}</p>
         )}
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <label className="text-xs text-muted-foreground block mb-1">Prioridade</label>
+            <Select
+              value={todo.priority}
+              onValueChange={(v) => updateTodo(todo.id, { priority: v as any })}
+            >
+              <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="alta">Alta prioridade</SelectItem>
+                <SelectItem value="media">Média prioridade</SelectItem>
+                <SelectItem value="baixa">Baixa prioridade</SelectItem>
+                <SelectItem value="sem">Sem prioridade</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div>
+            <label className="text-xs text-muted-foreground block mb-1">Matriz de Eisenhower</label>
+            <Select
+              value={todo.eisenhower_quadrant ? String(todo.eisenhower_quadrant) : "none"}
+              onValueChange={(v) =>
+                updateTodo(todo.id, { eisenhower_quadrant: v === "none" ? null : (Number(v) as any) } as any)
+              }
+            >
+              <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">Sem classificação</SelectItem>
+                <SelectItem value="1">{QUADRANT_LABEL[1]}</SelectItem>
+                <SelectItem value="2">{QUADRANT_LABEL[2]}</SelectItem>
+                <SelectItem value="3">{QUADRANT_LABEL[3]}</SelectItem>
+                <SelectItem value="4">{QUADRANT_LABEL[4]}</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
         <Tabs defaultValue="comments" className="flex-1 overflow-hidden flex flex-col">
           <TabsList>
             <TabsTrigger value="comments">Comentários ({comments.length})</TabsTrigger>
