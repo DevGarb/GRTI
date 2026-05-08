@@ -4,13 +4,14 @@ import ReactMarkdown from "react-markdown";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Input } from "@/components/ui/input";
-import { BookOpen, Shield, Wrench, User, Search, X, Code } from "lucide-react";
+import { BookOpen, Shield, Wrench, User, Search, X, Code, Building2 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 
 const guides = [
   { key: "admin", label: "Administrador", icon: Shield, file: "/docs/GUIA_ADMIN.md" },
   { key: "tecnico", label: "Técnico", icon: Wrench, file: "/docs/GUIA_TECNICO.md" },
   { key: "solicitante", label: "Solicitante", icon: User, file: "/docs/GUIA_SOLICITANTE.md" },
+  { key: "organizacoes", label: "Organizações", icon: Building2, file: "/docs/GUIA_ORGANIZACOES.md" },
   { key: "api", label: "Rotas de API", icon: Code, file: "/docs/API_ROUTES.md" },
 ];
 
