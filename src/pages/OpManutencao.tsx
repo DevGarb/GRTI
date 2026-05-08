@@ -53,6 +53,7 @@ export default function OpManutencao() {
   const [activeMonth, setActiveMonth] = useState(() => new Date().toISOString().slice(0, 7));
   const [activeSite, setActiveSite] = useState<string>("all");
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
+  const [statusFilter, setStatusFilter] = useState<"all" | "Aberta" | "Em execução" | "Concluída" | "atraso">("all");
   const [view, setView] = useState<"lista" | "kanban">("kanban");
   const [hideFinalized, setHideFinalized] = useState(true);
   const [closing, setClosing] = useState<MaintenanceOrder | null>(null);
@@ -72,7 +73,7 @@ export default function OpManutencao() {
 
   const today = todayISO();
 
-  const filtered = useMemo(() => {
+  const baseFiltered = useMemo(() => {
     return orders.items.filter(o => {
       if (!o.opened_at.startsWith(activeMonth)) return false;
       if (activeSite !== "all" && o.site_id !== activeSite) return false;
@@ -81,23 +82,37 @@ export default function OpManutencao() {
     });
   }, [orders.items, activeMonth, activeSite, categoryFilter]);
 
+  const filtered = useMemo(() => {
+    return baseFiltered.filter(o => {
+      const overdue = !!o.deadline && o.deadline < today && !["Concluída", "Cancelada"].includes(o.status);
+      if (statusFilter === "atraso" && !overdue) return false;
+      if (statusFilter !== "all" && statusFilter !== "atraso" && o.status !== statusFilter) return false;
+      return true;
+    });
+  }, [baseFiltered, statusFilter, today]);
+
   const kpis = useMemo(() => {
-    const overdue = filtered.filter(o => o.deadline && o.deadline < today && !["Concluída", "Cancelada"].includes(o.status)).length;
+    const overdue = baseFiltered.filter(o => o.deadline && o.deadline < today && !["Concluída", "Cancelada"].includes(o.status)).length;
     return {
-      abertas: filtered.filter(o => o.status === "Aberta").length,
-      execucao: filtered.filter(o => o.status === "Em execução").length,
-      concluidas: filtered.filter(o => o.status === "Concluída").length,
-      total: filtered.length,
+      abertas: baseFiltered.filter(o => o.status === "Aberta").length,
+      execucao: baseFiltered.filter(o => o.status === "Em execução").length,
+      concluidas: baseFiltered.filter(o => o.status === "Concluída").length,
+      total: baseFiltered.length,
       atrasadas: overdue,
     };
-  }, [filtered, today]);
+  }, [baseFiltered, today]);
+
+  const toggleStatus = (s: typeof statusFilter) => {
+    setStatusFilter(prev => prev === s ? "all" : s);
+    if (s === "Concluída") setHideFinalized(false);
+  };
 
   const siteName = (id: string | null) => sites.items.find(s => s.id === id)?.name || "—";
   const siteOf = (id: string | null) => sites.items.find(s => s.id === id);
 
   const filteredKanban = useMemo(() =>
-    filtered.filter(o => !(hideFinalized && o.status === "Concluída")),
-  [filtered, hideFinalized]);
+    filtered.filter(o => !(hideFinalized && statusFilter !== "Concluída" && o.status === "Concluída")),
+  [filtered, hideFinalized, statusFilter]);
 
   const itemsByCol = useMemo(() => {
     const map: Record<string, MaintenanceOrder[]> = {};
