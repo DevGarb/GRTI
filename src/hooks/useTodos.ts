@@ -69,6 +69,7 @@ export function useTodos() {
     description?: string;
     priority?: Todo["priority"];
     due_date?: string | null;
+    eisenhower_quadrant?: Todo["eisenhower_quadrant"];
   }) => {
     if (!user) return;
     const { error } = await supabase.from("user_todos").insert({
@@ -78,7 +79,8 @@ export function useTodos() {
       description: input.description ?? null,
       priority: input.priority ?? "media",
       due_date: input.due_date ?? null,
-    });
+      eisenhower_quadrant: input.eisenhower_quadrant ?? null,
+    } as any);
     if (error) {
       toast.error("Erro ao criar TODO");
       return;
