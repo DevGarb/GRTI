@@ -1696,6 +1696,30 @@ export type Database = {
         }
         Relationships: []
       }
+      user_organization_roles: {
+        Row: {
+          created_at: string
+          id: string
+          organization_id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          organization_id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          organization_id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_organizations: {
         Row: {
           created_at: string
@@ -1899,6 +1923,13 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      current_org_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
       get_org_technicians: {
         Args: never
         Returns: {
@@ -1910,6 +1941,14 @@ export type Database = {
       }
       has_role: {
         Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
+      has_role_in_org: {
+        Args: {
+          _org: string
           _role: Database["public"]["Enums"]["app_role"]
           _user_id: string
         }
