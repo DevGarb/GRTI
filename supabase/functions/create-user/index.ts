@@ -35,20 +35,29 @@ Deno.serve(async (req) => {
 
     const adminClient = createClient(supabaseUrl, serviceRoleKey);
 
-    const { data: callerRoles } = await adminClient
+    const { data: callerGlobalRoles } = await adminClient
       .from("user_roles")
       .select("role")
-      .eq("user_id", caller.id)
-      .in("role", ["admin", "super_admin"]);
+      .eq("user_id", caller.id);
 
-    if (!callerRoles || callerRoles.length === 0) {
+    const { data: callerOrgRoles } = await adminClient
+      .from("user_organization_roles")
+      .select("role")
+      .eq("user_id", caller.id);
+
+    const allCallerRoles = [
+      ...(callerGlobalRoles || []).map((r: any) => r.role),
+      ...(callerOrgRoles || []).map((r: any) => r.role),
+    ];
+
+    if (!allCallerRoles.some((r) => r === "admin" || r === "super_admin")) {
       return new Response(JSON.stringify({ error: "Forbidden: admin role required" }), {
         status: 403,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    const callerIsSuperAdmin = callerRoles.some((r) => r.role === "super_admin");
+    const callerIsSuperAdmin = allCallerRoles.some((r) => r === "super_admin");
 
     // Fetch caller's organization_id to assign to new user
     const { data: callerProfile } = await adminClient
