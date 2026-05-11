@@ -58,6 +58,7 @@ interface Profile {
 interface UserRole {
   user_id: string;
   role: string;
+  organization_id?: string | null; // null = global (super_admin)
 }
 
 const ROLES = ["admin", "tecnico", "solicitante"] as const;
