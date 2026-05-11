@@ -809,11 +809,11 @@ function UsuariosTab() {
           <p className="text-xs text-muted-foreground">Total Usuários</p>
         </div>
         <div className="card-elevated p-4 text-center">
-          <p className="text-2xl font-bold text-primary">{roles.filter((r) => r.role === "admin").length}</p>
+          <p className="text-2xl font-bold text-primary">{new Set(roles.filter((r) => r.role === "admin").map((r) => r.user_id)).size}</p>
           <p className="text-xs text-muted-foreground">Admins</p>
         </div>
         <div className="card-elevated p-4 text-center">
-          <p className="text-2xl font-bold text-foreground">{roles.filter((r) => r.role === "tecnico").length}</p>
+          <p className="text-2xl font-bold text-foreground">{new Set(roles.filter((r) => r.role === "tecnico").map((r) => r.user_id)).size}</p>
           <p className="text-xs text-muted-foreground">Técnicos</p>
         </div>
         <div className="card-elevated p-4 text-center">
