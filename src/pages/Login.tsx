@@ -30,11 +30,14 @@ export default function Login() {
         if ((memberships || []).length > 1) {
           navigate("/escolher-organizacao");
         } else {
-          const { data: userRoles } = await supabase
-            .from("user_roles")
-            .select("role")
-            .eq("user_id", session.user.id);
-          const roles = (userRoles || []).map(r => r.role);
+          const [{ data: globalRoles }, { data: orgRoles }] = await Promise.all([
+            supabase.from("user_roles").select("role").eq("user_id", session.user.id),
+            supabase.from("user_organization_roles").select("role").eq("user_id", session.user.id),
+          ]);
+          const roles = [
+            ...(globalRoles || []).map((r: any) => r.role),
+            ...(orgRoles || []).map((r: any) => r.role),
+          ];
           const isAdmin = roles.includes("admin") || roles.includes("super_admin");
           navigate(isAdmin ? "/" : "/chamados");
         }
