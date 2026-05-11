@@ -1,67 +1,92 @@
-## Roles por organização
+## Objetivo
 
-Hoje a role é global: `user_roles(user_id, role)`. Vamos passar para `user_organization_roles(user_id, organization_id, role)` para que o mesmo usuário possa ser Técnico no CGPS Operacional e Solicitante no Grupo Ramos.
+Unificar tudo no `/dashboard`. A página decide o que renderizar com base na **org ativa** (`profile.organization_id`) e nos **roles da org** (`user_organization_roles`):
 
-A "organização ativa" do usuário continua sendo `profiles.organization_id` (já é assim em todo o app). As RLS e o frontend passam a olhar a role nessa org ativa.
+- **Grupo Ramos** → dashboard atual (chamados, CSAT, retrabalhos, técnicos) — sem alterações.
+- **CGPS Operacional** → novo conjunto de KPIs vindo de OS / OM / Entregas / Checklists.
+- Aposentar o `/op/dashboard` criado anteriormente (rota e item de menu removidos).
+- Dados **estritamente** filtrados por `organization_id` da org ativa. Nenhuma query cruza orgs.
 
-### 1. Migração de schema
+## O que o dashboard Operacional vai mostrar
 
-Criar nova tabela:
+### 1. Filtros (topo)
+- **Seletor de mês** (igual ao Grupo Ramos).
+- Chips de filtro por módulo: **Mecânico**, **Sede**, **Motorista** (cada um filtra apenas seu bloco; também afetam os KPIs macro quando aplicados).
 
+### 2. KPIs macro (cards no topo, agregando OS + OM + Entregas do mês)
+- Total de demandas
+- Em aberto / Em andamento
+- Concluídas (com % do total)
+- Atrasadas (`deadline < hoje` e status não-final)
+- Tempo médio de execução (dias entre `opened_at` e `finished_at` — só itens fechados)
+- Cumprimento de prazo % (concluídas dentro do `deadline` ÷ concluídas)
+- Custo total da Oficina no mês (soma `op_service_orders.total_cost`)
+- Manutenções por sede (contagem distinta de sedes ativas)
+- Entregas por motorista (média)
+
+### 3. Bloco Oficina (OS)
+- Status breakdown (Pendente / Aguardando peças / Em andamento / Finalizado) — barras
+- **OS por mecânico** (ranking: total, finalizadas, atrasadas)
+- **Custo total e médio por OS** no mês
+- **Peças mais usadas** (top 10 via `op_service_order_parts` × `op_parts`, somando `quantity`)
+- Lista de **OS atrasadas** (com link p/ módulo)
+
+### 4. Bloco Manutenção (OM)
+- Status breakdown
+- **OM por sede** (`op_sites.name` × contagem)
+- **OM por categoria** (Elétrica / Hidráulica / Civil / Outros) — pizza
+- **OM por prioridade** (Baixa / Média / Alta / Crítica)
+- Lista de **OM atrasadas**
+
+### 5. Bloco Entregas
+- Status breakdown (Pendente / Em rota / Finalizado / Cancelado)
+- **Entregas por motorista** (ranking)
+- **Por tipo** (Entrega / Vistoria / Retirada / Outro)
+- **Por período** (Manhã / Tarde / Noite)
+- Lista de **Entregas atrasadas** (`scheduled_date < hoje` e não finalizadas)
+
+### 6. Bloco Checklists
+- **Execuções por sede** no mês (de `op_checklist_executions`)
+- **Execuções por template** (top templates utilizados)
+- % de templates ativos com pelo menos 1 execução no mês
+
+### 7. Volume diário (gráfico de barras empilhado)
+- Eixo X: dias do mês selecionado
+- Series: OS, OM, Entregas criadas naquele dia
+
+## Aspectos técnicos
+
+### Roteamento e menu
+- Em `App.tsx`: remover rota `/op/dashboard`.
+- Em `src/config/menuItems.ts`: remover entrada "Painel Operacional" (Dashboard normal já está no menu).
+- Apagar `src/pages/OpDashboard.tsx`.
+
+### Estrutura de `Dashboard.tsx`
+Detectar org pelo slug via `organizations` (já carregado no AuthContext) ou pelo `profile.organization_id` + lookup:
+
+```tsx
+const isOperacional = currentOrgSlug === "cgps-operacional";
+return isOperacional ? <DashboardOperacional /> : <DashboardPadrao />;
 ```
-user_organization_roles
-  id, user_id, organization_id, role (app_role), created_at
-  UNIQUE (user_id, organization_id, role)
-```
 
-RLS:
-- `SELECT`: o próprio user, admin da mesma org, ou super_admin.
-- `INSERT/UPDATE/DELETE`: admin da mesma org (sem permitir mexer em `super_admin`) ou super_admin.
+Mover o conteúdo atual para `src/pages/dashboard/DashboardPadrao.tsx` (sem mudanças funcionais — apenas split).
+Criar `src/pages/dashboard/DashboardOperacional.tsx` com a estrutura acima.
 
-`super_admin` continua **global** em `user_roles` (não faz sentido por org). Demais roles migram para a nova tabela.
+### Hooks de dados
+Criar `src/hooks/useOpDashboardMetrics.ts` retornando todos os agregados em um único `useQuery` parametrizado por `(orgId, monthStart, monthEnd, mechFilter, siteFilter, driverFilter)`. Reutiliza os hooks já existentes (`useServiceOrders`, `useMaintenanceOrders`, `useDeliveries`) apenas quando útil; agregados pesados (peças mais usadas, custo) ficam no hook novo, com queries diretas filtradas por `organization_id`.
 
-### 2. Migrar dados existentes
+### Isolamento entre orgs
+- Todas as queries do hook novo passam `.eq("organization_id", orgId)` explicitamente — mesmo com RLS já cobrindo, garante intenção.
+- Nenhum dado de `tickets` aparece no dashboard operacional; nenhum dado `op_*` aparece no dashboard padrão.
+- Quando usuário muda de org ativa, o `Dashboard.tsx` re-renderiza (queryKey contém `orgId`).
 
-Para cada `(user_id, role)` em `user_roles` onde role ≠ `super_admin`:
-- Inserir um registro em `user_organization_roles` para **cada** organização à qual o usuário pertence (via `user_organizations`).
+### Permissões
+- Página acessível para qualquer membro da org (já é hoje). O conteúdo (admin vs solicitante) não muda — todos veem os mesmos cards. Caso futuramente o cliente queira esconder métricas financeiras para solicitantes, abriremos um toggle por role.
 
-Assim ninguém perde acesso. Depois você pode ajustar caso a caso (ex.: tirar "Técnico" do Wandson no Grupo Ramos).
+## Fora de escopo (para conversas futuras)
+- Comparativo mês a mês (tendência histórica).
+- Metas operacionais (analógico ao `performance_goals` atual).
+- Exportação CSV do painel operacional.
+- Drill-down ao clicar nos números (abrir lista filtrada no módulo).
 
-### 3. Atualizar funções security definer
-
-Reescrever para considerar a org ativa do `profiles.organization_id`:
-
-- `has_role(_user_id, _role)` → true se `super_admin` global, ou existe role em `user_organization_roles` para o `_user_id` na org ativa do profile.
-- `is_op_staff(_org)` → true se super_admin, ou se for membro da org E tem role admin/tecnico/desenvolvedor **naquela org** (`_org`, não a ativa).
-- `is_staff_user(_user_id)` → idem, considerando a org ativa.
-- Nova função `has_role_in_org(_user_id, _role, _org)` para casos específicos.
-
-Todas as RLS de tickets, op_*, categories, etc. continuam funcionando — elas já chamam essas funções.
-
-### 4. Frontend
-
-- **AuthContext**: buscar roles de `user_organization_roles` filtrando por `profile.organization_id`. Manter `super_admin` vindo de `user_roles`.
-- **Usuarios.tsx** (admin de cada org): editar role apenas do escopo da org atual, lendo/gravando em `user_organization_roles` com o `organization_id` do admin logado.
-- **SuperAdmin.tsx**: permitir editar role por organização — adicionar coluna/seletor "Organização" ao lado do seletor de role, listando as orgs do usuário. Suporta múltiplas roles por org.
-- Quando o usuário troca de organização ativa (futuro), o AuthContext refaz o fetch de roles.
-
-### 5. Limpeza
-
-- Manter `user_roles` apenas para `super_admin` (remover demais linhas após validação).
-- Trigger `handle_new_user` continua criando `solicitante` em `user_roles`? → Mudar para inserir `solicitante` em `user_organization_roles` para cada org auto-vinculada (`grupo-ramos`, `cgps-operacional`).
-
-### Detalhes técnicos
-
-- Nova função:
-  ```
-  current_org_role(_user_id, _role) returns boolean
-    -- exists in user_organization_roles for the user's profile.organization_id
-  ```
-- `has_role` passa a delegar para `current_org_role` + check de super_admin.
-- Mantemos as chaves antigas (`user_roles`) só para `super_admin` para não quebrar nada.
-
-### Verificações pós-migração
-
-- Wandson: confirmar que terá `solicitante` no Grupo Ramos e podermos promovê-lo para `tecnico` apenas no CGPS Operacional.
-- Admins atuais: garantir que continuam admin nas duas orgs (até você decidir reduzir).
-- Login + dashboard de cada role nas duas orgs.
+Se algum dos KPIs acima não fizer sentido ou estiver faltando, basta apontar e eu ajusto o plano antes de implementar.
