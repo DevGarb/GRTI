@@ -44,7 +44,7 @@ export default function GoalsManager({ year, month }: Props) {
     queryKey: ["technicians-for-goals"],
     queryFn: async () => {
       const { data: roles } = await supabase
-        .from("user_roles")
+        .from("user_organization_roles")
         .select("user_id")
         .in("role", ["tecnico", "desenvolvedor"]);
       if (!roles || roles.length === 0) return [];

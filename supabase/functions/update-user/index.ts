@@ -35,13 +35,15 @@ Deno.serve(async (req) => {
 
     const adminClient = createClient(supabaseUrl, serviceRoleKey);
 
-    const { data: callerRoles } = await adminClient
-      .from("user_roles")
-      .select("role")
-      .eq("user_id", caller.id)
-      .in("role", ["admin", "super_admin"]);
-
-    if (!callerRoles || callerRoles.length === 0) {
+    const [{ data: globalRoles }, { data: orgRoles }] = await Promise.all([
+      adminClient.from("user_roles").select("role").eq("user_id", caller.id),
+      adminClient.from("user_organization_roles").select("role").eq("user_id", caller.id),
+    ]);
+    const allRoles = [
+      ...(globalRoles || []).map((r: any) => r.role),
+      ...(orgRoles || []).map((r: any) => r.role),
+    ];
+    if (!allRoles.some((r) => r === "admin" || r === "super_admin")) {
       return new Response(JSON.stringify({ error: "Forbidden: admin role required" }), {
         status: 403,
         headers: { ...corsHeaders, "Content-Type": "application/json" },

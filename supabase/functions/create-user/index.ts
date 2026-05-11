@@ -35,20 +35,29 @@ Deno.serve(async (req) => {
 
     const adminClient = createClient(supabaseUrl, serviceRoleKey);
 
-    const { data: callerRoles } = await adminClient
+    const { data: callerGlobalRoles } = await adminClient
       .from("user_roles")
       .select("role")
-      .eq("user_id", caller.id)
-      .in("role", ["admin", "super_admin"]);
+      .eq("user_id", caller.id);
 
-    if (!callerRoles || callerRoles.length === 0) {
+    const { data: callerOrgRoles } = await adminClient
+      .from("user_organization_roles")
+      .select("role")
+      .eq("user_id", caller.id);
+
+    const allCallerRoles = [
+      ...(callerGlobalRoles || []).map((r: any) => r.role),
+      ...(callerOrgRoles || []).map((r: any) => r.role),
+    ];
+
+    if (!allCallerRoles.some((r) => r === "admin" || r === "super_admin")) {
       return new Response(JSON.stringify({ error: "Forbidden: admin role required" }), {
         status: 403,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    const callerIsSuperAdmin = callerRoles.some((r) => r.role === "super_admin");
+    const callerIsSuperAdmin = allCallerRoles.some((r) => r === "super_admin");
 
     // Fetch caller's organization_id to assign to new user
     const { data: callerProfile } = await adminClient
@@ -131,10 +140,17 @@ Deno.serve(async (req) => {
         { onConflict: "user_id" }
       );
 
-    // Update role if not solicitante
-    if (userRole && userRole !== "solicitante") {
-      await adminClient.from("user_roles").delete().eq("user_id", newUser.user!.id);
-      await adminClient.from("user_roles").insert({ user_id: newUser.user!.id, role: userRole });
+    // Assign role per organization (new model). Keep user_roles only for super_admin.
+    if (userRole && userRole !== "super_admin" && organizationId) {
+      // Remove default 'solicitante' for this org (trigger may have inserted it for both orgs)
+      await adminClient
+        .from("user_organization_roles")
+        .delete()
+        .eq("user_id", newUser.user!.id)
+        .eq("organization_id", organizationId);
+      await adminClient
+        .from("user_organization_roles")
+        .insert({ user_id: newUser.user!.id, organization_id: organizationId, role: userRole });
     }
 
     return new Response(JSON.stringify({ user: newUser.user }), {

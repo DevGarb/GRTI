@@ -58,6 +58,7 @@ interface Profile {
 interface UserRole {
   user_id: string;
   role: string;
+  organization_id?: string | null; // null = global (super_admin)
 }
 
 const ROLES = ["admin", "tecnico", "solicitante"] as const;
@@ -144,19 +145,21 @@ function DashboardTab() {
   useEffect(() => {
     const fetchMetrics = async () => {
       setLoading(true);
-      const [profilesRes, orgsRes, ticketsRes, plansRes, rolesRes] = await Promise.all([
+      const [profilesRes, orgsRes, ticketsRes, plansRes, globalRolesRes, orgRolesRes] = await Promise.all([
         supabase.from("profiles").select("id, organization_id"),
         supabase.from("organizations").select("id, plan_id"),
         supabase.from("tickets").select("id, title, status, priority, created_at").order("created_at", { ascending: false }).limit(100),
         supabase.from("subscription_plans").select("id, is_active"),
         supabase.from("user_roles").select("user_id, role"),
+        supabase.from("user_organization_roles").select("user_id, role"),
       ]);
 
       const profiles = profilesRes.data || [];
       const orgs = orgsRes.data || [];
       const tickets = ticketsRes.data || [];
       const plans = plansRes.data || [];
-      const roles = rolesRes.data || [];
+      const globalRoles = globalRolesRes.data || [];
+      const orgRoles = orgRolesRes.data || [];
 
       const ticketsByStatus: Record<string, number> = {};
       const ticketsByPriority: Record<string, number> = {};
@@ -165,8 +168,13 @@ function DashboardTab() {
         ticketsByPriority[t.priority] = (ticketsByPriority[t.priority] || 0) + 1;
       });
 
+      // Distinct (user, role) pairs across global + per-org tables
       const roleBreakdown: Record<string, number> = {};
-      roles.forEach((r) => {
+      const seen = new Set<string>();
+      [...globalRoles, ...orgRoles].forEach((r: any) => {
+        const key = `${r.user_id}:${r.role}`;
+        if (seen.has(key)) return;
+        seen.add(key);
         roleBreakdown[r.role] = (roleBreakdown[r.role] || 0) + 1;
       });
 
@@ -532,13 +540,18 @@ function UsuariosTab() {
 
   const fetchData = async () => {
     setLoading(true);
-    const [profilesRes, rolesRes, orgsRes] = await Promise.all([
+    const [profilesRes, globalRolesRes, orgRolesRes, orgsRes] = await Promise.all([
       supabase.from("profiles").select("*").order("created_at", { ascending: false }),
       supabase.from("user_roles").select("user_id, role"),
+      supabase.from("user_organization_roles").select("user_id, role, organization_id"),
       supabase.from("organizations").select("id, name, slug, plan_id, logo_url, primary_color, created_at"),
     ]);
     if (profilesRes.data) setProfiles(profilesRes.data as Profile[]);
-    if (rolesRes.data) setRoles(rolesRes.data as UserRole[]);
+    const combined: UserRole[] = [
+      ...((globalRolesRes.data || []).map((r: any) => ({ user_id: r.user_id, role: r.role, organization_id: null }))),
+      ...((orgRolesRes.data || []).map((r: any) => ({ user_id: r.user_id, role: r.role, organization_id: r.organization_id }))),
+    ];
+    setRoles(combined);
     if (orgsRes.data) setOrgs(orgsRes.data as Org[]);
     setLoading(false);
   };
@@ -555,20 +568,34 @@ function UsuariosTab() {
 
   const handleChangeRole = async (userId: string, role: string) => {
     const profile = profiles.find((p) => p.user_id === userId);
+    const targetOrgId = profile?.organization_id;
+    if (!targetOrgId) {
+      toast.error("Defina uma organização para o usuário antes de alterar o perfil.");
+      return;
+    }
+    const orgName = orgs.find((o) => o.id === targetOrgId)?.name || "esta organização";
     const roleName = ROLE_LABELS[role] || role;
-    if (!confirm(`Tem certeza que deseja alterar o perfil de "${profile?.full_name || "usuário"}" para ${roleName}?`)) {
+    if (!confirm(`Alterar o perfil de "${profile?.full_name || "usuário"}" para ${roleName} em ${orgName}?`)) {
       return;
     }
 
-    const userCurrentRoles = roles.filter((r) => r.user_id === userId && r.role !== "super_admin");
+    // Replace role only for the user's active organization
+    await supabase
+      .from("user_organization_roles")
+      .delete()
+      .eq("user_id", userId)
+      .eq("organization_id", targetOrgId)
+      .neq("role", "super_admin");
 
-    for (const r of userCurrentRoles) {
-      await supabase.from("user_roles").delete().eq("user_id", userId).eq("role", r.role as any);
+    if (role !== "super_admin") {
+      const { error } = await supabase
+        .from("user_organization_roles")
+        .insert({ user_id: userId, organization_id: targetOrgId, role: role as any });
+      if (error) { toast.error("Erro: " + error.message); return; }
     }
-
-    const { error } = await supabase.from("user_roles").insert({ user_id: userId, role: role as any });
-    if (error) toast.error("Erro: " + error.message);
-    else { toast.success("Role do usuário atualizada!"); setEditingRole(null); fetchData(); }
+    toast.success("Role atualizada!");
+    setEditingRole(null);
+    fetchData();
   };
 
   const openEditProfile = (p: Profile) => {
@@ -782,11 +809,11 @@ function UsuariosTab() {
           <p className="text-xs text-muted-foreground">Total Usuários</p>
         </div>
         <div className="card-elevated p-4 text-center">
-          <p className="text-2xl font-bold text-primary">{roles.filter((r) => r.role === "admin").length}</p>
+          <p className="text-2xl font-bold text-primary">{new Set(roles.filter((r) => r.role === "admin").map((r) => r.user_id)).size}</p>
           <p className="text-xs text-muted-foreground">Admins</p>
         </div>
         <div className="card-elevated p-4 text-center">
-          <p className="text-2xl font-bold text-foreground">{roles.filter((r) => r.role === "tecnico").length}</p>
+          <p className="text-2xl font-bold text-foreground">{new Set(roles.filter((r) => r.role === "tecnico").map((r) => r.user_id)).size}</p>
           <p className="text-xs text-muted-foreground">Técnicos</p>
         </div>
         <div className="card-elevated p-4 text-center">

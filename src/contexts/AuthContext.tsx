@@ -45,11 +45,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const fetchRoles = async (userId: string) => {
-    const { data } = await supabase
-      .from("user_roles")
-      .select("role")
-      .eq("user_id", userId);
-    setRoles((data || []).map((r) => r.role as AppRole));
+    // Global roles (super_admin lives here) + per-org roles for the active org
+    const [globalRes, profileRes] = await Promise.all([
+      supabase.from("user_roles").select("role").eq("user_id", userId),
+      supabase.from("profiles").select("organization_id").eq("user_id", userId).single(),
+    ]);
+    const globalRoles = (globalRes.data || []).map((r) => r.role as AppRole);
+    const activeOrgId = profileRes.data?.organization_id ?? null;
+
+    let orgRoles: AppRole[] = [];
+    if (activeOrgId) {
+      const { data } = await supabase
+        .from("user_organization_roles")
+        .select("role")
+        .eq("user_id", userId)
+        .eq("organization_id", activeOrgId);
+      orgRoles = (data || []).map((r) => r.role as AppRole);
+    }
+    setRoles(Array.from(new Set([...globalRoles, ...orgRoles])));
   };
 
   useEffect(() => {

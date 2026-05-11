@@ -1,49 +1,67 @@
-## Diagnóstico
+## Roles por organização
 
-Verifiquei o erro "RLS em op_service_orders" ao abrir uma OS na Oficina. O usuário **Gabriel Porto** tem perfil em `grupo-ramos` com role `admin` e está vinculado a 2 organizações (`grupo-ramos` e `cgps-operacional`). As policies atuais funcionam apenas via `is_same_organization()`, que olha somente para `profiles.organization_id` — o que falha em vários cenários (membros multi-org, sessão recém-trocada, super_admin com org nula).
+Hoje a role é global: `user_roles(user_id, role)`. Vamos passar para `user_organization_roles(user_id, organization_id, role)` para que o mesmo usuário possa ser Técnico no CGPS Operacional e Solicitante no Grupo Ramos.
 
-Além disso, as policies dos módulos operacionais foram criadas como um único `FOR ALL` por tabela, o que dificulta diferenciar visualização (todos da org) de escrita (apenas staff). Isso gera inconsistências e erros silenciosos em inserções de filhos (peças, fotos, checklist).
+A "organização ativa" do usuário continua sendo `profiles.organization_id` (já é assim em todo o app). As RLS e o frontend passam a olhar a role nessa org ativa.
 
-## O que vou fazer
+### 1. Migração de schema
 
-### 1. Corrigir o root cause de RLS (uma migração)
+Criar nova tabela:
 
-Criar/atualizar funções `SECURITY DEFINER`:
-- `public.is_member_of_org(_org uuid)` — true se o usuário tem o org como `profiles.organization_id` **ou** vínculo em `user_organizations` (ou é super_admin).
-- `public.is_op_staff(_org uuid)` — true se for super_admin **ou** (membro do org **e** com role admin/tecnico/desenvolvedor).
+```
+user_organization_roles
+  id, user_id, organization_id, role (app_role), created_at
+  UNIQUE (user_id, organization_id, role)
+```
 
-Reescrever todas as policies das tabelas `op_*` separando claramente:
-- `SELECT` → `is_member_of_org(organization_id)` (qualquer membro do org vê).
-- `INSERT/UPDATE/DELETE` → `is_op_staff(organization_id)`.
+RLS:
+- `SELECT`: o próprio user, admin da mesma org, ou super_admin.
+- `INSERT/UPDATE/DELETE`: admin da mesma org (sem permitir mexer em `super_admin`) ou super_admin.
 
-Tabelas cobertas: `op_service_orders`, `op_service_order_parts`, `op_service_order_photos`, `op_maintenance_orders`, `op_maintenance_photos`, `op_deliveries`, `op_companies`, `op_drivers`, `op_vehicles`, `op_mechanics`, `op_parts`, `op_sites`, `op_checklist_templates`, `op_checklist_items`, `op_checklist_executions`, `op_card_notes`.
+`super_admin` continua **global** em `user_roles` (não faz sentido por org). Demais roles migram para a nova tabela.
 
-Para tabelas filhas (parts/photos/items) o `is_op_staff` é avaliado via `EXISTS` no pai usando o `organization_id` da OS/OM/template.
+### 2. Migrar dados existentes
 
-### 2. Varredura nos módulos do Operacional (frontend)
+Para cada `(user_id, role)` em `user_roles` onde role ≠ `super_admin`:
+- Inserir um registro em `user_organization_roles` para **cada** organização à qual o usuário pertence (via `user_organizations`).
 
-Para cada módulo (`OpOficina`, `OpManutencao`, `OpEntregas`, `OpCadastros`):
-- Garantir que **todo insert** envia `organization_id = profile.organization_id` e `created_by = user.id`, com early-return + toast quando esses valores estiverem ausentes (evita erros 42501 silenciosos).
-- Padronizar o tratamento de erro: exibir `error.message` no toast em todas as mutações dos hooks `useOficina`, `useManutencao`, `useDeliveries`, `useOperacional` (alguns updates/removes hoje silenciam erros de RLS).
-- Verificar o fluxo de **fechamento** (modal "O que foi feito?") nos 3 módulos para usar o mesmo padrão.
-- Conferir o upload de fotos no Storage `op-service-orders` e `patrimonio-photos` (path com `organization_id` quando aplicável) — não mexer nas policies de Storage agora se não houver erro.
+Assim ninguém perde acesso. Depois você pode ajustar caso a caso (ex.: tirar "Técnico" do Wandson no Grupo Ramos).
 
-### 3. Validação
+### 3. Atualizar funções security definer
 
-- Após a migração, confirmar via SQL que todas as tabelas `op_*` têm policies SELECT + INSERT + UPDATE + DELETE corretas (sem `FOR ALL` ambíguo).
-- Pedir ao usuário para tentar abrir uma OS novamente e reportar.
+Reescrever para considerar a org ativa do `profiles.organization_id`:
 
-## Arquivos afetados
+- `has_role(_user_id, _role)` → true se `super_admin` global, ou existe role em `user_organization_roles` para o `_user_id` na org ativa do profile.
+- `is_op_staff(_org)` → true se super_admin, ou se for membro da org E tem role admin/tecnico/desenvolvedor **naquela org** (`_org`, não a ativa).
+- `is_staff_user(_user_id)` → idem, considerando a org ativa.
+- Nova função `has_role_in_org(_user_id, _role, _org)` para casos específicos.
 
-- **Nova migração**: `supabase/migrations/<timestamp>_op_rls_overhaul.sql` (funções + recriação de policies de todas as tabelas `op_*`).
-- **Frontend (apenas tratamento de erro / guards)**: 
-  - `src/hooks/useOficina.ts`
-  - `src/hooks/useManutencao.ts`
-  - `src/hooks/useDeliveries.ts`
-  - `src/hooks/useOperacional.ts`
-- Páginas dos módulos não devem precisar de alteração estrutural; só ajustes pontuais se algum insert estiver enviando org errada.
+Todas as RLS de tickets, op_*, categories, etc. continuam funcionando — elas já chamam essas funções.
 
-## Observações
+### 4. Frontend
 
-- Não vou alterar regras de negócio dos status, kanban ou modais — apenas RLS e guards de erro.
-- A nova função `is_member_of_org` resolve de uma vez o problema de usuários multi-org (que já causou o bug dos TODOs do Gabriel aparecerem na org operacional).
+- **AuthContext**: buscar roles de `user_organization_roles` filtrando por `profile.organization_id`. Manter `super_admin` vindo de `user_roles`.
+- **Usuarios.tsx** (admin de cada org): editar role apenas do escopo da org atual, lendo/gravando em `user_organization_roles` com o `organization_id` do admin logado.
+- **SuperAdmin.tsx**: permitir editar role por organização — adicionar coluna/seletor "Organização" ao lado do seletor de role, listando as orgs do usuário. Suporta múltiplas roles por org.
+- Quando o usuário troca de organização ativa (futuro), o AuthContext refaz o fetch de roles.
+
+### 5. Limpeza
+
+- Manter `user_roles` apenas para `super_admin` (remover demais linhas após validação).
+- Trigger `handle_new_user` continua criando `solicitante` em `user_roles`? → Mudar para inserir `solicitante` em `user_organization_roles` para cada org auto-vinculada (`grupo-ramos`, `cgps-operacional`).
+
+### Detalhes técnicos
+
+- Nova função:
+  ```
+  current_org_role(_user_id, _role) returns boolean
+    -- exists in user_organization_roles for the user's profile.organization_id
+  ```
+- `has_role` passa a delegar para `current_org_role` + check de super_admin.
+- Mantemos as chaves antigas (`user_roles`) só para `super_admin` para não quebrar nada.
+
+### Verificações pós-migração
+
+- Wandson: confirmar que terá `solicitante` no Grupo Ramos e podermos promovê-lo para `tecnico` apenas no CGPS Operacional.
+- Admins atuais: garantir que continuam admin nas duas orgs (até você decidir reduzir).
+- Login + dashboard de cada role nas duas orgs.
