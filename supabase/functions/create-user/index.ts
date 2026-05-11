@@ -131,10 +131,17 @@ Deno.serve(async (req) => {
         { onConflict: "user_id" }
       );
 
-    // Update role if not solicitante
-    if (userRole && userRole !== "solicitante") {
-      await adminClient.from("user_roles").delete().eq("user_id", newUser.user!.id);
-      await adminClient.from("user_roles").insert({ user_id: newUser.user!.id, role: userRole });
+    // Assign role per organization (new model). Keep user_roles only for super_admin.
+    if (userRole && userRole !== "super_admin" && organizationId) {
+      // Remove default 'solicitante' for this org (trigger may have inserted it for both orgs)
+      await adminClient
+        .from("user_organization_roles")
+        .delete()
+        .eq("user_id", newUser.user!.id)
+        .eq("organization_id", organizationId);
+      await adminClient
+        .from("user_organization_roles")
+        .insert({ user_id: newUser.user!.id, organization_id: organizationId, role: userRole });
     }
 
     return new Response(JSON.stringify({ user: newUser.user }), {
