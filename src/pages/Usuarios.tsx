@@ -67,27 +67,54 @@ export default function Usuarios() {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showImportModal, setShowImportModal] = useState(false);
   const [createForm, setCreateForm] = useState({ full_name: "", username: "", password: "", role: "solicitante", phone: "" });
-  const { hasRole, isSuperAdmin } = useAuth();
+  const { hasRole, isSuperAdmin, profile } = useAuth();
   const queryClient = useQueryClient();
   const isAdmin = hasRole("admin");
+  const adminOrgId = profile?.organization_id ?? null;
 
   const { data: users = [], isLoading } = useQuery({
-    queryKey: ["admin-users"],
+    queryKey: ["admin-users", adminOrgId],
     queryFn: async () => {
+      if (!adminOrgId) return [] as ProfileWithRoles[];
+
+      // Only show users that belong to this organization
+      const { data: memberships } = await supabase
+        .from("user_organizations")
+        .select("user_id")
+        .eq("organization_id", adminOrgId);
+      const memberIds = (memberships || []).map((m) => m.user_id);
+      if (memberIds.length === 0) return [];
+
       const { data: profiles, error } = await supabase
         .from("profiles")
         .select("user_id, full_name, email, phone, avatar_url, created_at, username")
+        .in("user_id", memberIds)
         .order("full_name");
       if (error) throw error;
 
       const userIds = profiles.map((p) => p.user_id);
-      const { data: roles } = await supabase
+
+      // Per-org roles for this organization
+      const { data: orgRoles } = await supabase
+        .from("user_organization_roles")
+        .select("user_id, role")
+        .eq("organization_id", adminOrgId)
+        .in("user_id", userIds);
+
+      // Global roles (super_admin)
+      const { data: globalRoles } = await supabase
         .from("user_roles")
         .select("user_id, role")
         .in("user_id", userIds);
 
       const roleMap = new Map<string, string[]>();
-      (roles || []).forEach((r) => {
+      (orgRoles || []).forEach((r) => {
+        const arr = roleMap.get(r.user_id) || [];
+        arr.push(r.role);
+        roleMap.set(r.user_id, arr);
+      });
+      (globalRoles || []).forEach((r) => {
+        if (r.role !== "super_admin") return;
         const arr = roleMap.get(r.user_id) || [];
         arr.push(r.role);
         roleMap.set(r.user_id, arr);
@@ -123,12 +150,23 @@ export default function Usuarios() {
 
   const updateRole = useMutation({
     mutationFn: async ({ userId, role, fullName, password, phone }: { userId: string; role: string; fullName: string; password?: string; phone?: string }) => {
+      if (!adminOrgId) throw new Error("Administrador sem organização ativa.");
       await supabase.from("profiles").update({ full_name: fullName, phone: phone || null }).eq("user_id", userId);
-      await supabase.from("user_roles").delete().eq("user_id", userId).neq("role", "super_admin");
+
+      // Replace role only for the current organization
+      await supabase
+        .from("user_organization_roles")
+        .delete()
+        .eq("user_id", userId)
+        .eq("organization_id", adminOrgId)
+        .neq("role", "super_admin");
       if (role !== "super_admin") {
-        const { error } = await supabase.from("user_roles").insert({ user_id: userId, role: role as any });
+        const { error } = await supabase
+          .from("user_organization_roles")
+          .insert({ user_id: userId, organization_id: adminOrgId, role: role as any });
         if (error) throw error;
       }
+
       if (password && password.length > 0) {
         if (password.length < 6) throw new Error("A senha deve ter no mínimo 6 caracteres.");
         const { data, error } = await supabase.functions.invoke("update-user", {
