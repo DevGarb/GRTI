@@ -145,19 +145,21 @@ function DashboardTab() {
   useEffect(() => {
     const fetchMetrics = async () => {
       setLoading(true);
-      const [profilesRes, orgsRes, ticketsRes, plansRes, rolesRes] = await Promise.all([
+      const [profilesRes, orgsRes, ticketsRes, plansRes, globalRolesRes, orgRolesRes] = await Promise.all([
         supabase.from("profiles").select("id, organization_id"),
         supabase.from("organizations").select("id, plan_id"),
         supabase.from("tickets").select("id, title, status, priority, created_at").order("created_at", { ascending: false }).limit(100),
         supabase.from("subscription_plans").select("id, is_active"),
         supabase.from("user_roles").select("user_id, role"),
+        supabase.from("user_organization_roles").select("user_id, role"),
       ]);
 
       const profiles = profilesRes.data || [];
       const orgs = orgsRes.data || [];
       const tickets = ticketsRes.data || [];
       const plans = plansRes.data || [];
-      const roles = rolesRes.data || [];
+      const globalRoles = globalRolesRes.data || [];
+      const orgRoles = orgRolesRes.data || [];
 
       const ticketsByStatus: Record<string, number> = {};
       const ticketsByPriority: Record<string, number> = {};
@@ -166,8 +168,13 @@ function DashboardTab() {
         ticketsByPriority[t.priority] = (ticketsByPriority[t.priority] || 0) + 1;
       });
 
+      // Distinct (user, role) pairs across global + per-org tables
       const roleBreakdown: Record<string, number> = {};
-      roles.forEach((r) => {
+      const seen = new Set<string>();
+      [...globalRoles, ...orgRoles].forEach((r: any) => {
+        const key = `${r.user_id}:${r.role}`;
+        if (seen.has(key)) return;
+        seen.add(key);
         roleBreakdown[r.role] = (roleBreakdown[r.role] || 0) + 1;
       });
 
