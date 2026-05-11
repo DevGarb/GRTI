@@ -129,6 +129,14 @@ export default function Usuarios() {
         const { error } = await supabase.from("user_roles").insert({ user_id: userId, role: role as any });
         if (error) throw error;
       }
+      if (password && password.length > 0) {
+        if (password.length < 6) throw new Error("A senha deve ter no mínimo 6 caracteres.");
+        const { data, error } = await supabase.functions.invoke("update-user", {
+          body: { user_id: userId, password },
+        });
+        if (error) throw error;
+        if (data?.error) throw new Error(data.error);
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin-users"] });
