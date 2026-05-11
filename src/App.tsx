@@ -37,6 +37,7 @@ import OpCadastros from "@/pages/OpCadastros";
 import OpEntregas from "@/pages/OpEntregas";
 import OpOficina from "@/pages/OpOficina";
 import OpManutencao from "@/pages/OpManutencao";
+import OpDashboard from "@/pages/OpDashboard";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
