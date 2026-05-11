@@ -43,7 +43,7 @@ const anim = {
 
 type DashTab = "todos" | "categorias";
 
-export default function Dashboard() {
+export default function DashboardPadrao() {
   const { data: tickets = [], isLoading } = useTickets();
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState<DashTab>("todos");
