@@ -559,6 +559,8 @@ function UsuariosTab() {
   useEffect(() => { fetchData(); }, []);
 
   const getUserRoles = (userId: string) => roles.filter((r) => r.user_id === userId).map((r) => r.role);
+  const getUserRolesWithOrg = (userId: string) =>
+    roles.filter((r) => r.user_id === userId).map((r) => ({ role: r.role, organization_id: r.organization_id }));
 
   const handleChangeOrg = async (userId: string, orgId: string | null) => {
     const { error } = await supabase.from("profiles").update({ organization_id: orgId }).eq("user_id", userId);
