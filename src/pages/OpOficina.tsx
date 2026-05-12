@@ -504,7 +504,10 @@ function OsDetailDialog({ os, onClose, onUpdate, onDelete, onRequestClose, compa
         </div>
 
         <div className="border-t pt-3">
-          <h3 className="font-medium mb-2">Peças / Itens</h3>
+          <h3 className="font-medium mb-2 flex items-center gap-2">
+            Peças / Itens
+            <Badge variant="secondary">{parts.length}</Badge>
+          </h3>
           <div className="grid grid-cols-[1fr_80px_120px_auto] gap-2 mb-2">
             <Input list="parts-catalog" placeholder="Peça/serviço" value={partName} onChange={e => {
               setPartName(e.target.value);
