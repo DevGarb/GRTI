@@ -394,6 +394,12 @@ function OsDetailDialog({ os, onClose, onUpdate, onDelete, onRequestClose, compa
 
   const [partName, setPartName] = useState(""); const [qty, setQty] = useState("1"); const [price, setPrice] = useState("0");
 
+  const handleAddPart = () => {
+    if (!partName) return;
+    addPart({ part_name: partName, quantity: Number(qty), unit_price: Number(price) });
+    setPartName(""); setQty("1"); setPrice("0");
+  };
+
   const total = parts.reduce((s, p) => s + Number(p.quantity) * Number(p.unit_price), 0);
 
   const saveHeader = () => {
