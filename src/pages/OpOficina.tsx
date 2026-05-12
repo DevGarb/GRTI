@@ -390,6 +390,7 @@ function OsDetailDialog({ os, onClose, onUpdate, onDelete, onRequestClose, compa
   const [diagnosis, setDiagnosis] = useState(os.diagnosis || "");
   const [notes, setNotes] = useState(os.notes || "");
   const [deadline, setDeadline] = useState(os.deadline || "");
+  const [openedAt, setOpenedAt] = useState(os.opened_at || "");
 
   const [partName, setPartName] = useState(""); const [qty, setQty] = useState("1"); const [price, setPrice] = useState("0");
 
@@ -401,6 +402,7 @@ function OsDetailDialog({ os, onClose, onUpdate, onDelete, onRequestClose, compa
       diagnosis,
       notes,
       deadline: deadline || null,
+      opened_at: openedAt || os.opened_at,
     });
   };
 
@@ -427,7 +429,7 @@ function OsDetailDialog({ os, onClose, onUpdate, onDelete, onRequestClose, compa
     w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>OS #${os.os_number}</title>
       <style>body{font-family:Arial,sans-serif;padding:24px;color:#222}h1{margin:0 0 4px}h2{font-size:14px;margin:16px 0 6px;border-bottom:1px solid #ddd;padding-bottom:4px}table{width:100%;border-collapse:collapse;font-size:12px}th,td{border:1px solid #ccc;padding:6px}th{background:#f2f2f2;text-align:left}.grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:12px}.f{padding:6px;background:#f7f7f7;border-radius:4px}</style></head><body>
       <h1>Ordem de Serviço #${os.os_number}</h1>
-      <div style="font-size:12px;color:#666">Aberta em ${new Date(os.opened_at).toLocaleDateString("pt-BR")} · Status: <b>${status}</b></div>
+      <div style="font-size:12px;color:#666">Aberta em ${new Date(openedAt || os.opened_at).toLocaleDateString("pt-BR")} · Status: <b>${status}</b></div>
       <h2>Dados</h2>
       <div class="grid">
         <div class="f"><b>Cliente:</b> ${comp}</div>
@@ -475,6 +477,10 @@ function OsDetailDialog({ os, onClose, onUpdate, onDelete, onRequestClose, compa
             </Select>
           </div>
           <div>
+            <Label>Data de abertura</Label>
+            <Input type="date" value={openedAt} onChange={e => setOpenedAt(e.target.value)} />
+          </div>
+          <div>
             <Label>Prazo</Label>
             <Input type="date" value={deadline} onChange={e => setDeadline(e.target.value)} />
           </div>
@@ -498,7 +504,10 @@ function OsDetailDialog({ os, onClose, onUpdate, onDelete, onRequestClose, compa
         </div>
 
         <div className="border-t pt-3">
-          <h3 className="font-medium mb-2">Peças / Itens</h3>
+          <h3 className="font-medium mb-2 flex items-center gap-2">
+            Peças / Itens
+            <Badge variant="secondary">{parts.length}</Badge>
+          </h3>
           <div className="grid grid-cols-[1fr_80px_120px_auto] gap-2 mb-2">
             <Input list="parts-catalog" placeholder="Peça/serviço" value={partName} onChange={e => {
               setPartName(e.target.value);
