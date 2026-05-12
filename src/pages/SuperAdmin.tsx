@@ -559,6 +559,8 @@ function UsuariosTab() {
   useEffect(() => { fetchData(); }, []);
 
   const getUserRoles = (userId: string) => roles.filter((r) => r.user_id === userId).map((r) => r.role);
+  const getUserRolesWithOrg = (userId: string) =>
+    roles.filter((r) => r.user_id === userId).map((r) => ({ role: r.role, organization_id: r.organization_id }));
 
   const handleChangeOrg = async (userId: string, orgId: string | null) => {
     const { error } = await supabase.from("profiles").update({ organization_id: orgId }).eq("user_id", userId);
@@ -888,11 +890,21 @@ function UsuariosTab() {
                           </div>
                         ) : (
                           <div className="flex flex-wrap gap-1">
-                            {userRoles.map((r) => (
-                              <span key={r} className={`text-xs px-2 py-0.5 rounded-full font-medium ${roleColors[r] || "bg-muted text-muted-foreground"}`}>
-                                {ROLE_LABELS[r] || r}
-                              </span>
-                            ))}
+                            {getUserRolesWithOrg(p.user_id).map((r, idx) => {
+                              const orgName = r.organization_id
+                                ? (orgs.find((o) => o.id === r.organization_id)?.name || "—")
+                                : "Global";
+                              return (
+                                <span
+                                  key={`${r.role}-${r.organization_id ?? "global"}-${idx}`}
+                                  className={`text-xs px-2 py-0.5 rounded-full font-medium inline-flex items-center gap-1 ${roleColors[r.role] || "bg-muted text-muted-foreground"}`}
+                                  title={`${ROLE_LABELS[r.role] || r.role} em ${orgName}`}
+                                >
+                                  {ROLE_LABELS[r.role] || r.role}
+                                  <span className="opacity-70 font-normal">· {orgName}</span>
+                                </span>
+                              );
+                            })}
                           </div>
                         )}
                       </td>
