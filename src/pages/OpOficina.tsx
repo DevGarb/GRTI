@@ -402,6 +402,7 @@ function OsDetailDialog({ os, onClose, onUpdate, onDelete, onRequestClose, compa
       diagnosis,
       notes,
       deadline: deadline || null,
+      opened_at: openedAt || os.opened_at,
     });
   };
 
