@@ -112,8 +112,8 @@ const App = () => (
                       <Route path="/webhook-logs" element={<MenuGuard menuKey="webhook-logs"><AdminRoute><WebhookLogs /></AdminRoute></MenuGuard>} />
                       <Route path="/preventivas" element={<MenuGuard menuKey="preventivas"><Preventivas /></MenuGuard>} />
                       <Route path="/patrimonio" element={<MenuGuard menuKey="patrimonio"><AdminRoute><Patrimonio /></AdminRoute></MenuGuard>} />
-                      <Route path="/projetos" element={<MenuGuard menuKey="projetos"><AdminRoute><Projetos /></AdminRoute></MenuGuard>} />
-                      <Route path="/projetos/:id" element={<MenuGuard menuKey="projetos"><AdminRoute><ProjetoDetalhe /></AdminRoute></MenuGuard>} />
+                      <Route path="/projetos" element={<MenuGuard menuKey="projetos"><Projetos /></MenuGuard>} />
+                      <Route path="/projetos/:id" element={<MenuGuard menuKey="projetos"><ProjetoDetalhe /></MenuGuard>} />
                       <Route path="/configuracoes" element={<MenuGuard menuKey="configuracoes"><Configuracoes /></MenuGuard>} />
                       <Route path="/white-label" element={<MenuGuard menuKey="white-label"><AdminRoute><WhiteLabel /></AdminRoute></MenuGuard>} />
                       <Route path="/integracoes" element={<MenuGuard menuKey="integracoes"><AdminRoute><Integracoes /></AdminRoute></MenuGuard>} />
