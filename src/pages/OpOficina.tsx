@@ -509,15 +509,36 @@ function OsDetailDialog({ os, onClose, onUpdate, onDelete, onRequestClose, compa
             <Badge variant="secondary">{parts.length}</Badge>
           </h3>
           <div className="grid grid-cols-[1fr_80px_120px_auto] gap-2 mb-2">
-            <Input list="parts-catalog" placeholder="Peça/serviço" value={partName} onChange={e => {
-              setPartName(e.target.value);
-              const found = partsCatalog.find(p => p.name === e.target.value);
-              if (found) setPrice(String(found.default_price));
-            }} />
+            <Input
+              list="parts-catalog"
+              placeholder="Peça/serviço"
+              value={partName}
+              onChange={e => {
+                setPartName(e.target.value);
+                const found = partsCatalog.find(p => p.name === e.target.value);
+                if (found) setPrice(String(found.default_price));
+              }}
+              onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); handleAddPart(); } }}
+            />
             <datalist id="parts-catalog">{partsCatalog.map(p => <option key={p.id} value={p.name} />)}</datalist>
-            <Input type="number" step="0.5" min="0" value={qty} onChange={e => setQty(e.target.value)} />
-            <Input type="number" step="0.01" min="0" value={price} onChange={e => setPrice(e.target.value)} placeholder="Valor" />
-            <Button onClick={() => { if (!partName) return; addPart({ part_name: partName, quantity: Number(qty), unit_price: Number(price) }); setPartName(""); setQty("1"); setPrice("0"); }}>
+            <Input
+              type="number"
+              step="0.5"
+              min="0"
+              value={qty}
+              onChange={e => setQty(e.target.value)}
+              onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); handleAddPart(); } }}
+            />
+            <Input
+              type="number"
+              step="0.01"
+              min="0"
+              value={price}
+              onChange={e => setPrice(e.target.value)}
+              placeholder="Valor"
+              onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); handleAddPart(); } }}
+            />
+            <Button onClick={handleAddPart}>
               <Plus className="h-4 w-4" />
             </Button>
           </div>
