@@ -390,6 +390,7 @@ function OsDetailDialog({ os, onClose, onUpdate, onDelete, onRequestClose, compa
   const [diagnosis, setDiagnosis] = useState(os.diagnosis || "");
   const [notes, setNotes] = useState(os.notes || "");
   const [deadline, setDeadline] = useState(os.deadline || "");
+  const [openedAt, setOpenedAt] = useState(os.opened_at || "");
 
   const [partName, setPartName] = useState(""); const [qty, setQty] = useState("1"); const [price, setPrice] = useState("0");
 
