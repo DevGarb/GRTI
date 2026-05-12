@@ -429,7 +429,7 @@ function OsDetailDialog({ os, onClose, onUpdate, onDelete, onRequestClose, compa
     w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>OS #${os.os_number}</title>
       <style>body{font-family:Arial,sans-serif;padding:24px;color:#222}h1{margin:0 0 4px}h2{font-size:14px;margin:16px 0 6px;border-bottom:1px solid #ddd;padding-bottom:4px}table{width:100%;border-collapse:collapse;font-size:12px}th,td{border:1px solid #ccc;padding:6px}th{background:#f2f2f2;text-align:left}.grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:12px}.f{padding:6px;background:#f7f7f7;border-radius:4px}</style></head><body>
       <h1>Ordem de Serviço #${os.os_number}</h1>
-      <div style="font-size:12px;color:#666">Aberta em ${new Date(os.opened_at).toLocaleDateString("pt-BR")} · Status: <b>${status}</b></div>
+      <div style="font-size:12px;color:#666">Aberta em ${new Date(openedAt || os.opened_at).toLocaleDateString("pt-BR")} · Status: <b>${status}</b></div>
       <h2>Dados</h2>
       <div class="grid">
         <div class="f"><b>Cliente:</b> ${comp}</div>
