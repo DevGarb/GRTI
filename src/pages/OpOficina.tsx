@@ -477,6 +477,10 @@ function OsDetailDialog({ os, onClose, onUpdate, onDelete, onRequestClose, compa
             </Select>
           </div>
           <div>
+            <Label>Data de abertura</Label>
+            <Input type="date" value={openedAt} onChange={e => setOpenedAt(e.target.value)} />
+          </div>
+          <div>
             <Label>Prazo</Label>
             <Input type="date" value={deadline} onChange={e => setDeadline(e.target.value)} />
           </div>
