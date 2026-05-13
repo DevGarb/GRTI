@@ -1,45 +1,31 @@
-# Ajustes Entregas + Oficina
+## Objetivo
+Permitir que cada usuário tenha liberações de módulos diferentes por organização. Hoje os overrides de menu são salvos por usuário "global" (sem considerar a org ativa), e na leitura também são todos misturados.
 
-## 1. Entregas — Kanban por motorista
-Arquivo: `src/pages/OpEntregas.tsx`
+## O que muda
 
-- Remover as colunas **Em rota** e **Cancelado** do kanban (manter apenas no filtro de status, conforme combinado).
-- Gerar `KANBAN_COLUMNS` dinamicamente a partir dos motoristas ativos:
-  ```
-  Pendente | <Motorista A> | <Motorista B> | ... | Finalizado
-  ```
-- Distribuição (apenas agrupamento visual, sem alterar status):
-  - `Finalizado` → coluna Finalizado.
-  - Sem `driver_id` → coluna Pendente.
-  - Com `driver_id` (e não finalizado) → coluna do motorista.
-- `onMove`:
-  - Soltar em coluna de motorista → `update({ driver_id: <id> })` (status preservado).
-  - Soltar em **Pendente** → `update({ driver_id: null })`.
-  - Soltar em **Finalizado** → fluxo de fechamento atual (`setClosing`).
-- Manter o toggle "Ocultando finalizadas" e os filtros existentes (status/tipo/data) inalterados.
+### 1. Banco — `user_menu_overrides` por organização
+- Trocar a chave única `(user_id, menu_key)` por `(user_id, organization_id, menu_key)`.
+- Tornar `organization_id` NOT NULL (todos os registros atuais já têm valor).
+- Adicionar índice `(user_id, organization_id)` para a leitura por org ativa.
+- Manter as RLS atuais (já validam `is_same_organization(organization_id)`).
 
-## 2. Oficina — Cliente, Veículo e Mecânico editáveis na OS
-Arquivo: `src/pages/OpOficina.tsx` (`OsDetailDialog`)
+### 2. Leitura de permissões (`useMenuAccess`)
+- Buscar overrides filtrando pela organização ativa do usuário (`profile.organization_id`), e refazer a busca quando a org ativa muda.
+- Assim, ao trocar de organização no `OrgSwitcher`, o menu reflete as permissões daquela org.
 
-- Substituir o bloco somente-leitura (linhas ~493-497) por:
-  - Select de **Cliente** (companies).
-  - Select de **Veículo** (vehicles) + inputs de **Placa** e **Modelo** (preenchem automático ao escolher um veículo da frota, igual ao `NewOsDialog`).
-  - Select de **Mecânico** (mechanics).
-- Adicionar estado local para `company_id`, `vehicle_id`, `vehicle_plate`, `vehicle_model`, `mechanic_id` e incluir esses campos no `saveHeader`/`onUpdate`.
+### 3. Modal de permissões (`UserPermissionsModal` + `Usuarios.tsx`)
+- Mostrar no cabeçalho a organização cujas permissões estão sendo editadas (a org ativa do admin que está editando).
+- Carregar overrides filtrando por `(user_id, organization_id)`.
+- Carregar os papéis (`roles`) do usuário **naquela organização** via `user_organization_roles` (em vez de papéis globais), para que o "Padrão" exibido reflita o que aquele usuário realmente tem na org em questão.
+- Ao salvar: deletar/inserir filtrando também por `organization_id` (para não apagar overrides de outras orgs do mesmo usuário).
+- Bloquear o botão se o admin não tiver `organization_id` ativa.
 
-## 3. Oficina — Badge com quantidade de peças no card do kanban
-Arquivos: `src/hooks/useOficina.ts` e `src/pages/OpOficina.tsx`
+### Fora do escopo
+- Não muda papéis (`user_organization_roles` já é por org).
+- Não muda RLS das outras tabelas.
+- Não cria UI nova para "ver/editar permissões de outra org" — segue o modelo de "edita a org que você está logado". Para liberar X em outra org, o admin troca de org e edita lá.
 
-- No hook `useServiceOrders`, após buscar as OS, fazer uma query agregada em `op_service_order_parts` (`select service_order_id, quantity`) e expor um mapa `partsCountByOs: Record<string, number>` (contagem de linhas por OS).
-- Em `renderCard` (e na linha da view "Lista"), exibir um `<Badge>` com o número de peças (ex.: "🔧 3 peças") quando > 0, ao lado do número da OS.
-
-## 4. Oficina — Data de criação editável
-Arquivo: `src/pages/OpOficina.tsx` (`OsDetailDialog`)
-
-- O campo já existe como "Data de abertura" e é salvo, mas está pouco visível. Renomear o label para **"Data de criação"** e garantir que ele apareça acima do campo "Prazo".
-- Garantir que `saveHeader` envie `opened_at` mesmo quando vazio cai para o valor original (já implementado — só validar).
-
-## Notas técnicas
-- Manter tipos existentes (`Delivery`, `ServiceOrder`).
-- Sem mudanças de schema/RLS.
-- `partsCountByOs` deve ser atualizado em `refetch()` para refletir adição/remoção de peças após editar uma OS.
+## Resumo técnico
+1. Migração SQL: `DROP CONSTRAINT user_menu_overrides_user_id_menu_key_key`, `ALTER COLUMN organization_id SET NOT NULL`, `ADD CONSTRAINT ... UNIQUE (user_id, organization_id, menu_key)`, `CREATE INDEX idx_umo_user_org`.
+2. `src/hooks/useMenuAccess.ts`: incluir `.eq("organization_id", profile.organization_id)` e dependência do org id no `useEffect`.
+3. `src/components/usuarios/UserPermissionsModal.tsx`: filtrar select/delete por `organization_id`, carregar roles via `user_organization_roles` para a org ativa, exibir nome da org no header.

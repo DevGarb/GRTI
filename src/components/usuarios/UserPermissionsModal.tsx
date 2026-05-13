@@ -17,41 +17,69 @@ export default function UserPermissionsModal({ user, onClose }: Props) {
   const [states, setStates] = useState<Record<string, State>>({});
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [orgName, setOrgName] = useState<string>("");
+  const [orgRoles, setOrgRoles] = useState<string[]>([]);
+  const orgId = profile?.organization_id || null;
 
   const userRoles: Roles = {
     isSuperAdmin: user.roles.includes("super_admin"),
-    isAdmin: user.roles.includes("admin"),
-    isTech: user.roles.includes("tecnico") || user.roles.includes("desenvolvedor"),
-    isAuditor: user.roles.includes("auditor"),
+    isAdmin: orgRoles.includes("admin"),
+    isTech: orgRoles.includes("tecnico") || orgRoles.includes("desenvolvedor"),
+    isAuditor: orgRoles.includes("auditor"),
   };
 
   useEffect(() => {
-    supabase
-      .from("user_menu_overrides")
-      .select("menu_key, granted")
-      .eq("user_id", user.user_id)
-      .then(({ data }) => {
-        const map: Record<string, State> = {};
-        (data || []).forEach((r: any) => {
-          map[r.menu_key] = r.granted ? "grant" : "block";
-        });
-        setStates(map);
-        setLoading(false);
+    if (!orgId) { setLoading(false); return; }
+    let cancelled = false;
+    setLoading(true);
+    (async () => {
+      const [overridesRes, rolesRes, orgRes] = await Promise.all([
+        supabase
+          .from("user_menu_overrides")
+          .select("menu_key, granted")
+          .eq("user_id", user.user_id)
+          .eq("organization_id", orgId),
+        supabase
+          .from("user_organization_roles")
+          .select("role")
+          .eq("user_id", user.user_id)
+          .eq("organization_id", orgId),
+        supabase
+          .from("organizations")
+          .select("name")
+          .eq("id", orgId)
+          .maybeSingle(),
+      ]);
+      if (cancelled) return;
+      const map: Record<string, State> = {};
+      (overridesRes.data || []).forEach((r: any) => {
+        map[r.menu_key] = r.granted ? "grant" : "block";
       });
-  }, [user.user_id]);
+      setStates(map);
+      setOrgRoles((rolesRes.data || []).map((r: any) => r.role));
+      setOrgName(orgRes.data?.name || "");
+      setLoading(false);
+    })();
+    return () => { cancelled = true; };
+  }, [user.user_id, orgId]);
 
   const setState = (key: string, s: State) => {
     setStates((prev) => ({ ...prev, [key]: s }));
   };
 
   const save = async () => {
+    if (!orgId) {
+      toast.error("Selecione uma organização ativa primeiro");
+      return;
+    }
     setSaving(true);
     try {
-      // Delete all then insert non-default
+      // Delete only this org's overrides for this user, then re-insert non-default
       const { error: delErr } = await supabase
         .from("user_menu_overrides")
         .delete()
-        .eq("user_id", user.user_id);
+        .eq("user_id", user.user_id)
+        .eq("organization_id", orgId);
       if (delErr) throw delErr;
 
       const rows = Object.entries(states)
@@ -60,7 +88,7 @@ export default function UserPermissionsModal({ user, onClose }: Props) {
           user_id: user.user_id,
           menu_key,
           granted: s === "grant",
-          organization_id: profile?.organization_id || null,
+          organization_id: orgId,
           created_by: profile?.user_id,
         }));
 
@@ -83,7 +111,10 @@ export default function UserPermissionsModal({ user, onClose }: Props) {
         <div className="flex items-center justify-between p-4 border-b border-border">
           <div>
             <h2 className="text-base font-semibold">Permissões de Menu</h2>
-            <p className="text-xs text-muted-foreground">{user.full_name}</p>
+            <p className="text-xs text-muted-foreground">
+              {user.full_name}
+              {orgName && <> · <span className="font-medium">{orgName}</span></>}
+            </p>
           </div>
           <button onClick={onClose} className="p-1 text-muted-foreground hover:text-foreground">
             <X className="h-4 w-4" />
