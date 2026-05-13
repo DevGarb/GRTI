@@ -1,5 +1,7 @@
 import { useState, useMemo, useEffect } from "react";
-import { X, User, Tag, Paperclip, Star, ChevronDown, ChevronRight, LayoutList, Play, CheckCircle2, RotateCcw, ThumbsUp, ThumbsDown, RefreshCw, HandMetal, AlertTriangle, Clock, Trash2, Award, FolderKanban } from "lucide-react";
+import { X, User, Tag, Paperclip, Star, ChevronDown, ChevronRight, LayoutList, Play, CheckCircle2, RotateCcw, ThumbsUp, ThumbsDown, RefreshCw, HandMetal, AlertTriangle, Clock, Trash2, Award, FolderKanban, Building2 } from "lucide-react";
+import { useUserOrganizations } from "@/hooks/useUserOrganizations";
+import { useMoveTicketOrg } from "@/hooks/useMoveTicketOrg";
 import { StatusBadge, PriorityBadge } from "@/components/StatusBadge";
 import type { Ticket } from "@/hooks/useTickets";
 import { useUpdateTicket, usePickTicket, useTechnicianProfiles, useProfiles } from "@/hooks/useTickets";
@@ -136,6 +138,11 @@ export default function TicketDetailModal({ ticket, onClose }: Props) {
   const [approvalScore, setApprovalScore] = useState(0);
   const [approvalHover, setApprovalHover] = useState(0);
   const [approvalComment, setApprovalComment] = useState("");
+  const [showMoveOrgDialog, setShowMoveOrgDialog] = useState(false);
+  const [targetOrgId, setTargetOrgId] = useState<string>("");
+  const { orgs: userOrgs } = useUserOrganizations();
+  const moveTicketOrg = useMoveTicketOrg();
+  const moveCandidateOrgs = userOrgs.filter((o) => o.id !== (ticket as any).organization_id);
 
   const { data: attachments = [] } = useQuery({
     queryKey: ["ticket-attachments", ticket.id],
@@ -448,9 +455,20 @@ export default function TicketDetailModal({ ticket, onClose }: Props) {
               </span>
             </div>
           </div>
-          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-muted transition-colors text-muted-foreground">
-            <X className="h-5 w-5" />
-          </button>
+          <div className="flex items-center gap-1">
+            {(isAdmin || isSuperAdmin) && (
+              <button
+                onClick={() => setShowMoveOrgDialog(true)}
+                className="p-1.5 rounded-lg hover:bg-muted transition-colors text-muted-foreground"
+                title="Mover para outra organização"
+              >
+                <Building2 className="h-4 w-4" />
+              </button>
+            )}
+            <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-muted transition-colors text-muted-foreground">
+              <X className="h-5 w-5" />
+            </button>
+          </div>
         </div>
 
         {/* Body */}
@@ -1011,6 +1029,52 @@ export default function TicketDetailModal({ ticket, onClose }: Props) {
           </div>
         )}
       </div>
+
+      <AlertDialog open={showMoveOrgDialog} onOpenChange={(o) => { setShowMoveOrgDialog(o); if (!o) setTargetOrgId(""); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <Building2 className="h-5 w-5 text-primary" />
+              Mover chamado para outra organização
+            </AlertDialogTitle>
+            <AlertDialogDescription asChild>
+              <div className="space-y-3">
+                <p>Selecione a organização de destino. Esta ação será registrada no log de auditoria.</p>
+                {moveCandidateOrgs.length === 0 ? (
+                  <p className="text-amber-600 text-sm">Você não tem acesso a outras organizações.</p>
+                ) : (
+                  <select
+                    value={targetOrgId}
+                    onChange={(e) => setTargetOrgId(e.target.value)}
+                    className="w-full px-3 py-2.5 rounded-lg border border-input bg-background text-sm text-foreground"
+                  >
+                    <option value="">Selecione...</option>
+                    {moveCandidateOrgs.map((o) => (
+                      <option key={o.id} value={o.id}>{o.name}</option>
+                    ))}
+                  </select>
+                )}
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              disabled={!targetOrgId || moveTicketOrg.isPending}
+              onClick={async (e) => {
+                e.preventDefault();
+                if (!targetOrgId) return;
+                await moveTicketOrg.mutateAsync({ ticketId: ticket.id, targetOrgId });
+                setShowMoveOrgDialog(false);
+                setTargetOrgId("");
+                onClose();
+              }}
+            >
+              Mover chamado
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

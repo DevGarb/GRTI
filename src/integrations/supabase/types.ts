@@ -1962,6 +1962,10 @@ export type Database = {
       }
       is_staff_user: { Args: { _user_id: string }; Returns: boolean }
       is_super_admin: { Args: { _user_id: string }; Returns: boolean }
+      move_ticket_to_organization: {
+        Args: { _target_org: string; _ticket_id: string }
+        Returns: undefined
+      }
     }
     Enums: {
       app_role:

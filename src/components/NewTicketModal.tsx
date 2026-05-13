@@ -1,11 +1,24 @@
 import { useEffect, useRef, useState } from "react";
-import { X, Ticket, Upload, Trash2, Image } from "lucide-react";
+import { X, Ticket, Upload, Trash2, Image, Building2, AlertTriangle } from "lucide-react";
 import { useCreateTicket } from "@/hooks/useTickets";
 import { useSectors } from "@/hooks/useSectors";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { buildStorageFileName, createPendingFile, getAttachmentDisplayName, getClipboardImageFiles, revokePendingFiles } from "@/lib/attachments";
+import { useUserOrganizations } from "@/hooks/useUserOrganizations";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+
+const SKIP_CONFIRM_KEY = "ticket-confirm-skip";
 
 interface Props {
   onClose: () => void;
@@ -19,6 +32,9 @@ interface PendingFile {
 export default function NewTicketModal({ onClose }: Props) {
   const { profile } = useAuth();
   const { data: sectors = [] } = useSectors(profile?.organization_id || null);
+  const { orgs } = useUserOrganizations();
+  const activeOrg = orgs.find((o) => o.id === profile?.organization_id);
+  const hasMultipleOrgs = orgs.length > 1;
   const [dragOver, setDragOver] = useState(false);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
@@ -27,6 +43,10 @@ export default function NewTicketModal({ onClose }: Props) {
   const [sector, setSector] = useState("");
   const [pendingFiles, setPendingFiles] = useState<PendingFile[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
+  const [skipConfirm, setSkipConfirm] = useState<boolean>(() => {
+    try { return localStorage.getItem(SKIP_CONFIRM_KEY) === "1"; } catch { return false; }
+  });
   const fileInputRef = useRef<HTMLInputElement>(null);
   const pendingFilesRef = useRef<PendingFile[]>([]);
   const createTicket = useCreateTicket();
@@ -65,6 +85,23 @@ export default function NewTicketModal({ onClose }: Props) {
     e.preventDefault();
     setDragOver(false);
     if (e.dataTransfer.files.length) addFiles(e.dataTransfer.files);
+  };
+
+  const handleClickSubmit = () => {
+    if (!title.trim()) return;
+    if (skipConfirm) {
+      handleSubmit();
+    } else {
+      setShowConfirm(true);
+    }
+  };
+
+  const handleConfirmSubmit = () => {
+    if (skipConfirm) {
+      try { localStorage.setItem(SKIP_CONFIRM_KEY, "1"); } catch {}
+    }
+    setShowConfirm(false);
+    handleSubmit();
   };
 
   const handleSubmit = async () => {
@@ -153,6 +190,28 @@ export default function NewTicketModal({ onClose }: Props) {
         </div>
 
         <div className="p-5 space-y-4">
+          {/* Banner: organização ativa */}
+          <div className="flex items-start gap-2.5 p-3 rounded-lg bg-primary/5 border border-primary/20">
+            <Building2 className="h-4 w-4 text-primary mt-0.5 shrink-0" />
+            <div className="flex-1 min-w-0">
+              <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">
+                Este chamado será aberto em
+              </p>
+              <p className="text-sm font-semibold text-foreground truncate">
+                {activeOrg?.name || "—"}
+              </p>
+              {hasMultipleOrgs && (
+                <button
+                  type="button"
+                  onClick={() => { onClose(); window.location.href = "/escolher-organizacao"; }}
+                  className="mt-1 text-[11px] text-primary hover:underline"
+                >
+                  Não é a organização correta? Trocar de organização
+                </button>
+              )}
+            </div>
+          </div>
+
           <div>
             <label className="text-sm font-medium text-foreground">Título *</label>
             <input
@@ -279,7 +338,7 @@ export default function NewTicketModal({ onClose }: Props) {
             Cancelar
           </button>
           <button
-            onClick={handleSubmit}
+            onClick={handleClickSubmit}
             disabled={isSubmitting || createTicket.isPending || !title.trim()}
             className="px-4 py-2.5 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 transition-opacity disabled:opacity-50"
           >
@@ -287,6 +346,40 @@ export default function NewTicketModal({ onClose }: Props) {
           </button>
         </div>
       </div>
+
+      <AlertDialog open={showConfirm} onOpenChange={setShowConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-amber-500" />
+              Confirmar abertura do chamado
+            </AlertDialogTitle>
+            <AlertDialogDescription asChild>
+              <div className="space-y-3">
+                <p>
+                  Você está abrindo este chamado em{" "}
+                  <strong className="text-foreground">{activeOrg?.name || "—"}</strong>. Deseja continuar?
+                </p>
+                <label className="flex items-center gap-2 text-xs text-muted-foreground cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={skipConfirm}
+                    onChange={(e) => setSkipConfirm(e.target.checked)}
+                    className="rounded border-input"
+                  />
+                  Não pedir confirmação novamente
+                </label>
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Voltar e revisar</AlertDialogCancel>
+            <AlertDialogAction onClick={handleConfirmSubmit}>
+              Sim, abrir chamado
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
