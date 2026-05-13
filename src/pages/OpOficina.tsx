@@ -392,12 +392,18 @@ function OsDetailDialog({ os, onClose, onUpdate, onDelete, onRequestClose, compa
   const { items: partsCatalog } = useParts();
   const { items: mechanics } = useMechanics();
   const { items: companies } = useCompanies();
+  const { items: vehicles } = useVehicles();
 
   const [status, setStatus] = useState(os.status);
   const [diagnosis, setDiagnosis] = useState(os.diagnosis || "");
   const [notes, setNotes] = useState(os.notes || "");
   const [deadline, setDeadline] = useState(os.deadline || "");
   const [openedAt, setOpenedAt] = useState(os.opened_at || "");
+  const [companyId, setCompanyId] = useState<string>(os.company_id || "");
+  const [mechanicId, setMechanicId] = useState<string>(os.mechanic_id || "");
+  const [vehicleId, setVehicleId] = useState<string>(os.vehicle_id || "");
+  const [vehiclePlate, setVehiclePlate] = useState<string>(os.vehicle_plate || "");
+  const [vehicleModel, setVehicleModel] = useState<string>(os.vehicle_model || "");
 
   const [partName, setPartName] = useState(""); const [qty, setQty] = useState("1"); const [price, setPrice] = useState("0");
 
@@ -416,6 +422,11 @@ function OsDetailDialog({ os, onClose, onUpdate, onDelete, onRequestClose, compa
       notes,
       deadline: deadline || null,
       opened_at: openedAt || os.opened_at,
+      company_id: companyId || null,
+      mechanic_id: mechanicId || null,
+      vehicle_id: vehicleId || null,
+      vehicle_plate: vehiclePlate || null,
+      vehicle_model: vehicleModel || null,
     });
   };
 
