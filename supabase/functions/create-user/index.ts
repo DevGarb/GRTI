@@ -140,6 +140,16 @@ Deno.serve(async (req) => {
         { onConflict: "user_id" }
       );
 
+    // Ensure membership in user_organizations for the target org
+    if (organizationId) {
+      await adminClient
+        .from("user_organizations")
+        .upsert(
+          { user_id: newUser.user!.id, organization_id: organizationId },
+          { onConflict: "user_id,organization_id" }
+        );
+    }
+
     // Assign role per organization (new model). Keep user_roles only for super_admin.
     if (userRole && userRole !== "super_admin" && organizationId) {
       // Remove default 'solicitante' for this org (trigger may have inserted it for both orgs)
