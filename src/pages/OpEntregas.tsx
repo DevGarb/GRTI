@@ -291,12 +291,22 @@ export default function OpEntregas() {
         <div className="text-center text-muted-foreground py-12">Carregando...</div>
       ) : view === "kanban" ? (
         <OpKanbanBoard<Delivery>
-          columns={KANBAN_COLUMNS}
+          columns={kanbanColumns}
           itemsByColumn={itemsByCol}
           renderCard={renderKanbanCard}
           resolveItem={(id) => filtered.find(x => x.id === id)}
           isAllowed={() => true}
-          onMove={(item, _from, to) => handleStatusChange(item, to)}
+          onMove={(item, _from, to) => {
+            if (to === FINALIZED_COL) { handleStatusChange(item, "Finalizado"); return; }
+            if (to === PENDING_COL) {
+              if (item.driver_id) update(item.id, { driver_id: null });
+              return;
+            }
+            if (to.startsWith("driver:")) {
+              const driverId = to.slice("driver:".length);
+              if (item.driver_id !== driverId) update(item.id, { driver_id: driverId });
+            }
+          }}
           emptyText="Sem entregas"
         />
       ) : grouped.length === 0 ? (
