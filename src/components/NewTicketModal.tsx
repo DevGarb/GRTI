@@ -87,6 +87,23 @@ export default function NewTicketModal({ onClose }: Props) {
     if (e.dataTransfer.files.length) addFiles(e.dataTransfer.files);
   };
 
+  const handleClickSubmit = () => {
+    if (!title.trim()) return;
+    if (skipConfirm) {
+      handleSubmit();
+    } else {
+      setShowConfirm(true);
+    }
+  };
+
+  const handleConfirmSubmit = () => {
+    if (skipConfirm) {
+      try { localStorage.setItem(SKIP_CONFIRM_KEY, "1"); } catch {}
+    }
+    setShowConfirm(false);
+    handleSubmit();
+  };
+
   const handleSubmit = async () => {
     if (!title.trim()) return;
     setIsSubmitting(true);
