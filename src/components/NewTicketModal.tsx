@@ -190,6 +190,28 @@ export default function NewTicketModal({ onClose }: Props) {
         </div>
 
         <div className="p-5 space-y-4">
+          {/* Banner: organização ativa */}
+          <div className="flex items-start gap-2.5 p-3 rounded-lg bg-primary/5 border border-primary/20">
+            <Building2 className="h-4 w-4 text-primary mt-0.5 shrink-0" />
+            <div className="flex-1 min-w-0">
+              <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">
+                Este chamado será aberto em
+              </p>
+              <p className="text-sm font-semibold text-foreground truncate">
+                {activeOrg?.name || "—"}
+              </p>
+              {hasMultipleOrgs && (
+                <button
+                  type="button"
+                  onClick={() => { onClose(); window.location.href = "/escolher-organizacao"; }}
+                  className="mt-1 text-[11px] text-primary hover:underline"
+                >
+                  Não é a organização correta? Trocar de organização
+                </button>
+              )}
+            </div>
+          </div>
+
           <div>
             <label className="text-sm font-medium text-foreground">Título *</label>
             <input
