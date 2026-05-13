@@ -1029,6 +1029,52 @@ export default function TicketDetailModal({ ticket, onClose }: Props) {
           </div>
         )}
       </div>
+
+      <AlertDialog open={showMoveOrgDialog} onOpenChange={(o) => { setShowMoveOrgDialog(o); if (!o) setTargetOrgId(""); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <Building2 className="h-5 w-5 text-primary" />
+              Mover chamado para outra organização
+            </AlertDialogTitle>
+            <AlertDialogDescription asChild>
+              <div className="space-y-3">
+                <p>Selecione a organização de destino. Esta ação será registrada no log de auditoria.</p>
+                {moveCandidateOrgs.length === 0 ? (
+                  <p className="text-amber-600 text-sm">Você não tem acesso a outras organizações.</p>
+                ) : (
+                  <select
+                    value={targetOrgId}
+                    onChange={(e) => setTargetOrgId(e.target.value)}
+                    className="w-full px-3 py-2.5 rounded-lg border border-input bg-background text-sm text-foreground"
+                  >
+                    <option value="">Selecione...</option>
+                    {moveCandidateOrgs.map((o) => (
+                      <option key={o.id} value={o.id}>{o.name}</option>
+                    ))}
+                  </select>
+                )}
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              disabled={!targetOrgId || moveTicketOrg.isPending}
+              onClick={async (e) => {
+                e.preventDefault();
+                if (!targetOrgId) return;
+                await moveTicketOrg.mutateAsync({ ticketId: ticket.id, targetOrgId });
+                setShowMoveOrgDialog(false);
+                setTargetOrgId("");
+                onClose();
+              }}
+            >
+              Mover chamado
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
