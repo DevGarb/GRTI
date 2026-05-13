@@ -49,7 +49,7 @@ function isOverdue(o: ServiceOrder): boolean {
 
 export default function OpOficina() {
   const { user } = useAuth();
-  const { items, add, update, remove } = useServiceOrders();
+  const { items, partsCountByOs, add, update, remove } = useServiceOrders();
   const { items: mechanics } = useMechanics();
   const { items: companies } = useCompanies();
   const { items: vehicles } = useVehicles();
@@ -138,10 +138,14 @@ export default function OpOficina() {
 
   const renderCard = (o: ServiceOrder) => {
     const overdue = isOverdue(o);
+    const partsCount = partsCountByOs[o.id] || 0;
     return (
       <div onClick={() => setSelected(o)}>
-        <div className="flex items-start gap-2 mb-1">
+        <div className="flex items-start gap-2 mb-1 flex-wrap">
           <span className="font-mono text-[11px] bg-muted px-1.5 py-0.5 rounded">#{o.os_number}</span>
+          {partsCount > 0 && (
+            <Badge variant="secondary" className="text-[10px] h-5">🔧 {partsCount} {partsCount === 1 ? "peça" : "peças"}</Badge>
+          )}
           <span className="text-xs text-muted-foreground truncate flex-1">{companyName(o.company_id)}</span>
           {overdue && <Badge variant="destructive" className="text-[10px]"><AlertTriangle className="h-3 w-3 mr-0.5" />Atraso</Badge>}
         </div>
