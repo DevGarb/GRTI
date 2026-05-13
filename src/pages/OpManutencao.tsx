@@ -155,7 +155,12 @@ export default function OpManutencao() {
         </div>
         <div className="flex items-center justify-between mt-2">
           <Badge variant="secondary" className="text-[10px]">{om.category}</Badge>
-          <OpQuickActions phone={site?.phone} address={site?.address} size="icon" />
+          <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
+            <Button size="icon" variant="ghost" className="h-7 w-7" onClick={(e) => { e.stopPropagation(); setPhotoOmId(om.id); }} title="Fotos">
+              <ImageIcon className="h-4 w-4" />
+            </Button>
+            <OpQuickActions phone={site?.phone} address={site?.address} size="icon" />
+          </div>
         </div>
       </div>
     );
