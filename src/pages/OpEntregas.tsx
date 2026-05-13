@@ -29,12 +29,8 @@ const STATUS_COLORS: Record<string, string> = {
   "Cancelado": "bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300",
 };
 
-const KANBAN_COLUMNS: KanbanColumn[] = [
-  { id: "Pendente", label: "Pendente", color: "bg-amber-500" },
-  { id: "Em rota", label: "Em rota", color: "bg-blue-500" },
-  { id: "Finalizado", label: "Finalizado", color: "bg-emerald-600" },
-  { id: "Cancelado", label: "Cancelado", color: "bg-rose-500" },
-];
+const PENDING_COL = "Pendente";
+const FINALIZED_COL = "Finalizado";
 
 type FilterMode = "tudo" | "hoje" | "semana" | "data";
 
