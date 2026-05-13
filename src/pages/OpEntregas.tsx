@@ -109,12 +109,25 @@ export default function OpEntregas() {
     return Array.from(map.entries());
   }, [filtered]);
 
+  const kanbanColumns = useMemo<KanbanColumn[]>(() => {
+    const cols: KanbanColumn[] = [{ id: PENDING_COL, label: "Pendente", color: "bg-amber-500" }];
+    drivers.filter(d => d.is_active).forEach(d => {
+      cols.push({ id: `driver:${d.id}`, label: d.name, color: "bg-blue-500" });
+    });
+    cols.push({ id: FINALIZED_COL, label: "Finalizado", color: "bg-emerald-600" });
+    return cols;
+  }, [drivers]);
+
   const itemsByCol = useMemo(() => {
     const map: Record<string, Delivery[]> = {};
-    KANBAN_COLUMNS.forEach(c => { map[c.id] = []; });
-    filtered.forEach(d => { (map[d.status] ||= []).push(d); });
+    kanbanColumns.forEach(c => { map[c.id] = []; });
+    filtered.forEach(d => {
+      if (d.status === "Finalizado") map[FINALIZED_COL]?.push(d);
+      else if (d.driver_id && map[`driver:${d.driver_id}`]) map[`driver:${d.driver_id}`].push(d);
+      else map[PENDING_COL]?.push(d);
+    });
     return map;
-  }, [filtered]);
+  }, [filtered, kanbanColumns]);
 
   const driverCounts = useMemo(() => {
     const counts: Record<string, number> = { all: monthItems.length };
