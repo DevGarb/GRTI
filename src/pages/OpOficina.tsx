@@ -251,6 +251,9 @@ export default function OpOficina() {
                   <div className="flex items-center gap-2 flex-wrap">
                     <span className="font-medium truncate">{o.description || "Sem descrição"}</span>
                     <Badge className={statusColor[o.status] || ""} variant="secondary">{o.status}</Badge>
+                    {(partsCountByOs[o.id] || 0) > 0 && (
+                      <Badge variant="outline" className="text-[10px]">🔧 {partsCountByOs[o.id]} {partsCountByOs[o.id] === 1 ? "peça" : "peças"}</Badge>
+                    )}
                     {overdue && <Badge variant="destructive"><AlertTriangle className="h-3 w-3 mr-0.5" />Em atraso</Badge>}
                   </div>
                   <div className="text-xs text-muted-foreground mt-0.5">
