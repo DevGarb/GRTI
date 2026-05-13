@@ -338,7 +338,7 @@ export default function NewTicketModal({ onClose }: Props) {
             Cancelar
           </button>
           <button
-            onClick={handleSubmit}
+            onClick={handleClickSubmit}
             disabled={isSubmitting || createTicket.isPending || !title.trim()}
             className="px-4 py-2.5 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 transition-opacity disabled:opacity-50"
           >
@@ -346,6 +346,40 @@ export default function NewTicketModal({ onClose }: Props) {
           </button>
         </div>
       </div>
+
+      <AlertDialog open={showConfirm} onOpenChange={setShowConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-amber-500" />
+              Confirmar abertura do chamado
+            </AlertDialogTitle>
+            <AlertDialogDescription asChild>
+              <div className="space-y-3">
+                <p>
+                  Você está abrindo este chamado em{" "}
+                  <strong className="text-foreground">{activeOrg?.name || "—"}</strong>. Deseja continuar?
+                </p>
+                <label className="flex items-center gap-2 text-xs text-muted-foreground cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={skipConfirm}
+                    onChange={(e) => setSkipConfirm(e.target.checked)}
+                    className="rounded border-input"
+                  />
+                  Não pedir confirmação novamente
+                </label>
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Voltar e revisar</AlertDialogCancel>
+            <AlertDialogAction onClick={handleConfirmSubmit}>
+              Sim, abrir chamado
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
