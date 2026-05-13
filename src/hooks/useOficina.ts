@@ -91,12 +91,23 @@ export function useParts() {
 export function useServiceOrders() {
   const { profile, user } = useAuth();
   const [items, setItems] = useState<ServiceOrder[]>([]);
+  const [partsCountByOs, setPartsCountByOs] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(true);
   const fetch = useCallback(async () => {
     if (!profile?.organization_id) return;
     setLoading(true);
     const { data } = await supabase.from("op_service_orders").select("*").eq("organization_id", profile.organization_id).order("opened_at", { ascending: false });
-    setItems((data || []) as ServiceOrder[]);
+    const list = (data || []) as ServiceOrder[];
+    setItems(list);
+    const ids = list.map(o => o.id);
+    if (ids.length) {
+      const { data: pData } = await supabase.from("op_service_order_parts").select("service_order_id").in("service_order_id", ids);
+      const counts: Record<string, number> = {};
+      (pData || []).forEach((r: any) => { counts[r.service_order_id] = (counts[r.service_order_id] || 0) + 1; });
+      setPartsCountByOs(counts);
+    } else {
+      setPartsCountByOs({});
+    }
     setLoading(false);
   }, [profile?.organization_id]);
   useEffect(() => { fetch(); }, [fetch]);
