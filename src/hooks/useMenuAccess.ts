@@ -4,12 +4,17 @@ import { useAuth } from "@/contexts/AuthContext";
 import { menuItems, defaultAccess, type Roles } from "@/config/menuItems";
 
 export function useMenuAccess() {
-  const { user, roles, isSuperAdmin } = useAuth();
+  const { user, profile, roles, isSuperAdmin } = useAuth();
   const [overrides, setOverrides] = useState<Record<string, boolean>>({});
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (!user) {
+      setOverrides({});
+      setLoading(false);
+      return;
+    }
+    if (!profile?.organization_id) {
       setOverrides({});
       setLoading(false);
       return;
@@ -20,6 +25,7 @@ export function useMenuAccess() {
       .from("user_menu_overrides")
       .select("menu_key, granted")
       .eq("user_id", user.id)
+      .eq("organization_id", profile.organization_id)
       .then(({ data }) => {
         if (cancelled) return;
         const map: Record<string, boolean> = {};
@@ -28,7 +34,7 @@ export function useMenuAccess() {
         setLoading(false);
       });
     return () => { cancelled = true; };
-  }, [user?.id]);
+  }, [user?.id, profile?.organization_id]);
 
   const r: Roles = {
     isSuperAdmin,
