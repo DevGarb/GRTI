@@ -49,7 +49,7 @@ function isOverdue(o: ServiceOrder): boolean {
 
 export default function OpOficina() {
   const { user } = useAuth();
-  const { items, add, update, remove } = useServiceOrders();
+  const { items, partsCountByOs, add, update, remove } = useServiceOrders();
   const { items: mechanics } = useMechanics();
   const { items: companies } = useCompanies();
   const { items: vehicles } = useVehicles();
@@ -138,10 +138,14 @@ export default function OpOficina() {
 
   const renderCard = (o: ServiceOrder) => {
     const overdue = isOverdue(o);
+    const partsCount = partsCountByOs[o.id] || 0;
     return (
       <div onClick={() => setSelected(o)}>
-        <div className="flex items-start gap-2 mb-1">
+        <div className="flex items-start gap-2 mb-1 flex-wrap">
           <span className="font-mono text-[11px] bg-muted px-1.5 py-0.5 rounded">#{o.os_number}</span>
+          {partsCount > 0 && (
+            <Badge variant="secondary" className="text-[10px] h-5">🔧 {partsCount} {partsCount === 1 ? "peça" : "peças"}</Badge>
+          )}
           <span className="text-xs text-muted-foreground truncate flex-1">{companyName(o.company_id)}</span>
           {overdue && <Badge variant="destructive" className="text-[10px]"><AlertTriangle className="h-3 w-3 mr-0.5" />Atraso</Badge>}
         </div>
@@ -247,6 +251,9 @@ export default function OpOficina() {
                   <div className="flex items-center gap-2 flex-wrap">
                     <span className="font-medium truncate">{o.description || "Sem descrição"}</span>
                     <Badge className={statusColor[o.status] || ""} variant="secondary">{o.status}</Badge>
+                    {(partsCountByOs[o.id] || 0) > 0 && (
+                      <Badge variant="outline" className="text-[10px]">🔧 {partsCountByOs[o.id]} {partsCountByOs[o.id] === 1 ? "peça" : "peças"}</Badge>
+                    )}
                     {overdue && <Badge variant="destructive"><AlertTriangle className="h-3 w-3 mr-0.5" />Em atraso</Badge>}
                   </div>
                   <div className="text-xs text-muted-foreground mt-0.5">
@@ -385,12 +392,18 @@ function OsDetailDialog({ os, onClose, onUpdate, onDelete, onRequestClose, compa
   const { items: partsCatalog } = useParts();
   const { items: mechanics } = useMechanics();
   const { items: companies } = useCompanies();
+  const { items: vehicles } = useVehicles();
 
   const [status, setStatus] = useState(os.status);
   const [diagnosis, setDiagnosis] = useState(os.diagnosis || "");
   const [notes, setNotes] = useState(os.notes || "");
   const [deadline, setDeadline] = useState(os.deadline || "");
   const [openedAt, setOpenedAt] = useState(os.opened_at || "");
+  const [companyId, setCompanyId] = useState<string>(os.company_id || "");
+  const [mechanicId, setMechanicId] = useState<string>(os.mechanic_id || "");
+  const [vehicleId, setVehicleId] = useState<string>(os.vehicle_id || "");
+  const [vehiclePlate, setVehiclePlate] = useState<string>(os.vehicle_plate || "");
+  const [vehicleModel, setVehicleModel] = useState<string>(os.vehicle_model || "");
 
   const [partName, setPartName] = useState(""); const [qty, setQty] = useState("1"); const [price, setPrice] = useState("0");
 
@@ -409,6 +422,11 @@ function OsDetailDialog({ os, onClose, onUpdate, onDelete, onRequestClose, compa
       notes,
       deadline: deadline || null,
       opened_at: openedAt || os.opened_at,
+      company_id: companyId || null,
+      mechanic_id: mechanicId || null,
+      vehicle_id: vehicleId || null,
+      vehicle_plate: vehiclePlate || null,
+      vehicle_model: vehicleModel || null,
     });
   };
 
@@ -483,17 +501,45 @@ function OsDetailDialog({ os, onClose, onUpdate, onDelete, onRequestClose, compa
             </Select>
           </div>
           <div>
-            <Label>Data de abertura</Label>
+            <Label>Data de criação</Label>
             <Input type="date" value={openedAt} onChange={e => setOpenedAt(e.target.value)} />
           </div>
           <div>
             <Label>Prazo</Label>
             <Input type="date" value={deadline} onChange={e => setDeadline(e.target.value)} />
           </div>
-          <div className="text-sm md:col-span-2">
-            <div><b>Cliente:</b> {companies.find(c => c.id === os.company_id)?.name || "—"}</div>
-            <div><b>Veículo:</b> {os.vehicle_plate || "—"} · {os.vehicle_model || "—"}</div>
-            <div><b>Mecânico:</b> {mechanics.find(m => m.id === os.mechanic_id)?.name || "—"}</div>
+          <div>
+            <Label>Cliente</Label>
+            <Select value={companyId} onValueChange={setCompanyId}>
+              <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
+              <SelectContent>{companies.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}</SelectContent>
+            </Select>
+          </div>
+          <div>
+            <Label>Mecânico</Label>
+            <Select value={mechanicId} onValueChange={setMechanicId}>
+              <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
+              <SelectContent>{mechanics.map(m => <SelectItem key={m.id} value={m.id}>{m.name}</SelectItem>)}</SelectContent>
+            </Select>
+          </div>
+          <div>
+            <Label>Veículo (frota)</Label>
+            <Select value={vehicleId} onValueChange={v => {
+              setVehicleId(v);
+              const veh = vehicles.find(x => x.id === v);
+              if (veh) { setVehiclePlate(veh.plate || ""); setVehicleModel(veh.model || ""); }
+            }}>
+              <SelectTrigger><SelectValue placeholder="Opcional" /></SelectTrigger>
+              <SelectContent>{vehicles.map(v => <SelectItem key={v.id} value={v.id}>{v.plate} · {v.model}</SelectItem>)}</SelectContent>
+            </Select>
+          </div>
+          <div>
+            <Label>Placa</Label>
+            <Input value={vehiclePlate} onChange={e => setVehiclePlate(e.target.value.toUpperCase())} />
+          </div>
+          <div className="md:col-span-2">
+            <Label>Modelo</Label>
+            <Input value={vehicleModel} onChange={e => setVehicleModel(e.target.value)} />
           </div>
           <div className="md:col-span-2">
             <Label>Descrição</Label>

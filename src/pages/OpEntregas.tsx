@@ -29,12 +29,8 @@ const STATUS_COLORS: Record<string, string> = {
   "Cancelado": "bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300",
 };
 
-const KANBAN_COLUMNS: KanbanColumn[] = [
-  { id: "Pendente", label: "Pendente", color: "bg-amber-500" },
-  { id: "Em rota", label: "Em rota", color: "bg-blue-500" },
-  { id: "Finalizado", label: "Finalizado", color: "bg-emerald-600" },
-  { id: "Cancelado", label: "Cancelado", color: "bg-rose-500" },
-];
+const PENDING_COL = "Pendente";
+const FINALIZED_COL = "Finalizado";
 
 type FilterMode = "tudo" | "hoje" | "semana" | "data";
 
@@ -113,12 +109,25 @@ export default function OpEntregas() {
     return Array.from(map.entries());
   }, [filtered]);
 
+  const kanbanColumns = useMemo<KanbanColumn[]>(() => {
+    const cols: KanbanColumn[] = [{ id: PENDING_COL, label: "Pendente", color: "bg-amber-500" }];
+    drivers.filter(d => d.is_active).forEach(d => {
+      cols.push({ id: `driver:${d.id}`, label: d.name, color: "bg-blue-500" });
+    });
+    cols.push({ id: FINALIZED_COL, label: "Finalizado", color: "bg-emerald-600" });
+    return cols;
+  }, [drivers]);
+
   const itemsByCol = useMemo(() => {
     const map: Record<string, Delivery[]> = {};
-    KANBAN_COLUMNS.forEach(c => { map[c.id] = []; });
-    filtered.forEach(d => { (map[d.status] ||= []).push(d); });
+    kanbanColumns.forEach(c => { map[c.id] = []; });
+    filtered.forEach(d => {
+      if (d.status === "Finalizado") map[FINALIZED_COL]?.push(d);
+      else if (d.driver_id && map[`driver:${d.driver_id}`]) map[`driver:${d.driver_id}`].push(d);
+      else map[PENDING_COL]?.push(d);
+    });
     return map;
-  }, [filtered]);
+  }, [filtered, kanbanColumns]);
 
   const driverCounts = useMemo(() => {
     const counts: Record<string, number> = { all: monthItems.length };
@@ -282,12 +291,22 @@ export default function OpEntregas() {
         <div className="text-center text-muted-foreground py-12">Carregando...</div>
       ) : view === "kanban" ? (
         <OpKanbanBoard<Delivery>
-          columns={KANBAN_COLUMNS}
+          columns={kanbanColumns}
           itemsByColumn={itemsByCol}
           renderCard={renderKanbanCard}
           resolveItem={(id) => filtered.find(x => x.id === id)}
           isAllowed={() => true}
-          onMove={(item, _from, to) => handleStatusChange(item, to)}
+          onMove={(item, _from, to) => {
+            if (to === FINALIZED_COL) { handleStatusChange(item, "Finalizado"); return; }
+            if (to === PENDING_COL) {
+              if (item.driver_id) update(item.id, { driver_id: null });
+              return;
+            }
+            if (to.startsWith("driver:")) {
+              const driverId = to.slice("driver:".length);
+              if (item.driver_id !== driverId) update(item.id, { driver_id: driverId });
+            }
+          }}
           emptyText="Sem entregas"
         />
       ) : grouped.length === 0 ? (
