@@ -138,6 +138,11 @@ export default function TicketDetailModal({ ticket, onClose }: Props) {
   const [approvalScore, setApprovalScore] = useState(0);
   const [approvalHover, setApprovalHover] = useState(0);
   const [approvalComment, setApprovalComment] = useState("");
+  const [showMoveOrgDialog, setShowMoveOrgDialog] = useState(false);
+  const [targetOrgId, setTargetOrgId] = useState<string>("");
+  const { orgs: userOrgs } = useUserOrganizations();
+  const moveTicketOrg = useMoveTicketOrg();
+  const moveCandidateOrgs = userOrgs.filter((o) => o.id !== (ticket as any).organization_id);
 
   const { data: attachments = [] } = useQuery({
     queryKey: ["ticket-attachments", ticket.id],
