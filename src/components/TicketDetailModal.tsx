@@ -448,9 +448,20 @@ export default function TicketDetailModal({ ticket, onClose }: Props) {
               </span>
             </div>
           </div>
-          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-muted transition-colors text-muted-foreground">
-            <X className="h-5 w-5" />
-          </button>
+          <div className="flex items-center gap-1">
+            {(isAdmin || isSuperAdmin) && (
+              <button
+                onClick={() => setShowMoveOrgDialog(true)}
+                className="p-1.5 rounded-lg hover:bg-muted transition-colors text-muted-foreground"
+                title="Mover para outra organização"
+              >
+                <Building2 className="h-4 w-4" />
+              </button>
+            )}
+            <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-muted transition-colors text-muted-foreground">
+              <X className="h-5 w-5" />
+            </button>
+          </div>
         </div>
 
         {/* Body */}
