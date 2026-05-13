@@ -285,11 +285,6 @@ export default function TicketDetailModal({ ticket, onClose }: Props) {
         } as any);
         if (error) throw error;
       }
-  const [showMoveOrgDialog, setShowMoveOrgDialog] = useState(false);
-  const [targetOrgId, setTargetOrgId] = useState<string>("");
-  const { orgs: userOrgs } = useUserOrganizations();
-  const moveTicketOrg = useMoveTicketOrg();
-  const moveCandidateOrgs = userOrgs.filter((o) => o.id !== (ticket as any).organization_id);
 
 
       await addHistory("status_change", status, "Fechado");
