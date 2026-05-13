@@ -111,7 +111,10 @@ export default function UserPermissionsModal({ user, onClose }: Props) {
         <div className="flex items-center justify-between p-4 border-b border-border">
           <div>
             <h2 className="text-base font-semibold">Permissões de Menu</h2>
-            <p className="text-xs text-muted-foreground">{user.full_name}</p>
+            <p className="text-xs text-muted-foreground">
+              {user.full_name}
+              {orgName && <> · <span className="font-medium">{orgName}</span></>}
+            </p>
           </div>
           <button onClick={onClose} className="p-1 text-muted-foreground hover:text-foreground">
             <X className="h-4 w-4" />
