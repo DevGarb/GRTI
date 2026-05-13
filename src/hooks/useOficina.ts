@@ -141,7 +141,7 @@ export function useServiceOrders() {
     const { error } = await supabase.from("op_service_orders").delete().eq("id", id);
     if (error) toast.error(error.message); else fetch();
   };
-  return { items, loading, add, update, remove, refetch: fetch };
+  return { items, partsCountByOs, loading, add, update, remove, refetch: fetch };
 }
 
 export function useServiceOrderDetails(serviceOrderId: string | null) {
