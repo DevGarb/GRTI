@@ -501,17 +501,45 @@ function OsDetailDialog({ os, onClose, onUpdate, onDelete, onRequestClose, compa
             </Select>
           </div>
           <div>
-            <Label>Data de abertura</Label>
+            <Label>Data de criação</Label>
             <Input type="date" value={openedAt} onChange={e => setOpenedAt(e.target.value)} />
           </div>
           <div>
             <Label>Prazo</Label>
             <Input type="date" value={deadline} onChange={e => setDeadline(e.target.value)} />
           </div>
-          <div className="text-sm md:col-span-2">
-            <div><b>Cliente:</b> {companies.find(c => c.id === os.company_id)?.name || "—"}</div>
-            <div><b>Veículo:</b> {os.vehicle_plate || "—"} · {os.vehicle_model || "—"}</div>
-            <div><b>Mecânico:</b> {mechanics.find(m => m.id === os.mechanic_id)?.name || "—"}</div>
+          <div>
+            <Label>Cliente</Label>
+            <Select value={companyId} onValueChange={setCompanyId}>
+              <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
+              <SelectContent>{companies.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}</SelectContent>
+            </Select>
+          </div>
+          <div>
+            <Label>Mecânico</Label>
+            <Select value={mechanicId} onValueChange={setMechanicId}>
+              <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
+              <SelectContent>{mechanics.map(m => <SelectItem key={m.id} value={m.id}>{m.name}</SelectItem>)}</SelectContent>
+            </Select>
+          </div>
+          <div>
+            <Label>Veículo (frota)</Label>
+            <Select value={vehicleId} onValueChange={v => {
+              setVehicleId(v);
+              const veh = vehicles.find(x => x.id === v);
+              if (veh) { setVehiclePlate(veh.plate || ""); setVehicleModel(veh.model || ""); }
+            }}>
+              <SelectTrigger><SelectValue placeholder="Opcional" /></SelectTrigger>
+              <SelectContent>{vehicles.map(v => <SelectItem key={v.id} value={v.id}>{v.plate} · {v.model}</SelectItem>)}</SelectContent>
+            </Select>
+          </div>
+          <div>
+            <Label>Placa</Label>
+            <Input value={vehiclePlate} onChange={e => setVehiclePlate(e.target.value.toUpperCase())} />
+          </div>
+          <div className="md:col-span-2">
+            <Label>Modelo</Label>
+            <Input value={vehicleModel} onChange={e => setVehicleModel(e.target.value)} />
           </div>
           <div className="md:col-span-2">
             <Label>Descrição</Label>
