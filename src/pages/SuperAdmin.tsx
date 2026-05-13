@@ -374,8 +374,25 @@ function OrganizacoesTab() {
       const { error } = await supabase.from("organizations").update(payload).eq("id", editing.id);
       if (error) toast.error("Erro: " + error.message); else toast.success("Organização atualizada!");
     } else {
-      const { error } = await supabase.from("organizations").insert(payload);
-      if (error) toast.error("Erro: " + error.message); else toast.success("Organização criada!");
+      const { data: created, error } = await supabase.from("organizations").insert(payload).select("id").single();
+      if (error) {
+        toast.error("Erro: " + error.message);
+      } else {
+        // Auto-link all super admins to the new org so it appears in their switcher
+        if (created?.id) {
+          const { data: supers } = await supabase
+            .from("user_roles")
+            .select("user_id")
+            .eq("role", "super_admin");
+          const rows = (supers || []).map((s: any) => ({ user_id: s.user_id, organization_id: created.id }));
+          if (rows.length > 0) {
+            await supabase
+              .from("user_organizations")
+              .upsert(rows, { onConflict: "user_id,organization_id" });
+          }
+        }
+        toast.success("Organização criada!");
+      }
     }
     setSaving(false); resetForm(); fetchData();
   };
