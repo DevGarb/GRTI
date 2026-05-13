@@ -32,6 +32,9 @@ interface PendingFile {
 export default function NewTicketModal({ onClose }: Props) {
   const { profile } = useAuth();
   const { data: sectors = [] } = useSectors(profile?.organization_id || null);
+  const { orgs } = useUserOrganizations();
+  const activeOrg = orgs.find((o) => o.id === profile?.organization_id);
+  const hasMultipleOrgs = orgs.length > 1;
   const [dragOver, setDragOver] = useState(false);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
@@ -40,6 +43,10 @@ export default function NewTicketModal({ onClose }: Props) {
   const [sector, setSector] = useState("");
   const [pendingFiles, setPendingFiles] = useState<PendingFile[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
+  const [skipConfirm, setSkipConfirm] = useState<boolean>(() => {
+    try { return localStorage.getItem(SKIP_CONFIRM_KEY) === "1"; } catch { return false; }
+  });
   const fileInputRef = useRef<HTMLInputElement>(null);
   const pendingFilesRef = useRef<PendingFile[]>([]);
   const createTicket = useCreateTicket();
