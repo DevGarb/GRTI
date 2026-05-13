@@ -1,11 +1,24 @@
 import { useEffect, useRef, useState } from "react";
-import { X, Ticket, Upload, Trash2, Image } from "lucide-react";
+import { X, Ticket, Upload, Trash2, Image, Building2, AlertTriangle } from "lucide-react";
 import { useCreateTicket } from "@/hooks/useTickets";
 import { useSectors } from "@/hooks/useSectors";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { buildStorageFileName, createPendingFile, getAttachmentDisplayName, getClipboardImageFiles, revokePendingFiles } from "@/lib/attachments";
+import { useUserOrganizations } from "@/hooks/useUserOrganizations";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+
+const SKIP_CONFIRM_KEY = "ticket-confirm-skip";
 
 interface Props {
   onClose: () => void;
