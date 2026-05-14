@@ -52,7 +52,7 @@ export const menuItems: MenuItem[] = [
   { key: "setores", label: "Setores", icon: Building2, path: "/setores", adminOnly: true, tooltip: "Gerenciar setores da organização" },
   { key: "webhook-logs", label: "Webhook Logs", icon: Webhook, path: "/webhook-logs", adminOnly: true, tooltip: "Monitorar webhooks enviados" },
   { key: "preventivas", label: "Preventivas", icon: Wrench, path: "/preventivas", techAllowed: true, tooltip: "Manutenções preventivas programadas" },
-  { key: "patrimonio", label: "Patrimônio", icon: Package, path: "/patrimonio", adminOnly: true, tooltip: "Cadastro e histórico de equipamentos" },
+  { key: "patrimonio", label: "Patrimônio", icon: Package, path: "/patrimonio", adminOnly: true, techAllowed: true, tooltip: "Cadastro e histórico de equipamentos" },
   { key: "projetos", label: "Projetos", icon: FolderKanban, path: "/projetos", adminOnly: true, tooltip: "Gestão de projetos da organização" },
   { key: "super-admin", label: "Painel Admin", icon: Shield, path: "/super-admin", superAdminOnly: true, subtitle: "Organizações, Usuários e Planos", tooltip: "Gestão global de organizações, usuários e planos" },
   { key: "planos", label: "Planos", icon: CreditCard, path: "/planos", superAdminOnly: true, tooltip: "Gerenciar planos de assinatura" },
