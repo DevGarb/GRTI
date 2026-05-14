@@ -64,7 +64,7 @@ export default function Login() {
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 0.6 }}
-        className="hidden lg:flex lg:w-1/2 relative overflow-hidden items-center justify-center p-16 bg-gradient-to-br from-primary to-[hsl(var(--primary)/0.7)]"
+        className="hidden md:flex md:w-1/2 relative overflow-hidden items-center justify-center p-16 bg-gradient-to-br from-primary to-[hsl(var(--primary)/0.7)]"
       >
         <div
           className="absolute inset-0 opacity-[0.12]"
@@ -95,7 +95,7 @@ export default function Login() {
       </motion.aside>
 
       {/* Form panel */}
-      <main className="relative w-full lg:w-1/2 flex flex-col items-center justify-center p-8">
+      <main className="relative w-full md:w-1/2 flex flex-col items-center justify-center p-8">
         <motion.div
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
@@ -103,7 +103,7 @@ export default function Login() {
           className="w-full max-w-sm space-y-10"
         >
           {/* Mobile logo */}
-          <div className="lg:hidden flex flex-col items-center mb-2">
+          <div className="md:hidden flex flex-col items-center mb-2">
             <div className="w-16 h-16 bg-primary rounded-xl flex items-center justify-center text-2xl font-black text-primary-foreground mb-4">
               GR
             </div>
