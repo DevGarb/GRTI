@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { motion } from "framer-motion";
 import { toast } from "sonner";
 import { Eye, EyeOff } from "lucide-react";
+import logoBranco from "@/assets/logo-branco.png";
 
 const SUPPORT_PHONE_DISPLAY = "(85) 98151-9958";
 const SUPPORT_PHONE_E164 = "5585981519958";
@@ -83,10 +84,11 @@ export default function Login() {
           transition={{ duration: 0.7, delay: 0.1 }}
           className="relative z-10 text-primary-foreground max-w-md"
         >
-          <div className="mb-10 w-24 h-24 rounded-2xl flex items-center justify-center text-4xl font-black border border-primary-foreground/20 shadow-2xl bg-primary-foreground/15 backdrop-blur-xl">
-            GR
-          </div>
-          <h1 className="text-6xl font-black mb-6 tracking-tighter">GRTI</h1>
+          <img
+            src={logoBranco}
+            alt="Grupo Ramos"
+            className="mb-10 w-72 max-w-full h-auto object-contain drop-shadow-2xl"
+          />
           <div className="h-1 w-20 bg-primary-foreground/40 mb-8 rounded-full" />
           <p className="text-xl text-primary-foreground/90 leading-relaxed font-light">
             Gestão inteligente e suporte ágil para o seu helpdesk multi-tenant.
@@ -104,10 +106,9 @@ export default function Login() {
         >
           {/* Mobile logo */}
           <div className="md:hidden flex flex-col items-center mb-2">
-            <div className="w-16 h-16 bg-primary rounded-xl flex items-center justify-center text-2xl font-black text-primary-foreground mb-4">
-              GR
+            <div className="w-48 px-5 py-4 bg-primary rounded-xl flex items-center justify-center mb-4">
+              <img src={logoBranco} alt="Grupo Ramos" className="w-full h-auto object-contain" />
             </div>
-            <h2 className="text-2xl font-bold tracking-tight">GRTI</h2>
           </div>
 
           <div className="space-y-2">
