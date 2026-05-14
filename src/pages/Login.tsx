@@ -91,7 +91,7 @@ export default function Login() {
           />
           <div className="h-1 w-20 bg-primary-foreground/40 mb-8 rounded-full" />
           <p className="text-xl text-primary-foreground/90 leading-relaxed font-light">
-            Gestão inteligente e suporte ágil para o seu helpdesk multi-tenant.
+            Gestão unificada e suporte rápido para todo o ecossistema do Grupo Ramos.
           </p>
         </motion.div>
       </motion.aside>
