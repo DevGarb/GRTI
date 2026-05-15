@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Users, Shield, Search, UserPlus, ChevronDown, ChevronRight, Pencil, X, User, Crown, FileUp, Download, Code, KeyRound } from "lucide-react";
+import { Users, Shield, Search, UserPlus, ChevronDown, ChevronRight, Pencil, X, User, Crown, FileUp, Download, Code, KeyRound, Trash2 } from "lucide-react";
 import ImportUsersModal from "@/components/usuarios/ImportUsersModal";
 import UserPermissionsModal from "@/components/usuarios/UserPermissionsModal";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -184,6 +184,26 @@ export default function Usuarios() {
     onError: (e: Error) => toast.error("Erro: " + e.message),
   });
 
+  const deleteUser = useMutation({
+    mutationFn: async (userId: string) => {
+      const { data, error } = await supabase.functions.invoke("delete-user", {
+        body: { user_id: userId },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-users"] });
+      toast.success("Usuário excluído com sucesso!");
+    },
+    onError: (e: Error) => toast.error("Erro ao excluir: " + e.message),
+  });
+
+  const handleDelete = (user: ProfileWithRoles) => {
+    if (!confirm(`Tem certeza que deseja excluir ${user.full_name}? Esta ação é irreversível.`)) return;
+    deleteUser.mutate(user.user_id);
+  };
+
   const filtered = users.filter(
     (u) =>
       u.full_name.toLowerCase().includes(search.toLowerCase()) ||
@@ -362,6 +382,16 @@ export default function Usuarios() {
                             >
                               <KeyRound className="h-3.5 w-3.5" />
                             </button>
+                            {isSuperAdmin && (
+                              <button
+                                onClick={() => handleDelete(user)}
+                                disabled={deleteUser.isPending}
+                                className="p-1.5 rounded-md hover:bg-destructive/10 text-destructive transition-colors disabled:opacity-50"
+                                title="Excluir usuário"
+                              >
+                                <Trash2 className="h-3.5 w-3.5" />
+                              </button>
+                            )}
                           </>
                         )}
                         {isSuperAdmin && isSuperAdminUser(user) && (
