@@ -184,6 +184,26 @@ export default function Usuarios() {
     onError: (e: Error) => toast.error("Erro: " + e.message),
   });
 
+  const deleteUser = useMutation({
+    mutationFn: async (userId: string) => {
+      const { data, error } = await supabase.functions.invoke("delete-user", {
+        body: { user_id: userId },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-users"] });
+      toast.success("Usuário excluído com sucesso!");
+    },
+    onError: (e: Error) => toast.error("Erro ao excluir: " + e.message),
+  });
+
+  const handleDelete = (user: ProfileWithRoles) => {
+    if (!confirm(`Tem certeza que deseja excluir ${user.full_name}? Esta ação é irreversível.`)) return;
+    deleteUser.mutate(user.user_id);
+  };
+
   const filtered = users.filter(
     (u) =>
       u.full_name.toLowerCase().includes(search.toLowerCase()) ||
