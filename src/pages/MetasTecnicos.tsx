@@ -180,12 +180,21 @@ export default function MetasTecnicos() {
             </select>
           </div>
         </div>
-        {isLoading ? (
+        {error ? (
+          <ErrorBanner error={error} onRetry={refetch} />
+        ) : isLoading ? (
           <div className="card-elevated p-12 flex items-center justify-center">
             <div className="h-6 w-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
           </div>
         ) : (
-          <GoalsSummaryCards stats={myStats} goals={myGoals} formatHours={formatHours} />
+          <div className="relative">
+            {isFetching && (
+              <div className="absolute right-0 -top-8 flex items-center gap-1.5 text-[11px] text-muted-foreground">
+                <Loader2 className="h-3 w-3 animate-spin" /> Atualizando…
+              </div>
+            )}
+            <GoalsSummaryCards stats={myStats} goals={myGoals} formatHours={formatHours} />
+          </div>
         )}
       </div>
     );
