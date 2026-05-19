@@ -301,7 +301,9 @@ export default function MetasTecnicos() {
           <GoalsSummaryCards stats={stats} goals={goals} formatHours={formatHours} />
 
           {/* Technician list */}
-          {isLoading ? (
+          {error ? (
+            <ErrorBanner error={error} onRetry={refetch} />
+          ) : isLoading ? (
             <div className="card-elevated p-12 flex items-center justify-center">
               <div className="h-6 w-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
             </div>
