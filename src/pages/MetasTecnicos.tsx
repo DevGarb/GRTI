@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Target, Star, Clock, TrendingUp, User, ChevronDown, ChevronRight, Award, Settings2, BarChart3, RefreshCw } from "lucide-react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, keepPreviousData } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useGoals } from "@/hooks/useGoals";
