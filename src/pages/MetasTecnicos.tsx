@@ -514,24 +514,3 @@ export default function MetasTecnicos() {
   );
 }
 
-function ErrorBanner({ error, onRetry }: { error: unknown; onRetry: () => void }) {
-  const message =
-    error instanceof Error ? error.message : "Erro inesperado ao carregar os dados.";
-  return (
-    <div className="card-elevated p-6 flex flex-col items-center gap-3 text-center border border-destructive/40 bg-destructive/5">
-      <AlertCircle className="h-8 w-8 text-destructive" />
-      <div>
-        <p className="text-sm font-semibold text-foreground">
-          Não foi possível carregar as metas
-        </p>
-        <p className="text-xs text-muted-foreground mt-1 break-all">{message}</p>
-      </div>
-      <button
-        onClick={() => onRetry()}
-        className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
-      >
-        <RefreshCw className="h-3 w-3" /> Tentar novamente
-      </button>
-    </div>
-  );
-}
