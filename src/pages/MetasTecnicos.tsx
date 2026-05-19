@@ -211,6 +211,11 @@ export default function MetasTecnicos() {
           </div>
         </div>
         <div className="flex items-center gap-2">
+          {isFetching && !isLoading && (
+            <span className="flex items-center gap-1.5 text-[11px] text-muted-foreground mr-1">
+              <Loader2 className="h-3 w-3 animate-spin" /> Atualizando…
+            </span>
+          )}
           <select
             value={selectedMonth}
             onChange={(e) => setSelectedMonth(Number(e.target.value))}
