@@ -7,7 +7,6 @@ import { useGoals } from "@/hooks/useGoals";
 import GoalsManager from "@/components/metas/GoalsManager";
 import GoalsSummaryCards from "@/components/metas/GoalsSummaryCards";
 import { BUSINESS_HOURS_PER_DAY } from "@/lib/businessHours";
-import { fetchTicketWorkMinutes } from "@/lib/ticketTiming";
 
 interface TechnicianStats {
   userId: string;
@@ -36,146 +35,56 @@ export default function MetasTecnicos() {
   const { data: stats = [], isLoading } = useQuery({
     queryKey: ["metas-tecnicos", selectedYear, selectedMonth],
     queryFn: async () => {
-      // Range do mês selecionado
-      const monthStart = new Date(selectedYear, selectedMonth - 1, 1);
-      const monthEnd = new Date(selectedYear, selectedMonth, 1);
+      const { data, error } = await supabase.rpc("get_metas_tecnicos", {
+        _year: selectedYear,
+        _month: selectedMonth,
+      });
+      if (error) throw error;
 
-      // Tickets CRIADOS no mês E fechados — mesma base da Auditoria (created_at)
-      const { data: closedTickets, error: tErr } = await supabase
-        .from("tickets")
-        .select("*")
-        .eq("status", "Fechado")
-        .gte("created_at", monthStart.toISOString())
-        .lt("created_at", monthEnd.toISOString());
-      if (tErr) throw tErr;
+      const rows = (data || []) as Array<{
+        user_id: string;
+        full_name: string;
+        total_closed: number;
+        total_points: number;
+        avg_score: number;
+        evaluations_count: number;
+        preventivas_done: number;
+        rework_count: number;
+        total_work_minutes: number;
+        tickets: Array<{
+          title: string;
+          score: number | null;
+          resolution_hours: number;
+          closed_at: string;
+          category_name: string | null;
+          points: number;
+        }>;
+      }>;
 
-      const closedIds = (closedTickets || []).map((t) => t.id);
-      if (closedIds.length === 0) return [];
-
-      // Avaliações de satisfação (CSAT) e meta (pontos do admin) APENAS para tickets do mês
-      const { data: evaluations, error: eErr } = await supabase
-        .from("evaluations")
-        .select("*")
-        .eq("type", "satisfaction")
-        .in("ticket_id", closedIds);
-      if (eErr) throw eErr;
-
-      // Pontuação: avaliações META dos chamados fechados no mês
-      // Regra: 1 meta por ticket (garantido pelo unique index no banco)
-      const { data: metaEvaluations, error: mErr } = await supabase
-        .from("evaluations")
-        .select("ticket_id, score")
-        .eq("type", "meta")
-        .in("ticket_id", closedIds);
-      if (mErr) throw mErr;
-
-      const metaScoreMap = new Map<string, number>(
-        (metaEvaluations || []).map((e) => [e.ticket_id, e.score])
-      );
-
-      const categoryIds = [...new Set(closedTickets.map((t) => t.category_id).filter(Boolean))] as string[];
-      let categoryMap = new Map<string, string>();
-      if (categoryIds.length > 0) {
-        const { data: cats } = await supabase
-          .from("categories")
-          .select("id, name")
-          .in("id", categoryIds);
-        categoryMap = new Map((cats || []).map((c) => [c.id, c.name]));
-      }
-
-      const techIds = [...new Set(closedTickets.map((t) => t.assigned_to).filter(Boolean))] as string[];
-      if (techIds.length === 0) return [];
-
-      // Preventivas FEITAS no mês selecionado, por técnico
-      const { data: preventivas } = await supabase
-        .from("preventive_maintenance")
-        .select("created_by, created_at")
-        .gte("created_at", monthStart.toISOString())
-        .lt("created_at", monthEnd.toISOString());
-      const preventivasMap = new Map<string, number>();
-      (preventivas || []).forEach((p) => {
-        preventivasMap.set(p.created_by, (preventivasMap.get(p.created_by) || 0) + 1);
+      const result: TechnicianStats[] = rows.map((r) => {
+        const totalHours = Number(r.total_work_minutes || 0) / 60;
+        return {
+          userId: r.user_id,
+          name: r.full_name || "Sem nome",
+          totalClosed: r.total_closed,
+          avgScore: Number(r.avg_score || 0),
+          avgResolutionHours: r.total_closed > 0 ? totalHours / r.total_closed : 0,
+          evaluations: r.evaluations_count,
+          totalPoints: Number(r.total_points || 0),
+          preventivasDone: r.preventivas_done,
+          reworkCount: r.rework_count,
+          tickets: (r.tickets || []).map((t) => ({
+            title: t.title,
+            score: t.score,
+            resolutionHours: Number(t.resolution_hours || 0),
+            closedAt: t.closed_at,
+            categoryName: t.category_name,
+            points: Number(t.points || 0),
+          })),
+        };
       });
 
-      // Retrabalhos para os tickets do mês
-      let reworkMap = new Map<string, number>();
-      if (closedIds.length > 0) {
-        const { data: reworkHistory } = await supabase
-          .from("ticket_history")
-          .select("ticket_id")
-          .eq("action", "rework")
-          .in("ticket_id", closedIds);
-        (reworkHistory || []).forEach((r) => {
-          reworkMap.set(r.ticket_id, (reworkMap.get(r.ticket_id) || 0) + 1);
-        });
-      }
-
-      const { data: profiles } = await supabase
-        .from("profiles")
-        .select("user_id, full_name")
-        .in("user_id", techIds);
-      const nameMap = new Map((profiles || []).map((p) => [p.user_id, p.full_name]));
-
-      const evalMap = new Map(evaluations.map((e) => [e.ticket_id, e.score]));
-
-      // Tempo de trabalho acumulado (Em Andamento, somando retrabalhos)
-      const workMinutesMap = await fetchTicketWorkMinutes(closedTickets);
-
-      const techMap = new Map<string, TechnicianStats>();
-
-      for (const ticket of closedTickets) {
-        if (!ticket.assigned_to) continue;
-        const id = ticket.assigned_to;
-
-        if (!techMap.has(id)) {
-          techMap.set(id, {
-            userId: id,
-            name: nameMap.get(id) || "Sem nome",
-            totalClosed: 0,
-            avgScore: 0,
-            avgResolutionHours: 0,
-            evaluations: 0,
-            totalPoints: 0,
-            preventivasDone: preventivasMap.get(id) || 0,
-            reworkCount: 0,
-            tickets: [],
-          });
-        }
-
-        const tech = techMap.get(id)!;
-        // Tempo de atendimento: soma das janelas em "Em Andamento" (incluindo retrabalhos)
-        const resolutionHours = Math.max(0, (workMinutesMap.get(ticket.id) ?? 0) / 60);
-        const evalScore = evalMap.get(ticket.id) ?? null;
-
-        const categoryName = ticket.category_id ? categoryMap.get(ticket.category_id) ?? null : null;
-        // Pontuação: avaliação META atribuída a este chamado fechado
-        const points = metaScoreMap.get(ticket.id) ?? 0;
-
-        tech.totalClosed++;
-        tech.totalPoints += points;
-        tech.reworkCount += reworkMap.get(ticket.id) || 0;
-        if (evalScore !== null) tech.evaluations++;
-
-        tech.tickets.push({
-          title: ticket.title,
-          score: evalScore,
-          resolutionHours,
-          closedAt: ticket.updated_at,
-          categoryName,
-          points,
-        });
-      }
-
-      const result: TechnicianStats[] = [];
-      for (const tech of techMap.values()) {
-        const scores = tech.tickets.filter((t) => t.score !== null).map((t) => t.score!);
-        tech.avgScore = scores.length > 0 ? scores.reduce((a, b) => a + b, 0) / scores.length : 0;
-        const totalHours = tech.tickets.reduce((a, t) => a + t.resolutionHours, 0);
-        tech.avgResolutionHours = tech.totalClosed > 0 ? totalHours / tech.totalClosed : 0;
-        result.push(tech);
-      }
-
-      return result.sort((a, b) => b.totalPoints - a.totalPoints || b.avgScore - a.avgScore);
+      return result;
     },
   });
 
