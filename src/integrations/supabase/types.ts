@@ -1923,12 +1923,31 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      business_minutes_between: {
+        Args: { _end: string; _start: string }
+        Returns: number
+      }
       current_org_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
           _user_id: string
         }
         Returns: boolean
+      }
+      get_metas_tecnicos: {
+        Args: { _month: number; _year: number }
+        Returns: {
+          avg_score: number
+          evaluations_count: number
+          full_name: string
+          preventivas_done: number
+          rework_count: number
+          tickets: Json
+          total_closed: number
+          total_points: number
+          total_work_minutes: number
+          user_id: string
+        }[]
       }
       get_org_technicians: {
         Args: never
