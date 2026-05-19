@@ -1,6 +1,6 @@
 import { useState } from "react";
-import { Target, Star, Clock, TrendingUp, User, ChevronDown, ChevronRight, Award, Settings2, BarChart3, RefreshCw } from "lucide-react";
-import { useQuery } from "@tanstack/react-query";
+import { Target, Star, Clock, TrendingUp, User, ChevronDown, ChevronRight, Award, Settings2, BarChart3, RefreshCw, AlertCircle, Loader2 } from "lucide-react";
+import { useQuery, keepPreviousData } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useGoals } from "@/hooks/useGoals";
@@ -32,8 +32,26 @@ export default function MetasTecnicos() {
 
   const { data: goals = [] } = useGoals(selectedYear, selectedMonth);
 
-  const { data: stats = [], isLoading } = useQuery({
+  const isCurrentMonth =
+    selectedYear === now.getFullYear() && selectedMonth === now.getMonth() + 1;
+  const isFutureMonth =
+    selectedYear > now.getFullYear() ||
+    (selectedYear === now.getFullYear() && selectedMonth > now.getMonth() + 1);
+
+  const {
+    data: stats = [],
+    isLoading,
+    isFetching,
+    error,
+    refetch,
+  } = useQuery({
     queryKey: ["metas-tecnicos", selectedYear, selectedMonth],
+    placeholderData: keepPreviousData,
+    // Meses passados não mudam: cache “infinito” (até refresh manual).
+    // Mês atual: revalida a cada 5 min. Futuro: sem cache (raro).
+    staleTime: isFutureMonth ? 0 : isCurrentMonth ? 5 * 60 * 1000 : Infinity,
+    gcTime: 30 * 60 * 1000,
+    retry: 1,
     queryFn: async () => {
       const { data, error } = await supabase.rpc("get_metas_tecnicos", {
         _year: selectedYear,
@@ -162,12 +180,21 @@ export default function MetasTecnicos() {
             </select>
           </div>
         </div>
-        {isLoading ? (
+        {error ? (
+          <ErrorBanner error={error} onRetry={refetch} />
+        ) : isLoading ? (
           <div className="card-elevated p-12 flex items-center justify-center">
             <div className="h-6 w-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
           </div>
         ) : (
-          <GoalsSummaryCards stats={myStats} goals={myGoals} formatHours={formatHours} />
+          <div className="relative">
+            {isFetching && (
+              <div className="absolute right-0 -top-8 flex items-center gap-1.5 text-[11px] text-muted-foreground">
+                <Loader2 className="h-3 w-3 animate-spin" /> Atualizando…
+              </div>
+            )}
+            <GoalsSummaryCards stats={myStats} goals={myGoals} formatHours={formatHours} />
+          </div>
         )}
       </div>
     );
@@ -184,6 +211,11 @@ export default function MetasTecnicos() {
           </div>
         </div>
         <div className="flex items-center gap-2">
+          {isFetching && !isLoading && (
+            <span className="flex items-center gap-1.5 text-[11px] text-muted-foreground mr-1">
+              <Loader2 className="h-3 w-3 animate-spin" /> Atualizando…
+            </span>
+          )}
           <select
             value={selectedMonth}
             onChange={(e) => setSelectedMonth(Number(e.target.value))}
@@ -274,7 +306,9 @@ export default function MetasTecnicos() {
           <GoalsSummaryCards stats={stats} goals={goals} formatHours={formatHours} />
 
           {/* Technician list */}
-          {isLoading ? (
+          {error ? (
+            <ErrorBanner error={error} onRetry={refetch} />
+          ) : isLoading ? (
             <div className="card-elevated p-12 flex items-center justify-center">
               <div className="h-6 w-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
             </div>
@@ -454,6 +488,28 @@ export default function MetasTecnicos() {
           )}
         </>
       )}
+    </div>
+  );
+}
+
+function ErrorBanner({ error, onRetry }: { error: unknown; onRetry: () => void }) {
+  const message =
+    error instanceof Error ? error.message : "Erro inesperado ao carregar os dados.";
+  return (
+    <div className="card-elevated p-6 flex flex-col items-center gap-3 text-center border border-destructive/40 bg-destructive/5">
+      <AlertCircle className="h-8 w-8 text-destructive" />
+      <div>
+        <p className="text-sm font-semibold text-foreground">
+          Não foi possível carregar as metas
+        </p>
+        <p className="text-xs text-muted-foreground mt-1 break-all">{message}</p>
+      </div>
+      <button
+        onClick={() => onRetry()}
+        className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
+      >
+        <RefreshCw className="h-3 w-3" /> Tentar novamente
+      </button>
     </div>
   );
 }
