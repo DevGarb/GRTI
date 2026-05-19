@@ -32,8 +32,26 @@ export default function MetasTecnicos() {
 
   const { data: goals = [] } = useGoals(selectedYear, selectedMonth);
 
-  const { data: stats = [], isLoading } = useQuery({
+  const isCurrentMonth =
+    selectedYear === now.getFullYear() && selectedMonth === now.getMonth() + 1;
+  const isFutureMonth =
+    selectedYear > now.getFullYear() ||
+    (selectedYear === now.getFullYear() && selectedMonth > now.getMonth() + 1);
+
+  const {
+    data: stats = [],
+    isLoading,
+    isFetching,
+    error,
+    refetch,
+  } = useQuery({
     queryKey: ["metas-tecnicos", selectedYear, selectedMonth],
+    placeholderData: keepPreviousData,
+    // Meses passados não mudam: cache “infinito” (até refresh manual).
+    // Mês atual: revalida a cada 5 min. Futuro: sem cache (raro).
+    staleTime: isFutureMonth ? 0 : isCurrentMonth ? 5 * 60 * 1000 : Infinity,
+    gcTime: 30 * 60 * 1000,
+    retry: 1,
     queryFn: async () => {
       const { data, error } = await supabase.rpc("get_metas_tecnicos", {
         _year: selectedYear,
