@@ -7,7 +7,6 @@ import { useGoals } from "@/hooks/useGoals";
 import GoalsManager from "@/components/metas/GoalsManager";
 import GoalsSummaryCards from "@/components/metas/GoalsSummaryCards";
 import { BUSINESS_HOURS_PER_DAY } from "@/lib/businessHours";
-import { fetchTicketWorkMinutes } from "@/lib/ticketTiming";
 
 interface TechnicianStats {
   userId: string;
