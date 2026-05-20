@@ -642,6 +642,52 @@ export default function Chamados() {
 
       {showModal && <NewTicketModal onClose={() => setShowModal(false)} />}
       {selectedTicket && <TicketDetailModal ticket={selectedTicket} onClose={() => setSelectedTicket(null)} />}
+
+      {selectionMode && selectedIds.size > 0 && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 px-4 py-3 rounded-xl bg-background border-2 border-destructive shadow-2xl">
+          <span className="text-sm font-semibold text-foreground">
+            {selectedIds.size} chamado{selectedIds.size !== 1 ? "s" : ""} selecionado{selectedIds.size !== 1 ? "s" : ""}
+          </span>
+          <button
+            onClick={exitSelection}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-input bg-background text-sm font-medium text-muted-foreground hover:text-foreground"
+          >
+            Cancelar
+          </button>
+          <button
+            onClick={() => setConfirmDelete(true)}
+            disabled={bulkDelete.isPending}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-destructive text-destructive-foreground text-sm font-semibold hover:opacity-90 disabled:opacity-50"
+          >
+            <Trash2 className="h-4 w-4" />
+            Excluir selecionados
+          </button>
+        </div>
+      )}
+
+      <AlertDialog open={confirmDelete} onOpenChange={setConfirmDelete}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Excluir {selectedIds.size} chamado{selectedIds.size !== 1 ? "s" : ""}?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Esta ação não pode ser desfeita. Todos os comentários, anexos, histórico e avaliações destes chamados também serão removidos permanentemente.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={bulkDelete.isPending}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(e) => {
+                e.preventDefault();
+                handleBulkDelete();
+              }}
+              disabled={bulkDelete.isPending}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {bulkDelete.isPending ? "Excluindo..." : "Excluir"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
