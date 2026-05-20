@@ -364,6 +364,37 @@ export default function Chamados() {
   // Sort groups by ticket count desc
   const sortedGroups = Object.entries(grouped).sort((a, b) => b[1].length - a[1].length);
 
+  const toggleSelect = (id: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+  const toggleSelectAll = (ids: string[]) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      const allIn = ids.every((id) => next.has(id));
+      if (allIn) ids.forEach((id) => next.delete(id));
+      else ids.forEach((id) => next.add(id));
+      return next;
+    });
+  };
+  const exitSelection = () => {
+    setSelectionMode(false);
+    setSelectedIds(new Set());
+  };
+  const handleBulkDelete = async () => {
+    await bulkDelete.mutateAsync(Array.from(selectedIds));
+    setConfirmDelete(false);
+    exitSelection();
+  };
+
+  const tableSelectionProps = selectionMode
+    ? { selectionMode: true, selectedIds, onToggleSelect: toggleSelect, onToggleSelectAll: toggleSelectAll }
+    : {};
+
   return (
     <div className="space-y-6 max-w-7xl">
       <div className="flex items-center justify-between">
