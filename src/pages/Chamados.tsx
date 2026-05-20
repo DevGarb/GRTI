@@ -420,6 +420,19 @@ export default function Chamados() {
               Kanban
             </button>
           </div>
+          {isAdmin && viewMode === "list" && (
+            <button
+              onClick={() => (selectionMode ? exitSelection() : setSelectionMode(true))}
+              className={`inline-flex items-center gap-2 px-3 py-2.5 rounded-lg border text-sm font-medium transition-colors ${
+                selectionMode
+                  ? "border-destructive bg-destructive/10 text-destructive"
+                  : "border-input bg-background text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              {selectionMode ? <X className="h-4 w-4" /> : <CheckSquare className="h-4 w-4" />}
+              {selectionMode ? "Cancelar seleção" : "Selecionar"}
+            </button>
+          )}
           <button
             onClick={() => setShowModal(true)}
             className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 transition-opacity"
