@@ -243,6 +243,26 @@ export function useDeleteTicket() {
   });
 }
 
+export function useBulkDeleteTickets() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (ids: string[]) => {
+      if (ids.length === 0) return 0;
+      const { error } = await supabase.from("tickets").delete().in("id", ids);
+      if (error) throw error;
+      return ids.length;
+    },
+    onSuccess: (count) => {
+      queryClient.invalidateQueries({ queryKey: ["tickets"] });
+      toast.success(`${count} chamado${count !== 1 ? "s" : ""} excluído${count !== 1 ? "s" : ""}!`);
+    },
+    onError: (e: Error) => {
+      toast.error("Erro ao excluir: " + e.message);
+    },
+  });
+}
+
 export function useProfiles() {
   return useQuery({
     queryKey: ["profiles"],

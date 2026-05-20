@@ -1,10 +1,10 @@
 import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Search, Filter, ChevronDown, ChevronRight, Plus, User, RefreshCw, Inbox, SendHorizonal, HandMetal, AlertTriangle, Clock, TicketCheck, CircleDot, Loader2, CheckCircle2, LayoutGrid, List, Trophy } from "lucide-react";
+import { Search, Filter, ChevronDown, ChevronRight, Plus, User, RefreshCw, Inbox, SendHorizonal, HandMetal, AlertTriangle, Clock, TicketCheck, CircleDot, Loader2, CheckCircle2, LayoutGrid, List, Trophy, CheckSquare, Trash2, X } from "lucide-react";
 import KanbanBoard from "@/components/KanbanBoard";
 import MonthSelector, { getCurrentMonthValue, getMonthDateRange } from "@/components/MonthSelector";
 import { StatusBadge, PriorityBadge } from "@/components/StatusBadge";
-import { useTickets, Ticket, usePickTicket } from "@/hooks/useTickets";
+import { useTickets, Ticket, usePickTicket, useBulkDeleteTickets } from "@/hooks/useTickets";
 import { useAuth } from "@/contexts/AuthContext";
 import NewTicketModal from "@/components/NewTicketModal";
 import TicketDetailModal from "@/components/TicketDetailModal";
@@ -12,6 +12,17 @@ import { supabase } from "@/integrations/supabase/client";
 import MyGoalCard from "@/components/metas/MyGoalCard";
 import { calcBusinessMinutes, formatBusinessTime, getSlaStatus } from "@/lib/businessHours";
 import { fetchTicketWorkMinutes } from "@/lib/ticketTiming";
+import { Checkbox } from "@/components/ui/checkbox";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 const allStatuses = ["Aberto", "Em Andamento", "Aguardando Aprovação", "Aprovado", "Fechado", "Disponível"];
 
@@ -76,12 +87,26 @@ function SlaTimer({ ticket, workMinutes }: { ticket: Ticket; workMinutes?: numbe
   );
 }
 
-function TicketTable({ tickets, onSelect, scoreMap, showScore, workMinutesMap, monthFrom, monthTo }: { tickets: Ticket[]; onSelect: (t: Ticket) => void; scoreMap?: Map<string, number>; showScore?: boolean; workMinutesMap?: Map<string, number>; monthFrom?: Date; monthTo?: Date }) {
+function TicketTable({ tickets, onSelect, scoreMap, showScore, workMinutesMap, monthFrom, monthTo, selectionMode, selectedIds, onToggleSelect, onToggleSelectAll }: { tickets: Ticket[]; onSelect: (t: Ticket) => void; scoreMap?: Map<string, number>; showScore?: boolean; workMinutesMap?: Map<string, number>; monthFrom?: Date; monthTo?: Date; selectionMode?: boolean; selectedIds?: Set<string>; onToggleSelect?: (id: string) => void; onToggleSelectAll?: (ids: string[]) => void }) {
+  const allIds = tickets.map((t) => t.id);
+  const selectedInGroup = selectionMode && selectedIds ? allIds.filter((id) => selectedIds.has(id)).length : 0;
+  const allChecked = selectionMode && tickets.length > 0 && selectedInGroup === tickets.length;
+  const someChecked = selectionMode && selectedInGroup > 0 && selectedInGroup < tickets.length;
+
   return (
     <div className="overflow-x-auto">
       <table className="w-full">
         <thead>
           <tr className="border-b border-border">
+            {selectionMode && (
+              <th className="w-10 px-4 py-2">
+                <Checkbox
+                  checked={allChecked ? true : someChecked ? "indeterminate" : false}
+                  onCheckedChange={() => onToggleSelectAll?.(allIds)}
+                  aria-label="Selecionar todos"
+                />
+              </th>
+            )}
             <th className="text-left text-xs font-semibold text-muted-foreground px-4 py-2">Título</th>
             <th className="text-left text-xs font-semibold text-muted-foreground px-4 py-2">Solicitante</th>
             <th className="text-left text-xs font-semibold text-muted-foreground px-4 py-2">Status</th>
@@ -97,12 +122,28 @@ function TicketTable({ tickets, onSelect, scoreMap, showScore, workMinutesMap, m
             const score = scoreMap?.get(ticket.id);
             const createdAt = new Date(ticket.created_at);
             const isFromOtherMonth = !!(monthFrom && monthTo) && (createdAt < monthFrom || createdAt > monthTo);
+            const isSelected = selectionMode && selectedIds?.has(ticket.id);
             return (
             <tr
               key={ticket.id}
-              onClick={() => onSelect(ticket)}
-              className="border-b border-border last:border-0 hover:bg-muted/30 transition-colors cursor-pointer"
+              onClick={() => {
+                if (selectionMode) {
+                  onToggleSelect?.(ticket.id);
+                } else {
+                  onSelect(ticket);
+                }
+              }}
+              className={`border-b border-border last:border-0 hover:bg-muted/30 transition-colors cursor-pointer ${isSelected ? "bg-primary/5" : ""}`}
             >
+              {selectionMode && (
+                <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
+                  <Checkbox
+                    checked={!!isSelected}
+                    onCheckedChange={() => onToggleSelect?.(ticket.id)}
+                    aria-label="Selecionar chamado"
+                  />
+                </td>
+              )}
               <td className="px-4 py-3">
                 <div className="flex items-center gap-2">
                   <span className="text-sm font-medium text-foreground truncate block max-w-[250px]">
@@ -222,6 +263,10 @@ export default function Chamados() {
   const [statusFilter, setStatusFilter] = useState("Todos Status");
   const [selectedMonth, setSelectedMonth] = useState(getCurrentMonthValue());
   const [reworkFilter, setReworkFilter] = useState(false);
+  const [selectionMode, setSelectionMode] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const bulkDelete = useBulkDeleteTickets();
   const { data: tickets = [], isLoading } = useTickets();
   const { hasRole, roles, user } = useAuth();
   const isAdmin = roles.includes("admin") || roles.includes("super_admin");
@@ -319,6 +364,37 @@ export default function Chamados() {
   // Sort groups by ticket count desc
   const sortedGroups = Object.entries(grouped).sort((a, b) => b[1].length - a[1].length);
 
+  const toggleSelect = (id: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+  const toggleSelectAll = (ids: string[]) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      const allIn = ids.every((id) => next.has(id));
+      if (allIn) ids.forEach((id) => next.delete(id));
+      else ids.forEach((id) => next.add(id));
+      return next;
+    });
+  };
+  const exitSelection = () => {
+    setSelectionMode(false);
+    setSelectedIds(new Set());
+  };
+  const handleBulkDelete = async () => {
+    await bulkDelete.mutateAsync(Array.from(selectedIds));
+    setConfirmDelete(false);
+    exitSelection();
+  };
+
+  const tableSelectionProps = selectionMode
+    ? { selectionMode: true, selectedIds, onToggleSelect: toggleSelect, onToggleSelectAll: toggleSelectAll }
+    : {};
+
   return (
     <div className="space-y-6 max-w-7xl">
       <div className="flex items-center justify-between">
@@ -344,6 +420,19 @@ export default function Chamados() {
               Kanban
             </button>
           </div>
+          {isAdmin && viewMode === "list" && (
+            <button
+              onClick={() => (selectionMode ? exitSelection() : setSelectionMode(true))}
+              className={`inline-flex items-center gap-2 px-3 py-2.5 rounded-lg border text-sm font-medium transition-colors ${
+                selectionMode
+                  ? "border-destructive bg-destructive/10 text-destructive"
+                  : "border-input bg-background text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              {selectionMode ? <X className="h-4 w-4" /> : <CheckSquare className="h-4 w-4" />}
+              {selectionMode ? "Cancelar seleção" : "Selecionar"}
+            </button>
+          )}
           <button
             onClick={() => setShowModal(true)}
             className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 transition-opacity"
@@ -476,7 +565,7 @@ export default function Chamados() {
 
                 {isExpanded && (
                   <div className="border-t border-border">
-                    <TicketTable tickets={userTickets} onSelect={setSelectedTicket} scoreMap={scoreMap} showScore={isAdmin || isTech} workMinutesMap={workMinutesMap} monthFrom={monthFrom} monthTo={monthTo} />
+                    <TicketTable tickets={userTickets} onSelect={setSelectedTicket} scoreMap={scoreMap} showScore={isAdmin || isTech} workMinutesMap={workMinutesMap} monthFrom={monthFrom} monthTo={monthTo} {...tableSelectionProps} />
                   </div>
                 )}
               </div>
@@ -553,6 +642,52 @@ export default function Chamados() {
 
       {showModal && <NewTicketModal onClose={() => setShowModal(false)} />}
       {selectedTicket && <TicketDetailModal ticket={selectedTicket} onClose={() => setSelectedTicket(null)} />}
+
+      {selectionMode && selectedIds.size > 0 && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 px-4 py-3 rounded-xl bg-background border-2 border-destructive shadow-2xl">
+          <span className="text-sm font-semibold text-foreground">
+            {selectedIds.size} chamado{selectedIds.size !== 1 ? "s" : ""} selecionado{selectedIds.size !== 1 ? "s" : ""}
+          </span>
+          <button
+            onClick={exitSelection}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-input bg-background text-sm font-medium text-muted-foreground hover:text-foreground"
+          >
+            Cancelar
+          </button>
+          <button
+            onClick={() => setConfirmDelete(true)}
+            disabled={bulkDelete.isPending}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-destructive text-destructive-foreground text-sm font-semibold hover:opacity-90 disabled:opacity-50"
+          >
+            <Trash2 className="h-4 w-4" />
+            Excluir selecionados
+          </button>
+        </div>
+      )}
+
+      <AlertDialog open={confirmDelete} onOpenChange={setConfirmDelete}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Excluir {selectedIds.size} chamado{selectedIds.size !== 1 ? "s" : ""}?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Esta ação não pode ser desfeita. Todos os comentários, anexos, histórico e avaliações destes chamados também serão removidos permanentemente.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={bulkDelete.isPending}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(e) => {
+                e.preventDefault();
+                handleBulkDelete();
+              }}
+              disabled={bulkDelete.isPending}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {bulkDelete.isPending ? "Excluindo..." : "Excluir"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
