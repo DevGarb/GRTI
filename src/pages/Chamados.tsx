@@ -87,12 +87,26 @@ function SlaTimer({ ticket, workMinutes }: { ticket: Ticket; workMinutes?: numbe
   );
 }
 
-function TicketTable({ tickets, onSelect, scoreMap, showScore, workMinutesMap, monthFrom, monthTo }: { tickets: Ticket[]; onSelect: (t: Ticket) => void; scoreMap?: Map<string, number>; showScore?: boolean; workMinutesMap?: Map<string, number>; monthFrom?: Date; monthTo?: Date }) {
+function TicketTable({ tickets, onSelect, scoreMap, showScore, workMinutesMap, monthFrom, monthTo, selectionMode, selectedIds, onToggleSelect, onToggleSelectAll }: { tickets: Ticket[]; onSelect: (t: Ticket) => void; scoreMap?: Map<string, number>; showScore?: boolean; workMinutesMap?: Map<string, number>; monthFrom?: Date; monthTo?: Date; selectionMode?: boolean; selectedIds?: Set<string>; onToggleSelect?: (id: string) => void; onToggleSelectAll?: (ids: string[]) => void }) {
+  const allIds = tickets.map((t) => t.id);
+  const selectedInGroup = selectionMode && selectedIds ? allIds.filter((id) => selectedIds.has(id)).length : 0;
+  const allChecked = selectionMode && tickets.length > 0 && selectedInGroup === tickets.length;
+  const someChecked = selectionMode && selectedInGroup > 0 && selectedInGroup < tickets.length;
+
   return (
     <div className="overflow-x-auto">
       <table className="w-full">
         <thead>
           <tr className="border-b border-border">
+            {selectionMode && (
+              <th className="w-10 px-4 py-2">
+                <Checkbox
+                  checked={allChecked ? true : someChecked ? "indeterminate" : false}
+                  onCheckedChange={() => onToggleSelectAll?.(allIds)}
+                  aria-label="Selecionar todos"
+                />
+              </th>
+            )}
             <th className="text-left text-xs font-semibold text-muted-foreground px-4 py-2">Título</th>
             <th className="text-left text-xs font-semibold text-muted-foreground px-4 py-2">Solicitante</th>
             <th className="text-left text-xs font-semibold text-muted-foreground px-4 py-2">Status</th>
@@ -108,12 +122,28 @@ function TicketTable({ tickets, onSelect, scoreMap, showScore, workMinutesMap, m
             const score = scoreMap?.get(ticket.id);
             const createdAt = new Date(ticket.created_at);
             const isFromOtherMonth = !!(monthFrom && monthTo) && (createdAt < monthFrom || createdAt > monthTo);
+            const isSelected = selectionMode && selectedIds?.has(ticket.id);
             return (
             <tr
               key={ticket.id}
-              onClick={() => onSelect(ticket)}
-              className="border-b border-border last:border-0 hover:bg-muted/30 transition-colors cursor-pointer"
+              onClick={() => {
+                if (selectionMode) {
+                  onToggleSelect?.(ticket.id);
+                } else {
+                  onSelect(ticket);
+                }
+              }}
+              className={`border-b border-border last:border-0 hover:bg-muted/30 transition-colors cursor-pointer ${isSelected ? "bg-primary/5" : ""}`}
             >
+              {selectionMode && (
+                <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
+                  <Checkbox
+                    checked={!!isSelected}
+                    onCheckedChange={() => onToggleSelect?.(ticket.id)}
+                    aria-label="Selecionar chamado"
+                  />
+                </td>
+              )}
               <td className="px-4 py-3">
                 <div className="flex items-center gap-2">
                   <span className="text-sm font-medium text-foreground truncate block max-w-[250px]">
