@@ -565,7 +565,7 @@ export default function Chamados() {
 
                 {isExpanded && (
                   <div className="border-t border-border">
-                    <TicketTable tickets={userTickets} onSelect={setSelectedTicket} scoreMap={scoreMap} showScore={isAdmin || isTech} workMinutesMap={workMinutesMap} monthFrom={monthFrom} monthTo={monthTo} />
+                    <TicketTable tickets={userTickets} onSelect={setSelectedTicket} scoreMap={scoreMap} showScore={isAdmin || isTech} workMinutesMap={workMinutesMap} monthFrom={monthFrom} monthTo={monthTo} {...tableSelectionProps} />
                   </div>
                 )}
               </div>
