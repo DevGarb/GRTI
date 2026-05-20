@@ -1,10 +1,10 @@
 import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Search, Filter, ChevronDown, ChevronRight, Plus, User, RefreshCw, Inbox, SendHorizonal, HandMetal, AlertTriangle, Clock, TicketCheck, CircleDot, Loader2, CheckCircle2, LayoutGrid, List, Trophy } from "lucide-react";
+import { Search, Filter, ChevronDown, ChevronRight, Plus, User, RefreshCw, Inbox, SendHorizonal, HandMetal, AlertTriangle, Clock, TicketCheck, CircleDot, Loader2, CheckCircle2, LayoutGrid, List, Trophy, CheckSquare, Trash2, X } from "lucide-react";
 import KanbanBoard from "@/components/KanbanBoard";
 import MonthSelector, { getCurrentMonthValue, getMonthDateRange } from "@/components/MonthSelector";
 import { StatusBadge, PriorityBadge } from "@/components/StatusBadge";
-import { useTickets, Ticket, usePickTicket } from "@/hooks/useTickets";
+import { useTickets, Ticket, usePickTicket, useBulkDeleteTickets } from "@/hooks/useTickets";
 import { useAuth } from "@/contexts/AuthContext";
 import NewTicketModal from "@/components/NewTicketModal";
 import TicketDetailModal from "@/components/TicketDetailModal";
@@ -12,6 +12,17 @@ import { supabase } from "@/integrations/supabase/client";
 import MyGoalCard from "@/components/metas/MyGoalCard";
 import { calcBusinessMinutes, formatBusinessTime, getSlaStatus } from "@/lib/businessHours";
 import { fetchTicketWorkMinutes } from "@/lib/ticketTiming";
+import { Checkbox } from "@/components/ui/checkbox";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 const allStatuses = ["Aberto", "Em Andamento", "Aguardando Aprovação", "Aprovado", "Fechado", "Disponível"];
 
