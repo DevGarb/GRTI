@@ -263,6 +263,10 @@ export default function Chamados() {
   const [statusFilter, setStatusFilter] = useState("Todos Status");
   const [selectedMonth, setSelectedMonth] = useState(getCurrentMonthValue());
   const [reworkFilter, setReworkFilter] = useState(false);
+  const [selectionMode, setSelectionMode] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const bulkDelete = useBulkDeleteTickets();
   const { data: tickets = [], isLoading } = useTickets();
   const { hasRole, roles, user } = useAuth();
   const isAdmin = roles.includes("admin") || roles.includes("super_admin");
