@@ -1,41 +1,55 @@
-# Exclusão em massa de chamados (Admin)
+## Auditoria e limpeza para reduzir custo de Cloud do GRTI
 
-Adicionar à aba **Chamados** uma forma do admin selecionar vários chamados via checkbox e excluí-los de uma só vez. O recurso fica **invisível para não-admins**.
+### Diagnóstico atual
 
-## Comportamento (visão do usuário)
+O custo de **$7,92/mês** do GRTI **não vem de uso anormal** — vem do custo fixo de compute do instance Cloud, que é cobrado por hora 24/7 mesmo ocioso. Os outros projetos (Ramos Conecta, Indicação Rápida) custam centavos porque provavelmente estão em instance Nano. O GRTI parece estar em um tier maior.
 
-- Apenas usuários com papel **Admin** (ou Super Admin) veem:
-  - Um botão "Selecionar" no topo da lista, que liga/desliga o modo de seleção.
-  - Quando ativado: uma coluna de checkbox aparece em cada linha da tabela + um checkbox "selecionar todos" no cabeçalho de cada grupo de técnico.
-  - Uma **barra de ação fixa** no rodapé/topo mostrando "X chamados selecionados" com botão **Excluir selecionados** (vermelho) e **Cancelar**.
-- Ao clicar em "Excluir selecionados": modal de confirmação ("Excluir N chamados? Esta ação não pode ser desfeita.") com botão de confirmação destrutivo.
-- Após exclusão: toast de sucesso, lista atualizada, modo de seleção é desligado.
-- Disponível apenas no modo **Lista** (no Kanban não faz sentido marcar checkboxes — botão "Selecionar" fica oculto no modo Kanban).
-- Clique em checkbox **não** abre o modal de detalhes do chamado (stopPropagation).
+Volume real verificado: 26 MB de banco, ~70 requests REST/dia, 0 invocações de edge functions/dia, 1 cron diário, nenhum trigger pesado.
 
-## Implementação técnica
+### Ação principal (maior impacto)
 
-**Arquivos a alterar:**
+**Reduzir o tamanho do instance** em **Cloud → Overview → Advanced settings**. O uso atual cabe folgado em Nano/Micro. Essa ação sozinha deve cortar o custo para perto de $1–2/mês.
 
-1. `src/hooks/useTickets.ts`
-   - Novo hook `useBulkDeleteTickets()` — recebe `string[]` de IDs, executa `supabase.from("tickets").delete().in("id", ids)`, invalida `["tickets"]`, retorna contagem para o toast.
+Isso é uma ação manual sua (não dá para mim alterar o tier via código), mas vou preparar a base para você ter certeza de que reduzir é seguro.
 
-2. `src/pages/Chamados.tsx`
-   - Novo estado: `selectionMode: boolean`, `selectedIds: Set<string>`.
-   - Botão "Selecionar" no header (ao lado de Lista/Kanban), renderizado só se `isAdmin && viewMode === "list"`.
-   - Passar para `TicketTable` props opcionais: `selectionMode`, `selectedIds`, `onToggleSelect(id)`, `onToggleSelectAll(ids)`.
-   - `TicketTable`: quando `selectionMode`, renderiza `<th>` e `<td>` com `<Checkbox>` (de `@/components/ui/checkbox`); checkbox no `<th>` marca/desmarca todos os tickets daquele grupo (indeterminate quando parcial).
-   - Linha não dispara `onSelect` se o clique veio do checkbox (`e.stopPropagation` no `onClick` da célula).
-   - Barra de ação fixa (sticky bottom-4) quando `selectedIds.size > 0`: card com contador + botões Cancelar/Excluir.
-   - Confirmação via `AlertDialog` (`@/components/ui/alert-dialog`) antes de chamar o hook.
-   - Após sucesso: `setSelectedIds(new Set())` e `setSelectionMode(false)`.
+### Plano de auditoria/limpeza (no código e no banco)
 
-**RLS:** as políticas atuais de `DELETE` em `tickets` já permitem admin da organização excluir — não há migration necessária. Caso a migration falte, será detectada no primeiro teste e tratada como follow-up.
+1. **Auditar tabelas que crescem sem limite** e definir retenção
+   - `ticket_history` (1,2 MB hoje) — cresce a cada mudança de status; sem expurgo
+   - `audit_logs` (344 kB) — cresce a cada ação sensível; sem expurgo
+   - `webhook_logs` — já tem retenção de 14d via cron
+   - `patrimonio_history`, `user_todo_history` — sem expurgo
+   - **Entrega:** ampliar `cleanup-logs-daily` para também apagar registros antigos (ex.: >180 dias) dessas tabelas, com limites configuráveis.
 
-**Segurança:** o botão é apenas escondido no front; o backend (RLS) é a fonte de verdade — não-admins recebem erro do Supabase se tentarem via console.
+2. **Auditar uso de Storage**
+   - Listar tamanho dos buckets `attachments`, `patrimonio-photos`, `op-service-orders`, `org-logos`.
+   - Identificar arquivos órfãos (anexos de chamados deletados, fotos de patrimônios deletados).
+   - **Entrega:** script SQL de diagnóstico + (se houver órfãos) job de limpeza opcional.
 
-## Fora de escopo
+3. **Auditar Realtime**
+   - Confirmar quais tabelas estão em `supabase_realtime` publication e se todas são realmente assinadas pelo frontend.
+   - Realtime ocioso em tabelas grandes aumenta tráfego WAL.
+   - **Entrega:** remover do publication tabelas que não precisam de realtime.
 
-- Exclusão em massa em outras telas (Chamados em Aberto, Histórico).
-- Exclusão em massa no modo Kanban.
-- Exportar antes de excluir / lixeira / undo.
+4. **Auditar queries pesadas / frequentes**
+   - Rodar `pg_stat_statements` para identificar top 10 queries por tempo total.
+   - **Entrega:** lista de queries candidatas a otimização ou cache no frontend.
+
+5. **Relatório final**
+   - Resumo do que foi limpo, do que ficou e estimativa de impacto.
+   - Confirmar que é seguro reduzir o instance no Advanced settings.
+
+### Detalhes técnicos
+
+- Limpezas serão adicionadas à função do cron `cleanup-logs-daily` (já existe, roda 03:00).
+- Retenções sugeridas (ajustáveis): `ticket_history` 365d, `audit_logs` 365d, `patrimonio_history` 365d, `user_todo_history` 180d.
+- Nenhuma alteração destrutiva sem confirmar tamanhos atuais primeiro.
+- Não vou tocar em `tickets`, `evaluations`, `preventive_maintenance` (dados de negócio).
+
+### Fora de escopo
+
+- Alterar o tier do instance (ação manual sua em Advanced settings).
+- Refatoração ampla de frontend para reduzir requests (volume já é baixo).
+- Migração para outro backend.
+
+Quer que eu siga com os 5 passos, ou prefere começar só pelo passo 1 (retenção em `ticket_history` e `audit_logs`)?
