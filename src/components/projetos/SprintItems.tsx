@@ -26,6 +26,8 @@ export default function SprintItems({ projectId, sprintId }: Props) {
   const updateTask = useUpdateProjectTask();
   const deleteTask = useDeleteProjectTask();
 
+  const [detailTask, setDetailTask] = useState<ProjectTask | null>(null);
+
   if (tickets.length === 0 && tasks.length === 0) {
     return <div className="p-6 text-center text-sm text-muted-foreground">Nenhum item nesta sprint.</div>;
   }
