@@ -95,25 +95,29 @@ export default function SprintItems({ projectId, sprintId }: Props) {
       {tasks.map((task) => (
         <div key={task.id} className="p-3 flex items-center gap-3 text-sm">
           <ListTodo className="h-4 w-4 text-purple-500 shrink-0" />
-          <div className="flex-1 min-w-0">
+          <button
+            type="button"
+            onClick={() => setDetailTask(task)}
+            className="flex-1 min-w-0 text-left hover:bg-muted/40 -mx-2 px-2 py-1 rounded transition-colors"
+          >
             <div className="flex items-center gap-2">
               <span className="font-medium truncate">{task.title}</span>
-              <Select
-                value={task.status}
-                onValueChange={(v) => updateTask.mutate({ id: task.id, status: v })}
-              >
-                <SelectTrigger className="h-6 w-24 text-[10px]"><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="todo">A fazer</SelectItem>
-                  <SelectItem value="doing">Em andamento</SelectItem>
-                  <SelectItem value="done">Concluída</SelectItem>
-                </SelectContent>
-              </Select>
             </div>
             {task.description && (
               <div className="text-[11px] text-muted-foreground line-clamp-1">{task.description}</div>
             )}
-          </div>
+          </button>
+          <Select
+            value={task.status}
+            onValueChange={(v) => updateTask.mutate({ id: task.id, status: v })}
+          >
+            <SelectTrigger className="h-6 w-24 text-[10px]"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="todo">A fazer</SelectItem>
+              <SelectItem value="doing">Em andamento</SelectItem>
+              <SelectItem value="done">Concluída</SelectItem>
+            </SelectContent>
+          </Select>
           <Input
             type="number"
             min={1}
