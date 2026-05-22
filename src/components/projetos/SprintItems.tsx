@@ -1,11 +1,13 @@
+import { useState } from "react";
 import { useProjectTickets, useUnlinkTicket, useUpdateTicketSprint, useUpdateTicketPoints } from "@/hooks/useProjectTickets";
-import { useProjectTasks, useDeleteProjectTask, useUpdateProjectTask } from "@/hooks/useProjectTasks";
+import { useProjectTasks, useDeleteProjectTask, useUpdateProjectTask, type ProjectTask } from "@/hooks/useProjectTasks";
 import { useSprints } from "@/hooks/useSprints";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Ticket as TicketIcon, ListTodo, Trash2, ExternalLink } from "lucide-react";
+import TaskDetailModal from "./TaskDetailModal";
 
 interface Props {
   projectId: string;
@@ -23,6 +25,8 @@ export default function SprintItems({ projectId, sprintId }: Props) {
   const updatePoints = useUpdateTicketPoints();
   const updateTask = useUpdateProjectTask();
   const deleteTask = useDeleteProjectTask();
+
+  const [detailTask, setDetailTask] = useState<ProjectTask | null>(null);
 
   if (tickets.length === 0 && tasks.length === 0) {
     return <div className="p-6 text-center text-sm text-muted-foreground">Nenhum item nesta sprint.</div>;
@@ -91,25 +95,29 @@ export default function SprintItems({ projectId, sprintId }: Props) {
       {tasks.map((task) => (
         <div key={task.id} className="p-3 flex items-center gap-3 text-sm">
           <ListTodo className="h-4 w-4 text-purple-500 shrink-0" />
-          <div className="flex-1 min-w-0">
+          <button
+            type="button"
+            onClick={() => setDetailTask(task)}
+            className="flex-1 min-w-0 text-left hover:bg-muted/40 -mx-2 px-2 py-1 rounded transition-colors"
+          >
             <div className="flex items-center gap-2">
               <span className="font-medium truncate">{task.title}</span>
-              <Select
-                value={task.status}
-                onValueChange={(v) => updateTask.mutate({ id: task.id, status: v })}
-              >
-                <SelectTrigger className="h-6 w-24 text-[10px]"><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="todo">A fazer</SelectItem>
-                  <SelectItem value="doing">Em andamento</SelectItem>
-                  <SelectItem value="done">Concluída</SelectItem>
-                </SelectContent>
-              </Select>
             </div>
             {task.description && (
               <div className="text-[11px] text-muted-foreground line-clamp-1">{task.description}</div>
             )}
-          </div>
+          </button>
+          <Select
+            value={task.status}
+            onValueChange={(v) => updateTask.mutate({ id: task.id, status: v })}
+          >
+            <SelectTrigger className="h-6 w-24 text-[10px]"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="todo">A fazer</SelectItem>
+              <SelectItem value="doing">Em andamento</SelectItem>
+              <SelectItem value="done">Concluída</SelectItem>
+            </SelectContent>
+          </Select>
           <Input
             type="number"
             min={1}
@@ -139,6 +147,7 @@ export default function SprintItems({ projectId, sprintId }: Props) {
           </Button>
         </div>
       ))}
+      <TaskDetailModal open={!!detailTask} onOpenChange={(v) => !v && setDetailTask(null)} task={detailTask} />
     </div>
   );
 }
