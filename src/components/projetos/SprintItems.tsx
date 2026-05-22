@@ -147,6 +147,7 @@ export default function SprintItems({ projectId, sprintId }: Props) {
           </Button>
         </div>
       ))}
+      <TaskDetailModal open={!!detailTask} onOpenChange={(v) => !v && setDetailTask(null)} task={detailTask} />
     </div>
   );
 }
