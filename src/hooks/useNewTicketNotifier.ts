@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useCallback } from "react";
 import { useLocation } from "react-router-dom";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -12,11 +12,11 @@ function playAlert() {
   try {
     const audio = new Audio(alertSound);
     audio.volume = 0.6;
-    audio.play().catch(() => {
-      // autoplay bloqueado até primeira interação do usuário
+    audio.play().catch((err) => {
+      console.warn("[notifier] autoplay bloqueado:", err?.message || err);
     });
-  } catch {
-    // ignore
+  } catch (e) {
+    console.warn("[notifier] falha ao tocar alerta:", e);
   }
 }
 
@@ -31,15 +31,15 @@ export function useNewTicketNotifier() {
     locationRef.current = location.pathname;
   }, [location.pathname]);
 
-  const stopFlashing = () => {
+  const stopFlashing = useCallback(() => {
     if (intervalRef.current !== null) {
       window.clearInterval(intervalRef.current);
       intervalRef.current = null;
       document.title = originalTitleRef.current || "GRTI";
     }
-  };
+  }, []);
 
-  const startFlashing = () => {
+  const startFlashing = useCallback(() => {
     if (intervalRef.current !== null) return;
     originalTitleRef.current = document.title.replace(FLASH_TITLE, "").trim() || "GRTI";
     let toggle = false;
@@ -47,24 +47,22 @@ export function useNewTicketNotifier() {
       toggle = !toggle;
       document.title = toggle ? FLASH_TITLE : originalTitleRef.current;
     }, 1000);
-  };
+  }, []);
 
   // Stop flashing when tab gains focus or user enters Chamados em Aberto
   useEffect(() => {
     const onVisibility = () => {
       if (document.visibilityState === "visible") stopFlashing();
     };
-    window.addEventListener("visibilitychange", onVisibility);
     document.addEventListener("visibilitychange", onVisibility);
     return () => {
-      window.removeEventListener("visibilitychange", onVisibility);
       document.removeEventListener("visibilitychange", onVisibility);
     };
-  }, []);
+  }, [stopFlashing]);
 
   useEffect(() => {
     if (STOP_ROUTES.includes(location.pathname)) stopFlashing();
-  }, [location.pathname]);
+  }, [location.pathname, stopFlashing]);
 
   // Realtime subscription
   useEffect(() => {
@@ -106,4 +104,34 @@ export function useNewTicketNotifier() {
       stopFlashing();
     };
   }, [user?.id, profile?.organization_id, isSuperAdmin]);
+}
+
+/** Dispara o alerta manualmente (botão de teste). */
+export function triggerTestAlert() {
+  try {
+    const audio = new Audio(alertSound);
+    audio.volume = 0.6;
+    audio.play().catch((err) => {
+      toast.error("Navegador bloqueou o som. Interaja com a página e tente de novo.");
+      console.warn("[notifier:test] autoplay bloqueado:", err?.message || err);
+    });
+  } catch (e) {
+    toast.error("Falha ao iniciar o som de alerta.");
+    console.warn("[notifier:test] erro:", e);
+  }
+  toast("🔔 Novo chamado aberto (teste)", {
+    description: "Som e flash de título disparados manualmente.",
+    duration: 4000,
+  });
+  // Flash do título por 3s
+  const original = document.title.replace(FLASH_TITLE, "").trim() || "GRTI";
+  let toggle = false;
+  const id = window.setInterval(() => {
+    toggle = !toggle;
+    document.title = toggle ? FLASH_TITLE : original;
+  }, 700);
+  window.setTimeout(() => {
+    window.clearInterval(id);
+    document.title = original;
+  }, 3000);
 }
