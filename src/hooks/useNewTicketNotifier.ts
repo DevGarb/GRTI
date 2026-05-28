@@ -88,7 +88,7 @@ export function useNewTicketNotifier() {
           if (!t) return;
           if (t.created_by === user.id) return;
 
-          playBeep();
+          playAlert();
           toast("🔔 Novo chamado aberto", {
             description: t.title || "Sem título",
             duration: 6000,
