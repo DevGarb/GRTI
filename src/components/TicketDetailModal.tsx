@@ -105,7 +105,7 @@ function CategoryTreePicker({
   };
 
   return (
-    <div className="max-h-48 overflow-y-auto border border-border rounded-lg p-2 space-y-0.5 bg-background">
+    <div className="max-h-96 overflow-y-auto border border-border rounded-lg p-2 space-y-0.5 bg-background">
       {macros.length === 0 ? (
         <p className="text-xs text-muted-foreground p-2">Nenhuma categoria cadastrada.</p>
       ) : (
