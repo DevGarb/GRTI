@@ -2,14 +2,14 @@ import { useState, useEffect } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { supabase } from "@/integrations/supabase/client";
-import { LogOut, Menu, Moon, Sun, HelpCircle, Repeat } from "lucide-react";
+import { LogOut, Menu, Moon, Sun, HelpCircle, Repeat, Bell } from "lucide-react";
 import { cn } from "@/lib/utils";
 import OrgSwitcher from "@/components/OrgSwitcher";
 import { useAuth } from "@/contexts/AuthContext";
 import { menuItems } from "@/config/menuItems";
 import { useMenuAccess } from "@/hooks/useMenuAccess";
 import { useUserOrganizations } from "@/hooks/useUserOrganizations";
-import { useNewTicketNotifier } from "@/hooks/useNewTicketNotifier";
+import { useNewTicketNotifier, triggerTestAlert } from "@/hooks/useNewTicketNotifier";
 
 interface AppLayoutProps {
   children: React.ReactNode;
