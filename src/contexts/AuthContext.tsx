@@ -42,6 +42,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       .eq("user_id", userId)
       .single();
     setProfile(data);
+    return data;
   };
 
   const fetchRoles = async (userId: string) => {
@@ -63,34 +64,41 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       orgRoles = (data || []).map((r) => r.role as AppRole);
     }
     setRoles(Array.from(new Set([...globalRoles, ...orgRoles])));
+    return Array.from(new Set([...globalRoles, ...orgRoles]));
+  };
+
+  const loadUserContext = async (userId: string) => {
+    await Promise.all([fetchProfile(userId), fetchRoles(userId)]);
   };
 
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (_event, session) => {
+        setLoading(true);
         setSession(session);
         setUser(session?.user ?? null);
         if (session?.user) {
-          setTimeout(() => {
-            fetchProfile(session.user.id);
-            fetchRoles(session.user.id);
+          setTimeout(async () => {
+            await loadUserContext(session.user.id);
+            setLoading(false);
           }, 0);
         } else {
           setProfile(null);
           setRoles([]);
+          setLoading(false);
         }
-        setLoading(false);
       }
     );
 
     supabase.auth.getSession().then(({ data: { session } }) => {
+      setLoading(true);
       setSession(session);
       setUser(session?.user ?? null);
       if (session?.user) {
-        fetchProfile(session.user.id);
-        fetchRoles(session.user.id);
+        loadUserContext(session.user.id).finally(() => setLoading(false));
+      } else {
+        setLoading(false);
       }
-      setLoading(false);
     });
 
     return () => subscription.unsubscribe();

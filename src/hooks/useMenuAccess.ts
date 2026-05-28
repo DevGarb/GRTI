@@ -4,14 +4,22 @@ import { useAuth } from "@/contexts/AuthContext";
 import { menuItems, defaultAccess, type Roles } from "@/config/menuItems";
 
 export function useMenuAccess() {
-  const { user, profile, roles, isSuperAdmin } = useAuth();
+  const { user, profile, roles, isSuperAdmin, loading: authLoading } = useAuth();
   const [overrides, setOverrides] = useState<Record<string, boolean>>({});
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    if (authLoading) {
+      setLoading(true);
+      return;
+    }
     if (!user) {
       setOverrides({});
       setLoading(false);
+      return;
+    }
+    if (!profile) {
+      setLoading(true);
       return;
     }
     if (!profile?.organization_id) {
@@ -34,7 +42,7 @@ export function useMenuAccess() {
         setLoading(false);
       });
     return () => { cancelled = true; };
-  }, [user?.id, profile?.organization_id]);
+  }, [authLoading, user?.id, profile?.organization_id]);
 
   const r: Roles = {
     isSuperAdmin,
