@@ -9,6 +9,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { menuItems } from "@/config/menuItems";
 import { useMenuAccess } from "@/hooks/useMenuAccess";
 import { useUserOrganizations } from "@/hooks/useUserOrganizations";
+import { useNewTicketNotifier } from "@/hooks/useNewTicketNotifier";
 
 interface AppLayoutProps {
   children: React.ReactNode;
@@ -46,6 +47,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
   });
   const { profile, roles, signOut, hasRole, isSuperAdmin } = useAuth();
   const isAdmin = hasRole("admin");
+  useNewTicketNotifier();
 
   // Apply dark mode class on mount and changes
   useEffect(() => {
