@@ -249,13 +249,29 @@ export default function AppLayout({ children }: AppLayoutProps) {
       </aside>
 
       <div className="flex-1 flex flex-col min-w-0">
-        <header className="sticky top-0 z-30 h-12 flex items-center border-b border-border bg-background/80 backdrop-blur-sm px-4 lg:px-6">
+        <header className="sticky top-0 z-30 h-12 flex items-center justify-between border-b border-border bg-background/80 backdrop-blur-sm px-4 lg:px-6">
           <button
             onClick={() => setSidebarOpen(true)}
             className="lg:hidden p-1.5 rounded-md hover:bg-muted text-muted-foreground"
           >
             <Menu className="h-5 w-5" />
           </button>
+          {(isAdmin || hasRole("tecnico") || hasRole("desenvolvedor") || isSuperAdmin) && (
+            <Tooltip delayDuration={300}>
+              <TooltipTrigger asChild>
+                <button
+                  onClick={triggerTestAlert}
+                  className="ml-auto p-1.5 rounded-md hover:bg-muted text-muted-foreground transition-colors"
+                  aria-label="Testar alerta de novo chamado"
+                >
+                  <Bell className="h-4 w-4" />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent side="bottom" className="text-xs">
+                Testar alerta sonoro de novo chamado
+              </TooltipContent>
+            </Tooltip>
+          )}
         </header>
 
         <main className="flex-1 p-4 lg:p-8 overflow-auto">{children}</main>
