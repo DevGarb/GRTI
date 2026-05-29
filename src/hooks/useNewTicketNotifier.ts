@@ -23,6 +23,7 @@ function playAlert() {
 export function useNewTicketNotifier() {
   const { user, profile, hasRole, isSuperAdmin } = useAuth();
   const location = useLocation();
+  const navigate = useNavigate();
   const intervalRef = useRef<number | null>(null);
   const originalTitleRef = useRef<string>(typeof document !== "undefined" ? document.title : "");
   const locationRef = useRef(location.pathname);
