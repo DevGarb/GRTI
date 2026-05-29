@@ -149,6 +149,7 @@ export default function AssetPublicView() {
   const retryDisabled = cooldown || isFetching;
 
   const [showTimeline, setShowTimeline] = useState(false);
+  const [showResponsibles, setShowResponsibles] = useState(true);
   const [showChecklist, setShowChecklist] = useState(false);
 
   const maintHealth = useMemo(() => {
