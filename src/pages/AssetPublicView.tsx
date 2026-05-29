@@ -31,7 +31,8 @@ interface PublicAsset {
   last_maintenance: { execution_date: string; responsible: string | null; notes: string | null; checklist: Record<string, unknown> | null } | null;
   maintenance_interval_days: number | null;
   maintenance_interval_source?: "configured" | "default";
-  relocation_history: Array<{ changed_at: string; field: string; old_value: string | null; new_value: string | null }>;
+  relocation_history: Array<{ changed_at: string; field: string; old_value: string | null; new_value: string | null; changed_by_name: string | null }>;
+  responsible_history: Array<{ from: string | null; to: string | null; started_at: string; ended_at: string | null; changed_by_name: string | null }>;
 }
 
 const typeIcons: Record<string, React.ReactNode> = {
