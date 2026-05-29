@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
 import { Clock, HandMetal, Search } from "lucide-react";
 import { StatusBadge, PriorityBadge } from "@/components/StatusBadge";
 import { usePickTicket } from "@/hooks/useTickets";
@@ -14,6 +15,7 @@ export default function ChamadosAbertos() {
   const pickTicket = usePickTicket();
   const [selectedTicket, setSelectedTicket] = useState<Ticket | null>(null);
   const [searchText, setSearchText] = useState("");
+  const [searchParams, setSearchParams] = useSearchParams();
 
   const { data: tickets = [], isLoading } = useQuery({
     queryKey: ["open-tickets", orgId],
