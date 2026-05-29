@@ -83,14 +83,27 @@ export function useNewTicketNotifier() {
           filter: `organization_id=eq.${orgId}`,
         },
         (payload) => {
-          const t = payload.new as { created_by?: string; title?: string; status?: string };
+          const t = payload.new as { id?: string; created_by?: string; title?: string; status?: string };
           if (!t) return;
           if (t.created_by === user.id) return;
 
           playAlert();
+          const goToTicket = () => {
+            if (t.id) navigate(`/chamados-abertos?open=${t.id}`);
+            else navigate("/chamados-abertos");
+          };
           toast("🔔 Novo chamado aberto", {
-            description: t.title || "Sem título",
-            duration: 6000,
+            description: (t.title || "Sem título") + " — clique para abrir",
+            duration: 8000,
+            onDismiss: () => {},
+            action: {
+              label: "Abrir",
+              onClick: goToTicket,
+            },
+            onAutoClose: () => {},
+            // sonner: clicking the toast body
+            // @ts-expect-error sonner supports onClick on toast
+            onClick: goToTicket,
           });
 
           if (!STOP_ROUTES.includes(locationRef.current) || document.visibilityState !== "visible") {
