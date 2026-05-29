@@ -256,7 +256,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
           >
             <Menu className="h-5 w-5" />
           </button>
-          {(isAdmin || hasRole("tecnico") || hasRole("desenvolvedor") || isSuperAdmin) && (
+          {(isAdmin || isSuperAdmin) && (
             <Tooltip delayDuration={300}>
               <TooltipTrigger asChild>
                 <button
