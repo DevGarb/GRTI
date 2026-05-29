@@ -54,6 +54,36 @@ export default function ChamadosAbertos() {
     },
   });
 
+  const openId = searchParams.get("open");
+
+  useEffect(() => {
+    if (!openId || isLoading || selectedTicket) return;
+    const found = tickets.find((t) => t.id === openId);
+    if (found) {
+      setSelectedTicket(found);
+      setSearchParams({}, { replace: true });
+      return;
+    }
+    // Fallback: ticket pode já não estar mais na lista (foi atribuído). Buscar direto.
+    (async () => {
+      const { data } = await supabase.from("tickets").select("*").eq("id", openId).maybeSingle();
+      if (data) {
+        const { data: prof } = await supabase
+          .from("profiles")
+          .select("user_id, full_name")
+          .in("user_id", [data.created_by, data.assigned_to].filter(Boolean) as string[]);
+        const map = new Map((prof || []).map((p) => [p.user_id, p.full_name]));
+        setSelectedTicket({
+          ...data,
+          assignedProfile: data.assigned_to ? { full_name: map.get(data.assigned_to) || "" } : null,
+          creatorProfile: { full_name: map.get(data.created_by) || "" },
+          reworkCount: 0,
+        } as Ticket);
+      }
+      setSearchParams({}, { replace: true });
+    })();
+  }, [openId, isLoading, tickets, selectedTicket, setSearchParams]);
+
   const filtered = tickets
     .filter(t =>
       t.title.toLowerCase().includes(searchText.toLowerCase()) ||
