@@ -31,7 +31,8 @@ interface PublicAsset {
   last_maintenance: { execution_date: string; responsible: string | null; notes: string | null; checklist: Record<string, unknown> | null } | null;
   maintenance_interval_days: number | null;
   maintenance_interval_source?: "configured" | "default";
-  relocation_history: Array<{ changed_at: string; field: string; old_value: string | null; new_value: string | null }>;
+  relocation_history: Array<{ changed_at: string; field: string; old_value: string | null; new_value: string | null; changed_by_name: string | null }>;
+  responsible_history: Array<{ from: string | null; to: string | null; started_at: string; ended_at: string | null; changed_by_name: string | null }>;
 }
 
 const typeIcons: Record<string, React.ReactNode> = {
@@ -148,6 +149,7 @@ export default function AssetPublicView() {
   const retryDisabled = cooldown || isFetching;
 
   const [showTimeline, setShowTimeline] = useState(false);
+  const [showResponsibles, setShowResponsibles] = useState(true);
   const [showChecklist, setShowChecklist] = useState(false);
 
   const maintHealth = useMemo(() => {
@@ -356,7 +358,75 @@ export default function AssetPublicView() {
           </div>
         </div>
 
-        {/* 12. Linha do tempo (colapsável) */}
+        {/* 12a. Histórico de Responsáveis (destaque) */}
+        <CollapsibleCard
+          primary={primary}
+          open={showResponsibles}
+          onToggle={() => setShowResponsibles((v) => !v)}
+          icon={<User className="h-4 w-4" />}
+          title="Histórico de responsáveis"
+          count={
+            (asset.responsible_history?.length ?? 0) +
+            (asset.responsible && (asset.responsible_history?.length ?? 0) === 0 ? 1 : 0)
+          }
+        >
+          {(() => {
+            const hist = asset.responsible_history ?? [];
+            if (hist.length === 0 && !asset.responsible) {
+              return (
+                <p className="text-xs text-gray-500 pt-2">
+                  Nenhum responsável registrado ainda.
+                </p>
+              );
+            }
+            // Ordem decrescente (mais recente primeiro)
+            const items = hist.slice().reverse();
+            return (
+              <ol className="relative border-l-2 pt-2 space-y-3 ml-1.5" style={{ borderColor: rgba(primary, 0.2) }}>
+                {items.length === 0 && asset.responsible && (
+                  <li className="pl-4 relative">
+                    <span
+                      className="absolute -left-[7px] top-1 h-3 w-3 rounded-full border-2 border-white animate-pulse"
+                      style={{ backgroundColor: primary }}
+                    />
+                    <p className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: primary }}>
+                      Atual
+                    </p>
+                    <p className="text-sm font-semibold text-gray-800">{asset.responsible}</p>
+                    <p className="text-[11px] text-gray-500">Responsável desde o cadastro</p>
+                  </li>
+                )}
+                {items.map((h, i) => {
+                  const isCurrent = i === 0 && h.ended_at === null;
+                  return (
+                    <li key={i} className="pl-4 relative">
+                      <span
+                        className={`absolute -left-[7px] top-1 h-3 w-3 rounded-full border-2 border-white ${isCurrent ? "animate-pulse" : ""}`}
+                        style={{ backgroundColor: isCurrent ? primary : rgba(primary, 0.5) }}
+                      />
+                      <p className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: isCurrent ? primary : "#9ca3af" }}>
+                        {isCurrent ? "Atual" : "Anterior"}
+                      </p>
+                      <p className="text-sm font-semibold text-gray-800">
+                        {h.to || <span className="italic text-gray-400">Sem responsável</span>}
+                      </p>
+                      <p className="text-[11px] text-gray-500">
+                        {format(new Date(h.started_at), "dd/MM/yyyy")}
+                        {h.ended_at ? ` – ${format(new Date(h.ended_at), "dd/MM/yyyy")}` : " – atual"}
+                        {h.from && <span className="text-gray-400"> · veio de {h.from}</span>}
+                      </p>
+                      {h.changed_by_name && (
+                        <p className="text-[11px] text-gray-400">Atribuído por {h.changed_by_name}</p>
+                      )}
+                    </li>
+                  );
+                })}
+              </ol>
+            );
+          })()}
+        </CollapsibleCard>
+
+        {/* 12b. Linha do tempo geral (colapsável) */}
         <CollapsibleCard
           primary={primary}
           open={showTimeline}
@@ -379,6 +449,7 @@ export default function AssetPublicView() {
                   />
                   <p className="text-[11px] text-gray-400 uppercase tracking-wider">
                     {format(new Date(h.changed_at), "dd/MM/yyyy HH:mm")}
+                    {h.changed_by_name && <span className="normal-case"> · por {h.changed_by_name}</span>}
                   </p>
                   <p className="text-sm text-gray-700">
                     <span className="font-semibold">{fieldLabels[h.field] || h.field}</span>

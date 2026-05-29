@@ -103,21 +103,69 @@ Deno.serve(async (req) => {
       }
     }
 
-    // Linha do tempo de realocações (até 10)
+    // Linha do tempo completa (até 50 entradas, desc) + responsáveis derivados (asc)
     let relocation_history: Array<{
       changed_at: string;
       field: string;
       old_value: string | null;
       new_value: string | null;
+      changed_by_name: string | null;
+    }> = [];
+    let responsible_history: Array<{
+      from: string | null;
+      to: string | null;
+      started_at: string;
+      ended_at: string | null;
+      changed_by_name: string | null;
     }> = [];
     {
       const { data: hist } = await supabase
         .from("patrimonio_history")
-        .select("changed_at, field, old_value, new_value")
+        .select("changed_at, field, old_value, new_value, changed_by")
         .eq("patrimonio_id", data.id)
         .order("changed_at", { ascending: false })
-        .limit(10);
-      if (hist) relocation_history = hist;
+        .limit(50);
+
+      const rows = hist ?? [];
+      // Resolver nomes
+      const ids = Array.from(
+        new Set(rows.map((r) => r.changed_by).filter((v): v is string => !!v)),
+      );
+      const nameMap = new Map<string, string>();
+      if (ids.length > 0) {
+        const { data: profs } = await supabase
+          .from("profiles")
+          .select("user_id, full_name")
+          .in("user_id", ids);
+        for (const p of profs ?? []) {
+          if (p.user_id && p.full_name) nameMap.set(p.user_id, p.full_name);
+        }
+      }
+
+      relocation_history = rows.map((r) => ({
+        changed_at: r.changed_at,
+        field: r.field,
+        old_value: r.old_value,
+        new_value: r.new_value,
+        changed_by_name: r.changed_by ? nameMap.get(r.changed_by) ?? null : null,
+      }));
+
+      // Responsáveis em ordem ascendente
+      const respAsc = rows
+        .filter((r) => r.field === "responsible")
+        .slice()
+        .sort(
+          (a, b) =>
+            new Date(a.changed_at).getTime() - new Date(b.changed_at).getTime(),
+        );
+
+      responsible_history = respAsc.map((r, idx) => ({
+        from: r.old_value,
+        to: r.new_value,
+        started_at: r.changed_at,
+        ended_at: idx < respAsc.length - 1 ? respAsc[idx + 1].changed_at : null,
+        changed_by_name: r.changed_by ? nameMap.get(r.changed_by) ?? null : null,
+      }));
     }
 
     const { organization_id: _omit, ...safe } = data;
@@ -128,6 +176,7 @@ Deno.serve(async (req) => {
       maintenance_interval_days,
       maintenance_interval_source,
       relocation_history,
+      responsible_history,
     });
   } catch (e) {
     console.error("get-public-asset crash", e);
