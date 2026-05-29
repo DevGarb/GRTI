@@ -1,5 +1,5 @@
 import { useEffect, useRef, useCallback } from "react";
-import { useLocation } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -23,6 +23,7 @@ function playAlert() {
 export function useNewTicketNotifier() {
   const { user, profile, hasRole, isSuperAdmin } = useAuth();
   const location = useLocation();
+  const navigate = useNavigate();
   const intervalRef = useRef<number | null>(null);
   const originalTitleRef = useRef<string>(typeof document !== "undefined" ? document.title : "");
   const locationRef = useRef(location.pathname);
@@ -82,14 +83,27 @@ export function useNewTicketNotifier() {
           filter: `organization_id=eq.${orgId}`,
         },
         (payload) => {
-          const t = payload.new as { created_by?: string; title?: string; status?: string };
+          const t = payload.new as { id?: string; created_by?: string; title?: string; status?: string };
           if (!t) return;
           if (t.created_by === user.id) return;
 
           playAlert();
+          const goToTicket = () => {
+            if (t.id) navigate(`/chamados-abertos?open=${t.id}`);
+            else navigate("/chamados-abertos");
+          };
           toast("🔔 Novo chamado aberto", {
-            description: t.title || "Sem título",
-            duration: 6000,
+            description: (t.title || "Sem título") + " — clique para abrir",
+            duration: 8000,
+            onDismiss: () => {},
+            action: {
+              label: "Abrir",
+              onClick: goToTicket,
+            },
+            onAutoClose: () => {},
+            // sonner: clicking the toast body
+            // @ts-expect-error sonner supports onClick on toast
+            onClick: goToTicket,
           });
 
           if (!STOP_ROUTES.includes(locationRef.current) || document.visibilityState !== "visible") {
