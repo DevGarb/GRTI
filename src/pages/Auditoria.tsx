@@ -20,15 +20,29 @@ function TabChamados() {
   const { data: tickets = [], isLoading } = useQuery({
     queryKey: ["auditoria-chamados", selectedMonth],
     queryFn: async () => {
-      // Chamados criados no mês selecionado
-      const { data: rawTickets, error } = await supabase
-        .from("tickets")
-        .select("id, title, status, created_at, created_by, assigned_to, category_id")
-        .gte("created_at", monthFrom.toISOString())
-        .lte("created_at", monthTo.toISOString())
-        .order("created_at", { ascending: false });
-      if (error) throw error;
-      if (!rawTickets || rawTickets.length === 0) return [];
+      // Híbrido: abertos no mês → filtra por created_at; fechados no mês → filtra por closed_at
+      const [openedRes, closedRes] = await Promise.all([
+        supabase
+          .from("tickets")
+          .select("id, title, status, created_at, closed_at, created_by, assigned_to, category_id")
+          .neq("status", "Fechado")
+          .gte("created_at", monthFrom.toISOString())
+          .lte("created_at", monthTo.toISOString()),
+        supabase
+          .from("tickets")
+          .select("id, title, status, created_at, closed_at, created_by, assigned_to, category_id")
+          .eq("status", "Fechado")
+          .gte("closed_at", monthFrom.toISOString())
+          .lte("closed_at", monthTo.toISOString()),
+      ]);
+      if (openedRes.error) throw openedRes.error;
+      if (closedRes.error) throw closedRes.error;
+      const merged = [...(openedRes.data || []), ...(closedRes.data || [])];
+      const rawTickets = merged.sort((a, b) =>
+        new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+      );
+      if (rawTickets.length === 0) return [];
+
 
       const ticketIds = rawTickets.map((t) => t.id);
 
