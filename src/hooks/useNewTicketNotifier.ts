@@ -21,12 +21,13 @@ function playAlert() {
 }
 
 export function useNewTicketNotifier() {
-  const { user, profile, hasRole, isSuperAdmin } = useAuth();
+  const { user, profile, roles, isSuperAdmin, loading } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
   const intervalRef = useRef<number | null>(null);
   const originalTitleRef = useRef<string>(typeof document !== "undefined" ? document.title : "");
   const locationRef = useRef(location.pathname);
+  const canUseAdminAlert = !loading && (isSuperAdmin || roles.includes("admin"));
 
   useEffect(() => {
     locationRef.current = location.pathname;
@@ -67,9 +68,7 @@ export function useNewTicketNotifier() {
 
   // Realtime subscription
   useEffect(() => {
-    if (!user || !profile?.organization_id) return;
-    const isStaff = isSuperAdmin || hasRole("admin") || hasRole("tecnico") || hasRole("desenvolvedor");
-    if (!isStaff) return;
+    if (!user || !profile?.organization_id || !canUseAdminAlert) return;
 
     const orgId = profile.organization_id;
     const channel = supabase
@@ -117,7 +116,7 @@ export function useNewTicketNotifier() {
       supabase.removeChannel(channel);
       stopFlashing();
     };
-  }, [user?.id, profile?.organization_id, isSuperAdmin]);
+  }, [user?.id, profile?.organization_id, canUseAdminAlert, navigate, startFlashing, stopFlashing]);
 }
 
 /** Dispara o alerta manualmente (botão de teste). */
