@@ -45,8 +45,8 @@ export default function AppLayout({ children }: AppLayoutProps) {
     if (saved !== null) return saved === "true";
     return document.documentElement.classList.contains("dark");
   });
-  const { profile, roles, signOut, hasRole, isSuperAdmin } = useAuth();
-  const isAdmin = hasRole("admin");
+  const { profile, roles, signOut, isSuperAdmin, loading: authLoading } = useAuth();
+  const canUseAdminAlert = !authLoading && (isSuperAdmin || roles.includes("admin"));
   useNewTicketNotifier();
 
   // Apply dark mode class on mount and changes
@@ -256,7 +256,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
           >
             <Menu className="h-5 w-5" />
           </button>
-          {(isAdmin || isSuperAdmin) && (
+          {canUseAdminAlert && (
             <Tooltip delayDuration={300}>
               <TooltipTrigger asChild>
                 <button
