@@ -1,42 +1,61 @@
-# Histórico de Responsáveis do Patrimônio
+## Objetivo
 
-## Contexto
+Mudar a lógica de agrupamento mensal para o modelo **híbrido**:
 
-A infraestrutura já existe:
-- Tabela `patrimonio_history` registra mudanças de `responsible`, `sector`, `location`, `status` via trigger `trg_log_patrimonio_changes` (com `changed_by = auth.uid()`)
-- A página pública (`/asset/:id`, aberta pelo QR Code) já exibe uma "Linha do tempo do equipamento" misturando todos os tipos de alteração
+- **Chamados em aberto** (qualquer status ≠ Fechado) → continuam contando no mês de **criação** (`created_at`).
+- **Chamados fechados** → passam a contar no mês do **fechamento** (não mais pelo `created_at`).
 
-O que falta: dar destaque à **cadeia de responsáveis** — quem usou aquele equipamento, em que período, e quem fez a transferência.
+Resultado prático: um chamado criado em Maio/2026 e fechado em Junho/2026 sai das métricas de Maio (de fechados) e aparece em Junho.
 
-## O que mudar
+## Como saber "quando foi fechado"
 
-### 1. Edge function `supabase/functions/get-public-asset/index.ts`
+Hoje não existe coluna `closed_at` na tabela `tickets`. O `updated_at` muda em qualquer edição, então não serve. Solução:
 
-- Aumentar `limit(10)` → `limit(50)` para o histórico (cobrir vida útil maior).
-- Resolver os nomes de quem alterou: adicionar `changed_by` ao SELECT, coletar os UUIDs únicos e fazer um SELECT em `profiles (user_id, full_name)` para mapear nome do autor.
-- Retornar dois blocos:
-  - `relocation_history` (mantido, agora com `changed_by_name`)
-  - `responsible_history`: derivado filtrando `field='responsible'` em ordem cronológica ascendente, com `{ from, to, started_at, ended_at, changed_by_name }` (o `ended_at` de cada item é o `started_at` do próximo; o atual fica em aberto).
+1. Adicionar coluna `tickets.closed_at timestamptz` (nullable).
+2. Criar trigger `BEFORE UPDATE` que define `NEW.closed_at = now()` quando `status` muda **para** "Fechado", e `NEW.closed_at = NULL` se reabrir (sair de Fechado).
+3. **Backfill** dos chamados já fechados: pegar o último `ticket_history.created_at` com `action='status_change'` e `new_value='Fechado'`; quando não houver histórico, usar `updated_at` como fallback.
 
-### 2. Página pública `src/pages/AssetPublicView.tsx`
+Isso garante que chamados fechados em Junho — mesmo criados em Maio — tenham `closed_at` em Junho.
 
-- Nova seção colapsável **"Histórico de Responsáveis"** acima da linha do tempo existente, com ícone de usuário:
-  - Lista vertical (timeline) com cada responsável, data de início, data de fim ("atual" se for o vigente), e "transferido por {nome}" quando disponível.
-  - Se a lista vier vazia mas `asset.responsible` existir, mostra o responsável atual como item único ("Responsável desde o cadastro").
-- Na linha do tempo geral existente, exibir o `changed_by_name` ao lado da data (ex.: "12/05/2026 14:30 · por João Silva").
+## Mudanças
 
-### 3. Garantir que mudanças sejam capturadas no cadastro inicial
+### 1. Migration (DB)
+- `ALTER TABLE public.tickets ADD COLUMN closed_at timestamptz`.
+- Função + trigger `set_ticket_closed_at()` (BEFORE UPDATE).
+- Backfill via ticket_history (uma vez).
+- Índice `idx_tickets_closed_at` para acelerar filtros mensais.
 
-O trigger atual só dispara em `UPDATE`. Para incluir o responsável definido no `INSERT` (cadastro), adicionar um trigger `AFTER INSERT` que registra `responsible`, `sector`, `location` iniciais como entradas no histórico (`old_value = NULL`). Isso garante que o "primeiro responsável" apareça na timeline.
+### 2. `get_metas_tecnicos` (RPC)
+Trocar o filtro do CTE `closed`:
+```sql
+-- antes
+WHERE t.status = 'Fechado'
+  AND t.created_at >= _start AND t.created_at < _end
+-- depois
+WHERE t.status = 'Fechado'
+  AND t.closed_at >= _start AND t.closed_at < _end
+```
 
-## Fora de escopo
+### 3. `src/hooks/useDashboardMetrics.ts`
+- `closedTickets`: filtrar por `closed_at` em vez de `created_at`.
+- `allTickets` (criados no período, usado para "total" e categorias): **manter** filtro por `created_at` — esses representam chamados abertos no mês.
+- Incluir `closed_at` no SELECT da query de tickets.
 
-- Não muda o formulário de edição do patrimônio (a captura do responsável já funciona).
-- Não muda o QR Code em si — apenas o conteúdo da página que ele abre.
-- Não cria modal novo dentro do app; o "modal do QRCode" referido pelo usuário é a tela pública aberta pelo scan.
+### 4. `src/pages/Auditoria.tsx`
+A tela mostra "chamados do mês". Como é uma visão única, dividir em duas faixas mentais:
+- Abertos no período → `created_at` entre `monthFrom` e `monthTo` E status ≠ Fechado.
+- Fechados no período → `closed_at` entre `monthFrom` e `monthTo` E status = Fechado.
 
-## Detalhes técnicos
+Implementação: duas queries (`created_at` para não-fechados, `closed_at` para fechados) unidas no client. Mantém o CSV export como está.
 
-- Migração SQL nova: trigger `AFTER INSERT ON public.patrimonio` chamando uma função `log_patrimonio_insert()` (SECURITY DEFINER) que insere linhas iniciais em `patrimonio_history`.
-- Edge function: usar service role (já usa) para ler `profiles`, sem expor dados sensíveis (apenas `full_name`).
-- Tipos: estender a interface `Asset` em `AssetPublicView.tsx` com `responsible_history` e `changed_by_name` nos itens.
+### 5. `src/pages/Historico.tsx`
+Tela mostra `audit_logs` (eventos), não chamados — **não precisa mudar**.
+
+## Fora do escopo
+- Metas/Dashboard de outros módulos (Operacional, Oficina, Entregas) — só helpdesk.
+- UI das telas (apenas a fonte do filtro muda).
+- `ChamadosAbertos`, `Chamados`, `MetasTecnicos` (página) já consomem dos hooks/RPC acima — herdam a mudança sem edição extra.
+
+## Riscos
+- Métricas históricas vão se **mover retroativamente** conforme chamados antigos forem fechados. É o comportamento desejado.
+- Backfill é one-shot; chamados sem histórico de fechamento ficam com `closed_at = updated_at` (aproximação aceitável).
