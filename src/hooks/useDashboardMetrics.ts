@@ -48,27 +48,30 @@ export function useDashboardMetrics(dateFrom?: Date, dateTo?: Date) {
       // Fetch tickets
       let ticketQuery = supabase
         .from("tickets")
-        .select("id, status, created_at, updated_at, started_at, type, assigned_to")
+        .select("id, status, created_at, updated_at, closed_at, started_at, type, assigned_to")
         .order("created_at", { ascending: false });
       if (orgId) {
         ticketQuery = ticketQuery.eq("organization_id", orgId);
       }
       const { data: tickets } = await ticketQuery;
 
-      // Tickets criados no período (para "total" e categorias)
+      // Tickets criados no período (para "total" e categorias) — base por created_at
       const allTickets = (tickets || []).filter((t) => {
         if (!dateFrom || !dateTo) return true;
         const d = new Date(t.created_at);
         return d >= dateFrom && d <= dateTo;
       });
 
-      // Tickets FECHADOS no período: filtra por created_at (mesma base da Auditoria)
-      const closedTickets = (tickets || []).filter((t) => {
+      // Tickets FECHADOS no período: agora filtra pelo closed_at (mês do fechamento)
+      const closedTickets = (tickets || []).filter((t: any) => {
         if (t.status !== "Fechado") return false;
         if (!dateFrom || !dateTo) return true;
-        const d = new Date(t.created_at);
+        const ref = t.closed_at ?? t.updated_at;
+        if (!ref) return false;
+        const d = new Date(ref);
         return d >= dateFrom && d <= dateTo;
       });
+
 
       // Resolve "fim do atendimento técnico" para agrupar por mês
       const resolutionEndMap = await fetchTicketResolutionEnds(
