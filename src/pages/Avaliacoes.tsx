@@ -203,11 +203,11 @@ export default function Avaliacoes() {
                         {Array.from({ length: 5 }, (_, i) => (
                           <Star
                             key={i}
-                            className={`h-3 w-3 ${i < Math.min(ev.score, 5) ? "text-amber-500 fill-amber-500" : "text-muted"}`}
+                            className={`h-3 w-3 ${i < ev.score ? "text-amber-500 fill-amber-500" : "text-muted"}`}
                           />
                         ))}
                       </div>
-                      <span className="text-xs font-bold text-foreground">{Math.min(ev.score, 5)}/5</span>
+                      <span className="text-xs font-bold text-foreground">{ev.score}/5</span>
                     </div>
                     <p className="text-xs text-muted-foreground mt-1">
                       Chamado: {ev.ticketTitle}
