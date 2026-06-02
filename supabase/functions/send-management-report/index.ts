@@ -78,18 +78,20 @@ Deno.serve(async (req) => {
       .eq("organization_id", body.organization_id)
       .maybeSingle();
     if (cfgErr) throw cfgErr;
-    if (!config) {
-      return new Response(JSON.stringify({ error: "config not found" }), {
-        status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-    if (!config.webhook_url) {
-      return new Response(JSON.stringify({ error: "webhook_url not set" }), {
-        status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+    if (!body.dry_run) {
+      if (!config) {
+        return new Response(JSON.stringify({ error: "config not found" }), {
+          status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      if (!config.webhook_url) {
+        return new Response(JSON.stringify({ error: "webhook_url not set" }), {
+          status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
     }
 
-    const configuredTz = config.timezone && isValidTimezone(config.timezone) ? config.timezone : DEFAULT_TZ;
+    const configuredTz = config?.timezone && isValidTimezone(config.timezone) ? config.timezone : DEFAULT_TZ;
     const range = body.from && body.to
       ? { from: body.from, to: body.to, tz: configuredTz }
       : dMinusOneRange(configuredTz);
