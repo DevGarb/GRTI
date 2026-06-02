@@ -1,5 +1,5 @@
-import { useMemo, useState } from "react";
-import { format, subDays, startOfDay, endOfDay, startOfMonth } from "date-fns";
+import { useEffect, useMemo, useState } from "react";
+import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { CalendarIcon, Download, Send, RefreshCw } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
@@ -20,22 +21,16 @@ import {
   type ManagementMetricRow,
 } from "@/hooks/useManagementMetrics";
 import { useQueryClient } from "@tanstack/react-query";
-
-function dRange(preset: "yesterday" | "today" | "last7" | "thisMonth") {
-  const now = new Date();
-  switch (preset) {
-    case "today":
-      return { from: startOfDay(now), to: endOfDay(now) };
-    case "yesterday": {
-      const y = subDays(now, 1);
-      return { from: startOfDay(y), to: endOfDay(y) };
-    }
-    case "last7":
-      return { from: startOfDay(subDays(now, 7)), to: endOfDay(now) };
-    case "thisMonth":
-      return { from: startOfMonth(now), to: endOfDay(now) };
-  }
-}
+import {
+  COMMON_TIMEZONES,
+  DEFAULT_TZ,
+  endOfDayInTz,
+  formatInTz,
+  isValidTimezone,
+  presetRangeInTz,
+  startOfDayInTz,
+  type RangePreset,
+} from "@/lib/orgTimezone";
 
 function fmtMinutes(m: number) {
   if (!m || m <= 0) return "—";
@@ -94,24 +89,38 @@ export default function MetricasGerenciais() {
   const { profile } = useAuth();
   const orgId = profile?.organization_id ?? null;
   const queryClient = useQueryClient();
-  const [range, setRange] = useState(dRange("yesterday"));
+  const { data: config } = useManagementReportConfig(orgId);
+
+  const orgTz = useMemo(() => {
+    const tz = config?.timezone || DEFAULT_TZ;
+    return isValidTimezone(tz) ? tz : DEFAULT_TZ;
+  }, [config?.timezone]);
+
+  const [range, setRange] = useState(() => presetRangeInTz("yesterday", DEFAULT_TZ));
   const [editFrom, setEditFrom] = useState<Date | undefined>(range.from);
   const [editTo, setEditTo] = useState<Date | undefined>(range.to);
 
+  // Quando o fuso da organização chegar/mudar, recalcula o D-1 padrão.
+  useEffect(() => {
+    const r = presetRangeInTz("yesterday", orgTz);
+    setRange(r); setEditFrom(r.from); setEditTo(r.to);
+  }, [orgTz]);
+
   const { data: rows = [], isLoading, refetch } = useManagementMetrics(range.from, range.to, orgId);
-  const { data: config } = useManagementReportConfig(orgId);
 
   const [webhookUrl, setWebhookUrl] = useState("");
   const [sendTime, setSendTime] = useState("08:00");
+  const [timezone, setTimezone] = useState<string>(DEFAULT_TZ);
   const [isActive, setIsActive] = useState(false);
   const [saving, setSaving] = useState(false);
   const [sending, setSending] = useState(false);
 
-  useMemo(() => {
+  useEffect(() => {
     if (config) {
       setWebhookUrl(config.webhook_url ?? "");
       setSendTime((config.send_time ?? "08:00").slice(0, 5));
       setIsActive(config.is_active);
+      setTimezone(config.timezone || DEFAULT_TZ);
     }
   }, [config]);
 
@@ -119,6 +128,14 @@ export default function MetricasGerenciais() {
 
   async function saveConfig() {
     if (!orgId) return;
+    if (!isValidTimezone(timezone)) {
+      toast.error("Fuso horário inválido");
+      return;
+    }
+    if (!/^\d{2}:\d{2}$/.test(sendTime)) {
+      toast.error("Horário inválido (use HH:MM)");
+      return;
+    }
     setSaving(true);
     try {
       const payload = {
@@ -126,7 +143,7 @@ export default function MetricasGerenciais() {
         webhook_url: webhookUrl || null,
         send_time: sendTime + ":00",
         is_active: isActive,
-        timezone: "America/Sao_Paulo",
+        timezone,
       };
       const { error } = await supabase
         .from("management_report_config" as any)
@@ -168,17 +185,18 @@ export default function MetricasGerenciais() {
         <div>
           <h1 className="text-2xl font-bold">Métricas Gerenciais</h1>
           <p className="text-sm text-muted-foreground">
-            Relatório por técnico/desenvolvedor — janela padrão D-1 (ontem)
+            Relatório por técnico/desenvolvedor — janela padrão D-1 (ontem) no fuso{" "}
+            <span className="font-medium">{orgTz}</span>
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          {(["yesterday", "today", "last7", "thisMonth"] as const).map((p) => (
+          {(["yesterday", "today", "last7", "thisMonth"] as const as RangePreset[]).map((p) => (
             <Button
               key={p}
               variant="outline"
               size="sm"
               onClick={() => {
-                const r = dRange(p);
+                const r = presetRangeInTz(p, orgTz);
                 setRange(r); setEditFrom(r.from); setEditTo(r.to);
               }}
             >
@@ -189,7 +207,7 @@ export default function MetricasGerenciais() {
             <PopoverTrigger asChild>
               <Button variant="outline" size="sm">
                 <CalendarIcon className="h-4 w-4 mr-1" />
-                {format(range.from, "dd/MM", { locale: ptBR })} → {format(range.to, "dd/MM", { locale: ptBR })}
+                {formatInTz(range.from, orgTz, { day: "2-digit", month: "2-digit" })} → {formatInTz(range.to, orgTz, { day: "2-digit", month: "2-digit" })}
               </Button>
             </PopoverTrigger>
             <PopoverContent className="w-auto p-3 pointer-events-auto" align="end">
@@ -207,7 +225,7 @@ export default function MetricasGerenciais() {
                 <Button
                   size="sm"
                   onClick={() => {
-                    if (editFrom && editTo) setRange({ from: startOfDay(editFrom), to: endOfDay(editTo) });
+                    if (editFrom && editTo) setRange({ from: startOfDayInTz(editFrom, orgTz), to: endOfDayInTz(editTo, orgTz) });
                   }}
                 >
                   Aplicar
@@ -293,15 +311,31 @@ export default function MetricasGerenciais() {
           <CardTitle className="text-base">Envio automático diário (D-1) via webhook</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="grid gap-3 md:grid-cols-2">
-            <div className="space-y-1.5">
+          <div className="grid gap-3 md:grid-cols-3">
+            <div className="space-y-1.5 md:col-span-3">
               <Label htmlFor="webhook">URL do webhook</Label>
               <Input id="webhook" placeholder="https://..." value={webhookUrl} onChange={(e) => setWebhookUrl(e.target.value)} />
-              <p className="text-xs text-muted-foreground">POST com payload JSON contendo totais e linha por técnico.</p>
+              <p className="text-xs text-muted-foreground">POST com payload JSON contendo totais e linha por técnico. O intervalo D-1 é calculado de 00:00:00 até 23:59:59.999 no fuso selecionado.</p>
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="time">Horário de envio (America/Sao_Paulo)</Label>
+              <Label htmlFor="tz">Fuso horário</Label>
+              <Select value={timezone} onValueChange={setTimezone}>
+                <SelectTrigger id="tz"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {COMMON_TIMEZONES.map((t) => (
+                    <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="time">Horário de envio ({timezone})</Label>
               <Input id="time" type="time" value={sendTime} onChange={(e) => setSendTime(e.target.value)} />
+            </div>
+            <div className="space-y-1.5 flex items-end">
+              <p className="text-xs text-muted-foreground">
+                Próximo D-1: {formatInTz(presetRangeInTz("yesterday", timezone).from, timezone, { day: "2-digit", month: "2-digit", year: "numeric" })} (00:00 → 23:59)
+              </p>
             </div>
           </div>
           <div className="flex items-center gap-3">
