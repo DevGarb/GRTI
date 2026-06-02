@@ -10,6 +10,7 @@ import { menuItems } from "@/config/menuItems";
 import { useMenuAccess } from "@/hooks/useMenuAccess";
 import { useUserOrganizations } from "@/hooks/useUserOrganizations";
 import { useNewTicketNotifier, triggerTestAlert } from "@/hooks/useNewTicketNotifier";
+import NotificationBell from "@/components/NotificationBell";
 
 interface AppLayoutProps {
   children: React.ReactNode;
