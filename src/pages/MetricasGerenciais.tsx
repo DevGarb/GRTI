@@ -135,7 +135,7 @@ export default function MetricasGerenciais() {
         webhook_url: webhookUrl || null,
         send_time: sendTime + ":00",
         is_active: isActive,
-        timezone: "America/Sao_Paulo",
+        timezone,
       };
       const { error } = await supabase
         .from("management_report_config" as any)
