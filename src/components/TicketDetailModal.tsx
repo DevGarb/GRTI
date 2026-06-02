@@ -144,6 +144,18 @@ export default function TicketDetailModal({ ticket, onClose }: Props) {
   const moveTicketOrg = useMoveTicketOrg();
   const moveCandidateOrgs = userOrgs.filter((o) => o.id !== (ticket as any).organization_id);
 
+  // Marca o chamado como visualizado pelo solicitante ao abrir o modal
+  useEffect(() => {
+    if (!user?.id || ticket.created_by !== user.id) return;
+    (async () => {
+      await supabase
+        .from("tickets")
+        .update({ last_seen_by_requester_at: new Date().toISOString() } as any)
+        .eq("id", ticket.id);
+      queryClient.invalidateQueries({ queryKey: ["ticket-unread-comments"] });
+    })();
+  }, [ticket.id, ticket.created_by, user?.id, queryClient]);
+
   const { data: attachments = [] } = useQuery({
     queryKey: ["ticket-attachments", ticket.id],
     queryFn: async () => {
