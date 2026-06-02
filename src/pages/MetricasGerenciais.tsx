@@ -177,17 +177,18 @@ export default function MetricasGerenciais() {
         <div>
           <h1 className="text-2xl font-bold">Métricas Gerenciais</h1>
           <p className="text-sm text-muted-foreground">
-            Relatório por técnico/desenvolvedor — janela padrão D-1 (ontem)
+            Relatório por técnico/desenvolvedor — janela padrão D-1 (ontem) no fuso{" "}
+            <span className="font-medium">{orgTz}</span>
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          {(["yesterday", "today", "last7", "thisMonth"] as const).map((p) => (
+          {(["yesterday", "today", "last7", "thisMonth"] as const as RangePreset[]).map((p) => (
             <Button
               key={p}
               variant="outline"
               size="sm"
               onClick={() => {
-                const r = dRange(p);
+                const r = presetRangeInTz(p, orgTz);
                 setRange(r); setEditFrom(r.from); setEditTo(r.to);
               }}
             >
@@ -198,7 +199,7 @@ export default function MetricasGerenciais() {
             <PopoverTrigger asChild>
               <Button variant="outline" size="sm">
                 <CalendarIcon className="h-4 w-4 mr-1" />
-                {format(range.from, "dd/MM", { locale: ptBR })} → {format(range.to, "dd/MM", { locale: ptBR })}
+                {formatInTz(range.from, orgTz, { day: "2-digit", month: "2-digit" })} → {formatInTz(range.to, orgTz, { day: "2-digit", month: "2-digit" })}
               </Button>
             </PopoverTrigger>
             <PopoverContent className="w-auto p-3 pointer-events-auto" align="end">
