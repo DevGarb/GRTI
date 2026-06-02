@@ -4,8 +4,10 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
+import { TicketModalProvider } from "@/contexts/TicketModalContext";
 import { useMenuAccess } from "@/hooks/useMenuAccess";
 import AppLayout from "@/components/AppLayout";
+import MetricasGerenciais from "@/pages/MetricasGerenciais";
 import Dashboard from "@/pages/Dashboard";
 import Chamados from "@/pages/Chamados";
 import ChamadosAbertos from "@/pages/ChamadosAbertos";
@@ -99,9 +101,11 @@ const App = () => (
               path="/*"
               element={
                 <ProtectedRoute>
+                  <TicketModalProvider>
                   <AppLayout>
                     <Routes>
                       <Route path="/" element={<MenuGuard menuKey="dashboard"><AdminRoute><Dashboard /></AdminRoute></MenuGuard>} />
+                      <Route path="/metricas-gerenciais" element={<MenuGuard menuKey="metricas-gerenciais"><AdminRoute><MetricasGerenciais /></AdminRoute></MenuGuard>} />
                       <Route path="/chamados" element={<MenuGuard menuKey="chamados"><Chamados /></MenuGuard>} />
                       <Route path="/chamados-abertos" element={<MenuGuard menuKey="chamados-abertos"><ChamadosAbertos /></MenuGuard>} />
                       <Route path="/todos" element={<MenuGuard menuKey="todos"><Todos /></MenuGuard>} />
@@ -132,6 +136,7 @@ const App = () => (
                       <Route path="*" element={<NotFound />} />
                     </Routes>
                   </AppLayout>
+                  </TicketModalProvider>
                 </ProtectedRoute>
               }
             />
