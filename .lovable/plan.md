@@ -1,25 +1,28 @@
+# Permitir colaboradores abrirem OS na org Operacional
+
 ## Problema
+Hoje, na organização Operacional, somente técnicos/admins/desenvolvedores conseguem criar Ordens de Serviço (OS) na Oficina. Isso ocorre porque a RLS de `op_service_orders` (e tabelas filhas de peças/fotos) usa `is_op_staff(organization_id)` para INSERT, e essa função exige role `admin`, `tecnico` ou `desenvolvedor`.
 
-A página `/avaliacoes` está listando registros da tabela `evaluations` sem filtrar por `type`. A tabela guarda dois tipos diferentes:
+A regra desejada espelha o que já vale para chamados na org de T.I.: colaboradores podem **abrir** o registro, mas a gestão (atualizar/excluir) continua com o time técnico.
 
-- `satisfaction` (NPS do chamado, escala 1–5) — 717 registros
-- `meta` (pontuação interna por categoria, escala até 10) — 965 registros
+## Solução — apenas RLS (sem mudança de UI)
 
-Hoje a query traz os dois, por isso aparecem notas "estranhas" (ex.: 2/5 do GABRIEL PORTO no ONBOARDING WILKEN, RESET SENHA, etc.) que na verdade são pontuação de categoria, não avaliação NPS do solicitante.
+A página `/op/oficina` já está visível para colaboradores (nenhum gating de role no menu nem na rota). O botão "Nova OS" também não tem trava de role. Logo, basta liberar o INSERT no banco.
 
-Foi isso que voltou: depois de mudarmos a escala visual para 1–5, as linhas `meta` (até 10) viraram "X/5" com `Math.min(score,5)`, dando 2/5, 5/5 falsos.
+Migração ajustando as policies de INSERT (mantendo SELECT/UPDATE/DELETE como estão):
 
-## Correção (somente frontend, 1 arquivo)
+1. `op_service_orders` — policy `op_so_insert`: trocar `is_op_staff(organization_id)` por `is_member_of_org(organization_id)`.
+2. `op_service_order_parts` — policy `op_sop_write` (ALL): substituir por policies separadas:
+   - INSERT permitido a qualquer membro da org da OS pai.
+   - UPDATE/DELETE permanecem restritos a `is_op_staff`.
+3. `op_service_order_photos` — policy `op_soph_write` (ALL): mesmo desdobramento (INSERT por membro da org; UPDATE/DELETE só staff).
 
-### `src/pages/Avaliacoes.tsx`
-
-1. **Query `evaluations`**: adicionar `.eq("type", "satisfaction")` no `select` para nunca trazer registros de pontuação de categoria.
-2. **Remover o `Math.min(ev.score, 5)`** já que agora todos os scores são 1–5 nativos.
-3. **Card "Promotores (5)"**: manter o filtro `score >= 5` (já é compatível com escala 1–5).
-4. **Form "Nova Avaliação"**: o insert já usa `type: "satisfaction"` — sem mudança.
+Isso garante que o colaborador consiga criar a OS e anexar peças/fotos no momento da abertura, mas não consiga editar/excluir OS de outros.
 
 ## Fora de escopo
+- Nenhuma alteração em código frontend (`OpOficina.tsx`, `useOficina.ts`).
+- Sem mudanças nas demais tabelas operacionais (entregas, manutenção, checklists), que seguem com a regra atual de staff.
+- Sem mudança no fluxo de chamados da org de T.I.
 
-- Não alterar a tabela `evaluations` nem RLS.
-- Não tocar nos hooks de pontuação/metas (`useGoals`, `MetasTecnicos`, `useManagementMetrics`) que continuam usando `type='meta'` corretamente.
-- Não migrar dados antigos.
+## Observação para memória
+Após aplicar, atualizar `mem://features/multi-tenancy` (ou similar) registrando: "Colaboradores podem abrir OS na org Operacional; gestão (update/delete) continua restrita a staff."
