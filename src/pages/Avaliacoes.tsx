@@ -162,9 +162,9 @@ export default function Avaliacoes() {
             {isAdmin && (
               <div className="card-elevated p-4 text-center">
                 <span className="text-2xl font-bold text-foreground">
-                  {visibleEvaluations.filter((e: any) => e.score >= 9).length}
+                  {visibleEvaluations.filter((e: any) => e.score >= 5).length}
                 </span>
-                <p className="text-[11px] text-muted-foreground mt-1">Promotores (9-10)</p>
+                <p className="text-[11px] text-muted-foreground mt-1">Promotores (5)</p>
               </div>
             )}
           </div>
@@ -199,14 +199,14 @@ export default function Avaliacoes() {
                     <div className="flex items-center gap-2">
                       <span className="text-sm font-semibold text-foreground">{ev.evaluatorName}</span>
                       <div className="flex gap-0.5">
-                        {Array.from({ length: 10 }, (_, i) => (
+                        {Array.from({ length: 5 }, (_, i) => (
                           <Star
                             key={i}
-                            className={`h-3 w-3 ${i < ev.score ? "text-amber-500 fill-amber-500" : "text-muted"}`}
+                            className={`h-3 w-3 ${i < Math.min(ev.score, 5) ? "text-amber-500 fill-amber-500" : "text-muted"}`}
                           />
                         ))}
                       </div>
-                      <span className="text-xs font-bold text-foreground">{ev.score}/10</span>
+                      <span className="text-xs font-bold text-foreground">{Math.min(ev.score, 5)}/5</span>
                     </div>
                     <p className="text-xs text-muted-foreground mt-1">
                       Chamado: {ev.ticketTitle}
@@ -245,7 +245,7 @@ export default function Avaliacoes() {
           <div>
             <label className="text-sm font-medium text-foreground">Nota *</label>
             <div className="flex gap-1 mt-2">
-              {Array.from({ length: 10 }, (_, i) => (
+              {Array.from({ length: 5 }, (_, i) => (
                 <button
                   key={i}
                   type="button"
@@ -253,14 +253,14 @@ export default function Avaliacoes() {
                   className="p-1 transition-transform hover:scale-110"
                 >
                   <Star
-                    className={`h-6 w-6 transition-colors ${
+                    className={`h-7 w-7 transition-colors ${
                       i < score ? "text-amber-500 fill-amber-500" : "text-muted-foreground"
                     }`}
                   />
                 </button>
               ))}
               {score > 0 && (
-                <span className="ml-2 text-sm font-bold text-foreground self-center">{score}/10</span>
+                <span className="ml-2 text-sm font-bold text-foreground self-center">{score}/5</span>
               )}
             </div>
           </div>
