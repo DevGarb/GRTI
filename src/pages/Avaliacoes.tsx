@@ -162,9 +162,9 @@ export default function Avaliacoes() {
             {isAdmin && (
               <div className="card-elevated p-4 text-center">
                 <span className="text-2xl font-bold text-foreground">
-                  {visibleEvaluations.filter((e: any) => e.score >= 9).length}
+                  {visibleEvaluations.filter((e: any) => e.score >= 5).length}
                 </span>
-                <p className="text-[11px] text-muted-foreground mt-1">Promotores (9-10)</p>
+                <p className="text-[11px] text-muted-foreground mt-1">Promotores (5)</p>
               </div>
             )}
           </div>
