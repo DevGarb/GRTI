@@ -1,5 +1,5 @@
-import { useMemo, useState } from "react";
-import { format, subDays, startOfDay, endOfDay, startOfMonth } from "date-fns";
+import { useEffect, useMemo, useState } from "react";
+import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { CalendarIcon, Download, Send, RefreshCw } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
@@ -20,22 +21,16 @@ import {
   type ManagementMetricRow,
 } from "@/hooks/useManagementMetrics";
 import { useQueryClient } from "@tanstack/react-query";
-
-function dRange(preset: "yesterday" | "today" | "last7" | "thisMonth") {
-  const now = new Date();
-  switch (preset) {
-    case "today":
-      return { from: startOfDay(now), to: endOfDay(now) };
-    case "yesterday": {
-      const y = subDays(now, 1);
-      return { from: startOfDay(y), to: endOfDay(y) };
-    }
-    case "last7":
-      return { from: startOfDay(subDays(now, 7)), to: endOfDay(now) };
-    case "thisMonth":
-      return { from: startOfMonth(now), to: endOfDay(now) };
-  }
-}
+import {
+  COMMON_TIMEZONES,
+  DEFAULT_TZ,
+  endOfDayInTz,
+  formatInTz,
+  isValidTimezone,
+  presetRangeInTz,
+  startOfDayInTz,
+  type RangePreset,
+} from "@/lib/orgTimezone";
 
 function fmtMinutes(m: number) {
   if (!m || m <= 0) return "—";
