@@ -1,6 +1,5 @@
 import { useState } from "react";
 import { Bell, MessageSquare, CheckCircle2, AlertCircle, UserPlus, RotateCcw, ChevronDown, ChevronRight } from "lucide-react";
-import { useNavigate } from "react-router-dom";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -8,6 +7,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useNotifications, type AppNotification, type NotificationGroup } from "@/hooks/useNotifications";
+import { useTicketModal } from "@/contexts/TicketModalContext";
 
 function iconFor(type: string, className = "h-4 w-4") {
   switch (type) {
@@ -29,7 +29,7 @@ function iconFor(type: string, className = "h-4 w-4") {
 const TYPE_ORDER = ["ticket_comment", "ticket_status", "ticket_assigned", "ticket_resolved", "ticket_rejected"];
 
 export default function NotificationBell() {
-  const navigate = useNavigate();
+  const { openTicket } = useTicketModal();
   const { groups, unreadCount, markAsRead, markGroupAsRead, markAllAsRead } = useNotifications();
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
 
@@ -45,7 +45,7 @@ export default function NotificationBell() {
   const handleGroupClick = (g: NotificationGroup) => {
     if (g.ticket_id) {
       if (g.unreadCount > 0) markGroupAsRead(g.ticket_id);
-      navigate(`/chamados?open=${g.ticket_id}`);
+      openTicket(g.ticket_id);
     } else {
       if (!g.latest.read_at) markAsRead(g.latest.id);
     }
@@ -53,7 +53,7 @@ export default function NotificationBell() {
 
   const handleItemClick = (n: AppNotification) => {
     if (!n.read_at) markAsRead(n.id);
-    if (n.ticket_id) navigate(`/chamados?open=${n.ticket_id}`);
+    if (n.ticket_id) openTicket(n.ticket_id);
   };
 
   return (
