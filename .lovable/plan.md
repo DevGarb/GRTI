@@ -1,30 +1,28 @@
-# Pulse no badge + ícone de comentário não lido
+# Agrupar notificações por chamado no sino
 
-## 1. Pulse no badge "Aguardando Aprovação"
+## Objetivo
+No popover do sino, em vez de listar cada notificação solta, agrupar por `ticket_id` mostrando: título do chamado, quantas atualizações teve, quantas estão não lidas e um resumo dos tipos (comentário, status, atribuição, resolvido, rejeitado). Notificações sem `ticket_id` ficam em uma seção "Outras".
 
-Em `src/components/StatusBadge.tsx`, adicionar uma classe `animate-pulse` (Tailwind já disponível) somente quando `status === "Aguardando Aprovação"`, mantendo as cores roxas atuais. Aplica em todos os lugares que usam o `StatusBadge` (lista de Chamados, Kanban, modal, etc.) sem nenhuma outra alteração visual.
+## Mudanças
 
-## 2. Ícone de chat para comentário não visualizado pelo solicitante
+### `src/hooks/useNotifications.ts`
+- Adicionar um seletor derivado `groups: NotificationGroup[]` agrupando `items` por `ticket_id` (mantém ordem pela notificação mais recente do grupo).
+- Cada grupo expõe: `ticket_id`, `latest` (notificação mais recente, usada para título/tempo), `count`, `unreadCount`, `typeCounts` (ex.: `{ ticket_comment: 3, ticket_status: 1 }`), `items` (ordenadas desc).
+- Nova ação `markGroupAsRead(ticketId)`: marca todas as não lidas daquele ticket como lidas (otimista + update no banco com `.eq('ticket_id', ticketId).is('read_at', null)`).
 
-### Regra
-Mostrar um ícone `MessageSquare` (lucide) ao lado do título do chamado na linha da tabela em `src/pages/Chamados.tsx` quando:
-- o usuário logado é o **solicitante** (criou o chamado), e
-- existe pelo menos um comentário **público** (`is_public = true`) feito por **outra pessoa** (técnico/admin) com `created_at` maior que o último momento em que o solicitante abriu o chamado.
+### `src/components/NotificationBell.tsx`
+- Renderizar `groups` em vez de `items`.
+- Cada linha do grupo mostra:
+  - Ícone do tipo mais recente
+  - Título do chamado (do `latest.title`, que já referencia o ticket) + badge com `count` total
+  - Linha de chips compactos por tipo com contagem (ex.: 💬 3 · 🔔 1 · ✅ 1) usando os mesmos ícones do `iconFor`
+  - Ponto vermelho + contagem de não lidas quando `unreadCount > 0`
+  - Tempo relativo da atualização mais recente
+- Clique no grupo: chama `markGroupAsRead(ticket_id)` e navega para `/chamados?open=${ticket_id}`.
+- Botão expandir (chevron) opcional: revela a lista completa de notificações daquele ticket inline (reaproveita layout atual de item), para quem quiser ver detalhe sem abrir o chamado.
+- Seção "Outras" no fim para notificações sem `ticket_id` (comportamento atual mantido).
+- "Marcar todas como lidas" continua igual.
 
-O ícone fica em cor de destaque (`text-primary`) com um pequeno `animate-pulse` para chamar atenção. Ao abrir o `TicketDetailModal`, o timestamp de "última visualização" é atualizado e o ícone some.
-
-### Implementação técnica
-
-**Migração SQL (nova coluna em `tickets`)**
-- Adicionar `last_seen_by_requester_at timestamptz` (nullable) em `public.tickets`.
-- Sem alteração em GRANT/RLS (a policy de UPDATE existente já permite o criador atualizar o próprio chamado; verificar e, se necessário, garantir uma policy para o `created_by` atualizar apenas esse campo). Caso a policy de UPDATE atual não permita ao solicitante, criar policy específica permitindo `UPDATE` apenas com `created_by = auth.uid()` restrita a esta coluna via trigger ou simplesmente policy de update geral para o created_by — manter mínimo necessário.
-
-**`src/pages/Chamados.tsx`**
-- Query adicional (única, agregada) carregando, para os tickets visíveis onde o usuário é o `created_by`, o `max(created_at)` de `ticket_comments` filtrando `is_public = true AND user_id <> created_by`. Pode ser feito client-side: buscar comentários públicos dos tickets do usuário e calcular o "tem não lido" comparando com `ticket.last_seen_by_requester_at`.
-- Renderizar `<MessageSquare className="h-4 w-4 text-primary animate-pulse" />` ao lado do título quando houver não lido.
-
-**`src/components/TicketDetailModal.tsx`**
-- Ao abrir o modal, se o usuário logado for o `created_by` do ticket, fazer `update tickets set last_seen_by_requester_at = now() where id = :id` e invalidar a query de tickets/comments para o ícone sumir.
-
-### Escopo
-Apenas UI + a coluna de tracking. Sem mudanças em métricas, SLA, status, webhooks ou outras regras.
+## Fora de escopo
+- Sem mudanças no banco, triggers ou tipos de notificação.
+- Sem alterar realtime, contador do badge do sino, nem o som do admin.
