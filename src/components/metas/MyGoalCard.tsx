@@ -51,14 +51,15 @@ export default function MyGoalCard({ year, month }: Props) {
     queryFn: async () => {
       if (!user?.id) return null;
 
-      // Tickets fechados no mês atribuídos ao usuário (mesma base da Auditoria)
+      // Tickets fechados no mês atribuídos ao usuário — filtra por closed_at (mês do fechamento)
       const { data: closedTickets } = await supabase
         .from("tickets")
-        .select("id, created_at, updated_at, started_at, assigned_to")
+        .select("id, created_at, updated_at, closed_at, started_at, assigned_to")
         .eq("status", "Fechado")
         .eq("assigned_to", user.id)
-        .gte("created_at", monthStart.toISOString())
-        .lt("created_at", monthEnd.toISOString());
+        .gte("closed_at", monthStart.toISOString())
+        .lt("closed_at", monthEnd.toISOString());
+
 
       const ids = (closedTickets || []).map((t) => t.id);
 

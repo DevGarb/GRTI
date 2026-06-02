@@ -54,12 +54,20 @@ export default function DashboardPadrao() {
   const { data: metrics_data } = useDashboardMetrics(dateFrom, dateTo);
 
 
-  // Apply date range filter
-  const periodTickets = tickets.filter((t) => {
-    const d = new Date(t.created_at);
-    if (d < dateFrom) return false;
-    if (d > dateTo) return false;
-    return true;
+  // Regra híbrida:
+  // - chamados ainda não fechados → entram no mês pela data de abertura (created_at)
+  // - chamados fechados → entram no mês pela data de fechamento (closed_at)
+  const inRange = (iso?: string | null) => {
+    if (!iso) return false;
+    const d = new Date(iso);
+    return d >= dateFrom && d <= dateTo;
+  };
+
+  const periodTickets = tickets.filter((t: any) => {
+    if (t.status === "Fechado") {
+      return inRange(t.closed_at ?? t.updated_at);
+    }
+    return inRange(t.created_at);
   });
 
   // Filter tickets based on active tab
@@ -80,6 +88,7 @@ export default function DashboardPadrao() {
   const closedTickets = filteredTickets.filter((t) => t.status === "Fechado");
   const reworkedTickets = filteredTickets.filter((t) => (t.reworkCount || 0) > 0);
   const totalReworks = filteredTickets.reduce((sum, t) => sum + (t.reworkCount || 0), 0);
+
 
   // Category data
   const categoryMap = filteredTickets.reduce<Record<string, number>>((acc, t) => {
