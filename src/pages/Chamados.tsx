@@ -149,6 +149,14 @@ function TicketTable({ tickets, onSelect, scoreMap, showScore, workMinutesMap, m
                   <span className="text-sm font-medium text-foreground truncate block max-w-[250px]">
                     {ticket.title}
                   </span>
+                  {unreadIds?.has(ticket.id) && (
+                    <span
+                      title="Novo comentário do técnico"
+                      className="inline-flex items-center justify-center text-primary animate-pulse shrink-0"
+                    >
+                      <MessageSquare className="h-4 w-4" fill="currentColor" />
+                    </span>
+                  )}
                   {isFromOtherMonth && (
                     <span
                       className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-semibold bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400 border border-blue-200 dark:border-blue-800 shrink-0"
