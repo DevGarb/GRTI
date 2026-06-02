@@ -91,7 +91,7 @@ Deno.serve(async (req) => {
       }
     }
 
-    const configuredTz = config.timezone && isValidTimezone(config.timezone) ? config.timezone : DEFAULT_TZ;
+    const configuredTz = config?.timezone && isValidTimezone(config.timezone) ? config.timezone : DEFAULT_TZ;
     const range = body.from && body.to
       ? { from: body.from, to: body.to, tz: configuredTz }
       : dMinusOneRange(configuredTz);
