@@ -87,7 +87,7 @@ function SlaTimer({ ticket, workMinutes }: { ticket: Ticket; workMinutes?: numbe
   );
 }
 
-function TicketTable({ tickets, onSelect, scoreMap, showScore, workMinutesMap, monthFrom, monthTo, selectionMode, selectedIds, onToggleSelect, onToggleSelectAll }: { tickets: Ticket[]; onSelect: (t: Ticket) => void; scoreMap?: Map<string, number>; showScore?: boolean; workMinutesMap?: Map<string, number>; monthFrom?: Date; monthTo?: Date; selectionMode?: boolean; selectedIds?: Set<string>; onToggleSelect?: (id: string) => void; onToggleSelectAll?: (ids: string[]) => void }) {
+function TicketTable({ tickets, onSelect, scoreMap, showScore, workMinutesMap, monthFrom, monthTo, selectionMode, selectedIds, onToggleSelect, onToggleSelectAll, unreadIds }: { tickets: Ticket[]; onSelect: (t: Ticket) => void; scoreMap?: Map<string, number>; showScore?: boolean; workMinutesMap?: Map<string, number>; monthFrom?: Date; monthTo?: Date; selectionMode?: boolean; selectedIds?: Set<string>; onToggleSelect?: (id: string) => void; onToggleSelectAll?: (ids: string[]) => void; unreadIds?: Set<string> }) {
   const allIds = tickets.map((t) => t.id);
   const selectedInGroup = selectionMode && selectedIds ? allIds.filter((id) => selectedIds.has(id)).length : 0;
   const allChecked = selectionMode && tickets.length > 0 && selectedInGroup === tickets.length;
