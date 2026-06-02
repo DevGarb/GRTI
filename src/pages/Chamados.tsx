@@ -274,25 +274,32 @@ export default function Chamados() {
 
   const { from: monthFrom, to: monthTo } = getMonthDateRange(selectedMonth);
 
-  const filtered = tickets.filter((t) => {
+  // Regra híbrida: abertos/pendentes pelo mês de criação; fechados pelo mês de fechamento (closed_at).
+  const inRange = (iso: string | null | undefined) => {
+    if (!iso) return false;
+    const d = new Date(iso);
+    return d >= monthFrom && d <= monthTo;
+  };
+  const filtered = tickets.filter((t: any) => {
     const matchSearch =
       t.title.toLowerCase().includes(searchText.toLowerCase()) ||
       (t.description || "").toLowerCase().includes(searchText.toLowerCase()) ||
       (t.creatorProfile?.full_name || "").toLowerCase().includes(searchText.toLowerCase());
     const matchStatus = statusFilter === "Todos Status" || t.status === statusFilter;
-    const d = new Date(t.created_at);
-    const matchMonth = d >= monthFrom && d <= monthTo;
-    const PENDING_STATUSES = ["Aberto", "Em Andamento", "Aguardando Aprovação", "Disponível"];
+    const PENDING_STATUSES = ["Aberto", "Em Andamento", "Aguardando Aprovação", "Aprovado", "Disponível"];
     const isPending = PENDING_STATUSES.includes(t.status);
+    const matchPeriod = isPending
+      ? inRange(t.created_at)
+      : inRange(t.closed_at) || (!t.closed_at && inRange(t.updated_at));
     const matchRework = !reworkFilter || (t.reworkCount || 0) > 0;
-    return matchSearch && matchStatus && (matchMonth || isPending) && matchRework;
+    // Mantém o comportamento anterior: pendentes sempre aparecem (badge de mês de origem).
+    return matchSearch && matchStatus && (matchPeriod || isPending) && matchRework;
   });
 
-  // Pontuação: tickets criados no mês, atribuídos ao técnico e fechados (mesma base da Auditoria)
-  const closedByMe = tickets.filter((t) => {
+  // Pontuação do técnico: chamados FECHADOS no mês selecionado (por closed_at) atribuídos a ele.
+  const closedByMe = tickets.filter((t: any) => {
     if (t.assigned_to !== user?.id || t.status !== "Fechado") return false;
-    const d = new Date(t.created_at);
-    return d >= monthFrom && d <= monthTo;
+    return inRange(t.closed_at) || (!t.closed_at && inRange(t.updated_at));
   });
   const closedTicketIds = closedByMe.map((t) => t.id);
 
