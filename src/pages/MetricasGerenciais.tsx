@@ -128,6 +128,14 @@ export default function MetricasGerenciais() {
 
   async function saveConfig() {
     if (!orgId) return;
+    if (!isValidTimezone(timezone)) {
+      toast.error("Fuso horário inválido");
+      return;
+    }
+    if (!/^\d{2}:\d{2}$/.test(sendTime)) {
+      toast.error("Horário inválido (use HH:MM)");
+      return;
+    }
     setSaving(true);
     try {
       const payload = {
