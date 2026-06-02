@@ -367,6 +367,37 @@ export default function Chamados() {
     refetchInterval: 60_000,
   });
 
+  // Comentários públicos de outros usuários ainda não visualizados pelo solicitante
+  const myCreatedTickets = filtered.filter((t) => t.created_by === user?.id);
+  const myCreatedIds = myCreatedTickets.map((t) => t.id);
+  const { data: unreadIds = new Set<string>() } = useQuery({
+    queryKey: ["ticket-unread-comments", user?.id, myCreatedIds.join(",")],
+    queryFn: async () => {
+      const set = new Set<string>();
+      if (!user?.id || myCreatedIds.length === 0) return set;
+      const { data, error } = await supabase
+        .from("ticket_comments")
+        .select("ticket_id, created_at, user_id, is_public")
+        .in("ticket_id", myCreatedIds)
+        .eq("is_public", true)
+        .neq("user_id", user.id)
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      const lastByTicket = new Map<string, string>();
+      (data || []).forEach((c: any) => {
+        if (!lastByTicket.has(c.ticket_id)) lastByTicket.set(c.ticket_id, c.created_at);
+      });
+      myCreatedTickets.forEach((t: any) => {
+        const last = lastByTicket.get(t.id);
+        if (!last) return;
+        const seen = t.last_seen_by_requester_at || t.created_at;
+        if (new Date(last) > new Date(seen)) set.add(t.id);
+      });
+      return set;
+    },
+    enabled: !!user?.id && myCreatedIds.length > 0,
+  });
+
   // Group by assigned technician only. Tickets sem técnico (status "Aberto")
   // ficam num grupo separado — NÃO usar o solicitante como fallback, senão
   // colaboradores que abrem chamados aparecem como se fossem técnicos.
