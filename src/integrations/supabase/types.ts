@@ -1588,6 +1588,7 @@ export type Database = {
           created_by: string
           description: string | null
           id: string
+          last_seen_by_requester_at: string | null
           organization_id: string | null
           original_assigned_to: string | null
           picked_at: string | null
@@ -1611,6 +1612,7 @@ export type Database = {
           created_by: string
           description?: string | null
           id?: string
+          last_seen_by_requester_at?: string | null
           organization_id?: string | null
           original_assigned_to?: string | null
           picked_at?: string | null
@@ -1634,6 +1636,7 @@ export type Database = {
           created_by?: string
           description?: string | null
           id?: string
+          last_seen_by_requester_at?: string | null
           organization_id?: string | null
           original_assigned_to?: string | null
           picked_at?: string | null
