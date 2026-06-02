@@ -142,6 +142,51 @@ export type Database = {
           },
         ]
       }
+      daily_insights_cache: {
+        Row: {
+          created_at: string
+          highlights: Json
+          id: string
+          insights: Json
+          op_status: string
+          organization_id: string
+          reference_from: string
+          reference_to: string
+          risks: Json
+          technician_summaries: Json
+          updated_at: string
+          whatsapp_message: string | null
+        }
+        Insert: {
+          created_at?: string
+          highlights?: Json
+          id?: string
+          insights?: Json
+          op_status?: string
+          organization_id: string
+          reference_from: string
+          reference_to: string
+          risks?: Json
+          technician_summaries?: Json
+          updated_at?: string
+          whatsapp_message?: string | null
+        }
+        Update: {
+          created_at?: string
+          highlights?: Json
+          id?: string
+          insights?: Json
+          op_status?: string
+          organization_id?: string
+          reference_from?: string
+          reference_to?: string
+          risks?: Json
+          technician_summaries?: Json
+          updated_at?: string
+          whatsapp_message?: string | null
+        }
+        Relationships: []
+      }
       evaluations: {
         Row: {
           comment: string | null
@@ -2011,6 +2056,16 @@ export type Database = {
           _user_id: string
         }
         Returns: boolean
+      }
+      get_executive_overview: {
+        Args: { _organization_id: string }
+        Returns: {
+          active_technicians: number
+          awaiting_approval_count: number
+          backlog_total: number
+          in_progress_count: number
+          open_count: number
+        }[]
       }
       get_management_metrics: {
         Args: { _from: string; _organization_id?: string; _to: string }

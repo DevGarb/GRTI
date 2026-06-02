@@ -134,6 +134,35 @@ Deno.serve(async (req) => {
         points: 0, rework_count: 0, csat_sum: 0, csat_count: 0, handle_sum: 0, handle_weight: 0 }
     );
 
+    const reworkPct = totals.closed_in_period > 0
+      ? Math.round((totals.rework_count / totals.closed_in_period) * 10000) / 100 : 0;
+    const avgCsat = totals.csat_count > 0
+      ? Math.round((totals.csat_sum / totals.csat_count) * 100) / 100 : 0;
+    const avgHandle = totals.handle_weight > 0
+      ? Math.round((totals.handle_sum / totals.handle_weight) * 100) / 100 : 0;
+
+    // Resumo executivo + IA + WhatsApp (best-effort: se falhar, segue sem)
+    let executive: any = null;
+    try {
+      const projectUrl = Deno.env.get("SUPABASE_URL")!;
+      const summaryRes = await fetch(`${projectUrl}/functions/v1/generate-executive-summary`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!}`,
+        },
+        body: JSON.stringify({
+          organization_id: body.organization_id,
+          from: range.from,
+          to: range.to,
+          force: true,
+        }),
+      });
+      if (summaryRes.ok) executive = await summaryRes.json();
+    } catch (e) {
+      console.warn("executive summary failed", e);
+    }
+
     const payload = {
       organization_id: body.organization_id,
       organization_name: org?.name ?? null,
@@ -146,18 +175,30 @@ Deno.serve(async (req) => {
         awaiting_approval: totals.awaiting_approval,
         points: totals.points,
         rework_count: totals.rework_count,
-        rework_percent: totals.closed_in_period > 0
-          ? Math.round((totals.rework_count / totals.closed_in_period) * 10000) / 100
-          : 0,
-        avg_csat: totals.csat_count > 0
-          ? Math.round((totals.csat_sum / totals.csat_count) * 100) / 100
-          : 0,
+        rework_percent: reworkPct,
+        avg_csat: avgCsat,
         csat_count: totals.csat_count,
-        avg_handle_minutes: totals.handle_weight > 0
-          ? Math.round((totals.handle_sum / totals.handle_weight) * 100) / 100
-          : 0,
+        avg_handle_minutes: avgHandle,
       },
-      technicians: list,
+      overall: {
+        closed: totals.closed_in_period,
+        in_progress: totals.in_progress_now,
+        pending_approval: totals.awaiting_approval,
+        backlog: totals.in_progress_now + totals.awaiting_approval,
+        csat: avgCsat,
+        tma: avgHandle,
+        score: totals.points,
+        rework_pct: reworkPct,
+        op_status: executive?.op_status ?? "normal",
+      },
+      highlights: executive?.highlights ?? [],
+      risks: executive?.risks ?? [],
+      insights: executive?.insights ?? [],
+      whatsapp_message: executive?.whatsapp_message ?? null,
+      technicians: list.map((t: any) => ({
+        ...t,
+        summary: executive?.technician_summaries?.[t.user_id] ?? null,
+      })),
     };
 
     if (body.dry_run) {

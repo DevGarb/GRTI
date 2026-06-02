@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { CalendarIcon, Download, Send, RefreshCw } from "lucide-react";
+import { CalendarIcon, Download, Send, RefreshCw, Sparkles } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,8 +10,6 @@ import { Switch } from "@/components/ui/switch";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -20,6 +18,7 @@ import {
   useManagementReportConfig,
   type ManagementMetricRow,
 } from "@/hooks/useManagementMetrics";
+import { useExecutiveOverview, useDailyInsights, regenerateDailyInsights } from "@/hooks/useExecutiveSummary";
 import { useQueryClient } from "@tanstack/react-query";
 import {
   COMMON_TIMEZONES,
@@ -31,20 +30,16 @@ import {
   startOfDayInTz,
   type RangePreset,
 } from "@/lib/orgTimezone";
-
-function fmtMinutes(m: number) {
-  if (!m || m <= 0) return "—";
-  const h = Math.floor(m / 60);
-  const min = Math.round(m % 60);
-  return h > 0 ? `${h}h ${min}m` : `${min}m`;
-}
+import { ExecutiveSummary } from "@/components/metricas/ExecutiveSummary";
+import { InsightsCard } from "@/components/metricas/InsightsCard";
+import { TeamRanking } from "@/components/metricas/TeamRanking";
+import { WhatsappSummary } from "@/components/metricas/WhatsappSummary";
 
 function computeTotals(rows: ManagementMetricRow[]) {
   const t = rows.reduce(
     (acc, r) => {
       acc.closed += r.closed_in_period;
       acc.inProg += r.in_progress_now;
-      acc.total += r.total_assigned;
       acc.await += r.awaiting_approval;
       acc.points += Number(r.points || 0);
       acc.rework += r.rework_count;
@@ -54,7 +49,7 @@ function computeTotals(rows: ManagementMetricRow[]) {
       acc.handleW += r.closed_in_period;
       return acc;
     },
-    { closed: 0, inProg: 0, total: 0, await: 0, points: 0, rework: 0, csatSum: 0, csatCount: 0, handleSum: 0, handleW: 0 }
+    { closed: 0, inProg: 0, await: 0, points: 0, rework: 0, csatSum: 0, csatCount: 0, handleSum: 0, handleW: 0 }
   );
   return {
     ...t,
@@ -66,7 +61,7 @@ function computeTotals(rows: ManagementMetricRow[]) {
 
 function exportCsv(rows: ManagementMetricRow[], from: Date, to: Date) {
   const headers = [
-    "Técnico", "Fechados no período", "Em andamento", "Total atribuídos",
+    "Técnico", "Fechados", "Em andamento", "Total atribuídos",
     "Aguardando aprovação", "Pontuação", "Retrabalho", "% Retrabalho",
     "CSAT médio", "Qtd avaliações", "TMA (min)",
   ];
@@ -96,20 +91,25 @@ export default function MetricasGerenciais() {
     return isValidTimezone(tz) ? tz : DEFAULT_TZ;
   }, [config?.timezone]);
 
-  const [range, setRange] = useState(() => presetRangeInTz("yesterday", DEFAULT_TZ));
+  const [range, setRange] = useState(() => presetRangeInTz("today", DEFAULT_TZ));
   const [editFrom, setEditFrom] = useState<Date | undefined>(range.from);
   const [editTo, setEditTo] = useState<Date | undefined>(range.to);
 
-  // Quando o fuso da organização chegar/mudar, recalcula o D-1 padrão.
   useEffect(() => {
-    const r = presetRangeInTz("yesterday", orgTz);
+    const r = presetRangeInTz("today", orgTz);
     setRange(r); setEditFrom(r.from); setEditTo(r.to);
   }, [orgTz]);
 
   const { data: rows = [], isLoading, refetch } = useManagementMetrics(range.from, range.to, orgId);
+  const { data: overview } = useExecutiveOverview(orgId);
+  const [insightsEnabled, setInsightsEnabled] = useState(false);
+  const { data: insights, isLoading: insightsLoading, refetch: refetchInsights } = useDailyInsights({
+    organizationId: orgId, from: range.from, to: range.to, enabled: insightsEnabled,
+  });
+  const [regenerating, setRegenerating] = useState(false);
 
   const [webhookUrl, setWebhookUrl] = useState("");
-  const [sendTime, setSendTime] = useState("08:00");
+  const [sendTime, setSendTime] = useState("18:00");
   const [timezone, setTimezone] = useState<string>(DEFAULT_TZ);
   const [isActive, setIsActive] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -118,7 +118,7 @@ export default function MetricasGerenciais() {
   useEffect(() => {
     if (config) {
       setWebhookUrl(config.webhook_url ?? "");
-      setSendTime((config.send_time ?? "08:00").slice(0, 5));
+      setSendTime((config.send_time ?? "18:00").slice(0, 5));
       setIsActive(config.is_active);
       setTimezone(config.timezone || DEFAULT_TZ);
     }
@@ -126,36 +126,52 @@ export default function MetricasGerenciais() {
 
   const totals = useMemo(() => computeTotals(rows), [rows]);
 
+  const backlogTotal = overview?.backlog_total ?? (totals.inProg + totals.await);
+  const awaitCount = overview?.awaiting_approval_count ?? totals.await;
+  const inProgCount = overview?.in_progress_count ?? totals.inProg;
+  const activeTechs = overview?.active_technicians ?? rows.filter(r => r.in_progress_now > 0 || r.awaiting_approval > 0).length;
+
+  async function generateInsights() {
+    setInsightsEnabled(true);
+    if (insights) {
+      // Already loaded: regenerate
+      if (!orgId) return;
+      setRegenerating(true);
+      try {
+        const data = await regenerateDailyInsights({ organizationId: orgId, from: range.from, to: range.to });
+        queryClient.setQueryData(["daily-insights", orgId, range.from.toISOString(), range.to.toISOString()], data);
+        toast.success("Resumo atualizado");
+      } catch (e: any) {
+        toast.error("Erro ao gerar: " + (e?.message ?? e));
+      } finally {
+        setRegenerating(false);
+      }
+    } else {
+      await refetchInsights();
+    }
+  }
+
   async function saveConfig() {
     if (!orgId) return;
-    if (!isValidTimezone(timezone)) {
-      toast.error("Fuso horário inválido");
-      return;
-    }
-    if (!/^\d{2}:\d{2}$/.test(sendTime)) {
-      toast.error("Horário inválido (use HH:MM)");
-      return;
-    }
+    if (!isValidTimezone(timezone)) { toast.error("Fuso horário inválido"); return; }
+    if (!/^\d{2}:\d{2}$/.test(sendTime)) { toast.error("Horário inválido (use HH:MM)"); return; }
     setSaving(true);
     try {
-      const payload = {
-        organization_id: orgId,
-        webhook_url: webhookUrl || null,
-        send_time: sendTime + ":00",
-        is_active: isActive,
-        timezone,
-      };
       const { error } = await supabase
         .from("management_report_config" as any)
-        .upsert(payload, { onConflict: "organization_id" });
+        .upsert({
+          organization_id: orgId,
+          webhook_url: webhookUrl || null,
+          send_time: sendTime + ":00",
+          is_active: isActive,
+          timezone,
+        }, { onConflict: "organization_id" });
       if (error) throw error;
       toast.success("Configuração salva");
       queryClient.invalidateQueries({ queryKey: ["management-report-config"] });
     } catch (e: any) {
       toast.error("Erro ao salvar: " + (e?.message ?? e));
-    } finally {
-      setSaving(false);
-    }
+    } finally { setSaving(false); }
   }
 
   async function sendNow(dryRun = false) {
@@ -163,20 +179,18 @@ export default function MetricasGerenciais() {
     setSending(true);
     try {
       const { data, error } = await supabase.functions.invoke("send-management-report", {
-        body: { organization_id: orgId, dry_run: dryRun },
+        body: { organization_id: orgId, from: range.from.toISOString(), to: range.to.toISOString(), dry_run: dryRun },
       });
       if (error) throw error;
       if (dryRun) {
         toast.success("Pré-visualização gerada (veja o console)");
-        console.log("[D-1 preview]", data);
+        console.log("[payload preview]", data);
       } else {
         toast.success("Relatório enviado para o webhook");
       }
     } catch (e: any) {
       toast.error("Erro: " + (e?.message ?? e));
-    } finally {
-      setSending(false);
-    }
+    } finally { setSending(false); }
   }
 
   return (
@@ -185,12 +199,11 @@ export default function MetricasGerenciais() {
         <div>
           <h1 className="text-2xl font-bold">Métricas Gerenciais</h1>
           <p className="text-sm text-muted-foreground">
-            Relatório por técnico/desenvolvedor — janela padrão D-1 (ontem) no fuso{" "}
-            <span className="font-medium">{orgTz}</span>
+            Visão executiva — fuso <span className="font-medium">{orgTz}</span>
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          {(["yesterday", "today", "last7", "thisMonth"] as const as RangePreset[]).map((p) => (
+          {(["today", "yesterday", "last7", "thisMonth"] as const as RangePreset[]).map((p) => (
             <Button
               key={p}
               variant="outline"
@@ -200,7 +213,7 @@ export default function MetricasGerenciais() {
                 setRange(r); setEditFrom(r.from); setEditTo(r.to);
               }}
             >
-              {p === "yesterday" ? "Ontem (D-1)" : p === "today" ? "Hoje" : p === "last7" ? "Últimos 7 dias" : "Mês atual"}
+              {p === "yesterday" ? "Ontem" : p === "today" ? "Hoje" : p === "last7" ? "7 dias" : "Mês"}
             </Button>
           ))}
           <Popover>
@@ -222,14 +235,9 @@ export default function MetricasGerenciais() {
                 </div>
               </div>
               <div className="flex justify-end mt-2">
-                <Button
-                  size="sm"
-                  onClick={() => {
-                    if (editFrom && editTo) setRange({ from: startOfDayInTz(editFrom, orgTz), to: endOfDayInTz(editTo, orgTz) });
-                  }}
-                >
-                  Aplicar
-                </Button>
+                <Button size="sm" onClick={() => {
+                  if (editFrom && editTo) setRange({ from: startOfDayInTz(editFrom, orgTz), to: endOfDayInTz(editTo, orgTz) });
+                }}>Aplicar</Button>
               </div>
             </PopoverContent>
           </Popover>
@@ -242,80 +250,66 @@ export default function MetricasGerenciais() {
         </div>
       </div>
 
-      {/* Totais */}
-      <div className="grid gap-3 grid-cols-2 md:grid-cols-4 lg:grid-cols-8">
-        <KpiCard title="Fechados no período" value={totals.closed} />
-        <KpiCard title="Em andamento" value={totals.inProg} />
-        <KpiCard title="Aguardando aprovação" value={totals.await} />
-        <KpiCard title="Total atribuídos" value={totals.total} />
-        <KpiCard title="Pontuação" value={totals.points.toFixed(0)} />
-        <KpiCard title="% Retrabalho" value={`${totals.reworkPct.toFixed(1)}%`} />
-        <KpiCard title="CSAT médio" value={totals.avgCsat > 0 ? totals.avgCsat.toFixed(2) : "—"} />
-        <KpiCard title="TMA médio" value={fmtMinutes(totals.avgHandle)} />
+      {/* 1. Resumo Executivo */}
+      <ExecutiveSummary
+        closed={totals.closed}
+        inProgress={inProgCount}
+        awaiting={awaitCount}
+        backlog={backlogTotal}
+        csat={totals.avgCsat}
+        csatCount={totals.csatCount}
+        tmaMinutes={totals.avgHandle}
+        points={totals.points}
+        activeTechs={activeTechs}
+        reworkPercent={totals.reworkPct}
+      />
+
+      {/* 2. Insights + Ranking lado a lado em desktop */}
+      <div className="grid gap-4 lg:grid-cols-2">
+        {insightsEnabled ? (
+          <InsightsCard
+            insights={insights?.insights ?? []}
+            highlights={insights?.highlights ?? []}
+            risks={insights?.risks ?? []}
+            loading={insightsLoading || regenerating}
+            onRegenerate={generateInsights}
+          />
+        ) : (
+          <Card className="border-dashed border-primary/40">
+            <CardContent className="p-6 flex flex-col items-center justify-center text-center gap-3 h-full">
+              <Sparkles className="h-8 w-8 text-primary" />
+              <p className="text-sm text-muted-foreground">Gere insights e o resumo executivo com IA para o período selecionado.</p>
+              <Button onClick={generateInsights}>
+                <Sparkles className="h-4 w-4 mr-1" /> Gerar Resumo Executivo
+              </Button>
+            </CardContent>
+          </Card>
+        )}
+
+        <TeamRanking rows={rows} technicianSummaries={insights?.technician_summaries} />
       </div>
 
-      {/* Tabela por técnico */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">Por técnico / desenvolvedor</CardTitle>
-        </CardHeader>
-        <CardContent className="p-0">
-          <div className="overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Técnico</TableHead>
-                  <TableHead className="text-right">Fechados</TableHead>
-                  <TableHead className="text-right">Em andamento</TableHead>
-                  <TableHead className="text-right">Aguard. aprov.</TableHead>
-                  <TableHead className="text-right">Total atrib.</TableHead>
-                  <TableHead className="text-right">Pontuação</TableHead>
-                  <TableHead className="text-right">% Retrabalho</TableHead>
-                  <TableHead className="text-right">CSAT</TableHead>
-                  <TableHead className="text-right">TMA</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {isLoading ? (
-                  <TableRow><TableCell colSpan={9} className="text-center py-8 text-muted-foreground">Carregando…</TableCell></TableRow>
-                ) : rows.length === 0 ? (
-                  <TableRow><TableCell colSpan={9} className="text-center py-8 text-muted-foreground">Sem dados no período</TableCell></TableRow>
-                ) : (
-                  rows.map((r) => (
-                    <TableRow key={r.user_id}>
-                      <TableCell className="font-medium">{r.full_name}</TableCell>
-                      <TableCell className="text-right">{r.closed_in_period}</TableCell>
-                      <TableCell className="text-right">{r.in_progress_now}</TableCell>
-                      <TableCell className="text-right">{r.awaiting_approval}</TableCell>
-                      <TableCell className="text-right">{r.total_assigned}</TableCell>
-                      <TableCell className="text-right">{Number(r.points).toFixed(0)}</TableCell>
-                      <TableCell className={cn("text-right", r.rework_percent >= 20 && "text-red-600 font-semibold")}>
-                        {r.rework_percent.toFixed(1)}%
-                      </TableCell>
-                      <TableCell className="text-right">
-                        {r.csat_count > 0 ? `${Number(r.avg_csat).toFixed(2)} (${r.csat_count})` : "—"}
-                      </TableCell>
-                      <TableCell className="text-right">{fmtMinutes(Number(r.avg_handle_minutes))}</TableCell>
-                    </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
-          </div>
-        </CardContent>
-      </Card>
+      {/* 3. Resumo WhatsApp (mostrado após gerar) */}
+      {insights?.whatsapp_message && (
+        <WhatsappSummary
+          message={insights.whatsapp_message}
+          onSendNow={() => sendNow(false)}
+          sending={sending}
+          webhookConfigured={!!webhookUrl}
+        />
+      )}
 
-      {/* Configuração do envio automático */}
+      {/* 4. Configuração do envio automático */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">Envio automático diário (D-1) via webhook</CardTitle>
+          <CardTitle className="text-base">Envio automático diário via webhook</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid gap-3 md:grid-cols-3">
             <div className="space-y-1.5 md:col-span-3">
               <Label htmlFor="webhook">URL do webhook</Label>
               <Input id="webhook" placeholder="https://..." value={webhookUrl} onChange={(e) => setWebhookUrl(e.target.value)} />
-              <p className="text-xs text-muted-foreground">POST com payload JSON contendo totais e linha por técnico. O intervalo D-1 é calculado de 00:00:00 até 23:59:59.999 no fuso selecionado.</p>
+              <p className="text-xs text-muted-foreground">POST com payload contendo totais, ranking, insights, mensagem WhatsApp pronta e status operacional. Útil para integrar com n8n → grupo corporativo.</p>
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="tz">Fuso horário</Label>
@@ -334,13 +328,13 @@ export default function MetricasGerenciais() {
             </div>
             <div className="space-y-1.5 flex items-end">
               <p className="text-xs text-muted-foreground">
-                Próximo D-1: {formatInTz(presetRangeInTz("yesterday", timezone).from, timezone, { day: "2-digit", month: "2-digit", year: "numeric" })} (00:00 → 23:59)
+                Próximo D-1: {formatInTz(presetRangeInTz("yesterday", timezone).from, timezone, { day: "2-digit", month: "2-digit", year: "numeric" })}
               </p>
             </div>
           </div>
           <div className="flex items-center gap-3">
             <Switch checked={isActive} onCheckedChange={setIsActive} id="active" />
-            <Label htmlFor="active">Envio automático habilitado</Label>
+            <Label htmlFor="active">Enviar resumo automaticamente</Label>
           </div>
           {config?.last_sent_at && (
             <p className="text-xs text-muted-foreground">
@@ -349,9 +343,7 @@ export default function MetricasGerenciais() {
           )}
           <div className="flex flex-wrap gap-2">
             <Button onClick={saveConfig} disabled={saving}>{saving ? "Salvando…" : "Salvar configuração"}</Button>
-            <Button variant="outline" onClick={() => sendNow(true)} disabled={sending}>
-              Pré-visualizar payload
-            </Button>
+            <Button variant="outline" onClick={() => sendNow(true)} disabled={sending}>Pré-visualizar payload</Button>
             <Button variant="outline" onClick={() => sendNow(false)} disabled={sending || !webhookUrl}>
               <Send className="h-4 w-4 mr-1" />Enviar agora
             </Button>
@@ -359,16 +351,5 @@ export default function MetricasGerenciais() {
         </CardContent>
       </Card>
     </div>
-  );
-}
-
-function KpiCard({ title, value }: { title: string; value: string | number }) {
-  return (
-    <Card>
-      <CardContent className="p-3">
-        <p className="text-[11px] text-muted-foreground uppercase tracking-wide">{title}</p>
-        <p className="text-xl font-bold mt-1">{value}</p>
-      </CardContent>
-    </Card>
   );
 }
