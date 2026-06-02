@@ -89,9 +89,10 @@ Deno.serve(async (req) => {
       });
     }
 
+    const configuredTz = config.timezone && isValidTimezone(config.timezone) ? config.timezone : DEFAULT_TZ;
     const range = body.from && body.to
-      ? { from: body.from, to: body.to }
-      : dMinusOneRange(config.timezone || "America/Sao_Paulo");
+      ? { from: body.from, to: body.to, tz: configuredTz }
+      : dMinusOneRange(configuredTz);
 
     // Get org name
     const { data: org } = await supabase
