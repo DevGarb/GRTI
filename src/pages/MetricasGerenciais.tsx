@@ -217,7 +217,7 @@ export default function MetricasGerenciais() {
                 <Button
                   size="sm"
                   onClick={() => {
-                    if (editFrom && editTo) setRange({ from: startOfDay(editFrom), to: endOfDay(editTo) });
+                    if (editFrom && editTo) setRange({ from: startOfDayInTz(editFrom, orgTz), to: endOfDayInTz(editTo, orgTz) });
                   }}
                 >
                   Aplicar
