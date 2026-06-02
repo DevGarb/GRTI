@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Search, Filter, ChevronDown, ChevronRight, Plus, User, RefreshCw, Inbox, SendHorizonal, HandMetal, AlertTriangle, Clock, TicketCheck, CircleDot, Loader2, CheckCircle2, LayoutGrid, List, Trophy, CheckSquare, Trash2, X } from "lucide-react";
+import { Search, Filter, ChevronDown, ChevronRight, Plus, User, RefreshCw, Inbox, SendHorizonal, HandMetal, AlertTriangle, Clock, TicketCheck, CircleDot, Loader2, CheckCircle2, LayoutGrid, List, Trophy, CheckSquare, Trash2, X, MessageSquare } from "lucide-react";
 import KanbanBoard from "@/components/KanbanBoard";
 import MonthSelector, { getCurrentMonthValue, getMonthDateRange } from "@/components/MonthSelector";
 import { StatusBadge, PriorityBadge } from "@/components/StatusBadge";
@@ -87,7 +87,7 @@ function SlaTimer({ ticket, workMinutes }: { ticket: Ticket; workMinutes?: numbe
   );
 }
 
-function TicketTable({ tickets, onSelect, scoreMap, showScore, workMinutesMap, monthFrom, monthTo, selectionMode, selectedIds, onToggleSelect, onToggleSelectAll }: { tickets: Ticket[]; onSelect: (t: Ticket) => void; scoreMap?: Map<string, number>; showScore?: boolean; workMinutesMap?: Map<string, number>; monthFrom?: Date; monthTo?: Date; selectionMode?: boolean; selectedIds?: Set<string>; onToggleSelect?: (id: string) => void; onToggleSelectAll?: (ids: string[]) => void }) {
+function TicketTable({ tickets, onSelect, scoreMap, showScore, workMinutesMap, monthFrom, monthTo, selectionMode, selectedIds, onToggleSelect, onToggleSelectAll, unreadIds }: { tickets: Ticket[]; onSelect: (t: Ticket) => void; scoreMap?: Map<string, number>; showScore?: boolean; workMinutesMap?: Map<string, number>; monthFrom?: Date; monthTo?: Date; selectionMode?: boolean; selectedIds?: Set<string>; onToggleSelect?: (id: string) => void; onToggleSelectAll?: (ids: string[]) => void; unreadIds?: Set<string> }) {
   const allIds = tickets.map((t) => t.id);
   const selectedInGroup = selectionMode && selectedIds ? allIds.filter((id) => selectedIds.has(id)).length : 0;
   const allChecked = selectionMode && tickets.length > 0 && selectedInGroup === tickets.length;
@@ -149,6 +149,14 @@ function TicketTable({ tickets, onSelect, scoreMap, showScore, workMinutesMap, m
                   <span className="text-sm font-medium text-foreground truncate block max-w-[250px]">
                     {ticket.title}
                   </span>
+                  {unreadIds?.has(ticket.id) && (
+                    <span
+                      title="Novo comentário do técnico"
+                      className="inline-flex items-center justify-center text-primary animate-pulse shrink-0"
+                    >
+                      <MessageSquare className="h-4 w-4" fill="currentColor" />
+                    </span>
+                  )}
                   {isFromOtherMonth && (
                     <span
                       className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-semibold bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400 border border-blue-200 dark:border-blue-800 shrink-0"
@@ -357,6 +365,37 @@ export default function Chamados() {
       ),
     enabled: filtered.length > 0,
     refetchInterval: 60_000,
+  });
+
+  // Comentários públicos de outros usuários ainda não visualizados pelo solicitante
+  const myCreatedTickets = filtered.filter((t) => t.created_by === user?.id);
+  const myCreatedIds = myCreatedTickets.map((t) => t.id);
+  const { data: unreadIds = new Set<string>() } = useQuery({
+    queryKey: ["ticket-unread-comments", user?.id, myCreatedIds.join(",")],
+    queryFn: async () => {
+      const set = new Set<string>();
+      if (!user?.id || myCreatedIds.length === 0) return set;
+      const { data, error } = await supabase
+        .from("ticket_comments")
+        .select("ticket_id, created_at, user_id, is_public")
+        .in("ticket_id", myCreatedIds)
+        .eq("is_public", true)
+        .neq("user_id", user.id)
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      const lastByTicket = new Map<string, string>();
+      (data || []).forEach((c: any) => {
+        if (!lastByTicket.has(c.ticket_id)) lastByTicket.set(c.ticket_id, c.created_at);
+      });
+      myCreatedTickets.forEach((t: any) => {
+        const last = lastByTicket.get(t.id);
+        if (!last) return;
+        const seen = t.last_seen_by_requester_at || t.created_at;
+        if (new Date(last) > new Date(seen)) set.add(t.id);
+      });
+      return set;
+    },
+    enabled: !!user?.id && myCreatedIds.length > 0,
   });
 
   // Group by assigned technician only. Tickets sem técnico (status "Aberto")
@@ -572,7 +611,7 @@ export default function Chamados() {
 
                 {isExpanded && (
                   <div className="border-t border-border">
-                    <TicketTable tickets={userTickets} onSelect={setSelectedTicket} scoreMap={scoreMap} showScore={isAdmin || isTech} workMinutesMap={workMinutesMap} monthFrom={monthFrom} monthTo={monthTo} {...tableSelectionProps} />
+                    <TicketTable tickets={userTickets} onSelect={setSelectedTicket} scoreMap={scoreMap} showScore={isAdmin || isTech} workMinutesMap={workMinutesMap} monthFrom={monthFrom} monthTo={monthTo} unreadIds={unreadIds} {...tableSelectionProps} />
                   </div>
                 )}
               </div>
@@ -622,7 +661,7 @@ export default function Chamados() {
                       <p className="text-xs text-muted-foreground">{assignedToMe.length} chamado{assignedToMe.length !== 1 ? 's' : ''}</p>
                     </div>
                   </div>
-                  <TicketTable tickets={assignedToMe} onSelect={setSelectedTicket} scoreMap={scoreMap} showScore={isAdmin || isTech} workMinutesMap={workMinutesMap} monthFrom={monthFrom} monthTo={monthTo} />
+                  <TicketTable tickets={assignedToMe} onSelect={setSelectedTicket} scoreMap={scoreMap} showScore={isAdmin || isTech} workMinutesMap={workMinutesMap} monthFrom={monthFrom} monthTo={monthTo} unreadIds={unreadIds} />
                 </div>
               )}
               {createdByMe.length > 0 && (
@@ -634,7 +673,7 @@ export default function Chamados() {
                       <p className="text-xs text-muted-foreground">{createdByMe.length} chamado{createdByMe.length !== 1 ? 's' : ''}</p>
                     </div>
                   </div>
-                  <TicketTable tickets={createdByMe} onSelect={setSelectedTicket} scoreMap={scoreMap} showScore={isAdmin || isTech} workMinutesMap={workMinutesMap} monthFrom={monthFrom} monthTo={monthTo} />
+                  <TicketTable tickets={createdByMe} onSelect={setSelectedTicket} scoreMap={scoreMap} showScore={isAdmin || isTech} workMinutesMap={workMinutesMap} monthFrom={monthFrom} monthTo={monthTo} unreadIds={unreadIds} />
                 </div>
               )}
               {availableTickets.length === 0 && assignedToMe.length === 0 && createdByMe.length === 0 && (
