@@ -40,6 +40,7 @@ export interface MenuItem {
 
 export const menuItems: MenuItem[] = [
   { key: "dashboard", label: "Dashboard", icon: LayoutDashboard, path: "/", adminOnly: true, tooltip: "Visão geral com métricas e indicadores" },
+  { key: "metricas-gerenciais", label: "Métricas Gerenciais", icon: Target, path: "/metricas-gerenciais", adminOnly: true, tooltip: "Relatório gerencial D-1 por técnico e configuração de webhook diário" },
   { key: "chamados", label: "Chamados", icon: Ticket, path: "/chamados", tooltip: "Abrir e gerenciar chamados técnicos" },
   { key: "chamados-abertos", label: "Chamados Abertos", icon: Clock, path: "/chamados-abertos", techAllowed: true, tooltip: "Ver todos os chamados em aberto e atribuir para si" },
   { key: "todos", label: "TODO List", icon: CheckSquare, path: "/todos", tooltip: "Tarefas pessoais; técnicos e admins compartilham visibilidade" },

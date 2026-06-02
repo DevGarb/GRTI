@@ -204,6 +204,42 @@ export type Database = {
         }
         Relationships: []
       }
+      management_report_config: {
+        Row: {
+          created_at: string
+          id: string
+          is_active: boolean
+          last_sent_at: string | null
+          organization_id: string
+          send_time: string
+          timezone: string
+          updated_at: string
+          webhook_url: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          last_sent_at?: string | null
+          organization_id: string
+          send_time?: string
+          timezone?: string
+          updated_at?: string
+          webhook_url?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          last_sent_at?: string | null
+          organization_id?: string
+          send_time?: string
+          timezone?: string
+          updated_at?: string
+          webhook_url?: string | null
+        }
+        Relationships: []
+      }
       notifications: {
         Row: {
           body: string | null
@@ -1975,6 +2011,40 @@ export type Database = {
           _user_id: string
         }
         Returns: boolean
+      }
+      get_management_metrics: {
+        Args: { _from: string; _organization_id?: string; _to: string }
+        Returns: {
+          avg_csat: number
+          avg_handle_minutes: number
+          awaiting_approval: number
+          closed_in_period: number
+          csat_count: number
+          full_name: string
+          in_progress_now: number
+          points: number
+          rework_count: number
+          rework_percent: number
+          total_assigned: number
+          user_id: string
+        }[]
+      }
+      get_management_metrics_admin: {
+        Args: { _from: string; _organization_id: string; _to: string }
+        Returns: {
+          avg_csat: number
+          avg_handle_minutes: number
+          awaiting_approval: number
+          closed_in_period: number
+          csat_count: number
+          full_name: string
+          in_progress_now: number
+          points: number
+          rework_count: number
+          rework_percent: number
+          total_assigned: number
+          user_id: string
+        }[]
       }
       get_metas_tecnicos: {
         Args: { _month: number; _year: number }
