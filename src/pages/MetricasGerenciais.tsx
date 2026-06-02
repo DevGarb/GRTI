@@ -89,24 +89,38 @@ export default function MetricasGerenciais() {
   const { profile } = useAuth();
   const orgId = profile?.organization_id ?? null;
   const queryClient = useQueryClient();
-  const [range, setRange] = useState(dRange("yesterday"));
+  const { data: config } = useManagementReportConfig(orgId);
+
+  const orgTz = useMemo(() => {
+    const tz = config?.timezone || DEFAULT_TZ;
+    return isValidTimezone(tz) ? tz : DEFAULT_TZ;
+  }, [config?.timezone]);
+
+  const [range, setRange] = useState(() => presetRangeInTz("yesterday", DEFAULT_TZ));
   const [editFrom, setEditFrom] = useState<Date | undefined>(range.from);
   const [editTo, setEditTo] = useState<Date | undefined>(range.to);
 
+  // Quando o fuso da organização chegar/mudar, recalcula o D-1 padrão.
+  useEffect(() => {
+    const r = presetRangeInTz("yesterday", orgTz);
+    setRange(r); setEditFrom(r.from); setEditTo(r.to);
+  }, [orgTz]);
+
   const { data: rows = [], isLoading, refetch } = useManagementMetrics(range.from, range.to, orgId);
-  const { data: config } = useManagementReportConfig(orgId);
 
   const [webhookUrl, setWebhookUrl] = useState("");
   const [sendTime, setSendTime] = useState("08:00");
+  const [timezone, setTimezone] = useState<string>(DEFAULT_TZ);
   const [isActive, setIsActive] = useState(false);
   const [saving, setSaving] = useState(false);
   const [sending, setSending] = useState(false);
 
-  useMemo(() => {
+  useEffect(() => {
     if (config) {
       setWebhookUrl(config.webhook_url ?? "");
       setSendTime((config.send_time ?? "08:00").slice(0, 5));
       setIsActive(config.is_active);
+      setTimezone(config.timezone || DEFAULT_TZ);
     }
   }, [config]);
 
