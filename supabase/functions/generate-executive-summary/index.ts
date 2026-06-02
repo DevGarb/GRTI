@@ -179,8 +179,11 @@ async function generateAiInsights(opts: {
   technicians: MetricRow[];
   date: string;
 }): Promise<string[]> {
-  const apiKey = Deno.env.get("LOVABLE_API_KEY");
-  if (!apiKey) return [];
+  const apiKey = Deno.env.get("OPEN_AI") ?? Deno.env.get("OPENAI_API_KEY");
+  if (!apiKey) {
+    console.warn("OPEN_AI secret não configurado");
+    return [];
+  }
 
   const techSummary = opts.technicians
     .filter((t) => t.closed_in_period > 0 || t.in_progress_now > 0 || t.awaiting_approval > 0)
@@ -200,23 +203,24 @@ ${techSummary || "sem atividade"}
 Responda APENAS um JSON no formato: {"insights": ["frase 1", "frase 2", ...]}`;
 
   try {
-    const res = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    const res = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         "Authorization": `Bearer ${apiKey}`,
       },
       body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
+        model: "gpt-4o-mini",
         messages: [
           { role: "system", content: "Você é um analista executivo de operações de TI. Seja direto, profissional e prático." },
           { role: "user", content: prompt },
         ],
         response_format: { type: "json_object" },
+        temperature: 0.4,
       }),
     });
     if (!res.ok) {
-      console.warn("AI Gateway non-ok", res.status, await res.text());
+      console.warn("OpenAI non-ok", res.status, await res.text());
       return [];
     }
     const data = await res.json();

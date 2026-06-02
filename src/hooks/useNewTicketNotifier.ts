@@ -27,7 +27,12 @@ export function useNewTicketNotifier() {
   const intervalRef = useRef<number | null>(null);
   const originalTitleRef = useRef<string>(typeof document !== "undefined" ? document.title : "");
   const locationRef = useRef(location.pathname);
-  const canUseAdminAlert = !loading && (isSuperAdmin || roles.includes("admin"));
+  const canUseAdminAlert =
+    !loading &&
+    (isSuperAdmin ||
+      roles.includes("admin") ||
+      roles.includes("tecnico") ||
+      roles.includes("desenvolvedor"));
 
   useEffect(() => {
     locationRef.current = location.pathname;
