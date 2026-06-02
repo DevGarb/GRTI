@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Search, Filter, ChevronDown, ChevronRight, Plus, User, RefreshCw, Inbox, SendHorizonal, HandMetal, AlertTriangle, Clock, TicketCheck, CircleDot, Loader2, CheckCircle2, LayoutGrid, List, Trophy, CheckSquare, Trash2, X } from "lucide-react";
+import { Search, Filter, ChevronDown, ChevronRight, Plus, User, RefreshCw, Inbox, SendHorizonal, HandMetal, AlertTriangle, Clock, TicketCheck, CircleDot, Loader2, CheckCircle2, LayoutGrid, List, Trophy, CheckSquare, Trash2, X, MessageSquare } from "lucide-react";
 import KanbanBoard from "@/components/KanbanBoard";
 import MonthSelector, { getCurrentMonthValue, getMonthDateRange } from "@/components/MonthSelector";
 import { StatusBadge, PriorityBadge } from "@/components/StatusBadge";
