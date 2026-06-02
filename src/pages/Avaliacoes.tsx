@@ -25,6 +25,7 @@ export default function Avaliacoes() {
       let query = supabase
         .from("evaluations")
         .select("*, tickets(title, organization_id)")
+        .eq("type", "satisfaction")
         .order("created_at", { ascending: false });
 
       const { data, error } = await query;
