@@ -257,22 +257,25 @@ export default function AppLayout({ children }: AppLayoutProps) {
           >
             <Menu className="h-5 w-5" />
           </button>
-          {canUseAdminAlert && (
-            <Tooltip delayDuration={300}>
-              <TooltipTrigger asChild>
-                <button
-                  onClick={triggerTestAlert}
-                  className="ml-auto p-1.5 rounded-md hover:bg-muted text-muted-foreground transition-colors"
-                  aria-label="Testar alerta de novo chamado"
-                >
-                  <Bell className="h-4 w-4" />
-                </button>
-              </TooltipTrigger>
-              <TooltipContent side="bottom" className="text-xs">
-                Testar alerta sonoro de novo chamado
-              </TooltipContent>
-            </Tooltip>
-          )}
+          <div className="ml-auto flex items-center gap-1">
+            <NotificationBell />
+            {canUseAdminAlert && (
+              <Tooltip delayDuration={300}>
+                <TooltipTrigger asChild>
+                  <button
+                    onClick={triggerTestAlert}
+                    className="p-1.5 rounded-md hover:bg-muted text-muted-foreground transition-colors"
+                    aria-label="Testar alerta de novo chamado"
+                  >
+                    <Bell className="h-4 w-4" />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent side="bottom" className="text-xs">
+                  Testar alerta sonoro de novo chamado
+                </TooltipContent>
+              </Tooltip>
+            )}
+          </div>
         </header>
 
         <main className="flex-1 p-4 lg:p-8 overflow-auto">{children}</main>
