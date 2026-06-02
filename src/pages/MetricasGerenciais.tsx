@@ -303,15 +303,31 @@ export default function MetricasGerenciais() {
           <CardTitle className="text-base">Envio automático diário (D-1) via webhook</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="grid gap-3 md:grid-cols-2">
-            <div className="space-y-1.5">
+          <div className="grid gap-3 md:grid-cols-3">
+            <div className="space-y-1.5 md:col-span-3">
               <Label htmlFor="webhook">URL do webhook</Label>
               <Input id="webhook" placeholder="https://..." value={webhookUrl} onChange={(e) => setWebhookUrl(e.target.value)} />
-              <p className="text-xs text-muted-foreground">POST com payload JSON contendo totais e linha por técnico.</p>
+              <p className="text-xs text-muted-foreground">POST com payload JSON contendo totais e linha por técnico. O intervalo D-1 é calculado de 00:00:00 até 23:59:59.999 no fuso selecionado.</p>
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="time">Horário de envio (America/Sao_Paulo)</Label>
+              <Label htmlFor="tz">Fuso horário</Label>
+              <Select value={timezone} onValueChange={setTimezone}>
+                <SelectTrigger id="tz"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {COMMON_TIMEZONES.map((t) => (
+                    <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="time">Horário de envio ({timezone})</Label>
               <Input id="time" type="time" value={sendTime} onChange={(e) => setSendTime(e.target.value)} />
+            </div>
+            <div className="space-y-1.5 flex items-end">
+              <p className="text-xs text-muted-foreground">
+                Próximo D-1: {formatInTz(presetRangeInTz("yesterday", timezone).from, timezone, { day: "2-digit", month: "2-digit", year: "numeric" })} (00:00 → 23:59)
+              </p>
             </div>
           </div>
           <div className="flex items-center gap-3">
