@@ -1,108 +1,49 @@
-# Evolução da tela Métricas Gerenciais
+## Problema
 
-Transformar a tela atual (tabela operacional + config de envio D-1) em um **painel executivo** que responde em <30s: "Como foi a operação hoje e o que comunicar à diretoria?".
+Hoje as RLS de **`op_deliveries`** (Entregas) exigem `is_op_staff(organization_id)` (admin/técnico/desenvolvedor) tanto para INSERT quanto para UPDATE/DELETE. Por isso colaboradores comuns recebem "permissão RLS" ao tentar criar uma entrega.
 
-## 1. Resumo Executivo do Dia (topo fixo)
+A **Oficina** (`op_service_orders`) já permite INSERT para qualquer membro (`is_member_of_org`), então essa parte funciona — mas vou alinhar a regra também aqui.
 
-Substituir a faixa atual de 8 KPIs por uma faixa principal com cards grandes:
+A regra confirmada é: **qualquer colaborador da organização pode abrir registros; edição/movimentação/exclusão continua restrita à equipe operacional**.
 
-- Chamados Finalizados, Em Andamento, Aguardando Aprovação, Backlog (Abertos + Em Andamento + Aguardando)
-- CSAT Médio, TMA Médio, Pontuação Total, Técnicos Ativos, Índice de Retrabalho
+## O que muda
 
-Ao lado, **badge de Status Operacional** semafórico:
-- 🟢 Normal — backlog ≤ média móvel 7d e aguardando aprovação < 20% do backlog
-- 🟡 Atenção — backlog 10-30% acima da média OU >30% aguardando aprovação
-- 🔴 Crítico — backlog >30% acima da média OU retrabalho >20% OU chamados estourando SLA de horário comercial
+### Banco (RLS)
+- `op_deliveries`: trocar a policy de INSERT para `is_member_of_org(organization_id)` (igual ao padrão da Oficina). UPDATE/DELETE seguem restritos a `is_op_staff`.
+- `op_maintenance_orders` (OM): aplicar a mesma liberação no INSERT, para manter coerência com Entregas e Oficina (também é abertura de chamado operacional).
+- `op_service_orders`: já está correto — sem mudanças.
 
-Regras encapsuladas em util `computeOpStatus()` reutilizável pelo edge function de resumo.
-
-## 2. Insights Automáticos (card destacado)
-
-Novo card "Insights do dia" gerado por IA via Lovable AI Gateway (google/gemini-2.5-flash) na edge function `generate-daily-insights`. Recebe métricas agregadas + variação D-1, retorna lista de bullets com:
-- Técnico destaque (mais fechados ponderado por CSAT)
-- Melhor CSAT
-- Técnicos com mais pendências
-- Variação de backlog vs dia anterior
-- Risco operacional detectado
-- Comparativo com ontem
-
-Cache por org+período em `daily_insights_cache` (nova tabela) para evitar regerar.
-
-## 3. Ranking da Equipe
-
-Substituir tabela por **cards de ranking** ordenáveis (Fechamentos | CSAT | Menor retrabalho):
-- Avatar + Nome (medalha 🥇🥈🥉 nos 3 primeiros)
-- Métricas em linha: Fechados, Em andamento, Aguardando, CSAT, TMA, Retrabalho
-- Badge de status individual: Excelente / Bom / Atenção / Crítico (regra: CSAT≥4.5 & retrabalho<10% = Excelente; retrabalho>20% ou CSAT<3 = Crítico)
-
-## 4. Resumo Individual (expansível)
-
-Cada card de técnico vira `<Collapsible>`. Ao expandir:
-- KPIs detalhados (Fechados, Em andamento, Aguardando, Total atribuídos, CSAT, TMA, Retrabalho)
-- Frase-resumo gerada pelo mesmo edge function de insights (1 frase por técnico)
-
-## 5. Resumo WhatsApp
-
-Nova seção "Resumo Executivo" com:
-- Botão **[Gerar Resumo Executivo]** → chama edge function `generate-executive-summary` que monta o texto formatado (emojis, seções, destaques, riscos)
-- Textarea com o texto pronto
-- Botões **[Copiar Resumo]** e **[Enviar para Webhook agora]**
-
-Formato segue o template do briefing (emojis 📊✅🔄⏳⭐⏱️🏆⚠️).
-
-## 6. Webhook /api/metrics/daily-summary
-
-Estender a edge function existente `send-management-report` para emitir o novo payload enriquecido:
-
-```json
-{
-  "period": "2026-06-01",
-  "generated_at": "...",
-  "overall": { "closed", "in_progress", "pending_approval", "backlog", "csat", "tma", "score", "rework_pct", "op_status" },
-  "highlights": ["..."],
-  "risks": ["..."],
-  "technicians": [{ "name", "closed", "in_progress", "pending_approval", "csat", "tma", "summary" }],
-  "whatsapp_message": "texto completo"
-}
-```
-
-Mantém compatibilidade: campos antigos permanecem.
-
-## 7. Automação (envio agendado)
-
-A seção atual de config evolui:
-- Switch "Enviar resumo automaticamente" (já existe `is_active`)
-- Horário (já existe `send_time`) — default 18:00
-- Destino: **Webhook** (atual). Para WhatsApp / Grupo Corporativo o usuário usa o webhook → n8n (fluxo descrito no briefing; nada novo no app).
-- Cron `pg_cron` existente já dispara `send-management-report`; vamos só validar que respeita o `send_time` configurado por org.
+### Frontend
+- Nenhuma mudança funcional necessária para abertura. Os hooks `useDeliveries.add` e `useOficina.add` já enviam `organization_id` e `created_by` corretamente.
+- Pequeno ajuste de UX: esconder/desabilitar botões de **editar/excluir/arrastar** quando o usuário não for `op_staff`, para evitar erros silenciosos depois de criar. Vou expor um helper `isOpStaff` a partir de `useAuth` (baseado em `roles.includes('admin'|'tecnico'|'desenvolvedor')`) e usar nas páginas `OpEntregas.tsx`, `OpOficina.tsx`, `OpManutencao.tsx`.
 
 ## Detalhes técnicos
 
-**Banco (migration):**
-- Tabela `daily_insights_cache (organization_id, reference_date, insights jsonb, summary_text text, created_at)` com RLS por org + GRANTs.
-- RPC `get_executive_summary(_org, _from, _to)` que devolve agregados consolidados (backlog total, técnicos ativos, variação D-1) — extensão do `get_management_metrics` atual.
+Policies novas (substituindo as atuais de INSERT):
 
-**Frontend (arquivos):**
-- `src/pages/MetricasGerenciais.tsx` — refatorado em seções
-- `src/components/metricas/ExecutiveSummary.tsx` (KPIs + status semafórico)
-- `src/components/metricas/InsightsCard.tsx`
-- `src/components/metricas/TeamRanking.tsx` + `TechnicianCard.tsx`
-- `src/components/metricas/WhatsappSummary.tsx`
-- `src/lib/opStatus.ts` (regras de status semafórico — compartilhado com edge)
-- `src/hooks/useExecutiveSummary.ts`, `useDailyInsights.ts`
+```sql
+-- Entregas
+DROP POLICY "op_del_insert" ON public.op_deliveries;
+CREATE POLICY "op_del_insert" ON public.op_deliveries
+  FOR INSERT TO authenticated
+  WITH CHECK (is_member_of_org(organization_id) AND created_by = auth.uid());
 
-**Edge functions:**
-- `generate-daily-insights` (nova) — Lovable AI Gateway, cacheia em `daily_insights_cache`
-- `generate-executive-summary` (nova) — monta texto WhatsApp
-- `send-management-report` (estendida) — inclui novos campos no payload
+-- Manutenção
+DROP POLICY "op_mo_insert" ON public.op_maintenance_orders;
+CREATE POLICY "op_mo_insert" ON public.op_maintenance_orders
+  FOR INSERT TO authenticated
+  WITH CHECK (is_member_of_org(organization_id) AND created_by = auth.uid());
+```
 
-**Design:**
-- Cards grandes, tipografia destacada nos números
-- Cores semafóricas via tokens (`--status-ok`, `--status-warn`, `--status-critical` em `index.css`)
-- Layout responsivo: grid 4 cols desktop, 2 cols tablet, 1 col mobile
-- Medalhas no top-3 do ranking
+`op_service_orders.op_so_insert` já usa `is_member_of_org` — mantido.
 
-## Fora de escopo
-- Integração direta com WhatsApp Business (segue via n8n pelo webhook)
-- Alterações no cálculo base de métricas (`get_management_metrics`) além de extensão para backlog/técnicos ativos
-- Histórico/tendência além da comparação D vs D-1
+No frontend, em `OpKanbanBoard`/ações de edição, passar a prop `isAllowed` considerando `isOpStaff` para colaboradores comuns só visualizarem.
+
+## Validação
+
+- Logar como `natielle` (solicitante na OPERACIONAL) → criar Entrega e OS com sucesso; tentar mover card → bloqueado pelo UI; UPDATE direto → ainda barrado pelo RLS (defesa em profundidade).
+- Logar como admin/técnico → fluxo completo continua funcionando.
+
+## Memória
+
+Atualizar `mem://features/multi-tenancy` (ou criar entrada em `mem://features/operacional`) registrando: "Abertura de Entregas/OS/OM no módulo Operacional é liberada para qualquer membro da organização; edição segue restrita a admin/técnico/desenvolvedor".
