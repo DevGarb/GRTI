@@ -1,12 +1,13 @@
 import { useState } from "react";
 import { useProjectTickets, useUnlinkTicket, useUpdateTicketSprint, useUpdateTicketPoints } from "@/hooks/useProjectTickets";
-import { useProjectTasks, useDeleteProjectTask, useUpdateProjectTask, type ProjectTask } from "@/hooks/useProjectTasks";
+import { useProjectTasks, useDeleteProjectTask, useUpdateProjectTask, useConvertTaskToTicket, type ProjectTask } from "@/hooks/useProjectTasks";
 import { useSprints } from "@/hooks/useSprints";
+import { useAuth } from "@/contexts/AuthContext";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Ticket as TicketIcon, ListTodo, Trash2, ExternalLink } from "lucide-react";
+import { Ticket as TicketIcon, ListTodo, Trash2, ExternalLink, ArrowRightCircle } from "lucide-react";
 import TaskDetailModal from "./TaskDetailModal";
 
 interface Props {
@@ -20,11 +21,14 @@ export default function SprintItems({ projectId, sprintId }: Props) {
   const { data: tickets = [] } = useProjectTickets(projectId, sprintId);
   const { data: tasks = [] } = useProjectTasks(projectId, sprintId);
   const { data: sprints = [] } = useSprints(projectId);
+  const { hasRole } = useAuth();
+  const isAdmin = hasRole("admin") || hasRole("desenvolvedor") || hasRole("super_admin");
   const unlinkTicket = useUnlinkTicket();
   const moveTicket = useUpdateTicketSprint();
   const updatePoints = useUpdateTicketPoints();
   const updateTask = useUpdateProjectTask();
   const deleteTask = useDeleteProjectTask();
+  const convertTask = useConvertTaskToTicket();
 
   const [detailTask, setDetailTask] = useState<ProjectTask | null>(null);
 
@@ -38,8 +42,11 @@ export default function SprintItems({ projectId, sprintId }: Props) {
         <div key={t.id} className="p-3 flex items-center gap-3 text-sm">
           <TicketIcon className="h-4 w-4 text-blue-500 shrink-0" />
           <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-wrap">
               <span className="font-medium truncate">{t.title}</span>
+              <Badge className="text-[10px] bg-purple-500/15 text-purple-700 dark:text-purple-300 border-purple-500/30" variant="outline">
+                Projeto
+              </Badge>
               <Badge variant="outline" className="text-[10px]">{t.priority}</Badge>
               <Badge
                 variant="outline"
@@ -135,6 +142,20 @@ export default function SprintItems({ projectId, sprintId }: Props) {
               {sprints.map((s) => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}
             </SelectContent>
           </Select>
+          {isAdmin && (
+            <Button
+              size="icon"
+              variant="ghost"
+              className="h-7 w-7"
+              title="Converter em chamado (vincula à mesma sprint)"
+              disabled={convertTask.isPending}
+              onClick={() => {
+                if (confirm("Converter esta tarefa em um chamado do projeto?")) convertTask.mutate(task);
+              }}
+            >
+              <ArrowRightCircle className="h-3.5 w-3.5 text-primary" />
+            </Button>
+          )}
           <Button
             size="icon"
             variant="ghost"
