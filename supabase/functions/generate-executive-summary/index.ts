@@ -178,6 +178,10 @@ async function generateAiInsights(opts: {
   risks: string[];
   technicians: MetricRow[];
   date: string;
+  typeMix: Record<string, number>;
+  priorityMix: Record<string, number>;
+  topCategories: { name: string; count: number }[];
+  avgStoryPoints: number;
 }): Promise<string[]> {
   const apiKey = Deno.env.get("OPEN_AI") ?? Deno.env.get("OPENAI_API_KEY");
   if (!apiKey) {
@@ -187,36 +191,52 @@ async function generateAiInsights(opts: {
 
   const techSummary = opts.technicians
     .filter((t) => t.closed_in_period > 0 || t.in_progress_now > 0 || t.awaiting_approval > 0)
-    .slice(0, 10)
-    .map((t) => `${t.full_name}: ${t.closed_in_period} fechados, ${t.in_progress_now} em andamento, ${t.awaiting_approval} aguardando, CSAT ${Number(t.avg_csat).toFixed(1)} (${t.csat_count}), retrabalho ${t.rework_percent.toFixed(0)}%`)
+    .slice(0, 15)
+    .map((t) => `- ${t.full_name}: ${t.closed_in_period} fechados, ${t.in_progress_now} em andamento, ${t.awaiting_approval} aguardando, ${t.total_assigned} atribuídos no período, CSAT ${Number(t.avg_csat).toFixed(1)} (${t.csat_count} aval.), retrabalho ${t.rework_percent.toFixed(0)}% (${t.rework_count}), TMA ${Math.round(Number(t.avg_handle_minutes))}min, ${Number(t.points).toFixed(0)} pts`)
     .join("\n");
 
-  const prompt = `Analise as métricas operacionais do helpdesk em ${opts.date} e gere 3 a 5 insights gerenciais curtos e acionáveis (uma frase cada), em português, sem repetir números literais já presentes. Foque em padrões, riscos e oportunidades.
+  const typeMixStr = Object.entries(opts.typeMix).map(([k, v]) => `${k}: ${v}`).join(", ") || "sem dados";
+  const prioMixStr = Object.entries(opts.priorityMix).map(([k, v]) => `${k}: ${v}`).join(", ") || "sem dados";
+  const catsStr = opts.topCategories.map((c) => `${c.name} (${c.count})`).join(", ") || "sem dados";
 
+  const prompt = `Você é um analista executivo de operações de TI (helpdesk). Analise os dados do dia ${opts.date} e gere 5 a 8 insights gerenciais curtos, específicos e acionáveis, em português.
+
+OBRIGATÓRIO cobrir:
+1. Análise individual dos técnicos ativos (cite nomes, destaque produtividade/qualidade/risco — uma frase por técnico relevante).
+2. Mix Hardware vs Software vs outros tipos — o que indica (demanda recorrente, sobrecarga em uma frente etc).
+3. Complexidade dos chamados (distribuição de prioridade + média de story points) — chamados leves ou pesados?
+4. Categorias top — onde está concentrada a demanda.
+5. 1 a 2 riscos operacionais concretos (retrabalho alto, CSAT baixo, backlog crescente, técnico sobrecarregado).
+6. 1 recomendação prática para o próximo dia útil.
+
+Evite frases genéricas. Não repita literalmente números já mostrados nos cards.
+
+DADOS:
 Totais: ${JSON.stringify(opts.totals)}
-Destaques já identificados: ${opts.highlights.join("; ") || "nenhum"}
-Riscos já identificados: ${opts.risks.join("; ") || "nenhum"}
+Mix por tipo (criados no período): ${typeMixStr}
+Mix por prioridade (fechados no período): ${prioMixStr}
+Média de story points: ${opts.avgStoryPoints.toFixed(2)}
+Top categorias: ${catsStr}
+Destaques pré-detectados: ${opts.highlights.join("; ") || "nenhum"}
+Riscos pré-detectados: ${opts.risks.join("; ") || "nenhum"}
 
 Técnicos:
 ${techSummary || "sem atividade"}
 
-Responda APENAS um JSON no formato: {"insights": ["frase 1", "frase 2", ...]}`;
+Responda APENAS um JSON: {"insights": ["frase 1", "frase 2", ...]}`;
 
   try {
     const res = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${apiKey}`,
-      },
+      headers: { "Content-Type": "application/json", "Authorization": `Bearer ${apiKey}` },
       body: JSON.stringify({
         model: "gpt-4o-mini",
         messages: [
-          { role: "system", content: "Você é um analista executivo de operações de TI. Seja direto, profissional e prático." },
+          { role: "system", content: "Você é um analista executivo de operações de TI. Seja direto, específico, profissional. Cite nomes e padrões reais, não generalidades." },
           { role: "user", content: prompt },
         ],
         response_format: { type: "json_object" },
-        temperature: 0.4,
+        temperature: 0.5,
       }),
     });
     if (!res.ok) {
@@ -227,7 +247,7 @@ Responda APENAS um JSON no formato: {"insights": ["frase 1", "frase 2", ...]}`;
     const content = data?.choices?.[0]?.message?.content;
     if (!content) return [];
     const parsed = JSON.parse(content);
-    return Array.isArray(parsed?.insights) ? parsed.insights.slice(0, 5) : [];
+    return Array.isArray(parsed?.insights) ? parsed.insights.slice(0, 8) : [];
   } catch (e) {
     console.warn("AI insights error", e);
     return [];
@@ -348,6 +368,57 @@ Deno.serve(async (req) => {
       organizationName: org?.name ?? null,
     });
 
+    // Extra dimensions for richer AI insights: type/priority mix, top categories, story points
+    const { data: periodTickets } = await supabase
+      .from("tickets")
+      .select("id, type, priority, story_points, category_id, status, closed_at, created_at")
+      .eq("organization_id", body.organization_id)
+      .gte("created_at", body.from)
+      .lt("created_at", body.to);
+
+    const typeMix: Record<string, number> = {};
+    (periodTickets ?? []).forEach((t: any) => {
+      const k = (t.type as string) || "Outro";
+      typeMix[k] = (typeMix[k] ?? 0) + 1;
+    });
+
+    const { data: closedPeriod } = await supabase
+      .from("tickets")
+      .select("id, priority, story_points, category_id")
+      .eq("organization_id", body.organization_id)
+      .eq("status", "Fechado")
+      .gte("closed_at", body.from)
+      .lt("closed_at", body.to);
+
+    const priorityMix: Record<string, number> = {};
+    let spSum = 0, spCount = 0;
+    const catIds = new Set<string>();
+    (closedPeriod ?? []).forEach((t: any) => {
+      const p = (t.priority as string) || "—";
+      priorityMix[p] = (priorityMix[p] ?? 0) + 1;
+      if (t.story_points != null) { spSum += Number(t.story_points); spCount++; }
+      if (t.category_id) catIds.add(t.category_id);
+    });
+    const avgStoryPoints = spCount > 0 ? spSum / spCount : 0;
+
+    // Top categories
+    const catCount: Record<string, number> = {};
+    (closedPeriod ?? []).forEach((t: any) => {
+      if (t.category_id) catCount[t.category_id] = (catCount[t.category_id] ?? 0) + 1;
+    });
+    let topCategories: { name: string; count: number }[] = [];
+    if (catIds.size > 0) {
+      const { data: cats } = await supabase
+        .from("categories")
+        .select("id, name")
+        .in("id", [...catIds]);
+      const nameMap = new Map((cats ?? []).map((c: any) => [c.id, c.name]));
+      topCategories = Object.entries(catCount)
+        .map(([id, count]) => ({ name: nameMap.get(id) ?? "—", count }))
+        .sort((a, b) => b.count - a.count)
+        .slice(0, 5);
+    }
+
     // AI insights (best-effort)
     const aiInsights = await generateAiInsights({
       totals: totalsForMsg,
@@ -355,7 +426,12 @@ Deno.serve(async (req) => {
       risks,
       technicians: list,
       date: dateLabel,
+      typeMix,
+      priorityMix,
+      topCategories,
+      avgStoryPoints,
     });
+
 
     // Cache
     await supabase
