@@ -1,13 +1,22 @@
 import { useState } from "react";
 import { useProjectTickets, useUnlinkTicket, useUpdateTicketSprint, useUpdateTicketPoints } from "@/hooks/useProjectTickets";
 import { useProjectTasks, useDeleteProjectTask, useUpdateProjectTask, useConvertTaskToTicket, type ProjectTask } from "@/hooks/useProjectTasks";
+import { useProject } from "@/hooks/useProjects";
 import { useSprints } from "@/hooks/useSprints";
 import { useAuth } from "@/contexts/AuthContext";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Ticket as TicketIcon, ListTodo, Trash2, ExternalLink, ArrowRightCircle } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Ticket as TicketIcon, ListTodo, Trash2, ExternalLink, ArrowRightCircle, Loader2 } from "lucide-react";
 import TaskDetailModal from "./TaskDetailModal";
 
 interface Props {
@@ -18,6 +27,7 @@ interface Props {
 const RESOLVED = ["Resolvido", "Aprovado", "Aguardando Aprovação", "Fechado"];
 
 export default function SprintItems({ projectId, sprintId }: Props) {
+  const { data: project } = useProject(projectId);
   const { data: tickets = [] } = useProjectTickets(projectId, sprintId);
   const { data: tasks = [] } = useProjectTasks(projectId, sprintId);
   const { data: sprints = [] } = useSprints(projectId);
@@ -31,10 +41,23 @@ export default function SprintItems({ projectId, sprintId }: Props) {
   const convertTask = useConvertTaskToTicket();
 
   const [detailTask, setDetailTask] = useState<ProjectTask | null>(null);
+  const [confirmTask, setConfirmTask] = useState<ProjectTask | null>(null);
+
+  const currentSprintName = confirmTask
+    ? (confirmTask.sprint_id ? sprints.find((s) => s.id === confirmTask.sprint_id)?.name : "Backlog")
+    : "";
 
   if (tickets.length === 0 && tasks.length === 0) {
     return <div className="p-6 text-center text-sm text-muted-foreground">Nenhum item nesta sprint.</div>;
   }
+
+  const handleConvert = () => {
+    if (!confirmTask) return;
+    convertTask.mutate(confirmTask, {
+      onSuccess: () => setConfirmTask(null),
+      onError: () => setConfirmTask(null),
+    });
+  };
 
   return (
     <div className="divide-y divide-border">
@@ -149,11 +172,13 @@ export default function SprintItems({ projectId, sprintId }: Props) {
               className="h-7 w-7"
               title="Converter em chamado (vincula à mesma sprint)"
               disabled={convertTask.isPending}
-              onClick={() => {
-                if (confirm("Converter esta tarefa em um chamado do projeto?")) convertTask.mutate(task);
-              }}
+              onClick={() => setConfirmTask(task)}
             >
-              <ArrowRightCircle className="h-3.5 w-3.5 text-primary" />
+              {convertTask.isPending && confirmTask?.id === task.id ? (
+                <Loader2 className="h-3.5 w-3.5 animate-spin text-primary" />
+              ) : (
+                <ArrowRightCircle className="h-3.5 w-3.5 text-primary" />
+              )}
             </Button>
           )}
           <Button
@@ -169,6 +194,52 @@ export default function SprintItems({ projectId, sprintId }: Props) {
         </div>
       ))}
       <TaskDetailModal open={!!detailTask} onOpenChange={(v) => !v && setDetailTask(null)} task={detailTask} />
+
+      <Dialog open={!!confirmTask} onOpenChange={(v) => !v && setConfirmTask(null)}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Converter tarefa em chamado</DialogTitle>
+            <DialogDescription>
+              Confirme os dados antes de transformar esta tarefa em um chamado vinculado ao projeto.
+            </DialogDescription>
+          </DialogHeader>
+          {confirmTask && (
+            <div className="space-y-3 py-2 text-sm">
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Tarefa</span>
+                <span className="font-medium text-right max-w-[60%]">{confirmTask.title}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Projeto</span>
+                <span className="font-medium">{project?.name || "—"}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Sprint</span>
+                <span className="font-medium">{currentSprintName || "Backlog"}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Story Points</span>
+                <span className="font-medium">{confirmTask.story_points}</span>
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setConfirmTask(null)} disabled={convertTask.isPending}>
+              Cancelar
+            </Button>
+            <Button onClick={handleConvert} disabled={convertTask.isPending}>
+              {convertTask.isPending ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Convertendo...
+                </>
+              ) : (
+                "Confirmar conversão"
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
