@@ -27,6 +27,7 @@ interface Props {
 const RESOLVED = ["Resolvido", "Aprovado", "Aguardando Aprovação", "Fechado"];
 
 export default function SprintItems({ projectId, sprintId }: Props) {
+  const { data: project } = useProject(projectId);
   const { data: tickets = [] } = useProjectTickets(projectId, sprintId);
   const { data: tasks = [] } = useProjectTasks(projectId, sprintId);
   const { data: sprints = [] } = useSprints(projectId);
@@ -40,10 +41,23 @@ export default function SprintItems({ projectId, sprintId }: Props) {
   const convertTask = useConvertTaskToTicket();
 
   const [detailTask, setDetailTask] = useState<ProjectTask | null>(null);
+  const [confirmTask, setConfirmTask] = useState<ProjectTask | null>(null);
+
+  const currentSprintName = confirmTask
+    ? (confirmTask.sprint_id ? sprints.find((s) => s.id === confirmTask.sprint_id)?.name : "Backlog")
+    : "";
 
   if (tickets.length === 0 && tasks.length === 0) {
     return <div className="p-6 text-center text-sm text-muted-foreground">Nenhum item nesta sprint.</div>;
   }
+
+  const handleConvert = () => {
+    if (!confirmTask) return;
+    convertTask.mutate(confirmTask, {
+      onSuccess: () => setConfirmTask(null),
+      onError: () => setConfirmTask(null),
+    });
+  };
 
   return (
     <div className="divide-y divide-border">
