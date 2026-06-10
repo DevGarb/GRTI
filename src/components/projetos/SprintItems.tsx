@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { useProjectTickets, useUnlinkTicket, useUpdateTicketSprint, useUpdateTicketPoints } from "@/hooks/useProjectTickets";
 import { useProjectTasks, useDeleteProjectTask, useUpdateProjectTask, useConvertTaskToTicket, type ProjectTask } from "@/hooks/useProjectTasks";
-import { useProject, useSprints } from "@/hooks/useSprints";
+import { useProject } from "@/hooks/useProjects";
+import { useSprints } from "@/hooks/useSprints";
 import { useAuth } from "@/contexts/AuthContext";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
