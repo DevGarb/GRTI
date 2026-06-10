@@ -21,11 +21,14 @@ export default function SprintItems({ projectId, sprintId }: Props) {
   const { data: tickets = [] } = useProjectTickets(projectId, sprintId);
   const { data: tasks = [] } = useProjectTasks(projectId, sprintId);
   const { data: sprints = [] } = useSprints(projectId);
+  const { hasRole } = useAuth();
+  const isAdmin = hasRole("admin") || hasRole("desenvolvedor") || hasRole("super_admin");
   const unlinkTicket = useUnlinkTicket();
   const moveTicket = useUpdateTicketSprint();
   const updatePoints = useUpdateTicketPoints();
   const updateTask = useUpdateProjectTask();
   const deleteTask = useDeleteProjectTask();
+  const convertTask = useConvertTaskToTicket();
 
   const [detailTask, setDetailTask] = useState<ProjectTask | null>(null);
 
