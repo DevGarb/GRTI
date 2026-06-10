@@ -194,6 +194,52 @@ export default function SprintItems({ projectId, sprintId }: Props) {
         </div>
       ))}
       <TaskDetailModal open={!!detailTask} onOpenChange={(v) => !v && setDetailTask(null)} task={detailTask} />
+
+      <Dialog open={!!confirmTask} onOpenChange={(v) => !v && setConfirmTask(null)}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Converter tarefa em chamado</DialogTitle>
+            <DialogDescription>
+              Confirme os dados antes de transformar esta tarefa em um chamado vinculado ao projeto.
+            </DialogDescription>
+          </DialogHeader>
+          {confirmTask && (
+            <div className="space-y-3 py-2 text-sm">
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Tarefa</span>
+                <span className="font-medium text-right max-w-[60%]">{confirmTask.title}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Projeto</span>
+                <span className="font-medium">{project?.name || "—"}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Sprint</span>
+                <span className="font-medium">{currentSprintName || "Backlog"}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Story Points</span>
+                <span className="font-medium">{confirmTask.story_points}</span>
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setConfirmTask(null)} disabled={convertTask.isPending}>
+              Cancelar
+            </Button>
+            <Button onClick={handleConvert} disabled={convertTask.isPending}>
+              {convertTask.isPending ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Convertendo...
+                </>
+              ) : (
+                "Confirmar conversão"
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
