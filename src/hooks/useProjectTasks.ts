@@ -67,7 +67,7 @@ export function useUpdateProjectTask() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async ({ id, ...updates }: Partial<ProjectTask> & { id: string }) => {
-      const { data, error } = await supabase.from("project_tasks").update(updates).eq("id", id).select().single();
+      const { data, error } = await supabase.from("project_tasks").update(updates).eq("id", id).select().maybeSingle();
       if (error) throw error;
       return data;
     },
@@ -94,5 +94,43 @@ export function useDeleteProjectTask() {
       toast.success("Tarefa excluída");
     },
     onError: (e: Error) => toast.error("Erro: " + e.message),
+  });
+}
+
+export function useConvertTaskToTicket() {
+  const queryClient = useQueryClient();
+  const { user } = useAuth();
+  return useMutation({
+    mutationFn: async (task: ProjectTask) => {
+      const { data: ticket, error: insErr } = await supabase
+        .from("tickets")
+        .insert({
+          title: task.title,
+          description: task.description,
+          priority: "Média",
+          type: "Software",
+          status: "Aberto",
+          organization_id: task.organization_id,
+          project_id: task.project_id,
+          sprint_id: task.sprint_id,
+          story_points: task.story_points ?? 1,
+          created_by: user!.id,
+        })
+        .select()
+        .single();
+      if (insErr) throw insErr;
+      const { error: delErr } = await supabase.from("project_tasks").delete().eq("id", task.id);
+      if (delErr) throw delErr;
+      return ticket;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["project-tasks"] });
+      queryClient.invalidateQueries({ queryKey: ["project-tickets"] });
+      queryClient.invalidateQueries({ queryKey: ["sprints"] });
+      queryClient.invalidateQueries({ queryKey: ["projects"] });
+      queryClient.invalidateQueries({ queryKey: ["tickets"] });
+      toast.success("Tarefa convertida em chamado!");
+    },
+    onError: (e: Error) => toast.error("Erro ao converter: " + e.message),
   });
 }
