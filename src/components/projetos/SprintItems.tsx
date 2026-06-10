@@ -142,6 +142,20 @@ export default function SprintItems({ projectId, sprintId }: Props) {
               {sprints.map((s) => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}
             </SelectContent>
           </Select>
+          {isAdmin && (
+            <Button
+              size="icon"
+              variant="ghost"
+              className="h-7 w-7"
+              title="Converter em chamado (vincula à mesma sprint)"
+              disabled={convertTask.isPending}
+              onClick={() => {
+                if (confirm("Converter esta tarefa em um chamado do projeto?")) convertTask.mutate(task);
+              }}
+            >
+              <ArrowRightCircle className="h-3.5 w-3.5 text-primary" />
+            </Button>
+          )}
           <Button
             size="icon"
             variant="ghost"
