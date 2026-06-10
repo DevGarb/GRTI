@@ -368,6 +368,57 @@ Deno.serve(async (req) => {
       organizationName: org?.name ?? null,
     });
 
+    // Extra dimensions for richer AI insights: type/priority mix, top categories, story points
+    const { data: periodTickets } = await supabase
+      .from("tickets")
+      .select("id, type, priority, story_points, category_id, status, closed_at, created_at")
+      .eq("organization_id", body.organization_id)
+      .gte("created_at", body.from)
+      .lt("created_at", body.to);
+
+    const typeMix: Record<string, number> = {};
+    (periodTickets ?? []).forEach((t: any) => {
+      const k = (t.type as string) || "Outro";
+      typeMix[k] = (typeMix[k] ?? 0) + 1;
+    });
+
+    const { data: closedPeriod } = await supabase
+      .from("tickets")
+      .select("id, priority, story_points, category_id")
+      .eq("organization_id", body.organization_id)
+      .eq("status", "Fechado")
+      .gte("closed_at", body.from)
+      .lt("closed_at", body.to);
+
+    const priorityMix: Record<string, number> = {};
+    let spSum = 0, spCount = 0;
+    const catIds = new Set<string>();
+    (closedPeriod ?? []).forEach((t: any) => {
+      const p = (t.priority as string) || "—";
+      priorityMix[p] = (priorityMix[p] ?? 0) + 1;
+      if (t.story_points != null) { spSum += Number(t.story_points); spCount++; }
+      if (t.category_id) catIds.add(t.category_id);
+    });
+    const avgStoryPoints = spCount > 0 ? spSum / spCount : 0;
+
+    // Top categories
+    const catCount: Record<string, number> = {};
+    (closedPeriod ?? []).forEach((t: any) => {
+      if (t.category_id) catCount[t.category_id] = (catCount[t.category_id] ?? 0) + 1;
+    });
+    let topCategories: { name: string; count: number }[] = [];
+    if (catIds.size > 0) {
+      const { data: cats } = await supabase
+        .from("categories")
+        .select("id, name")
+        .in("id", [...catIds]);
+      const nameMap = new Map((cats ?? []).map((c: any) => [c.id, c.name]));
+      topCategories = Object.entries(catCount)
+        .map(([id, count]) => ({ name: nameMap.get(id) ?? "—", count }))
+        .sort((a, b) => b.count - a.count)
+        .slice(0, 5);
+    }
+
     // AI insights (best-effort)
     const aiInsights = await generateAiInsights({
       totals: totalsForMsg,
@@ -375,7 +426,12 @@ Deno.serve(async (req) => {
       risks,
       technicians: list,
       date: dateLabel,
+      typeMix,
+      priorityMix,
+      topCategories,
+      avgStoryPoints,
     });
+
 
     // Cache
     await supabase
