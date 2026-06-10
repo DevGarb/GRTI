@@ -1,12 +1,13 @@
 import { useState } from "react";
 import { useProjectTickets, useUnlinkTicket, useUpdateTicketSprint, useUpdateTicketPoints } from "@/hooks/useProjectTickets";
-import { useProjectTasks, useDeleteProjectTask, useUpdateProjectTask, type ProjectTask } from "@/hooks/useProjectTasks";
+import { useProjectTasks, useDeleteProjectTask, useUpdateProjectTask, useConvertTaskToTicket, type ProjectTask } from "@/hooks/useProjectTasks";
 import { useSprints } from "@/hooks/useSprints";
+import { useAuth } from "@/contexts/AuthContext";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Ticket as TicketIcon, ListTodo, Trash2, ExternalLink } from "lucide-react";
+import { Ticket as TicketIcon, ListTodo, Trash2, ExternalLink, ArrowRightCircle } from "lucide-react";
 import TaskDetailModal from "./TaskDetailModal";
 
 interface Props {
