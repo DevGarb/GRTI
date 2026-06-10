@@ -172,11 +172,13 @@ export default function SprintItems({ projectId, sprintId }: Props) {
               className="h-7 w-7"
               title="Converter em chamado (vincula à mesma sprint)"
               disabled={convertTask.isPending}
-              onClick={() => {
-                if (confirm("Converter esta tarefa em um chamado do projeto?")) convertTask.mutate(task);
-              }}
+              onClick={() => setConfirmTask(task)}
             >
-              <ArrowRightCircle className="h-3.5 w-3.5 text-primary" />
+              {convertTask.isPending && confirmTask?.id === task.id ? (
+                <Loader2 className="h-3.5 w-3.5 animate-spin text-primary" />
+              ) : (
+                <ArrowRightCircle className="h-3.5 w-3.5 text-primary" />
+              )}
             </Button>
           )}
           <Button
