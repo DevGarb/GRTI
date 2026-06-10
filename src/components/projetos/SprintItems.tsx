@@ -42,8 +42,11 @@ export default function SprintItems({ projectId, sprintId }: Props) {
         <div key={t.id} className="p-3 flex items-center gap-3 text-sm">
           <TicketIcon className="h-4 w-4 text-blue-500 shrink-0" />
           <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-wrap">
               <span className="font-medium truncate">{t.title}</span>
+              <Badge className="text-[10px] bg-purple-500/15 text-purple-700 dark:text-purple-300 border-purple-500/30" variant="outline">
+                Projeto
+              </Badge>
               <Badge variant="outline" className="text-[10px]">{t.priority}</Badge>
               <Badge
                 variant="outline"
