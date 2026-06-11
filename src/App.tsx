@@ -41,7 +41,15 @@ import OpOficina from "@/pages/OpOficina";
 import OpManutencao from "@/pages/OpManutencao";
 import NotFound from "./pages/NotFound";
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      // Evita refetch/re-render ao voltar para a aba (atrapalhava modais abertos)
+      refetchOnWindowFocus: false,
+      refetchOnReconnect: false,
+    },
+  },
+});
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
