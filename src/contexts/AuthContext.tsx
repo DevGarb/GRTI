@@ -72,8 +72,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   useEffect(() => {
+    let currentUserId: string | null = null;
+
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (_event, session) => {
+      async (event, session) => {
+        const newUserId = session?.user?.id ?? null;
+
+        // Renovação de token ou re-foco na aba com o MESMO usuário:
+        // apenas atualiza a sessão silenciosamente, sem loading/re-render global
+        if (newUserId && newUserId === currentUserId && (event === "TOKEN_REFRESHED" || event === "SIGNED_IN" || event === "INITIAL_SESSION")) {
+          setSession(session);
+          setUser(session!.user);
+          return;
+        }
+
+        currentUserId = newUserId;
         setLoading(true);
         setSession(session);
         setUser(session?.user ?? null);
@@ -91,6 +104,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     );
 
     supabase.auth.getSession().then(({ data: { session } }) => {
+      const newUserId = session?.user?.id ?? null;
+      if (newUserId && newUserId === currentUserId) return;
+      currentUserId = newUserId;
       setLoading(true);
       setSession(session);
       setUser(session?.user ?? null);
