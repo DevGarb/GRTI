@@ -1,67 +1,56 @@
-## Problemas identificados
 
-1. **Total atribuídos = 371** — a RPC `get_management_metrics` conta TODOS os chamados já atribuídos ao técnico, ignorando o filtro de período (hoje/ontem/mês).
-2. **TMA Médio = 35h 42m** — usa `business_minutes_between(started_at, closed_at)` diretamente. Para chamados antigos reabertos/fechados hoje, isso infla o tempo. O Dashboard já usa "tempo de trabalho acumulado" (somente intervalos em "Em Andamento" via `ticket_history`); a página gerencial não.
-3. **Análise da I.A.** vem genérica/desconexa: prompt não diferencia tipo (Hardware/Software), complexidade, nem faz leitura individual aprofundada por técnico do dia.
+## Objetivo
 
-## Plano
+Permitir cadastrar as 5 métricas (Chamados Fechados, Nota Média, Tempo Médio Resolução, Pontuação, Preventivas Realizadas) de um técnico/setor em um único formulário, e reformatar a listagem agrupando por pessoa/setor.
 
-### 1. Migração SQL — corrigir `get_management_metrics` e `get_management_metrics_admin`
+## Mudanças em `src/components/metas/GoalsManager.tsx`
 
-- `total_assigned`: contar apenas tickets com `created_at` dentro de `[_from, _to)` (mesma janela do `closed_in_period`). Assim "diário" mostra atribuições do dia, "mensal" do mês.
-- `awaiting_approval` e `in_progress_now`: permanecem como snapshot atual (são estados, fazem sentido instantâneos), mantendo o nome — sem mudança.
-- `avg_handle_minutes`: substituir o cálculo direto por **soma de intervalos em "Em Andamento"** por ticket (mesmo padrão da função `get_team_evaluation_summary` já existente em `20260601172500`), depois `AVG` sobre os tickets fechados no período. Isso passa a refletir tempo de trabalho efetivo (não calendário).
-- Aplicar a mudança nas duas RPCs (a `_admin` é chamada pela edge function).
+### 1. Formulário "Nova Meta" → "Definir Metas"
 
-### 2. Edge Function `generate-executive-summary` — prompt mais rico
+Substituir o formulário atual (1 métrica por vez) por um formulário único:
 
-- Adicionar ao payload enviado à I.A.:
-  - **Mix de tipos**: % Hardware vs % Software vs Outros (calculado via nova query simples a `tickets` filtrada por período/org).
-  - **Complexidade**: distribuição de `priority` (Baixa/Média/Alta/Crítica) e `story_points` (quando houver) dos chamados fechados.
-  - **Categoria top 3** (campo `category` em tickets) dos chamados do período.
-  - **Por técnico (até 10)**: linha já existente + ticket médio em min + retrabalho.
-- Reescrever o prompt para pedir explicitamente:
-  1. Análise individual de cada técnico ativo no dia (frase curta destacando produtividade/qualidade).
-  2. Leitura do mix Hardware/Software e o que ele indica.
-  3. Análise de complexidade (priority/pontos) — chamados estão pesados ou leves?
-  4. Riscos operacionais concretos (backlog, retrabalho, CSAT baixo).
-  5. 1 recomendação prática.
-- Aumentar o limite de insights para 5–8 itens curtos. Manter formato JSON `{ "insights": [...] }`.
-- Manter cache, mas invalidar quando `force=true` (já existe).
+- **Tipo**: Individual / Setor (mantém)
+- **Alvo**: dropdown técnico ou input de setor (mantém)
+- **Bloco de KPIs**: 5 campos numéricos em grade 2 colunas, um por métrica:
+  - Chamados Fechados
+  - Nota Média (/5, step 0.1)
+  - Tempo Médio Resolução (h)
+  - Pontuação (pts)
+  - Preventivas Realizadas
 
-### 3. Sem mudanças de UI
+Campos em branco/zero são ignorados. Ao salvar, dispara `createGoal.mutate` para cada métrica preenchida (em paralelo via `Promise.all`). Se já existir meta daquela métrica para o alvo no período, faz `update` em vez de `insert` (upsert manual).
 
-Os componentes (`ExecutiveSummary`, `InsightsCard`, `TeamRanking`) já consomem os mesmos campos — apenas os valores ficam corretos.
+Botão muda para "Salvar Metas" e mostra contador (`Salvando 3/5...`).
 
-## Detalhes técnicos
+### 2. Listagem agrupada
 
-Trecho SQL para `avg_handle_minutes` (substitui `handle` CTE):
+Trocar a tabela "uma linha por métrica" por cards agrupados por alvo:
 
-```sql
-status_intervals AS (
-  SELECT h.ticket_id,
-         h.created_at AS open_at,
-         LEAD(h.created_at) OVER (PARTITION BY h.ticket_id ORDER BY h.created_at) AS close_at
-  FROM public.ticket_history h
-  WHERE h.action = 'status_change'
-    AND h.new_value = 'Em Andamento'
-    AND h.ticket_id IN (SELECT id FROM closed)
-),
-per_ticket AS (
-  SELECT ticket_id,
-         SUM(public.business_minutes_between(open_at, COALESCE(close_at, now()))) AS work_mins
-  FROM status_intervals GROUP BY ticket_id
-),
-handle AS (
-  SELECT c.assigned_to, AVG(COALESCE(pt.work_mins, 0))::numeric AS mins
-  FROM closed c LEFT JOIN per_ticket pt ON pt.ticket_id = c.id
-  GROUP BY c.assigned_to
-)
+```text
+┌─ Metas Individuais ───────────────────────────┐
+│ ┌─ MARIA IZABELE LIMA ────────────[+ editar]─┐│
+│ │ Chamados Fechados   50    [edit][del]      ││
+│ │ Nota Média          4.95  [edit][del]      ││
+│ │ TMR                 8h    [edit][del]      ││
+│ │ Pontuação           170   [edit][del]      ││
+│ │ Preventivas         10    [edit][del]      ││
+│ └────────────────────────────────────────────┘│
+│ ┌─ FELIPE AUGUSTO ──────...                    │
+└───────────────────────────────────────────────┘
 ```
 
-(O padrão completo já existe na migration `20260601172500` — vou replicar.)
+Cada card mostra nome do técnico/setor no header e grid 2-3 colunas com chip por métrica (ícone + label + valor + ações edit/delete inline). Botão "+ adicionar métrica" no header do card abre o form pré-preenchido com aquele alvo, listando só as métricas que ainda não existem.
 
-## Arquivos afetados
+Mesmo padrão para "Metas por Setor".
 
-- `supabase/migrations/<nova>.sql` — redefine ambas RPCs.
-- `supabase/functions/generate-executive-summary/index.ts` — novas queries de mix/complexidade e prompt reescrito.
+### 3. Pequenos ajustes
+
+- Agrupar via `reduce` por `target_id` (ou `target_label` para setor).
+- Mantém edição inline de valor e exclusão individual já existentes.
+- Sem alterações em hooks (`useGoals`, mutations) nem na tabela `performance_goals`.
+
+## Arquivos
+
+- `src/components/metas/GoalsManager.tsx` — reescrita do form e da listagem.
+
+Nenhuma migração ou mudança de backend.
