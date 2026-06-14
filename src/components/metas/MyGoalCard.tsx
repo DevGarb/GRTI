@@ -128,6 +128,15 @@ export default function MyGoalCard({ year, month }: Props) {
         reworkPercent = (reworkedIds.size / ids.length) * 100;
       }
 
+      // Projetos entregues no mês = tarefas concluídas atribuídas ao usuário
+      const { count: projectTasksDone } = await supabase
+        .from("project_tasks")
+        .select("id", { count: "exact", head: true })
+        .eq("assigned_to", user.id)
+        .eq("status", "done")
+        .gte("updated_at", monthStart.toISOString())
+        .lt("updated_at", monthEnd.toISOString());
+
       return {
         totalClosed: (closedTickets || []).length,
         totalPoints,
@@ -135,6 +144,7 @@ export default function MyGoalCard({ year, month }: Props) {
         avgResolutionHours,
         preventivasDone: prevCount || 0,
         reworkPercent,
+        projectTasksDone: projectTasksDone || 0,
       };
     },
     enabled: !!user?.id && myGoals.length > 0,
