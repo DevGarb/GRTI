@@ -84,18 +84,40 @@ export default function GoalsManager({ year, month }: Props) {
     queryFn: async () => {
       const { data: roles } = await supabase
         .from("user_organization_roles")
-        .select("user_id")
+        .select("user_id, role")
         .in("role", ["tecnico", "desenvolvedor"]);
-      if (!roles || roles.length === 0) return [];
-      const ids = [...new Set(roles.map((r) => r.user_id))];
+      if (!roles || roles.length === 0) return [] as Array<{ user_id: string; full_name: string; role: string }>;
+      // priority: desenvolvedor > tecnico se o usuário tem ambos
+      const roleByUser = new Map<string, string>();
+      for (const r of roles) {
+        const cur = roleByUser.get(r.user_id);
+        if (!cur || (cur === "tecnico" && r.role === "desenvolvedor")) {
+          roleByUser.set(r.user_id, r.role);
+        }
+      }
+      const ids = [...roleByUser.keys()];
       const { data: profiles } = await supabase
         .from("profiles")
         .select("user_id, full_name")
         .in("user_id", ids)
         .order("full_name");
-      return profiles || [];
+      return (profiles || []).map((p) => ({ ...p, role: roleByUser.get(p.user_id) || "tecnico" }));
     },
   });
+
+  const selectedTech = technicians.find((t) => t.user_id === form.target_id);
+  const recommendedPreset: PresetKey | null =
+    form.target_type === "individual" && selectedTech
+      ? selectedTech.role === "desenvolvedor" ? "desenvolvedor" : "tecnico"
+      : null;
+
+  const applyPreset = (key: PresetKey) => {
+    setForm((f) => ({ ...f, values: { ...PRESETS[key].values } }));
+  };
+
+  const clearValues = () => {
+    setForm((f) => ({ ...f, values: {} }));
+  };
 
   const openNew = () => {
     setForm(emptyForm());
