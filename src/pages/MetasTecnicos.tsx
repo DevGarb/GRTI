@@ -164,7 +164,9 @@ export default function MetasTecnicos() {
       else if (metric === "avg_score") current = tech.avgScore;
       else if (metric === "avg_resolution_hours") current = tech.avgResolutionHours;
       else if (metric === "points") current = tech.totalPoints;
-      else if (metric === "preventivas_done") current = tech.preventivasDone;
+     else if (metric === "preventivas_done") current = tech.preventivasDone;
+      else if (metric === "project_tasks_done") current = tech.projectTasksDone;
+      else if (metric === "rework_percent") current = tech.reworkPercent;
     const pct = goal.target_value > 0 ? Math.min(100, Math.round((current / goal.target_value) * 100)) : 0;
     return { target: goal.target_value, current, pct };
   };
