@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { Plus, Trash2, Target, Users, User, Edit2, Check, X, CheckCircle2, Clock, Star, Award, Wrench } from "lucide-react";
+import { Plus, Trash2, Target, Users, User, Edit2, Check, X, CheckCircle2, Clock, Star, Award, Wrench, RefreshCw } from "lucide-react";
 import { useGoals, useCreateGoal, useUpdateGoal, useDeleteGoal, type PerformanceGoal } from "@/hooks/useGoals";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -7,11 +7,12 @@ import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 
 const METRICS = [
-  { value: "tickets_closed", label: "Chamados Fechados", short: "Fechados", unit: "", step: 1, icon: CheckCircle2 },
-  { value: "avg_score", label: "Nota Média", short: "Nota", unit: "/5", step: 0.1, icon: Star },
-  { value: "avg_resolution_hours", label: "Tempo Médio Resolução", short: "TMR", unit: "h", step: 1, icon: Clock },
-  { value: "points", label: "Pontuação", short: "Pontos", unit: "pts", step: 1, icon: Award },
-  { value: "preventivas_done", label: "Preventivas Realizadas", short: "Preventivas", unit: "", step: 1, icon: Wrench },
+  { value: "tickets_closed", label: "Chamados Fechados", short: "Fechados", unit: "", step: 1, icon: CheckCircle2, inverse: false },
+  { value: "avg_score", label: "Nota Média", short: "Nota", unit: "/5", step: 0.1, icon: Star, inverse: false },
+  { value: "avg_resolution_hours", label: "Tempo Médio Resolução", short: "TMR", unit: "h", step: 1, icon: Clock, inverse: true },
+  { value: "points", label: "Pontuação", short: "Pontos", unit: "pts", step: 1, icon: Award, inverse: false },
+  { value: "preventivas_done", label: "Preventivas Realizadas", short: "Preventivas", unit: "", step: 1, icon: Wrench, inverse: false },
+  { value: "rework_percent", label: "Retrabalho Máximo", short: "Retrabalho", unit: "%", step: 0.5, icon: RefreshCw, inverse: true },
 ];
 
 const MONTHS = ["", "Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];

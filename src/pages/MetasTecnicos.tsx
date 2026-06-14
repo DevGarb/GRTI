@@ -18,6 +18,7 @@ interface TechnicianStats {
   totalPoints: number;
   preventivasDone: number;
   reworkCount: number;
+  reworkPercent: number;
   tickets: { title: string; score: number | null; resolutionHours: number; closedAt: string; categoryName: string | null; points: number }[];
 }
 
@@ -113,6 +114,7 @@ export default function MetasTecnicos() {
           totalPoints: Number(r.total_points || 0),
           preventivasDone: r.preventivas_done,
           reworkCount: r.rework_count,
+          reworkPercent: r.total_closed > 0 ? (r.rework_count / r.total_closed) * 100 : 0,
           tickets: (r.tickets || []).map((t) => ({
             title: t.title,
             score: t.score,

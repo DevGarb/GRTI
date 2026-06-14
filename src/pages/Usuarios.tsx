@@ -6,6 +6,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
+import { maskPhone, maskCPF, unmask, isValidCPF } from "@/lib/masks";
 
 interface ProfileWithRoles {
   user_id: string;
@@ -13,6 +14,7 @@ interface ProfileWithRoles {
   email: string | null;
   username: string | null;
   phone: string | null;
+  cpf: string | null;
   avatar_url: string | null;
   created_at: string;
   roles: string[];
@@ -63,10 +65,10 @@ export default function Usuarios() {
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set(roleGroupOrder));
   const [editingUser, setEditingUser] = useState<ProfileWithRoles | null>(null);
   const [permissionsUser, setPermissionsUser] = useState<ProfileWithRoles | null>(null);
-  const [editForm, setEditForm] = useState({ full_name: "", role: "solicitante", password: "", phone: "" });
+  const [editForm, setEditForm] = useState({ full_name: "", role: "solicitante", password: "", phone: "", cpf: "" });
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showImportModal, setShowImportModal] = useState(false);
-  const [createForm, setCreateForm] = useState({ full_name: "", username: "", password: "", role: "solicitante", phone: "" });
+  const [createForm, setCreateForm] = useState({ full_name: "", username: "", password: "", role: "solicitante", phone: "", cpf: "" });
   const { hasRole, isSuperAdmin, profile } = useAuth();
   const queryClient = useQueryClient();
   const isAdmin = hasRole("admin");
@@ -87,7 +89,7 @@ export default function Usuarios() {
 
       const { data: profiles, error } = await supabase
         .from("profiles")
-        .select("user_id, full_name, email, phone, avatar_url, created_at, username")
+        .select("user_id, full_name, email, phone, cpf, avatar_url, created_at, username")
         .in("user_id", memberIds)
         .order("full_name");
       if (error) throw error;
@@ -131,9 +133,12 @@ export default function Usuarios() {
     mutationFn: async (form: typeof createForm) => {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) throw new Error("Não autenticado");
-      
+
+      const cpfDigits = unmask(form.cpf);
+      if (cpfDigits && !isValidCPF(cpfDigits)) throw new Error("CPF inválido.");
+
       const res = await supabase.functions.invoke("create-user", {
-        body: { username: form.username, password: form.password, full_name: form.full_name, role: form.role, phone: form.phone },
+        body: { username: form.username, password: form.password, full_name: form.full_name, role: form.role, phone: unmask(form.phone), cpf: cpfDigits || null },
       });
       if (res.error) throw new Error(res.error.message);
       if (res.data?.error) throw new Error(res.data.error);
@@ -142,16 +147,22 @@ export default function Usuarios() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin-users"] });
       setShowCreateModal(false);
-      setCreateForm({ full_name: "", username: "", password: "", role: "solicitante", phone: "" });
+      setCreateForm({ full_name: "", username: "", password: "", role: "solicitante", phone: "", cpf: "" });
       toast.success("Usuário criado com sucesso!");
     },
     onError: (e: Error) => toast.error("Erro ao criar: " + e.message),
   });
 
   const updateRole = useMutation({
-    mutationFn: async ({ userId, role, fullName, password, phone }: { userId: string; role: string; fullName: string; password?: string; phone?: string }) => {
+    mutationFn: async ({ userId, role, fullName, password, phone, cpf }: { userId: string; role: string; fullName: string; password?: string; phone?: string; cpf?: string }) => {
       if (!adminOrgId) throw new Error("Administrador sem organização ativa.");
-      await supabase.from("profiles").update({ full_name: fullName, phone: phone || null }).eq("user_id", userId);
+      const cpfDigits = cpf ? unmask(cpf) : "";
+      if (cpfDigits && !isValidCPF(cpfDigits)) throw new Error("CPF inválido.");
+      await supabase.from("profiles").update({
+        full_name: fullName,
+        phone: phone ? unmask(phone) : null,
+        cpf: cpfDigits || null,
+      } as any).eq("user_id", userId);
 
       // Replace role only for the current organization
       await supabase
@@ -252,7 +263,13 @@ export default function Usuarios() {
       return;
     }
     setEditingUser(user);
-    setEditForm({ full_name: user.full_name, role: user.roles[0] || "solicitante", password: "", phone: user.phone || "" });
+    setEditForm({
+      full_name: user.full_name,
+      role: user.roles[0] || "solicitante",
+      password: "",
+      phone: user.phone ? maskPhone(user.phone) : "",
+      cpf: user.cpf ? maskCPF(user.cpf) : "",
+    });
   };
 
   const handleFullNameChange = (name: string) => {
@@ -449,11 +466,23 @@ export default function Usuarios() {
                 <label className="text-sm font-medium text-foreground">Telefone</label>
                 <input
                   value={editForm.phone}
-                  onChange={(e) => setEditForm({ ...editForm, phone: e.target.value })}
-                  placeholder="5585999999999"
+                  onChange={(e) => setEditForm({ ...editForm, phone: maskPhone(e.target.value) })}
+                  placeholder="(00) 00000-0000"
+                  inputMode="tel"
+                  maxLength={15}
                   className="mt-1.5 w-full px-3 py-2.5 rounded-lg border border-input bg-background text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring/20"
                 />
-                <p className="text-[11px] text-muted-foreground mt-1">Formato: DDI+DDD+Número (ex: 5585999999999)</p>
+              </div>
+              <div>
+                <label className="text-sm font-medium text-foreground">CPF</label>
+                <input
+                  value={editForm.cpf}
+                  onChange={(e) => setEditForm({ ...editForm, cpf: maskCPF(e.target.value) })}
+                  placeholder="000.000.000-00"
+                  inputMode="numeric"
+                  maxLength={14}
+                  className="mt-1.5 w-full px-3 py-2.5 rounded-lg border border-input bg-background text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring/20"
+                />
               </div>
               <div>
                 <label className="text-sm font-medium text-foreground">Nova Senha (deixe vazio para manter)</label>
@@ -488,6 +517,7 @@ export default function Usuarios() {
                     fullName: editForm.full_name,
                     password: editForm.password || undefined,
                     phone: editForm.phone || undefined,
+                    cpf: editForm.cpf || undefined,
                   })
                 }
                 disabled={updateRole.isPending}
@@ -548,11 +578,23 @@ export default function Usuarios() {
                 <label className="text-sm font-medium text-foreground">Telefone</label>
                 <input
                   value={createForm.phone}
-                  onChange={(e) => setCreateForm({ ...createForm, phone: e.target.value })}
-                  placeholder="5585999999999"
+                  onChange={(e) => setCreateForm({ ...createForm, phone: maskPhone(e.target.value) })}
+                  placeholder="(00) 00000-0000"
+                  inputMode="tel"
+                  maxLength={15}
                   className="mt-1.5 w-full px-3 py-2.5 rounded-lg border border-input bg-background text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring/20"
                 />
-                <p className="text-[11px] text-muted-foreground mt-1">Formato: DDI+DDD+Número (ex: 5585999999999)</p>
+              </div>
+              <div>
+                <label className="text-sm font-medium text-foreground">CPF</label>
+                <input
+                  value={createForm.cpf}
+                  onChange={(e) => setCreateForm({ ...createForm, cpf: maskCPF(e.target.value) })}
+                  placeholder="000.000.000-00"
+                  inputMode="numeric"
+                  maxLength={14}
+                  className="mt-1.5 w-full px-3 py-2.5 rounded-lg border border-input bg-background text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring/20"
+                />
               </div>
               <div>
                 <label className="text-sm font-medium text-foreground">Tipo de acesso *</label>

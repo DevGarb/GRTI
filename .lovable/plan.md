@@ -1,56 +1,42 @@
+## 1. KPI Retrabalho (porcentagem)
 
-## Objetivo
-
-Permitir cadastrar as 5 métricas (Chamados Fechados, Nota Média, Tempo Médio Resolução, Pontuação, Preventivas Realizadas) de um técnico/setor em um único formulário, e reformatar a listagem agrupando por pessoa/setor.
-
-## Mudanças em `src/components/metas/GoalsManager.tsx`
-
-### 1. Formulário "Nova Meta" → "Definir Metas"
-
-Substituir o formulário atual (1 métrica por vez) por um formulário único:
-
-- **Tipo**: Individual / Setor (mantém)
-- **Alvo**: dropdown técnico ou input de setor (mantém)
-- **Bloco de KPIs**: 5 campos numéricos em grade 2 colunas, um por métrica:
-  - Chamados Fechados
-  - Nota Média (/5, step 0.1)
-  - Tempo Médio Resolução (h)
-  - Pontuação (pts)
-  - Preventivas Realizadas
-
-Campos em branco/zero são ignorados. Ao salvar, dispara `createGoal.mutate` para cada métrica preenchida (em paralelo via `Promise.all`). Se já existir meta daquela métrica para o alvo no período, faz `update` em vez de `insert` (upsert manual).
-
-Botão muda para "Salvar Metas" e mostra contador (`Salvando 3/5...`).
-
-### 2. Listagem agrupada
-
-Trocar a tabela "uma linha por métrica" por cards agrupados por alvo:
-
-```text
-┌─ Metas Individuais ───────────────────────────┐
-│ ┌─ MARIA IZABELE LIMA ────────────[+ editar]─┐│
-│ │ Chamados Fechados   50    [edit][del]      ││
-│ │ Nota Média          4.95  [edit][del]      ││
-│ │ TMR                 8h    [edit][del]      ││
-│ │ Pontuação           170   [edit][del]      ││
-│ │ Preventivas         10    [edit][del]      ││
-│ └────────────────────────────────────────────┘│
-│ ┌─ FELIPE AUGUSTO ──────...                    │
-└───────────────────────────────────────────────┘
+**Adicionar nova métrica** em `src/components/metas/GoalsManager.tsx`:
+```
+{ value: "rework_percent", label: "Retrabalho Máximo", short: "Retrabalho", unit: "%", step: 0.5, icon: RefreshCw, inverse: true }
 ```
 
-Cada card mostra nome do técnico/setor no header e grid 2-3 colunas com chip por métrica (ícone + label + valor + ações edit/delete inline). Botão "+ adicionar métrica" no header do card abre o form pré-preenchido com aquele alvo, listando só as métricas que ainda não existem.
+Flag `inverse: true` indica que **valores menores = melhor** (ao contrário das outras metas). Já existe `rework_percent` no retorno de `useManagementMetrics`, então o cálculo de progresso já tem a base pronta.
 
-Mesmo padrão para "Metas por Setor".
+**Atualizar `src/components/metas/MyGoalCard.tsx` e `GoalsSummaryCards.tsx`:**
+- Reconhecer `rework_percent` como métrica invertida.
+- Progresso: `progresso = (meta / valor_atual) * 100` (limitado a 100%), em vez de `(atual/meta)*100`.
+- Status "atingida" quando `valor_atual <= meta`.
+- Label de exibição: `"3.2% / máx 5%"`.
 
-### 3. Pequenos ajustes
+Nenhuma mudança no schema — `performance_goals.metric` é text livre.
 
-- Agrupar via `reduce` por `target_id` (ou `target_label` para setor).
-- Mantém edição inline de valor e exclusão individual já existentes.
-- Sem alterações em hooks (`useGoals`, mutations) nem na tabela `performance_goals`.
+## 2. Máscaras em Usuários (Telefone + CPF)
 
-## Arquivos
+**Novo arquivo `src/lib/masks.ts`** com helpers puros:
+- `maskPhone(v)` → `(00) 00000-0000` (aceita 10 ou 11 dígitos).
+- `maskCPF(v)` → `000.000.000-00`.
+- `unmask(v)` → remove tudo que não é dígito (para salvar no banco apenas dígitos).
+- `isValidCPF(v)` → validação dos dígitos verificadores.
 
-- `src/components/metas/GoalsManager.tsx` — reescrita do form e da listagem.
+**Migration** — adicionar coluna `cpf TEXT` em `public.profiles` (nullable, sem unique para evitar conflito com legados; validação só no front).
 
-Nenhuma migração ou mudança de backend.
+**`src/pages/Usuarios.tsx`** — em ambos os modais (criar e editar):
+- Campo Telefone: aplicar `maskPhone` no `onChange`, `maxLength=15`, `inputMode="tel"`.
+- Adicionar campo **CPF** logo abaixo: aplicar `maskCPF`, `maxLength=14`, `inputMode="numeric"`, validar com `isValidCPF` no submit (toast de erro se inválido e não vazio).
+- Carregar e salvar `cpf` junto com `phone` (salvar apenas dígitos com `unmask`, exibir com máscara).
+
+**`supabase/functions/create-user/index.ts` e `update-user/index.ts`** — aceitar e gravar campo `cpf` em `profiles`.
+
+## Resumo de arquivos
+
+- `supabase/migrations/...` — `ALTER TABLE profiles ADD COLUMN cpf TEXT`.
+- `src/lib/masks.ts` (novo).
+- `src/components/metas/GoalsManager.tsx` — nova métrica retrabalho.
+- `src/components/metas/MyGoalCard.tsx` e `GoalsSummaryCards.tsx` — lógica invertida para `rework_percent`.
+- `src/pages/Usuarios.tsx` — máscaras + campo CPF nos dois modais.
+- `supabase/functions/create-user/index.ts` e `update-user/index.ts` — propagar `cpf`.

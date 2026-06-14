@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { Target, TrendingUp, Star, Clock, Award, CheckCircle2, AlertTriangle, Wrench } from "lucide-react";
+import { Target, TrendingUp, Star, Clock, Award, CheckCircle2, AlertTriangle, Wrench, RefreshCw } from "lucide-react";
 import { Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, ResponsiveContainer } from "recharts";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -13,12 +13,20 @@ const METRIC_CONFIG: Record<string, { label: string; icon: typeof Target; shortL
   avg_resolution_hours: { label: "Tempo Resolução", icon: Clock, shortLabel: "Tempo" },
   points: { label: "Pontuação", icon: Award, shortLabel: "Pontos" },
   preventivas_done: { label: "Preventivas Realizadas", icon: Wrench, shortLabel: "Preventivas" },
+  rework_percent: { label: "Retrabalho Máximo", icon: RefreshCw, shortLabel: "Retrabalho" },
 };
+
+const INVERSE_METRICS = new Set(["avg_resolution_hours", "rework_percent"]);
 
 function getPct(actual: number, target: number, isInverse: boolean): number {
   if (target <= 0) return 0;
-  const pct = Math.round((actual / target) * 100);
-  return isInverse ? (pct <= 100 ? 100 : Math.max(0, 200 - pct)) : Math.min(pct, 100);
+  if (isInverse) {
+    if (actual <= 0) return 100;
+    if (actual <= target) return 100;
+    // beyond target: degrade linearly (100% → 0% as actual goes from target to 2x target)
+    return Math.max(0, Math.round((target / actual) * 100));
+  }
+  return Math.min(Math.round((actual / target) * 100), 100);
 }
 
 function formatHours(h: number): string {
@@ -107,12 +115,25 @@ export default function MyGoalCard({ year, month }: Props) {
         .gte("created_at", monthStart.toISOString())
         .lt("created_at", monthEnd.toISOString());
 
+      // Retrabalho %: chamados fechados que tiveram retrabalho / total fechados * 100
+      let reworkPercent = 0;
+      if (ids.length > 0) {
+        const { data: reworkHist } = await supabase
+          .from("ticket_history")
+          .select("ticket_id")
+          .eq("action", "rework")
+          .in("ticket_id", ids);
+        const reworkedIds = new Set((reworkHist || []).map((h) => h.ticket_id));
+        reworkPercent = (reworkedIds.size / ids.length) * 100;
+      }
+
       return {
         totalClosed: (closedTickets || []).length,
         totalPoints,
         avgScore,
         avgResolutionHours,
         preventivasDone: prevCount || 0,
+        reworkPercent,
       };
     },
     enabled: !!user?.id && myGoals.length > 0,
@@ -124,13 +145,14 @@ export default function MyGoalCard({ year, month }: Props) {
   const initials = name.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase();
 
   const radarData = myGoals.map((g) => {
-    const isInverse = g.metric === "avg_resolution_hours";
+    const isInverse = INVERSE_METRICS.has(g.metric);
     let actual = 0;
     if (g.metric === "tickets_closed") actual = stats.totalClosed;
     else if (g.metric === "avg_score") actual = stats.avgScore;
     else if (g.metric === "avg_resolution_hours") actual = stats.avgResolutionHours;
     else if (g.metric === "points") actual = stats.totalPoints;
     else if (g.metric === "preventivas_done") actual = stats.preventivasDone;
+    else if (g.metric === "rework_percent") actual = stats.reworkPercent;
 
     const pct = getPct(actual, g.target_value, isInverse);
     return {
@@ -225,10 +247,12 @@ export default function MyGoalCard({ year, month }: Props) {
                     ? d.actual.toFixed(1)
                     : d.metricKey === "avg_resolution_hours"
                     ? formatHours(d.actual)
+                    : d.metricKey === "rework_percent"
+                    ? `${d.actual.toFixed(1)}%`
                     : Math.round(d.actual)}
                 </div>
                 <div className="text-[10px] text-muted-foreground">
-                  meta: {d.metricKey === "avg_resolution_hours" ? `${d.target}h` : d.target}
+                  meta: {d.metricKey === "avg_resolution_hours" ? `máx ${d.target}h` : d.metricKey === "rework_percent" ? `máx ${d.target}%` : d.target}
                 </div>
                 <div className="h-1.5 bg-muted rounded-full mt-1.5">
                   <div
