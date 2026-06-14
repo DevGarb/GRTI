@@ -1,4 +1,4 @@
-import { Target, TrendingUp, Star, Clock, Award, CheckCircle2, AlertTriangle, Wrench } from "lucide-react";
+import { Target, TrendingUp, Star, Clock, Award, CheckCircle2, AlertTriangle, Wrench, RefreshCw } from "lucide-react";
 import { Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, ResponsiveContainer } from "recharts";
 
 interface TechnicianStats {
@@ -9,6 +9,7 @@ interface TechnicianStats {
   avgResolutionHours: number;
   totalPoints: number;
   preventivasDone: number;
+  reworkPercent?: number;
 }
 
 interface PerformanceGoal {
@@ -32,7 +33,10 @@ const METRIC_CONFIG: Record<string, { label: string; icon: typeof Target; shortL
   avg_resolution_hours: { label: "Tempo Resolução", icon: Clock, shortLabel: "Tempo" },
   points: { label: "Pontuação", icon: Award, shortLabel: "Pontos" },
   preventivas_done: { label: "Preventivas Realizadas", icon: Wrench, shortLabel: "Preventivas" },
+  rework_percent: { label: "Retrabalho Máximo", icon: RefreshCw, shortLabel: "Retrabalho" },
 };
+
+const INVERSE_METRICS = new Set(["avg_resolution_hours", "rework_percent"]);
 
 function getActualValue(tech: TechnicianStats, metric: string): number {
   if (metric === "tickets_closed") return tech.totalClosed;
@@ -40,13 +44,18 @@ function getActualValue(tech: TechnicianStats, metric: string): number {
   if (metric === "avg_resolution_hours") return tech.avgResolutionHours;
   if (metric === "points") return tech.totalPoints;
   if (metric === "preventivas_done") return tech.preventivasDone;
+  if (metric === "rework_percent") return tech.reworkPercent ?? 0;
   return 0;
 }
 
 function getPct(actual: number, target: number, isInverse: boolean): number {
   if (target <= 0) return 0;
-  const pct = Math.round((actual / target) * 100);
-  return isInverse ? (pct <= 100 ? 100 : Math.max(0, 200 - pct)) : Math.min(pct, 100);
+  if (isInverse) {
+    if (actual <= 0) return 100;
+    if (actual <= target) return 100;
+    return Math.max(0, Math.round((target / actual) * 100));
+  }
+  return Math.min(Math.round((actual / target) * 100), 100);
 }
 
 export default function GoalsSummaryCards({ stats, goals, formatHours }: Props) {
