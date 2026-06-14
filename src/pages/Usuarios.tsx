@@ -466,11 +466,23 @@ export default function Usuarios() {
                 <label className="text-sm font-medium text-foreground">Telefone</label>
                 <input
                   value={editForm.phone}
-                  onChange={(e) => setEditForm({ ...editForm, phone: e.target.value })}
-                  placeholder="5585999999999"
+                  onChange={(e) => setEditForm({ ...editForm, phone: maskPhone(e.target.value) })}
+                  placeholder="(00) 00000-0000"
+                  inputMode="tel"
+                  maxLength={15}
                   className="mt-1.5 w-full px-3 py-2.5 rounded-lg border border-input bg-background text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring/20"
                 />
-                <p className="text-[11px] text-muted-foreground mt-1">Formato: DDI+DDD+Número (ex: 5585999999999)</p>
+              </div>
+              <div>
+                <label className="text-sm font-medium text-foreground">CPF</label>
+                <input
+                  value={editForm.cpf}
+                  onChange={(e) => setEditForm({ ...editForm, cpf: maskCPF(e.target.value) })}
+                  placeholder="000.000.000-00"
+                  inputMode="numeric"
+                  maxLength={14}
+                  className="mt-1.5 w-full px-3 py-2.5 rounded-lg border border-input bg-background text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring/20"
+                />
               </div>
               <div>
                 <label className="text-sm font-medium text-foreground">Nova Senha (deixe vazio para manter)</label>
@@ -505,6 +517,7 @@ export default function Usuarios() {
                     fullName: editForm.full_name,
                     password: editForm.password || undefined,
                     phone: editForm.phone || undefined,
+                    cpf: editForm.cpf || undefined,
                   })
                 }
                 disabled={updateRole.isPending}
