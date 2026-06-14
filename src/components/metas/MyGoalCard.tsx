@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { Target, TrendingUp, Star, Clock, Award, CheckCircle2, AlertTriangle, Wrench, RefreshCw } from "lucide-react";
+import { Target, TrendingUp, Star, Clock, Award, CheckCircle2, AlertTriangle, Wrench, RefreshCw, Rocket } from "lucide-react";
 import { Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, ResponsiveContainer } from "recharts";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -14,6 +14,7 @@ const METRIC_CONFIG: Record<string, { label: string; icon: typeof Target; shortL
   points: { label: "Pontuação", icon: Award, shortLabel: "Pontos" },
   preventivas_done: { label: "Preventivas Realizadas", icon: Wrench, shortLabel: "Preventivas" },
   rework_percent: { label: "Retrabalho Máximo", icon: RefreshCw, shortLabel: "Retrabalho" },
+  project_tasks_done: { label: "Projetos Entregues", icon: Rocket, shortLabel: "Projetos" },
 };
 
 const INVERSE_METRICS = new Set(["avg_resolution_hours", "rework_percent"]);
