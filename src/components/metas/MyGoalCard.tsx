@@ -115,12 +115,25 @@ export default function MyGoalCard({ year, month }: Props) {
         .gte("created_at", monthStart.toISOString())
         .lt("created_at", monthEnd.toISOString());
 
+      // Retrabalho %: chamados fechados que tiveram retrabalho / total fechados * 100
+      let reworkPercent = 0;
+      if (ids.length > 0) {
+        const { data: reworkHist } = await supabase
+          .from("ticket_history")
+          .select("ticket_id")
+          .eq("action", "rework")
+          .in("ticket_id", ids);
+        const reworkedIds = new Set((reworkHist || []).map((h) => h.ticket_id));
+        reworkPercent = (reworkedIds.size / ids.length) * 100;
+      }
+
       return {
         totalClosed: (closedTickets || []).length,
         totalPoints,
         avgScore,
         avgResolutionHours,
         preventivasDone: prevCount || 0,
+        reworkPercent,
       };
     },
     enabled: !!user?.id && myGoals.length > 0,
@@ -132,13 +145,14 @@ export default function MyGoalCard({ year, month }: Props) {
   const initials = name.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase();
 
   const radarData = myGoals.map((g) => {
-    const isInverse = g.metric === "avg_resolution_hours";
+    const isInverse = INVERSE_METRICS.has(g.metric);
     let actual = 0;
     if (g.metric === "tickets_closed") actual = stats.totalClosed;
     else if (g.metric === "avg_score") actual = stats.avgScore;
     else if (g.metric === "avg_resolution_hours") actual = stats.avgResolutionHours;
     else if (g.metric === "points") actual = stats.totalPoints;
     else if (g.metric === "preventivas_done") actual = stats.preventivasDone;
+    else if (g.metric === "rework_percent") actual = stats.reworkPercent;
 
     const pct = getPct(actual, g.target_value, isInverse);
     return {
