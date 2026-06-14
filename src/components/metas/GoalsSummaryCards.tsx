@@ -1,4 +1,4 @@
-import { Target, TrendingUp, Star, Clock, Award, CheckCircle2, AlertTriangle, Wrench, RefreshCw } from "lucide-react";
+import { Target, TrendingUp, Star, Clock, Award, CheckCircle2, AlertTriangle, Wrench, RefreshCw, Rocket } from "lucide-react";
 import { Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, ResponsiveContainer } from "recharts";
 
 interface TechnicianStats {
@@ -10,6 +10,7 @@ interface TechnicianStats {
   totalPoints: number;
   preventivasDone: number;
   reworkPercent?: number;
+  projectTasksDone?: number;
 }
 
 interface PerformanceGoal {
@@ -34,6 +35,7 @@ const METRIC_CONFIG: Record<string, { label: string; icon: typeof Target; shortL
   points: { label: "Pontuação", icon: Award, shortLabel: "Pontos" },
   preventivas_done: { label: "Preventivas Realizadas", icon: Wrench, shortLabel: "Preventivas" },
   rework_percent: { label: "Retrabalho Máximo", icon: RefreshCw, shortLabel: "Retrabalho" },
+  project_tasks_done: { label: "Projetos Entregues", icon: Rocket, shortLabel: "Projetos" },
 };
 
 const INVERSE_METRICS = new Set(["avg_resolution_hours", "rework_percent"]);
@@ -45,6 +47,7 @@ function getActualValue(tech: TechnicianStats, metric: string): number {
   if (metric === "points") return tech.totalPoints;
   if (metric === "preventivas_done") return tech.preventivasDone;
   if (metric === "rework_percent") return tech.reworkPercent ?? 0;
+  if (metric === "project_tasks_done") return tech.projectTasksDone ?? 0;
   return 0;
 }
 

@@ -19,6 +19,7 @@ interface TechnicianStats {
   preventivasDone: number;
   reworkCount: number;
   reworkPercent: number;
+  projectTasksDone: number;
   tickets: { title: string; score: number | null; resolutionHours: number; closedAt: string; categoryName: string | null; points: number }[];
 }
 
@@ -115,6 +116,7 @@ export default function MetasTecnicos() {
           preventivasDone: r.preventivas_done,
           reworkCount: r.rework_count,
           reworkPercent: r.total_closed > 0 ? (r.rework_count / r.total_closed) * 100 : 0,
+          projectTasksDone: 0,
           tickets: (r.tickets || []).map((t) => ({
             title: t.title,
             score: t.score,
@@ -125,6 +127,27 @@ export default function MetasTecnicos() {
           })),
         };
       });
+
+      // Augmenta com tarefas de projeto entregues no mês por técnico
+      const monthStart = new Date(selectedYear, selectedMonth - 1, 1).toISOString();
+      const monthEnd = new Date(selectedYear, selectedMonth, 1).toISOString();
+      const userIds = result.map((r) => r.userId);
+      if (userIds.length > 0) {
+        const { data: tasks } = await (supabase as any)
+          .from("project_tasks")
+          .select("assigned_to")
+          .eq("status", "done")
+          .in("assigned_to", userIds)
+          .gte("updated_at", monthStart)
+          .lt("updated_at", monthEnd);
+        const counts = new Map<string, number>();
+        for (const t of (tasks || []) as Array<{ assigned_to: string }>) {
+          counts.set(t.assigned_to, (counts.get(t.assigned_to) || 0) + 1);
+        }
+        for (const tech of result) {
+          tech.projectTasksDone = counts.get(tech.userId) || 0;
+        }
+      }
 
       return result;
     },
@@ -141,7 +164,9 @@ export default function MetasTecnicos() {
       else if (metric === "avg_score") current = tech.avgScore;
       else if (metric === "avg_resolution_hours") current = tech.avgResolutionHours;
       else if (metric === "points") current = tech.totalPoints;
-      else if (metric === "preventivas_done") current = tech.preventivasDone;
+     else if (metric === "preventivas_done") current = tech.preventivasDone;
+      else if (metric === "project_tasks_done") current = tech.projectTasksDone;
+      else if (metric === "rework_percent") current = tech.reworkPercent;
     const pct = goal.target_value > 0 ? Math.min(100, Math.round((current / goal.target_value) * 100)) : 0;
     return { target: goal.target_value, current, pct };
   };

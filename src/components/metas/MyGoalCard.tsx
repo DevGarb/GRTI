@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { Target, TrendingUp, Star, Clock, Award, CheckCircle2, AlertTriangle, Wrench, RefreshCw } from "lucide-react";
+import { Target, TrendingUp, Star, Clock, Award, CheckCircle2, AlertTriangle, Wrench, RefreshCw, Rocket } from "lucide-react";
 import { Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, ResponsiveContainer } from "recharts";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -14,6 +14,7 @@ const METRIC_CONFIG: Record<string, { label: string; icon: typeof Target; shortL
   points: { label: "Pontuação", icon: Award, shortLabel: "Pontos" },
   preventivas_done: { label: "Preventivas Realizadas", icon: Wrench, shortLabel: "Preventivas" },
   rework_percent: { label: "Retrabalho Máximo", icon: RefreshCw, shortLabel: "Retrabalho" },
+  project_tasks_done: { label: "Projetos Entregues", icon: Rocket, shortLabel: "Projetos" },
 };
 
 const INVERSE_METRICS = new Set(["avg_resolution_hours", "rework_percent"]);
@@ -127,6 +128,16 @@ export default function MyGoalCard({ year, month }: Props) {
         reworkPercent = (reworkedIds.size / ids.length) * 100;
       }
 
+      // Projetos entregues no mês = tarefas concluídas atribuídas ao usuário
+      const projectTasksRes = await (supabase as any)
+        .from("project_tasks")
+        .select("id", { count: "exact", head: true })
+        .eq("assigned_to", user.id)
+        .eq("status", "done")
+        .gte("updated_at", monthStart.toISOString())
+        .lt("updated_at", monthEnd.toISOString());
+      const projectTasksDone: number = projectTasksRes?.count || 0;
+
       return {
         totalClosed: (closedTickets || []).length,
         totalPoints,
@@ -134,6 +145,7 @@ export default function MyGoalCard({ year, month }: Props) {
         avgResolutionHours,
         preventivasDone: prevCount || 0,
         reworkPercent,
+        projectTasksDone: projectTasksDone || 0,
       };
     },
     enabled: !!user?.id && myGoals.length > 0,
@@ -153,6 +165,7 @@ export default function MyGoalCard({ year, month }: Props) {
     else if (g.metric === "points") actual = stats.totalPoints;
     else if (g.metric === "preventivas_done") actual = stats.preventivasDone;
     else if (g.metric === "rework_percent") actual = stats.reworkPercent;
+    else if (g.metric === "project_tasks_done") actual = stats.projectTasksDone;
 
     const pct = getPct(actual, g.target_value, isInverse);
     return {

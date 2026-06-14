@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { Plus, Trash2, Target, Users, User, Edit2, Check, X, CheckCircle2, Clock, Star, Award, Wrench, RefreshCw } from "lucide-react";
+import { Plus, Trash2, Target, Users, User, Edit2, Check, X, CheckCircle2, Clock, Star, Award, Wrench, RefreshCw, Rocket, Wand2, Eraser } from "lucide-react";
 import { useGoals, useCreateGoal, useUpdateGoal, useDeleteGoal, type PerformanceGoal } from "@/hooks/useGoals";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -13,7 +13,37 @@ const METRICS = [
   { value: "points", label: "Pontuação", short: "Pontos", unit: "pts", step: 1, icon: Award, inverse: false },
   { value: "preventivas_done", label: "Preventivas Realizadas", short: "Preventivas", unit: "", step: 1, icon: Wrench, inverse: false },
   { value: "rework_percent", label: "Retrabalho Máximo", short: "Retrabalho", unit: "%", step: 0.5, icon: RefreshCw, inverse: true },
+  { value: "project_tasks_done", label: "Projetos Entregues", short: "Projetos", unit: "", step: 1, icon: Rocket, inverse: false },
 ];
+
+type PresetKey = "tecnico" | "desenvolvedor";
+
+const PRESETS: Record<PresetKey, { label: string; values: Record<string, string> }> = {
+  tecnico: {
+    label: "Técnico (foco chamados)",
+    values: {
+      tickets_closed: "40",
+      avg_score: "4.5",
+      avg_resolution_hours: "8",
+      points: "80",
+      preventivas_done: "5",
+      rework_percent: "5",
+      project_tasks_done: "",
+    },
+  },
+  desenvolvedor: {
+    label: "Desenvolvedor (foco projetos)",
+    values: {
+      tickets_closed: "15",
+      avg_score: "4.5",
+      avg_resolution_hours: "8",
+      points: "30",
+      preventivas_done: "",
+      rework_percent: "5",
+      project_tasks_done: "8",
+    },
+  },
+};
 
 const MONTHS = ["", "Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
 
@@ -54,18 +84,40 @@ export default function GoalsManager({ year, month }: Props) {
     queryFn: async () => {
       const { data: roles } = await supabase
         .from("user_organization_roles")
-        .select("user_id")
+        .select("user_id, role")
         .in("role", ["tecnico", "desenvolvedor"]);
-      if (!roles || roles.length === 0) return [];
-      const ids = [...new Set(roles.map((r) => r.user_id))];
+      if (!roles || roles.length === 0) return [] as Array<{ user_id: string; full_name: string; role: string }>;
+      // priority: desenvolvedor > tecnico se o usuário tem ambos
+      const roleByUser = new Map<string, string>();
+      for (const r of roles) {
+        const cur = roleByUser.get(r.user_id);
+        if (!cur || (cur === "tecnico" && r.role === "desenvolvedor")) {
+          roleByUser.set(r.user_id, r.role);
+        }
+      }
+      const ids = [...roleByUser.keys()];
       const { data: profiles } = await supabase
         .from("profiles")
         .select("user_id, full_name")
         .in("user_id", ids)
         .order("full_name");
-      return profiles || [];
+      return (profiles || []).map((p) => ({ ...p, role: roleByUser.get(p.user_id) || "tecnico" }));
     },
   });
+
+  const selectedTech = technicians.find((t) => t.user_id === form.target_id);
+  const recommendedPreset: PresetKey | null =
+    form.target_type === "individual" && selectedTech
+      ? selectedTech.role === "desenvolvedor" ? "desenvolvedor" : "tecnico"
+      : null;
+
+  const applyPreset = (key: PresetKey) => {
+    setForm((f) => ({ ...f, values: { ...PRESETS[key].values } }));
+  };
+
+  const clearValues = () => {
+    setForm((f) => ({ ...f, values: {} }));
+  };
 
   const openNew = () => {
     setForm(emptyForm());
@@ -302,6 +354,39 @@ export default function GoalsManager({ year, month }: Props) {
               )}
             </div>
           </div>
+
+          {form.target_type === "individual" && (
+            <div className="flex items-center gap-2 flex-wrap p-3 rounded-lg border border-dashed border-border bg-muted/20">
+              <span className="text-xs font-medium text-muted-foreground inline-flex items-center gap-1.5">
+                <Wand2 className="h-3.5 w-3.5" /> Presets:
+              </span>
+              {(Object.keys(PRESETS) as PresetKey[]).map((k) => {
+                const isRecommended = recommendedPreset === k;
+                return (
+                  <button
+                    key={k}
+                    type="button"
+                    onClick={() => applyPreset(k)}
+                    className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs border transition-colors ${
+                      isRecommended
+                        ? "border-primary/40 bg-primary/10 text-primary hover:bg-primary/20"
+                        : "border-input text-muted-foreground hover:text-foreground hover:bg-muted"
+                    }`}
+                  >
+                    {PRESETS[k].label}
+                    {isRecommended && <span className="text-[10px] font-semibold">(sugerido)</span>}
+                  </button>
+                );
+              })}
+              <button
+                type="button"
+                onClick={clearValues}
+                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs border border-input text-muted-foreground hover:text-foreground hover:bg-muted transition-colors ml-auto"
+              >
+                <Eraser className="h-3 w-3" /> Limpar
+              </button>
+            </div>
+          )}
 
           <div>
             <div className="text-xs font-medium text-muted-foreground mb-2">
