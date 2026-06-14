@@ -133,9 +133,12 @@ export default function Usuarios() {
     mutationFn: async (form: typeof createForm) => {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) throw new Error("Não autenticado");
-      
+
+      const cpfDigits = unmask(form.cpf);
+      if (cpfDigits && !isValidCPF(cpfDigits)) throw new Error("CPF inválido.");
+
       const res = await supabase.functions.invoke("create-user", {
-        body: { username: form.username, password: form.password, full_name: form.full_name, role: form.role, phone: form.phone },
+        body: { username: form.username, password: form.password, full_name: form.full_name, role: form.role, phone: unmask(form.phone), cpf: cpfDigits || null },
       });
       if (res.error) throw new Error(res.error.message);
       if (res.data?.error) throw new Error(res.data.error);
@@ -144,16 +147,22 @@ export default function Usuarios() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin-users"] });
       setShowCreateModal(false);
-      setCreateForm({ full_name: "", username: "", password: "", role: "solicitante", phone: "" });
+      setCreateForm({ full_name: "", username: "", password: "", role: "solicitante", phone: "", cpf: "" });
       toast.success("Usuário criado com sucesso!");
     },
     onError: (e: Error) => toast.error("Erro ao criar: " + e.message),
   });
 
   const updateRole = useMutation({
-    mutationFn: async ({ userId, role, fullName, password, phone }: { userId: string; role: string; fullName: string; password?: string; phone?: string }) => {
+    mutationFn: async ({ userId, role, fullName, password, phone, cpf }: { userId: string; role: string; fullName: string; password?: string; phone?: string; cpf?: string }) => {
       if (!adminOrgId) throw new Error("Administrador sem organização ativa.");
-      await supabase.from("profiles").update({ full_name: fullName, phone: phone || null }).eq("user_id", userId);
+      const cpfDigits = cpf ? unmask(cpf) : "";
+      if (cpfDigits && !isValidCPF(cpfDigits)) throw new Error("CPF inválido.");
+      await supabase.from("profiles").update({
+        full_name: fullName,
+        phone: phone ? unmask(phone) : null,
+        cpf: cpfDigits || null,
+      } as any).eq("user_id", userId);
 
       // Replace role only for the current organization
       await supabase
@@ -254,7 +263,13 @@ export default function Usuarios() {
       return;
     }
     setEditingUser(user);
-    setEditForm({ full_name: user.full_name, role: user.roles[0] || "solicitante", password: "", phone: user.phone || "" });
+    setEditForm({
+      full_name: user.full_name,
+      role: user.roles[0] || "solicitante",
+      password: "",
+      phone: user.phone ? maskPhone(user.phone) : "",
+      cpf: user.cpf ? maskCPF(user.cpf) : "",
+    });
   };
 
   const handleFullNameChange = (name: string) => {
