@@ -19,6 +19,7 @@ interface TechnicianStats {
   preventivasDone: number;
   reworkCount: number;
   reworkPercent: number;
+  projectTasksDone: number;
   tickets: { title: string; score: number | null; resolutionHours: number; closedAt: string; categoryName: string | null; points: number }[];
 }
 
