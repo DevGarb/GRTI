@@ -1,42 +1,57 @@
-## 1. KPI Retrabalho (porcentagem)
+## Objetivo
 
-**Adicionar nova métrica** em `src/components/metas/GoalsManager.tsx`:
-```
-{ value: "rework_percent", label: "Retrabalho Máximo", short: "Retrabalho", unit: "%", step: 0.5, icon: RefreshCw, inverse: true }
-```
+Diferenciar metas entre **Técnicos** (Felipe, Izabele — foco em chamados) e **Desenvolvedores** (Danilo, Victor — meta menor de chamados e maior em projetos), adicionando a KPI de **Projetos** que hoje não existe e criando **presets rápidos por papel**.
 
-Flag `inverse: true` indica que **valores menores = melhor** (ao contrário das outras metas). Já existe `rework_percent` no retorno de `useManagementMetrics`, então o cálculo de progresso já tem a base pronta.
+## 1. Nova KPI: Tarefas de Projeto Entregues
 
-**Atualizar `src/components/metas/MyGoalCard.tsx` e `GoalsSummaryCards.tsx`:**
-- Reconhecer `rework_percent` como métrica invertida.
-- Progresso: `progresso = (meta / valor_atual) * 100` (limitado a 100%), em vez de `(atual/meta)*100`.
-- Status "atingida" quando `valor_atual <= meta`.
-- Label de exibição: `"3.2% / máx 5%"`.
+Adicionar métrica `project_tasks_done` em `GoalsManager.tsx` (METRICS), `MyGoalCard.tsx` e `GoalsSummaryCards.tsx` (METRIC_CONFIG).
 
-Nenhuma mudança no schema — `performance_goals.metric` é text livre.
+- **Label:** "Projetos Entregues" / short "Projetos"
+- **Unit:** "" (contagem), step 1, ícone `Briefcase` ou `Rocket` (lucide).
+- **Fonte de dados:** tabela `project_tasks` — contar tarefas onde `assigned_to = user.id` E `status = 'done'` (ou equivalente concluído) E `updated_at` dentro do mês de referência.
+  - Validar o nome exato do status final consultando `project_tasks` antes de implementar (provavelmente `"Concluído"` / `"done"`).
+- Atualizar `MyGoalCard.tsx` (query `my-goal-stats`) e o cálculo agregado em `MetasTecnicos.tsx` (que monta `stats` para `GoalsSummaryCards`) para incluir `projectTasksDone`.
 
-## 2. Máscaras em Usuários (Telefone + CPF)
+Nenhuma mudança de schema — `performance_goals.metric` é texto livre.
 
-**Novo arquivo `src/lib/masks.ts`** com helpers puros:
-- `maskPhone(v)` → `(00) 00000-0000` (aceita 10 ou 11 dígitos).
-- `maskCPF(v)` → `000.000.000-00`.
-- `unmask(v)` → remove tudo que não é dígito (para salvar no banco apenas dígitos).
-- `isValidCPF(v)` → validação dos dígitos verificadores.
+## 2. Presets por Papel (UX para aplicar a sugestão)
 
-**Migration** — adicionar coluna `cpf TEXT` em `public.profiles` (nullable, sem unique para evitar conflito com legados; validação só no front).
+No modal **"Definir Metas"** (`GoalsManager.tsx`), adicionar uma linha de **botões de preset** acima da grade de KPIs, ativos apenas quando `target_type === "individual"` e um técnico está selecionado:
 
-**`src/pages/Usuarios.tsx`** — em ambos os modais (criar e editar):
-- Campo Telefone: aplicar `maskPhone` no `onChange`, `maxLength=15`, `inputMode="tel"`.
-- Adicionar campo **CPF** logo abaixo: aplicar `maskCPF`, `maxLength=14`, `inputMode="numeric"`, validar com `isValidCPF` no submit (toast de erro se inválido e não vazio).
-- Carregar e salvar `cpf` junto com `phone` (salvar apenas dígitos com `unmask`, exibir com máscara).
+- **Preset "Técnico (foco chamados)"** — preenche valores sugeridos:
+  - tickets_closed: **40**
+  - avg_score: **4.5**
+  - avg_resolution_hours: **8**
+  - rework_percent: **5**
+  - points: **80**
+  - preventivas_done: **5**
+  - project_tasks_done: *(vazio)*
+- **Preset "Desenvolvedor (foco projetos)"** — preenche:
+  - tickets_closed: **15** (menor)
+  - project_tasks_done: **8** (maior)
+  - avg_score: **4.5**
+  - avg_resolution_hours: **8**
+  - rework_percent: **5**
+  - points: **30**
+  - preventivas_done: *(vazio)*
+- **Preset "Limpar"** — zera todos os campos.
 
-**`supabase/functions/create-user/index.ts` e `update-user/index.ts`** — aceitar e gravar campo `cpf` em `profiles`.
+Os valores são *defaults editáveis*: o usuário pode ajustar antes de salvar. Isso resolve diretamente a sugestão (Felipe/Izabele recebem o preset Técnico; Danilo/Victor recebem o preset Desenvolvedor).
 
-## Resumo de arquivos
+> Os números acima são **chutes iniciais razoáveis** — pode confirmar/ajustar antes de implementar.
 
-- `supabase/migrations/...` — `ALTER TABLE profiles ADD COLUMN cpf TEXT`.
-- `src/lib/masks.ts` (novo).
-- `src/components/metas/GoalsManager.tsx` — nova métrica retrabalho.
-- `src/components/metas/MyGoalCard.tsx` e `GoalsSummaryCards.tsx` — lógica invertida para `rework_percent`.
-- `src/pages/Usuarios.tsx` — máscaras + campo CPF nos dois modais.
-- `supabase/functions/create-user/index.ts` e `update-user/index.ts` — propagar `cpf`.
+## 3. Detecção opcional do papel
+
+Para destacar o preset recomendado, ler o papel do técnico selecionado em `user_organization_roles` (já buscado para popular o select). Se `role === "desenvolvedor"`, marcar visualmente o preset "Desenvolvedor" como recomendado; se `tecnico`, o preset "Técnico". Sem bloquear a escolha.
+
+## Arquivos afetados
+
+- `src/components/metas/GoalsManager.tsx` — nova métrica `project_tasks_done`, presets, leitura de `role` no select de técnicos.
+- `src/components/metas/MyGoalCard.tsx` — METRIC_CONFIG + query de `projectTasksDone`.
+- `src/components/metas/GoalsSummaryCards.tsx` — METRIC_CONFIG + `getActualValue`.
+- `src/pages/MetasTecnicos.tsx` — agregar `projectTasksDone` por técnico no `stats` passado ao Summary.
+
+## Perguntas antes de implementar
+
+1. Os **valores dos presets** acima fazem sentido, ou prefere ajustar (ex.: quantos chamados/mês são realistas para Felipe e Izabele hoje)?
+2. "Projetos Entregues" deve contar **tarefas concluídas** (`project_tasks` com status final) ou **projetos/sprints finalizados**? Tarefas é o mais granular e mensal — recomendado.
