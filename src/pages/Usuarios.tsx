@@ -6,6 +6,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
+import { maskPhone, maskCPF, unmask, isValidCPF } from "@/lib/masks";
 
 interface ProfileWithRoles {
   user_id: string;
@@ -13,6 +14,7 @@ interface ProfileWithRoles {
   email: string | null;
   username: string | null;
   phone: string | null;
+  cpf: string | null;
   avatar_url: string | null;
   created_at: string;
   roles: string[];
@@ -63,10 +65,10 @@ export default function Usuarios() {
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set(roleGroupOrder));
   const [editingUser, setEditingUser] = useState<ProfileWithRoles | null>(null);
   const [permissionsUser, setPermissionsUser] = useState<ProfileWithRoles | null>(null);
-  const [editForm, setEditForm] = useState({ full_name: "", role: "solicitante", password: "", phone: "" });
+  const [editForm, setEditForm] = useState({ full_name: "", role: "solicitante", password: "", phone: "", cpf: "" });
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showImportModal, setShowImportModal] = useState(false);
-  const [createForm, setCreateForm] = useState({ full_name: "", username: "", password: "", role: "solicitante", phone: "" });
+  const [createForm, setCreateForm] = useState({ full_name: "", username: "", password: "", role: "solicitante", phone: "", cpf: "" });
   const { hasRole, isSuperAdmin, profile } = useAuth();
   const queryClient = useQueryClient();
   const isAdmin = hasRole("admin");
@@ -87,7 +89,7 @@ export default function Usuarios() {
 
       const { data: profiles, error } = await supabase
         .from("profiles")
-        .select("user_id, full_name, email, phone, avatar_url, created_at, username")
+        .select("user_id, full_name, email, phone, cpf, avatar_url, created_at, username")
         .in("user_id", memberIds)
         .order("full_name");
       if (error) throw error;
