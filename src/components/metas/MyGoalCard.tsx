@@ -165,6 +165,7 @@ export default function MyGoalCard({ year, month }: Props) {
     else if (g.metric === "points") actual = stats.totalPoints;
     else if (g.metric === "preventivas_done") actual = stats.preventivasDone;
     else if (g.metric === "rework_percent") actual = stats.reworkPercent;
+    else if (g.metric === "project_tasks_done") actual = stats.projectTasksDone;
 
     const pct = getPct(actual, g.target_value, isInverse);
     return {
