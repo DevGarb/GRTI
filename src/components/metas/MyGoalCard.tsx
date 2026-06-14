@@ -129,9 +129,10 @@ export default function MyGoalCard({ year, month }: Props) {
       }
 
       // Projetos entregues no mês = tarefas concluídas atribuídas ao usuário
-      const { count: projectTasksDone } = await supabase
+      const projectTasksQuery = supabase
         .from("project_tasks")
-        .select("id", { count: "exact", head: true })
+        .select("id", { count: "exact", head: true });
+      const { count: projectTasksDone } = await projectTasksQuery
         .eq("assigned_to", user.id)
         .eq("status", "done")
         .gte("updated_at", monthStart.toISOString())
