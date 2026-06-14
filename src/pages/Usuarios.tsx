@@ -578,11 +578,23 @@ export default function Usuarios() {
                 <label className="text-sm font-medium text-foreground">Telefone</label>
                 <input
                   value={createForm.phone}
-                  onChange={(e) => setCreateForm({ ...createForm, phone: e.target.value })}
-                  placeholder="5585999999999"
+                  onChange={(e) => setCreateForm({ ...createForm, phone: maskPhone(e.target.value) })}
+                  placeholder="(00) 00000-0000"
+                  inputMode="tel"
+                  maxLength={15}
                   className="mt-1.5 w-full px-3 py-2.5 rounded-lg border border-input bg-background text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring/20"
                 />
-                <p className="text-[11px] text-muted-foreground mt-1">Formato: DDI+DDD+Número (ex: 5585999999999)</p>
+              </div>
+              <div>
+                <label className="text-sm font-medium text-foreground">CPF</label>
+                <input
+                  value={createForm.cpf}
+                  onChange={(e) => setCreateForm({ ...createForm, cpf: maskCPF(e.target.value) })}
+                  placeholder="000.000.000-00"
+                  inputMode="numeric"
+                  maxLength={14}
+                  className="mt-1.5 w-full px-3 py-2.5 rounded-lg border border-input bg-background text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring/20"
+                />
               </div>
               <div>
                 <label className="text-sm font-medium text-foreground">Tipo de acesso *</label>
