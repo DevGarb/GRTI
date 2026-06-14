@@ -1,0 +1,36 @@
+
+REVOKE EXECUTE ON FUNCTION public.audit_logs_set_org() FROM PUBLIC;
+REVOKE EXECUTE ON FUNCTION public.current_org_role(uuid, app_role) FROM PUBLIC;
+REVOKE EXECUTE ON FUNCTION public.get_executive_overview(uuid) FROM PUBLIC;
+REVOKE EXECUTE ON FUNCTION public.get_management_metrics(timestamptz, timestamptz, uuid) FROM PUBLIC;
+REVOKE EXECUTE ON FUNCTION public.get_org_technicians() FROM PUBLIC;
+REVOKE EXECUTE ON FUNCTION public.handle_new_user() FROM PUBLIC;
+REVOKE EXECUTE ON FUNCTION public.has_role(uuid, app_role) FROM PUBLIC;
+REVOKE EXECUTE ON FUNCTION public.has_role_in_org(uuid, app_role, uuid) FROM PUBLIC;
+REVOKE EXECUTE ON FUNCTION public.is_member_of_org(uuid) FROM PUBLIC;
+REVOKE EXECUTE ON FUNCTION public.is_op_staff(uuid) FROM PUBLIC;
+REVOKE EXECUTE ON FUNCTION public.is_same_organization(uuid) FROM PUBLIC;
+REVOKE EXECUTE ON FUNCTION public.is_staff_user(uuid) FROM PUBLIC;
+REVOKE EXECUTE ON FUNCTION public.is_super_admin(uuid) FROM PUBLIC;
+REVOKE EXECUTE ON FUNCTION public.log_patrimonio_changes() FROM PUBLIC;
+REVOKE EXECUTE ON FUNCTION public.log_patrimonio_insert() FROM PUBLIC;
+REVOKE EXECUTE ON FUNCTION public.log_user_todo_changes() FROM PUBLIC;
+REVOKE EXECUTE ON FUNCTION public.move_ticket_to_organization(uuid, uuid) FROM PUBLIC;
+REVOKE EXECUTE ON FUNCTION public.notify_ticket_comment() FROM PUBLIC;
+REVOKE EXECUTE ON FUNCTION public.notify_ticket_insert() FROM PUBLIC;
+REVOKE EXECUTE ON FUNCTION public.notify_ticket_update() FROM PUBLIC;
+REVOKE EXECUTE ON FUNCTION public.protect_super_admin_profile() FROM PUBLIC;
+REVOKE EXECUTE ON FUNCTION public.protect_super_admin_role() FROM PUBLIC;
+
+GRANT EXECUTE ON FUNCTION public.current_org_role(uuid, app_role) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.get_executive_overview(uuid) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.get_management_metrics(timestamptz, timestamptz, uuid) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.get_org_technicians() TO authenticated;
+GRANT EXECUTE ON FUNCTION public.has_role(uuid, app_role) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.has_role_in_org(uuid, app_role, uuid) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.is_member_of_org(uuid) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.is_op_staff(uuid) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.is_same_organization(uuid) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.is_staff_user(uuid) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.is_super_admin(uuid) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.move_ticket_to_organization(uuid, uuid) TO authenticated;
