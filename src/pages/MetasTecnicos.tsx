@@ -116,6 +116,7 @@ export default function MetasTecnicos() {
           preventivasDone: r.preventivas_done,
           reworkCount: r.rework_count,
           reworkPercent: r.total_closed > 0 ? (r.rework_count / r.total_closed) * 100 : 0,
+          projectTasksDone: 0,
           tickets: (r.tickets || []).map((t) => ({
             title: t.title,
             score: t.score,
@@ -126,6 +127,27 @@ export default function MetasTecnicos() {
           })),
         };
       });
+
+      // Augmenta com tarefas de projeto entregues no mês por técnico
+      const monthStart = new Date(selectedYear, selectedMonth - 1, 1).toISOString();
+      const monthEnd = new Date(selectedYear, selectedMonth, 1).toISOString();
+      const userIds = result.map((r) => r.userId);
+      if (userIds.length > 0) {
+        const { data: tasks } = await (supabase as any)
+          .from("project_tasks")
+          .select("assigned_to")
+          .eq("status", "done")
+          .in("assigned_to", userIds)
+          .gte("updated_at", monthStart)
+          .lt("updated_at", monthEnd);
+        const counts = new Map<string, number>();
+        for (const t of (tasks || []) as Array<{ assigned_to: string }>) {
+          counts.set(t.assigned_to, (counts.get(t.assigned_to) || 0) + 1);
+        }
+        for (const tech of result) {
+          tech.projectTasksDone = counts.get(tech.userId) || 0;
+        }
+      }
 
       return result;
     },
