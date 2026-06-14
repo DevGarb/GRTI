@@ -247,10 +247,12 @@ export default function MyGoalCard({ year, month }: Props) {
                     ? d.actual.toFixed(1)
                     : d.metricKey === "avg_resolution_hours"
                     ? formatHours(d.actual)
+                    : d.metricKey === "rework_percent"
+                    ? `${d.actual.toFixed(1)}%`
                     : Math.round(d.actual)}
                 </div>
                 <div className="text-[10px] text-muted-foreground">
-                  meta: {d.metricKey === "avg_resolution_hours" ? `${d.target}h` : d.target}
+                  meta: {d.metricKey === "avg_resolution_hours" ? `máx ${d.target}h` : d.metricKey === "rework_percent" ? `máx ${d.target}%` : d.target}
                 </div>
                 <div className="h-1.5 bg-muted rounded-full mt-1.5">
                   <div
