@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { Plus, Trash2, Target, Users, User, Edit2, Check, X, CheckCircle2, Clock, Star, Award, Wrench, RefreshCw } from "lucide-react";
+import { Plus, Trash2, Target, Users, User, Edit2, Check, X, CheckCircle2, Clock, Star, Award, Wrench, RefreshCw, Rocket, Wand2, Eraser } from "lucide-react";
 import { useGoals, useCreateGoal, useUpdateGoal, useDeleteGoal, type PerformanceGoal } from "@/hooks/useGoals";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -13,7 +13,37 @@ const METRICS = [
   { value: "points", label: "Pontuação", short: "Pontos", unit: "pts", step: 1, icon: Award, inverse: false },
   { value: "preventivas_done", label: "Preventivas Realizadas", short: "Preventivas", unit: "", step: 1, icon: Wrench, inverse: false },
   { value: "rework_percent", label: "Retrabalho Máximo", short: "Retrabalho", unit: "%", step: 0.5, icon: RefreshCw, inverse: true },
+  { value: "project_tasks_done", label: "Projetos Entregues", short: "Projetos", unit: "", step: 1, icon: Rocket, inverse: false },
 ];
+
+type PresetKey = "tecnico" | "desenvolvedor";
+
+const PRESETS: Record<PresetKey, { label: string; values: Record<string, string> }> = {
+  tecnico: {
+    label: "Técnico (foco chamados)",
+    values: {
+      tickets_closed: "40",
+      avg_score: "4.5",
+      avg_resolution_hours: "8",
+      points: "80",
+      preventivas_done: "5",
+      rework_percent: "5",
+      project_tasks_done: "",
+    },
+  },
+  desenvolvedor: {
+    label: "Desenvolvedor (foco projetos)",
+    values: {
+      tickets_closed: "15",
+      avg_score: "4.5",
+      avg_resolution_hours: "8",
+      points: "30",
+      preventivas_done: "",
+      rework_percent: "5",
+      project_tasks_done: "8",
+    },
+  },
+};
 
 const MONTHS = ["", "Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
 
