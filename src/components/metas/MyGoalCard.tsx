@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { Target, TrendingUp, Star, Clock, Award, CheckCircle2, AlertTriangle, Wrench } from "lucide-react";
+import { Target, TrendingUp, Star, Clock, Award, CheckCircle2, AlertTriangle, Wrench, RefreshCw } from "lucide-react";
 import { Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, ResponsiveContainer } from "recharts";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -13,12 +13,20 @@ const METRIC_CONFIG: Record<string, { label: string; icon: typeof Target; shortL
   avg_resolution_hours: { label: "Tempo Resolução", icon: Clock, shortLabel: "Tempo" },
   points: { label: "Pontuação", icon: Award, shortLabel: "Pontos" },
   preventivas_done: { label: "Preventivas Realizadas", icon: Wrench, shortLabel: "Preventivas" },
+  rework_percent: { label: "Retrabalho Máximo", icon: RefreshCw, shortLabel: "Retrabalho" },
 };
+
+const INVERSE_METRICS = new Set(["avg_resolution_hours", "rework_percent"]);
 
 function getPct(actual: number, target: number, isInverse: boolean): number {
   if (target <= 0) return 0;
-  const pct = Math.round((actual / target) * 100);
-  return isInverse ? (pct <= 100 ? 100 : Math.max(0, 200 - pct)) : Math.min(pct, 100);
+  if (isInverse) {
+    if (actual <= 0) return 100;
+    if (actual <= target) return 100;
+    // beyond target: degrade linearly (100% → 0% as actual goes from target to 2x target)
+    return Math.max(0, Math.round((target / actual) * 100));
+  }
+  return Math.min(Math.round((actual / target) * 100), 100);
 }
 
 function formatHours(h: number): string {
