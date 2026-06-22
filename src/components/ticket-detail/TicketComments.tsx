@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
-import { MessageSquare, Send, Paperclip, Eye, EyeOff, Trash2, Image } from "lucide-react";
+import { MessageSquare, Send, Paperclip, Eye, EyeOff, Trash2, Image, Pencil, X, Check } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import { buildStorageFileName, createPendingFile, getAttachmentDisplayName, getClipboardImageFiles, isImageFile, revokePendingFiles } from "@/lib/attachments";
@@ -22,6 +22,9 @@ export default function TicketComments({ ticketId }: Props) {
   const [isPublic, setIsPublic] = useState(true);
   const [pendingFiles, setPendingFiles] = useState<PendingFile[]>([]);
   const [isUploading, setIsUploading] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editingContent, setEditingContent] = useState("");
+  const [isSavingEdit, setIsSavingEdit] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const pendingFilesRef = useRef<PendingFile[]>([]);
 
@@ -78,7 +81,6 @@ export default function TicketComments({ ticketId }: Props) {
       let finalContent = content;
       const failedUploads: string[] = [];
 
-      // Upload files and append URLs to content
       for (const pf of pendingFiles) {
         const fileName = buildStorageFileName(pf.file);
         const path = `comments/${ticketId}/${fileName}`;
@@ -127,7 +129,7 @@ export default function TicketComments({ ticketId }: Props) {
       setPendingFiles([]);
 
       if (failedUploads.length > 0) {
-        toast.warning(`Comentário enviado, mas ${failedUploads.length} imagem(ns)/arquivo(s) falharam.`);
+        toast.warning(`Comentário enviado, mas ${failedUploads.length} arquivo(s) falharam.`);
       } else {
         toast.success("Comentário adicionado!");
       }
@@ -148,6 +150,36 @@ export default function TicketComments({ ticketId }: Props) {
   };
 
   const canSeePrivate = hasRole("admin") || hasRole("tecnico");
+  const isAdmin = hasRole("admin") || hasRole("super_admin");
+
+  const startEdit = (c: any) => {
+    setEditingId(c.id);
+    setEditingContent(c.content);
+  };
+
+  const cancelEdit = () => {
+    setEditingId(null);
+    setEditingContent("");
+  };
+
+  const saveEdit = async () => {
+    if (!editingId || !editingContent.trim()) return;
+    setIsSavingEdit(true);
+    try {
+      const { error } = await supabase
+        .from("ticket_comments")
+        .update({ content: editingContent.trim() })
+        .eq("id", editingId);
+      if (error) throw error;
+      queryClient.invalidateQueries({ queryKey: ["ticket-comments", ticketId] });
+      toast.success("Comentário atualizado!");
+      cancelEdit();
+    } catch (e: any) {
+      toast.error(e.message || "Erro ao atualizar comentário");
+    } finally {
+      setIsSavingEdit(false);
+    }
+  };
 
   // Render markdown images inline
   const renderContent = (text: string) => {
@@ -184,32 +216,77 @@ export default function TicketComments({ ticketId }: Props) {
         <p className="text-sm text-muted-foreground">Nenhum comentário ainda.</p>
       ) : (
         <div className="space-y-3 max-h-60 overflow-y-auto">
-          {comments.map((c) => (
-            <div
-              key={c.id}
-              className={`p-3 rounded-lg text-sm ${
-                !c.is_public
-                  ? "bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800"
-                  : "bg-muted/30 border border-border"
-              }`}
-            >
-              <div className="flex items-center justify-between mb-1">
-                <span className="font-medium text-foreground">{c.user_name}</span>
-                <div className="flex items-center gap-2">
-                  {!c.is_public && (
-                    <span className="text-[10px] text-amber-600 dark:text-amber-400 flex items-center gap-1">
-                      <EyeOff className="h-3 w-3" /> Interno
+          {comments.map((c) => {
+            const canEdit = c.user_id === user?.id || isAdmin;
+            const wasEdited = c.updated_at && new Date(c.updated_at).getTime() - new Date(c.created_at).getTime() > 2000;
+            const isEditing = editingId === c.id;
+            return (
+              <div
+                key={c.id}
+                className={`p-3 rounded-lg text-sm ${
+                  !c.is_public
+                    ? "bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800"
+                    : "bg-muted/30 border border-border"
+                }`}
+              >
+                <div className="flex items-center justify-between mb-1">
+                  <span className="font-medium text-foreground">{c.user_name}</span>
+                  <div className="flex items-center gap-2">
+                    {!c.is_public && (
+                      <span className="text-[10px] text-amber-600 dark:text-amber-400 flex items-center gap-1">
+                        <EyeOff className="h-3 w-3" /> Interno
+                      </span>
+                    )}
+                    <span className="text-[11px] text-muted-foreground">
+                      {new Date(c.created_at).toLocaleDateString("pt-BR")},{" "}
+                      {new Date(c.created_at).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}
+                      {wasEdited && <span className="ml-1 italic">(editado)</span>}
                     </span>
-                  )}
-                  <span className="text-[11px] text-muted-foreground">
-                    {new Date(c.created_at).toLocaleDateString("pt-BR")},{" "}
-                    {new Date(c.created_at).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}
-                  </span>
+                    {canEdit && !isEditing && (
+                      <button
+                        type="button"
+                        onClick={() => startEdit(c)}
+                        className="p-0.5 text-muted-foreground hover:text-foreground"
+                        title="Editar comentário"
+                      >
+                        <Pencil className="h-3 w-3" />
+                      </button>
+                    )}
+                  </div>
                 </div>
+                {isEditing ? (
+                  <div className="space-y-2">
+                    <textarea
+                      value={editingContent}
+                      onChange={(e) => setEditingContent(e.target.value)}
+                      rows={3}
+                      className="w-full px-2 py-1.5 rounded border border-input bg-background text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring/20 resize-none"
+                    />
+                    <div className="flex items-center justify-end gap-2">
+                      <button
+                        type="button"
+                        onClick={cancelEdit}
+                        disabled={isSavingEdit}
+                        className="flex items-center gap-1 px-2 py-1 rounded text-xs text-muted-foreground hover:bg-muted"
+                      >
+                        <X className="h-3 w-3" /> Cancelar
+                      </button>
+                      <button
+                        type="button"
+                        onClick={saveEdit}
+                        disabled={isSavingEdit || !editingContent.trim()}
+                        className="flex items-center gap-1 px-2 py-1 rounded text-xs bg-primary text-primary-foreground hover:opacity-90 disabled:opacity-50"
+                      >
+                        <Check className="h-3 w-3" /> {isSavingEdit ? "Salvando..." : "Salvar"}
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="text-foreground whitespace-pre-wrap">{renderContent(c.content)}</div>
+                )}
               </div>
-              <div className="text-foreground whitespace-pre-wrap">{renderContent(c.content)}</div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
 
@@ -271,7 +348,7 @@ export default function TicketComments({ ticketId }: Props) {
               type="button"
               onClick={() => fileInputRef.current?.click()}
               className="p-1.5 text-muted-foreground hover:text-foreground transition-colors"
-              title="Anexar arquivo"
+              title="Anexar arquivo (imagem, PDF, DOCX...)"
             >
               <Paperclip className="h-4 w-4" />
             </button>
