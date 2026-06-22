@@ -1633,6 +1633,7 @@ export type Database = {
           id: string
           is_public: boolean
           ticket_id: string
+          updated_at: string
           user_id: string
         }
         Insert: {
@@ -1641,6 +1642,7 @@ export type Database = {
           id?: string
           is_public?: boolean
           ticket_id: string
+          updated_at?: string
           user_id: string
         }
         Update: {
@@ -1649,6 +1651,7 @@ export type Database = {
           id?: string
           is_public?: boolean
           ticket_id?: string
+          updated_at?: string
           user_id?: string
         }
         Relationships: [
