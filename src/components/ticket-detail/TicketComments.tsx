@@ -4,6 +4,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
+import { Fancybox } from "@fancyapps/ui";
+import "@fancyapps/ui/dist/fancybox/fancybox.css";
 import { buildStorageFileName, createPendingFile, getAttachmentDisplayName, getClipboardImageFiles, isImageFile, revokePendingFiles } from "@/lib/attachments";
 
 interface Props {
@@ -35,6 +37,14 @@ export default function TicketComments({ ticketId }: Props) {
   useEffect(() => {
     return () => revokePendingFiles(pendingFilesRef.current);
   }, []);
+
+  useEffect(() => {
+    Fancybox.bind(`[data-fancybox="comments-${ticketId}"]`, {});
+    return () => {
+      Fancybox.unbind(`[data-fancybox="comments-${ticketId}"]`);
+      Fancybox.close();
+    };
+  }, [ticketId]);
 
   const { data: comments = [] } = useQuery({
     queryKey: ["ticket-comments", ticketId],
@@ -188,7 +198,7 @@ export default function TicketComments({ ticketId }: Props) {
       const imgMatch = part.match(/^!\[(.*?)\]\((.*?)\)$/);
       if (imgMatch) {
         return (
-          <a key={i} href={imgMatch[2]} target="_blank" rel="noopener noreferrer">
+          <a key={i} href={imgMatch[2]} data-fancybox={`comments-${ticketId}`} data-caption={imgMatch[1]}>
             <img src={imgMatch[2]} alt={imgMatch[1]} className="max-w-xs max-h-40 rounded mt-1 cursor-pointer hover:opacity-80" />
           </a>
         );
