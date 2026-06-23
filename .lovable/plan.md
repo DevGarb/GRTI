@@ -1,30 +1,35 @@
-## Mudanças nos Comentários de Chamados
+## Bugs a corrigir
 
-### 1. Aceitar upload de DOCX e PDF
-Atualmente o input de arquivo em `TicketComments.tsx` já lista `.pdf, .doc, .docx, .xls, .xlsx, .txt` no `accept`, mas o bucket de storage `attachments` provavelmente está restringindo por MIME type (apenas imagens passam de fato). Vou:
+### 1. Comentários internos visíveis para colaboradores
+**Problema:** Em `src/components/ticket-detail/TicketComments.tsx` os comentários marcados como "Interno" (`is_public = false`) aparecem para qualquer usuário que abre o chamado, inclusive solicitantes/colaboradores. Hoje o RLS até deixa o autor ver o próprio comentário interno, mas o solicitante do chamado também enxerga internos de outros porque a policy `Users view comments scoped by org or ownership` permite quando o ticket é dele.
 
-- Confirmar/ajustar o bucket `attachments` para permitir os MIME types: `application/pdf`, `application/msword`, `application/vnd.openxmlformats-officedocument.wordprocessingml.document` (e manter os já aceitos).
-- Garantir que o `accept` do input cubra `.pdf,.doc,.docx` (já cobre).
-- Ajustar o render para mostrar ícone apropriado para PDF/DOCX (atualmente já cai no fallback de "📎 nome do arquivo", o que funciona — manter).
+**Correção (frontend):**
+- Já existe a flag `canSeePrivate = hasRole("admin") || hasRole("tecnico")`. Vou ampliar para incluir `desenvolvedor` e `super_admin` (consistente com o resto do app).
+- Filtrar a lista renderizada: se `!canSeePrivate`, esconder qualquer comentário com `is_public === false` (independente de quem é o autor — o solicitante não precisa ver internos nem os próprios).
 
-### 2. Editar comentário
-Adicionar em cada comentário (apenas para o autor e para admins) um botão "Editar":
+**Correção (backend / RLS):** ajustar a policy de SELECT em `ticket_comments` para que comentários internos só sejam visíveis para admin / tecnico / desenvolvedor / super_admin. Isso fecha o vazamento mesmo se alguém consultar a tabela direto pela API.
 
-- Estado local `editingId` + `editingContent` em `TicketComments.tsx`.
-- Botão lápis ao lado do botão de deletar (quando aplicável).
-- Ao clicar, troca o texto do comentário por um `<textarea>` com botões "Salvar" / "Cancelar".
-- Salvar faz `UPDATE` em `ticket_comments` (`content` + `updated_at`).
-- Mostra indicador "(editado)" quando `updated_at > created_at`.
+### 2. Notificações de chamados aparecendo para colaboradores que não são donos
+**Problema:** O trigger `notify_ticket_insert` cria uma notificação `ticket_new` para todos os admin/técnico/desenvolvedor da organização, e `notify_ticket_comment` / `notify_ticket_update` notificam `created_by` e `assigned_to`. O colaborador (`solicitante`) só deveria ver notificações dos chamados que **ele criou** ou em que ele participa diretamente — não notificações genéricas da organização.
 
-### Backend (migração)
-- Garantir coluna `updated_at` em `ticket_comments` (já deve existir — verificar) e trigger de update.
-- Política RLS: permitir `UPDATE` em `ticket_comments` quando `user_id = auth.uid()` OU quando o usuário for admin da organização do ticket.
-- Atualizar `storage.objects` policies/bucket `attachments` se necessário para liberar PDF/DOCX (provavelmente já permite — confirmar via leitura antes da migração).
+Investigação rápida mostrou que o RLS da tabela está correto (`user_id = auth.uid()`) e o hook `useNotifications` filtra por user. Então o problema real é que estão sendo **inseridas notificações para usuários errados** em algum cenário (provavelmente notificações antigas, ou um caminho que cria notificação `ticket_new`/`ticket_comment` para o solicitante mesmo quando o chamado não é dele).
 
-### Arquivos afetados
-- `src/components/ticket-detail/TicketComments.tsx` — UI de edição + ícones para PDF/DOCX.
-- Migração Supabase — política UPDATE em `ticket_comments` (e ajustes no bucket `attachments` se necessário).
+**Correção (backend):**
+- Revisar `notify_ticket_comment`: garantir que só notifica `created_by` (se diferente do autor do comentário) e `assigned_to` (idem). Já faz isso — manter, mas **não notificar comentário interno para o solicitante** (`is_public = false` → pular `created_by`).
+- Limpar notificações órfãs já existentes na tabela onde o usuário destinatário não é `created_by` nem `assigned_to` nem participante do ticket (one-off cleanup).
+- Adicionar índice/garantia: nenhuma notificação `ticket_*` deve ser criada para um usuário que não tenha relação com o ticket (created_by, assigned_to, comentou, ou tem role admin/tecnico/desenvolvedor para `ticket_new`).
 
-### Fora de escopo
-- Histórico de edições do comentário.
-- Edição de anexos já enviados (apenas o texto será editável).
+**Correção (frontend - defesa em profundidade):** no `useNotifications`, além do filtro por `user_id`, ignorar notificações cujo `ticket_id` aponte para um ticket que o usuário não tem relação — opcional, deixo de fora pra não complicar; o RLS + correção do trigger já resolvem.
+
+## Detalhes técnicos
+
+**Arquivos alterados:**
+- `src/components/ticket-detail/TicketComments.tsx` — filtrar internos no render; expandir `canSeePrivate` para `desenvolvedor` e `super_admin`.
+- Nova migração SQL:
+  - Recriar policy de SELECT em `ticket_comments`: internos só para staff (admin/tecnico/desenvolvedor/super_admin); públicos seguem regra atual (mesma org + relacionado ao ticket).
+  - Atualizar função `notify_ticket_comment` para pular `created_by` quando `is_public = false`.
+  - DELETE de notificações já criadas indevidamente para solicitantes (notificações de tickets onde o `user_id` da notificação não é nem `created_by` nem `assigned_to` do ticket e o usuário não tem role staff).
+
+## Fora do escopo
+- Não vou mexer no `notify_ticket_insert` (notificar todos os técnicos de novo chamado é comportamento esperado para a fila de "Chamados em Aberto").
+- Não vou alterar o `useNewTicketNotifier` (já restrito a staff via `canUseAdminAlert`).

@@ -159,8 +159,9 @@ export default function TicketComments({ ticketId }: Props) {
     if (imageFiles.length) e.preventDefault();
   };
 
-  const canSeePrivate = hasRole("admin") || hasRole("tecnico");
+  const canSeePrivate = hasRole("admin") || hasRole("tecnico") || hasRole("desenvolvedor") || hasRole("super_admin");
   const isAdmin = hasRole("admin") || hasRole("super_admin");
+  const visibleComments = canSeePrivate ? comments : comments.filter((c) => c.is_public);
 
   const startEdit = (c: any) => {
     setEditingId(c.id);
@@ -222,11 +223,11 @@ export default function TicketComments({ ticketId }: Props) {
         Comentários
       </div>
 
-      {comments.length === 0 ? (
+      {visibleComments.length === 0 ? (
         <p className="text-sm text-muted-foreground">Nenhum comentário ainda.</p>
       ) : (
         <div className="space-y-3 max-h-60 overflow-y-auto">
-          {comments.map((c) => {
+          {visibleComments.map((c) => {
             const canEdit = c.user_id === user?.id || isAdmin;
             const wasEdited = c.updated_at && new Date(c.updated_at).getTime() - new Date(c.created_at).getTime() > 2000;
             const isEditing = editingId === c.id;
