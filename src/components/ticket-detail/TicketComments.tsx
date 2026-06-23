@@ -159,8 +159,9 @@ export default function TicketComments({ ticketId }: Props) {
     if (imageFiles.length) e.preventDefault();
   };
 
-  const canSeePrivate = hasRole("admin") || hasRole("tecnico");
+  const canSeePrivate = hasRole("admin") || hasRole("tecnico") || hasRole("desenvolvedor") || hasRole("super_admin");
   const isAdmin = hasRole("admin") || hasRole("super_admin");
+  const visibleComments = canSeePrivate ? comments : comments.filter((c) => c.is_public);
 
   const startEdit = (c: any) => {
     setEditingId(c.id);
