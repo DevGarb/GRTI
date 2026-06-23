@@ -409,6 +409,35 @@ export default function TicketDetailModal({ ticket, onClose }: Props) {
     }).catch(() => {});
   };
 
+  // Admin: Marca chamado já fechado como retrabalho e reabre
+  const handleAdminRework = async () => {
+    if (!reworkReason.trim()) {
+      toast.error("Informe o motivo do retrabalho.");
+      return;
+    }
+    try {
+      setIsReworking(true);
+      await addHistory("rework", "Fechado", `Retrabalho: ${reworkReason.trim()}`);
+      await updateTicket.mutateAsync({ id: ticket.id, status: "Em Andamento" } as any);
+      await addHistory("status_change", "Fechado", "Em Andamento");
+      setStatus("Em Andamento");
+      updateTicketStatusInCache("Em Andamento");
+      queryClient.invalidateQueries({ queryKey: ["ticket-rework-count", ticket.id] });
+      queryClient.invalidateQueries({ queryKey: ["tickets"] });
+      dispatchWebhookEvent(ticket.id, "ticket_reopened", { reason: reworkReason.trim() });
+      supabase.functions.invoke("send-whatsapp", {
+        body: { ticket_id: ticket.id, event_type: "rework" },
+      }).catch(() => {});
+      toast.success("Chamado reaberto para retrabalho.");
+      setShowReworkDialog(false);
+      setReworkReason("");
+    } catch (e: any) {
+      toast.error(e?.message || "Erro ao marcar retrabalho.");
+    } finally {
+      setIsReworking(false);
+    }
+  };
+
   const isOpen = status === "Aberto";
   const isInProgress = status === "Em Andamento";
   const isAwaitingApproval = status === "Aguardando Aprovação";
