@@ -424,7 +424,7 @@ export default function TicketDetailModal({ ticket, onClose }: Props) {
       updateTicketStatusInCache("Em Andamento");
       queryClient.invalidateQueries({ queryKey: ["ticket-rework-count", ticket.id] });
       queryClient.invalidateQueries({ queryKey: ["tickets"] });
-      dispatchWebhookEvent(ticket.id, "ticket_reopened", { reason: reworkReason.trim() });
+      dispatchWebhookEvent(ticket.id, "ticket_rejected", { reason: reworkReason.trim(), reopened: true });
       supabase.functions.invoke("send-whatsapp", {
         body: { ticket_id: ticket.id, event_type: "rework" },
       }).catch(() => {});
