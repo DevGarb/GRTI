@@ -140,6 +140,9 @@ export default function TicketDetailModal({ ticket, onClose }: Props) {
   const [approvalComment, setApprovalComment] = useState("");
   const [showMoveOrgDialog, setShowMoveOrgDialog] = useState(false);
   const [targetOrgId, setTargetOrgId] = useState<string>("");
+  const [showReworkDialog, setShowReworkDialog] = useState(false);
+  const [reworkReason, setReworkReason] = useState("");
+  const [isReworking, setIsReworking] = useState(false);
   const { orgs: userOrgs } = useUserOrganizations();
   const moveTicketOrg = useMoveTicketOrg();
   const moveCandidateOrgs = userOrgs.filter((o) => o.id !== (ticket as any).organization_id);
@@ -404,6 +407,35 @@ export default function TicketDetailModal({ ticket, onClose }: Props) {
     supabase.functions.invoke("send-whatsapp", {
       body: { ticket_id: ticket.id, event_type: "rework" },
     }).catch(() => {});
+  };
+
+  // Admin: Marca chamado já fechado como retrabalho e reabre
+  const handleAdminRework = async () => {
+    if (!reworkReason.trim()) {
+      toast.error("Informe o motivo do retrabalho.");
+      return;
+    }
+    try {
+      setIsReworking(true);
+      await addHistory("rework", "Fechado", `Retrabalho: ${reworkReason.trim()}`);
+      await updateTicket.mutateAsync({ id: ticket.id, status: "Em Andamento" } as any);
+      await addHistory("status_change", "Fechado", "Em Andamento");
+      setStatus("Em Andamento");
+      updateTicketStatusInCache("Em Andamento");
+      queryClient.invalidateQueries({ queryKey: ["ticket-rework-count", ticket.id] });
+      queryClient.invalidateQueries({ queryKey: ["tickets"] });
+      dispatchWebhookEvent(ticket.id, "ticket_rejected", { reason: reworkReason.trim(), reopened: true });
+      supabase.functions.invoke("send-whatsapp", {
+        body: { ticket_id: ticket.id, event_type: "rework" },
+      }).catch(() => {});
+      toast.success("Chamado reaberto para retrabalho.");
+      setShowReworkDialog(false);
+      setReworkReason("");
+    } catch (e: any) {
+      toast.error(e?.message || "Erro ao marcar retrabalho.");
+    } finally {
+      setIsReworking(false);
+    }
   };
 
   const isOpen = status === "Aberto";
@@ -785,6 +817,45 @@ export default function TicketDetailModal({ ticket, onClose }: Props) {
               <Star className="h-4 w-4" />
               Avaliar Atendimento
             </button>
+          )}
+
+          {/* Admin: Marcar chamado já fechado como retrabalho (reabre) */}
+          {isAdmin && isClosed && (
+            <AlertDialog open={showReworkDialog} onOpenChange={(o) => { setShowReworkDialog(o); if (!o) setReworkReason(""); }}>
+              <AlertDialogTrigger asChild>
+                <button
+                  className="w-full py-2.5 rounded-lg border border-orange-300 dark:border-orange-800 bg-orange-50 dark:bg-orange-950/30 text-orange-700 dark:text-orange-400 text-sm font-semibold hover:bg-orange-100 dark:hover:bg-orange-950/50 transition-colors flex items-center justify-center gap-2"
+                >
+                  <RefreshCw className="h-4 w-4" />
+                  Marcar como Retrabalho e Reabrir
+                </button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Reabrir chamado para retrabalho?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    O chamado voltará para "Em Andamento" com o mesmo técnico responsável. Informe o motivo do retrabalho — será registrado no histórico.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <textarea
+                  value={reworkReason}
+                  onChange={(e) => setReworkReason(e.target.value)}
+                  placeholder="Ex.: Problema voltou no dia seguinte..."
+                  rows={3}
+                  className="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm text-foreground resize-none"
+                />
+                <AlertDialogFooter>
+                  <AlertDialogCancel disabled={isReworking}>Cancelar</AlertDialogCancel>
+                  <AlertDialogAction
+                    onClick={(e) => { e.preventDefault(); handleAdminRework(); }}
+                    disabled={!reworkReason.trim() || isReworking}
+                    className="bg-orange-600 hover:bg-orange-700 text-white"
+                  >
+                    {isReworking ? "Reabrindo..." : "Confirmar Retrabalho"}
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
           )}
 
           {/* Evaluation form (admin only) */}
