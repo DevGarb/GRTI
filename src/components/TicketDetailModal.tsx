@@ -460,8 +460,7 @@ export default function TicketDetailModal({ ticket, onClose }: Props) {
   const slaRemainingMinutes = Math.max(0, Math.floor((slaRemainingMs % (1000 * 60 * 60)) / (1000 * 60)));
 
   const handlePickTicket = async () => {
-    pickTicket.mutate(ticket.id);
-    setStatus("Em Andamento");
+    setShowAssignModal(true);
   };
 
   return (
