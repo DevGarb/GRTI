@@ -68,9 +68,9 @@ export default function KanbanBoard({ tickets, onSelect }: KanbanBoardProps) {
 
     if (oldStatus === "Aberto" && newStatus === "Em Andamento") {
       // Technician picking / starting the ticket
+      // started_at é preenchido automaticamente pelo trigger trg_set_ticket_started_at
       updatePayload.assigned_to = user!.id;
       updatePayload.picked_at = new Date().toISOString();
-      updatePayload.started_at = new Date().toISOString();
     }
 
     updateTicket.mutate(
