@@ -24,6 +24,8 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Trophy, Medal, RefreshCw, CheckCircle2, XCircle } from "lucide-react";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import MvpTeamCharts from "@/components/projetos/MvpTeamCharts";
 import { useMvpMetrics } from "@/hooks/useProjetosDashboard";
 import { toast } from "sonner";
 
