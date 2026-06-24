@@ -647,6 +647,7 @@ export default function Chamados() {
                 <AvailableTicketsSection
                   tickets={availableTickets}
                   onSelect={setSelectedTicket}
+                  onAssign={setAssignTicketId}
                   title="Disponíveis para assumir"
                   description={`${availableTickets.length} chamado${availableTickets.length !== 1 ? 's' : ''} com SLA expirado`}
                   variant="expired"
