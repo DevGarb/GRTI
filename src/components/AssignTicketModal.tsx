@@ -139,7 +139,7 @@ export default function AssignTicketModal({ ticketId, currentAssignee, mode = "s
                   {dueDate ? format(dueDate, "PPP", { locale: ptBR }) : "Selecionar data…"}
                 </Button>
               </PopoverTrigger>
-              <PopoverContent className="w-auto p-0" align="start">
+              <PopoverContent className="w-auto p-0 z-[70]" align="start">
                 <Calendar
                   mode="single"
                   selected={dueDate}
