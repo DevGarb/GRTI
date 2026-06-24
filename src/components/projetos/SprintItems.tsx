@@ -143,9 +143,11 @@ export default function SprintItems({ projectId, sprintId }: Props) {
           >
             <SelectTrigger className="h-6 w-24 text-[10px]"><SelectValue /></SelectTrigger>
             <SelectContent>
-              <SelectItem value="todo">A fazer</SelectItem>
-              <SelectItem value="doing">Em andamento</SelectItem>
-              <SelectItem value="done">Concluída</SelectItem>
+              <SelectItem value="Pendente">Pendente</SelectItem>
+              <SelectItem value="Em Desenvolvimento">Em Dev</SelectItem>
+              <SelectItem value="Em Homologação">Homolog.</SelectItem>
+              <SelectItem value="Concluído">Concluído</SelectItem>
+              <SelectItem value="Retrabalho">Retrabalho</SelectItem>
             </SelectContent>
           </Select>
           <Input

@@ -133,7 +133,7 @@ export default function MyGoalCard({ year, month }: Props) {
         .from("project_tasks")
         .select("id", { count: "exact", head: true })
         .eq("assigned_to", user.id)
-        .eq("status", "done")
+        .in("status", ["Concluído", "done"])
         .gte("updated_at", monthStart.toISOString())
         .lt("updated_at", monthEnd.toISOString());
       const projectTasksDone: number = projectTasksRes?.count || 0;

@@ -10,7 +10,7 @@ export interface ProjectTask {
   organization_id: string | null;
   title: string;
   description: string | null;
-  status: "todo" | "doing" | "done" | string;
+  status: string;
   story_points: number;
   assignee_id: string | null;
   created_by: string;

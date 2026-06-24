@@ -23,7 +23,7 @@ export default function TaskDetailModal({ open, onOpenChange, task }: Props) {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [points, setPoints] = useState<number>(1);
-  const [status, setStatus] = useState<string>("todo");
+  const [status, setStatus] = useState<string>("Pendente");
   const [sprintId, setSprintId] = useState<string>("backlog");
 
   useEffect(() => {

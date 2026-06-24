@@ -136,7 +136,7 @@ export default function MetasTecnicos() {
         const { data: tasks } = await (supabase as any)
           .from("project_tasks")
           .select("assigned_to")
-          .eq("status", "done")
+          .in("status", ["Concluído", "done"])
           .in("assigned_to", userIds)
           .gte("updated_at", monthStart)
           .lt("updated_at", monthEnd);
