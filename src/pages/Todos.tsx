@@ -29,7 +29,7 @@ const isToday = (iso?: string | null) => {
 
 export default function Todos() {
   const { user } = useAuth();
-  const { todos, loading, createTodo, setCompleted, deleteTodo } = useTodos();
+  const { todos, loading, createTodo, updateTodo, setCompleted, deleteTodo } = useTodos();
   const [open, setOpen] = useState(false);
   const [selected, setSelected] = useState<TodoWithAuthor | null>(null);
   const [search, setSearch] = useState("");
@@ -330,7 +330,7 @@ export default function Todos() {
       )}
 
       <NewTodoModal open={open} onOpenChange={setOpen} onCreate={createTodo} />
-      <TodoDetailModal todo={selected} open={!!selected} onOpenChange={(v) => !v && setSelected(null)} />
+      <TodoDetailModal todo={selected} open={!!selected} onOpenChange={(v) => !v && setSelected(null)} onUpdate={updateTodo} />
     </div>
   );
 }
