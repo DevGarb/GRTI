@@ -49,9 +49,9 @@ const fieldLabel: Record<string, string> = {
   due_date: "Prazo",
 };
 
-export default function TodoDetailModal({ todo, open, onOpenChange }: Props) {
+export default function TodoDetailModal({ todo, open, onOpenChange, onUpdate }: Props) {
   const { user } = useAuth();
-  const { updateTodo } = useTodos();
+  const updateTodo = onUpdate;
   const [comments, setComments] = useState<Comment[]>([]);
   const [history, setHistory] = useState<HistoryEntry[]>([]);
   const [text, setText] = useState("");
