@@ -1,151 +1,110 @@
-## Visão geral
+# Complemento MVP Software — Plano
 
-Reformulação completa da aba **Projetos** em uma entrega única (big bang), transformando-a numa central de gestão com 6 áreas: Dashboard, Projetos, Backlog, Sprints, Calendário e MVP.
+Expande a aba **Projetos** com três frentes novas (MVP Individual, MVP Equipe, Penalidades) e enriquece os controles existentes de **Retrabalho** e **Qualidade Técnica**. Tudo alimentado pelos dados já existentes em `projects`, `project_tasks`, `sprints`, `sprint_quality_checks` e `mvp_awards`.
 
-Modelo de dados unificado em `project_tasks` (backlog absorve tarefas e mantém compatibilidade com chamados vinculados). Retrabalho é detectado automaticamente por reabertura após conclusão. Premiação tem histórico mensal com fluxo de aprovação pelo admin.
+---
 
-## 1. Mudanças de banco (migration única)
+## 1. Banco de dados (1 migration)
 
-**`projects`** — novas colunas:
-- `co_owner_id uuid` (corresponsável)
-- `priority text default 'Média'`
-- `planned_end_date date` (data prevista — `end_date` vira "data real")
-- `progress_percent int default 0` (calculado por trigger ao mudar tasks)
+### Novas colunas
+- `project_tasks`: `rework_reason text`, `rework_category text` (Erro funcional, Regra de negócio, Integração, Frontend/UI, Documentação, Homologação reprovada), `rework_requested_by uuid`, `rework_notes text`.
+- `sprints`: `delivered_late boolean`, `late_justification text`, `late_approved_by uuid`.
 
-**`project_tasks`** — campos novos:
-- `co_assignee_id uuid`
-- `priority text default 'Média'`
-- `planned_date date`, `delivered_date date`
-- `status` aceita: `Pendente`, `Em Desenvolvimento`, `Em Homologação`, `Concluído`, `Retrabalho` (mapeamento dos antigos `todo/doing/done` em migration)
-- `rework_count int default 0`
-- `reopened_at timestamptz`
+### Nova tabela `mvp_penalties`
+Campos de domínio: `user_id`, `organization_id`, `scope` (`mvp` | `operacional`), `type` (falta_injustificada, atrasos_15min, advertencia, suspensao, sprint_atrasada, backlog_parado, homologacao_reprovada, sem_documentacao, sem_evidencia), `percent_impact numeric`, `quality_impact numeric`, `reference_date date`, `project_id`, `sprint_id`, `task_id`, `justification text`, `evidence_url text`, `status` (pendente, aprovado, rejeitado), `requested_by`, `approved_by`, `approved_at`, `notes`, `year int`, `month int`, timestamps.
+- Grants padrão (authenticated + service_role), RLS por organização, admin pode INSERT/UPDATE, colaborador apenas SELECT das próprias.
+- Trigger `audit_logs` em INSERT/UPDATE/DELETE para trilha completa.
 
-**`sprints`** — novas colunas:
-- `owner_id uuid`
-- `quality_checklist jsonb` (5 itens, peso 20% cada: documentação, evidências, homologação, backlog atualizado, padrões técnicos)
-- `quality_score numeric` (gravado no fechamento)
+### Nova tabela `mvp_penalty_history`
+Histórico imutável de mudanças de status (snapshot before/after), gravada via trigger.
 
-**Tabelas novas:**
+### RPCs
+- `get_mvp_individual(_user_id, _year, _month)` → todos os números do card individual + projeções (faltam X entregas para 100%, impacto dos retrabalhos no score atual).
+- `get_mvp_team_ranking(_org, _year, _month)` → ranking colaboradores, sprints, projetos com métricas agregadas.
+- `get_mvp_team_evolution(_org, _months_back)` → série mensal para gráficos.
+- `request_penalty(...)` / `approve_penalty(_id, _approve, _notes)` (security definer, exige admin).
+- `apply_penalties_to_award(_org, _year, _month)` → ajusta `mvp_awards.amount_brl` e nível conforme penalidades **aprovadas**; suspensão zera o prêmio.
+- Atualizar `compute_mvp_awards` e `get_mvp_metrics` para descontar penalidades aprovadas (operacionais reduzem Eficiência Operacional; MVP reduzem score final; documentação/evidência reduzem Qualidade Técnica).
+- Atualizar `task_status_change_trigger` para aceitar payload de retrabalho (reason/category/requested_by/notes) gravado em `task_status_history.metadata`.
 
-```text
-sprint_quality_checks   -- 1:1 com sprint quando fechada
-  sprint_id, doc_ok, evidence_ok, homolog_ok,
-  backlog_ok, standards_ok, checked_by, checked_at
+---
 
-task_status_history     -- alimenta detecção de retrabalho
-  task_id, old_status, new_status, changed_by, changed_at
+## 2. Frontend (rota `/projetos`)
 
-delivery_reschedules    -- justificativas de mudança de data no calendário
-  task_id, old_date, new_date, reason, user_id, created_at
+### Novas sub-abas no `ProjetosLayout`
+- **MVP** (existente — vira "MVP Equipe" com dashboard gerencial).
+- **Meu MVP** (novo) — visão individual do colaborador logado; gestores podem trocar de pessoa.
+- **Penalidades** (novo) — somente admin/desenvolvedor enxerga no menu.
 
-mvp_awards              -- premiação mensal com aprovação
-  user_id, organization_id, year, month,
-  on_time_rate, quality_rate, rework_rate, final_score,
-  award_level ('none'|'prata'|'ouro'), amount_brl,
-  status ('pendente'|'aprovado'|'rejeitado'),
-  approved_by, approved_at, notes
-  UNIQUE (user_id, organization_id, year, month)
-```
+### `ProjetosMeuMVP.tsx`
+- Header com nome, avatar, mês.
+- Cards: Projetos ativos, Backlogs, Sprints, Planejadas, Concluídas, Atrasadas, Retrabalhos, Qualidade Técnica %, Eficiência Operacional %, Eficiência Final %.
+- Badge grande Ouro / Prata / Fora.
+- Painel "Projeções": *faltam X entregas no prazo para Ouro*, *cada retrabalho a mais reduz Y%*, *score projetado se mantiver ritmo*.
+- Lista das penalidades aprovadas do mês com impacto.
 
-Todas com `GRANT` adequados + RLS por organização (membros leem da org; admin aprova).
+### `ProjetosMVP.tsx` (Equipe — refatorar atual)
+- Mantém tabela atual, adiciona abas internas:
+  - **Ranking** (colaboradores / sprints / projetos).
+  - **Gráficos** (Recharts): evolução mensal do score médio, retrabalho por colaborador (barras), entregas por colaborador, qualidade técnica por colaborador.
+- Filtro por mês/ano já existe.
 
-**Triggers:**
-- `task_status_change_log` em `project_tasks`: registra histórico e, se `old_status='Concluído'` e `new_status` ativo, faz `rework_count = rework_count + 1`, marca `reopened_at`, e seta status para `Retrabalho`.
-- `project_progress_recalc`: recalcula `projects.progress_percent` ao alterar tasks.
+### `ProjetosPenalidades.tsx` (novo)
+- Tabela com filtros: Colaborador, Projeto, Sprint, Período, Tipo.
+- Botão "Registrar penalidade" (admin) → dialog com Colaborador, Tipo (lista fixa com % automático), Data, Justificativa, Evidência (upload `attachments/penalties/`), Projeto/Sprint opcional.
+- Fluxo: pendente → aprovado/rejeitado por outro admin (ou mesmo admin com observação).
+- KPIs do mês: total de penalidades, impacto agregado no MVP, top 3 motivos.
+- Histórico completo + auditoria.
 
-**Funções SQL (SECURITY DEFINER):**
-- `get_projects_dashboard(_org, _from, _to)` → cards (ativos, concluídos, atrasados, sprints em andamento, backlog pendente, entregas/retrabalhos do mês, eficiência operacional, qualidade técnica, eficiência MVP final).
-- `get_mvp_metrics(_org, _year, _month)` → linha por colaborador com `entregas`, `entregas_no_prazo`, `retrabalhos`, `qualidade_tecnica`, `eficiencia_operacional`, `eficiencia_final`, `nivel_premiacao`, `valor_brl`.
-- `close_sprint_with_checklist(_sprint_id, _checks jsonb)` → valida checklist completo, grava `quality_score`, fecha sprint.
-- `compute_mvp_awards(_org, _year, _month)` → upsert em `mvp_awards` em status `pendente`.
-- `approve_mvp_award(_id, _approve bool, _notes)` → apenas admin.
+### Retrabalho — UI
+- No `BacklogKanban` e `TaskDetailModal`, ao mover card de **Concluído → outro status**, abrir dialog obrigatório:
+  - Categoria (select), Solicitante (auto = user atual, editável p/ admin), Motivo (textarea), Observação opcional.
+- Salvar via update de `project_tasks` (trigger gera histórico + incrementa rework_count + muda status para `Retrabalho`).
 
-## 2. Estrutura de rotas/UI
+### Qualidade Técnica — UI
+- `CloseSprintDialog` já tem 5 itens + evidências (implementado). Apenas renomear labels para casar com o briefing: Documentação atualizada / Evidências anexadas / Homologação realizada / Backlog atualizado / Conformidade técnica.
 
-Nova rota principal `/projetos` com sub-navegação (sidebar interna ou tabs com NavLink):
+---
 
-```text
-/projetos                       -> Dashboard executivo
-/projetos/lista                 -> Projetos (Lista | Kanban | Timeline)
-/projetos/:id                   -> Detalhe (mantém com melhorias)
-/projetos/backlog               -> Backlog global
-/projetos/sprints               -> Sprints (todas as orgs do usuário)
-/projetos/calendario            -> Calendário de entregas
-/projetos/mvp                   -> Dashboard MVP + premiação
-```
+## 3. Regras de negócio aplicadas
 
-## 3. Telas
+| Penalidade | Tipo | Impacto |
+|---|---|---|
+| Falta injustificada | mvp | -25% score final |
+| 3+ atrasos >15min | mvp | -10% score final |
+| Advertência | mvp | -50% score final |
+| Suspensão | mvp | desclassifica (amount = 0, level = none) |
+| Sprint atrasada s/ justificativa | operacional | -5% Eficiência Op |
+| Backlog parado >5 dias úteis | operacional | -2% Eficiência Op |
+| Homologação reprovada | operacional | +1 retrabalho |
+| Sem documentação | operacional | -5% Qualidade Técnica |
+| Sem evidência | operacional | -5% Qualidade Técnica |
 
-**Dashboard (`/projetos`)**
-- 10 cards de KPI (grid responsivo).
-- Gráficos (recharts): entregas por mês (barra), retrabalho por colaborador (barra horizontal), eficiência/qualidade por colaborador (radar ou barras lado a lado), evolução mensal dos 4 indicadores (linha), projetos por status (donut).
-- Seletor de período (mês atual / últimos 3 meses / personalizado).
+Aplicação **apenas** quando `status = 'aprovado'`. `compute_mvp_awards` consulta `mvp_penalties` aprovadas do mês e ajusta valores antes de gravar.
 
-**Projetos (`/projetos/lista`)**
-- Toggle de visualização: **Lista** (tabela densa com colunas pedidas), **Kanban** (por status), **Timeline** (Gantt simples por mês usando barras posicionadas por start/end).
-- Filtros no topo: responsável, projeto, sprint, prioridade, status, período.
-- Card/linha mostra % concluído, indicador de retrabalho (badge) e qualidade (badge da última sprint).
+---
 
-**Backlog (`/projetos/backlog`)**
-- Lista única com filtros e busca instantânea (debounce).
-- Drag-and-drop com `@dnd-kit/core` (já em uso comum); edição inline de prioridade, status, story points, datas, responsável.
-- Agrupamento opcional por projeto ou prioridade.
+## 4. Detalhes técnicos
 
-**Sprints (`/projetos/sprints`)**
-- Lista de sprints com cards mostrando: período, responsável, qtd tarefas, concluídas, atrasadas, retrabalhos, taxa conclusão, taxa retrabalho, eficiência.
-- Detalhe da sprint: **Burndown chart** (recharts area), **velocidade** (story points/dia), **timeline** de eventos.
-- Botão **Fechar sprint** abre modal com checklist obrigatório de 5 itens (bloqueado se faltar item) → chama `close_sprint_with_checklist`.
+**Hooks novos:** `useMvpIndividual`, `useMvpTeamRanking`, `useMvpEvolution`, `useMvpPenalties`, `useCreatePenalty`, `useApprovePenalty`.
 
-**Calendário (`/projetos/calendario`)**
-- Grid mensal próprio (component novo `DeliveryCalendar`) com células por dia.
-- Entregas renderizadas como chips coloridos: verde (entregue), azul (planejada), amarelo (em andamento), vermelho (atrasada — `planned_date < hoje` e não concluída).
-- Drag-and-drop entre dias → abre modal de **justificativa de alteração** (obrigatória), grava em `delivery_reschedules` e atualiza `planned_date`.
-- Filtros: colaborador, projeto, sprint, status.
-- Click em entrega → drawer lateral com detalhes/edição rápida.
+**Permissões:** aba Penalidades visível só para `admin`/`super_admin`/`desenvolvedor`; criação restrita a admin via RLS + checagem em RPC.
 
-**Dashboard MVP (`/projetos/mvp`)**
-- Seletor ano/mês.
-- Tabela por colaborador: entregas, no prazo %, qualidade %, retrabalho %, **eficiência final %**, nível (Prata/Ouro/—), valor (R$ 300/500/0), status (pendente/aprovado/rejeitado).
-- Botões admin: **Recalcular mês**, **Aprovar**, **Rejeitar** (com nota).
-- Cards de totais: total a pagar, ouros, pratas.
-- Histórico: navegação por mês mantém registros aprovados.
+**Auditoria:** todo INSERT/UPDATE em `mvp_penalties` grava em `audit_logs` (action = `penalty_*`) com snapshot completo.
 
-## 4. Hooks
+**Storage:** evidências em `attachments/penalties/{org}/{user}/{uuid}.{ext}`.
 
-- `useProjectsDashboard(period)` → RPC `get_projects_dashboard`.
-- `useMvpMetrics(year, month)` → RPC `get_mvp_metrics`.
-- `useBacklog(filters)` → query unificada em `project_tasks` cross-projetos.
-- `useDeliveryCalendar(month, filters)` → tasks com `planned_date` no mês.
-- `useRescheduleTask()` → update + insert em `delivery_reschedules`.
-- `useCloseSprint()` → RPC `close_sprint_with_checklist`.
-- `useMvpAwards()` / `useApproveAward()` → leitura/aprovação.
+**Menu lateral:** sem mudanças — tudo continua dentro de `/projetos`.
 
-## 5. UX/UI
+---
 
-- Layout inspirado em Linear/ClickUp: sub-sidebar à esquerda dentro de `/projetos` com ícones + labels, mantendo o sidebar global.
-- Densidade ajustável (compacto/confortável) na Lista e Backlog.
-- Indicadores visuais: badges com cores semânticas via tokens (`bg-emerald-500/15`, etc — já no padrão do projeto), barra de progresso fina nos cards de projeto.
-- Atalhos de teclado básicos: `n` (novo), `/` (busca), `1/2/3` (alternar visualização da lista).
-- Toda interação deve usar componentes shadcn existentes; novos componentes ficam em `src/components/projetos/`.
+## 5. Entrega
 
-## 6. Compatibilidade
+Big bang em uma única iteração:
+1. Migration (tabelas + colunas + RPCs + grants + RLS).
+2. Hooks + páginas novas (`ProjetosMeuMVP`, `ProjetosPenalidades`).
+3. Refator `ProjetosMVP` com abas internas + gráficos.
+4. Dialog de retrabalho categorizado em Kanban / TaskDetail.
+5. Ajuste de labels no checklist de sprint.
 
-- Tarefas antigas com status `todo/doing/done` migradas para `Pendente/Em Desenvolvimento/Concluído`.
-- Tickets vinculados ao projeto continuam visíveis no Backlog e Sprint (sem mudar modelo de tickets) — apenas renderizados em lista paralela com badge "Chamado".
-- Retrabalho do MVP considera tanto reaberturas de `project_tasks` quanto a ação `rework` já existente em `tickets` (consultando `ticket_history`).
-- Indicadores de eficiência operacional usam: entregas totais = tasks concluídas + tickets fechados no período; retrabalhos = reaberturas + `ticket_history.action='rework'`.
-
-## 7. Entregáveis
-
-1. Migration única com schema, triggers, funções RPC, RLS, GRANTs.
-2. Hooks novos e revisão dos existentes (`useProjects`, `useProjectTasks`, `useSprints`) para os campos novos.
-3. 6 telas novas + sub-layout `ProjetosLayout`.
-4. Componentes: `KpiCard`, `DeliveryCalendar`, `BurndownChart`, `SprintCloseChecklistModal`, `RescheduleDialog`, `MvpAwardsTable`, `ProjectsTimeline`, `BacklogList`.
-5. Roteamento atualizado em `App.tsx` + entrada no menu.
-6. Sem alterações em outras áreas do sistema fora de `src/pages/projetos/`, `src/components/projetos/`, hooks de projeto, App.tsx e migration.
-
-## 8. Fora de escopo
-
-- Notificações push de mudanças de prazo (pode entrar depois).
-- Integração com WhatsApp para premiação.
-- Pagamento automatizado da premiação (somente registro + aprovação).
+Sem mexer em outras áreas do sistema.

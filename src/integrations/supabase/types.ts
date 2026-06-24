@@ -383,6 +383,122 @@ export type Database = {
         }
         Relationships: []
       }
+      mvp_penalties: {
+        Row: {
+          approved_at: string | null
+          approved_by: string | null
+          created_at: string
+          disqualify: boolean
+          evidence_url: string | null
+          id: string
+          justification: string
+          month: number
+          notes: string | null
+          organization_id: string
+          percent_impact: number
+          project_id: string | null
+          quality_impact: number
+          reference_date: string
+          requested_by: string
+          scope: string
+          sprint_id: string | null
+          status: string
+          task_id: string | null
+          type: string
+          updated_at: string
+          user_id: string
+          year: number
+        }
+        Insert: {
+          approved_at?: string | null
+          approved_by?: string | null
+          created_at?: string
+          disqualify?: boolean
+          evidence_url?: string | null
+          id?: string
+          justification: string
+          month: number
+          notes?: string | null
+          organization_id: string
+          percent_impact?: number
+          project_id?: string | null
+          quality_impact?: number
+          reference_date?: string
+          requested_by: string
+          scope: string
+          sprint_id?: string | null
+          status?: string
+          task_id?: string | null
+          type: string
+          updated_at?: string
+          user_id: string
+          year: number
+        }
+        Update: {
+          approved_at?: string | null
+          approved_by?: string | null
+          created_at?: string
+          disqualify?: boolean
+          evidence_url?: string | null
+          id?: string
+          justification?: string
+          month?: number
+          notes?: string | null
+          organization_id?: string
+          percent_impact?: number
+          project_id?: string | null
+          quality_impact?: number
+          reference_date?: string
+          requested_by?: string
+          scope?: string
+          sprint_id?: string | null
+          status?: string
+          task_id?: string | null
+          type?: string
+          updated_at?: string
+          user_id?: string
+          year?: number
+        }
+        Relationships: []
+      }
+      mvp_penalty_history: {
+        Row: {
+          changed_by: string | null
+          created_at: string
+          id: string
+          new_status: string | null
+          old_status: string | null
+          penalty_id: string
+          snapshot: Json | null
+        }
+        Insert: {
+          changed_by?: string | null
+          created_at?: string
+          id?: string
+          new_status?: string | null
+          old_status?: string | null
+          penalty_id: string
+          snapshot?: Json | null
+        }
+        Update: {
+          changed_by?: string | null
+          created_at?: string
+          id?: string
+          new_status?: string | null
+          old_status?: string | null
+          penalty_id?: string
+          snapshot?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "mvp_penalty_history_penalty_id_fkey"
+            columns: ["penalty_id"]
+            isOneToOne: false
+            referencedRelation: "mvp_penalties"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       notifications: {
         Row: {
           body: string | null
@@ -1489,7 +1605,11 @@ export type Database = {
           priority: string
           project_id: string
           reopened_at: string | null
+          rework_category: string | null
           rework_count: number
+          rework_notes: string | null
+          rework_reason: string | null
+          rework_requested_by: string | null
           sprint_id: string | null
           status: string
           story_points: number
@@ -1509,7 +1629,11 @@ export type Database = {
           priority?: string
           project_id: string
           reopened_at?: string | null
+          rework_category?: string | null
           rework_count?: number
+          rework_notes?: string | null
+          rework_reason?: string | null
+          rework_requested_by?: string | null
           sprint_id?: string | null
           status?: string
           story_points?: number
@@ -1529,7 +1653,11 @@ export type Database = {
           priority?: string
           project_id?: string
           reopened_at?: string | null
+          rework_category?: string | null
           rework_count?: number
+          rework_notes?: string | null
+          rework_reason?: string | null
+          rework_requested_by?: string | null
           sprint_id?: string | null
           status?: string
           story_points?: number
@@ -1691,9 +1819,12 @@ export type Database = {
           closed_at: string | null
           created_at: string
           created_by: string
+          delivered_late: boolean | null
           end_date: string | null
           goal: string | null
           id: string
+          late_approved_by: string | null
+          late_justification: string | null
           name: string
           organization_id: string | null
           owner_id: string | null
@@ -1708,9 +1839,12 @@ export type Database = {
           closed_at?: string | null
           created_at?: string
           created_by: string
+          delivered_late?: boolean | null
           end_date?: string | null
           goal?: string | null
           id?: string
+          late_approved_by?: string | null
+          late_justification?: string | null
           name: string
           organization_id?: string | null
           owner_id?: string | null
@@ -1725,9 +1859,12 @@ export type Database = {
           closed_at?: string | null
           created_at?: string
           created_by?: string
+          delivered_late?: boolean | null
           end_date?: string | null
           goal?: string | null
           id?: string
+          late_approved_by?: string | null
+          late_justification?: string | null
           name?: string
           organization_id?: string | null
           owner_id?: string | null
@@ -2272,6 +2409,10 @@ export type Database = {
         Args: { _approve: boolean; _id: string; _notes: string }
         Returns: undefined
       }
+      approve_penalty: {
+        Args: { _approve: boolean; _id: string; _notes?: string }
+        Returns: undefined
+      }
       business_minutes_between: {
         Args: { _end: string; _start: string }
         Returns: number
@@ -2358,6 +2499,15 @@ export type Database = {
           user_id: string
         }[]
       }
+      get_mvp_individual: {
+        Args: {
+          _month: number
+          _organization_id: string
+          _user_id: string
+          _year: number
+        }
+        Returns: Json
+      }
       get_mvp_metrics: {
         Args: { _month: number; _organization_id: string; _year: number }
         Returns: {
@@ -2374,6 +2524,21 @@ export type Database = {
           total_deliveries: number
           user_id: string
         }[]
+      }
+      get_mvp_team_evolution: {
+        Args: { _months_back?: number; _organization_id: string }
+        Returns: {
+          avg_final: number
+          avg_quality: number
+          month: number
+          total_deliveries: number
+          total_reworks: number
+          year: number
+        }[]
+      }
+      get_mvp_team_ranking: {
+        Args: { _month: number; _organization_id: string; _year: number }
+        Returns: Json
       }
       get_org_technicians: {
         Args: never
@@ -2415,9 +2580,33 @@ export type Database = {
         Args: { _target_org: string; _ticket_id: string }
         Returns: undefined
       }
+      penalty_defaults: {
+        Args: { _type: string }
+        Returns: {
+          disqualify: boolean
+          percent_impact: number
+          quality_impact: number
+          scope: string
+        }[]
+      }
       recompute_project_progress: {
         Args: { _project_id: string }
         Returns: undefined
+      }
+      request_penalty: {
+        Args: {
+          _evidence_url: string
+          _justification: string
+          _notes?: string
+          _organization_id: string
+          _project_id?: string
+          _reference_date: string
+          _sprint_id?: string
+          _task_id?: string
+          _type: string
+          _user_id: string
+        }
+        Returns: string
       }
     }
     Enums: {
