@@ -4,10 +4,12 @@ import { Search, Filter, ChevronDown, ChevronRight, Plus, User, RefreshCw, Inbox
 import KanbanBoard from "@/components/KanbanBoard";
 import MonthSelector, { getCurrentMonthValue, getMonthDateRange } from "@/components/MonthSelector";
 import { StatusBadge, PriorityBadge } from "@/components/StatusBadge";
-import { useTickets, Ticket, usePickTicket, useBulkDeleteTickets } from "@/hooks/useTickets";
+import { useTickets, Ticket, useBulkDeleteTickets } from "@/hooks/useTickets";
 import { useAuth } from "@/contexts/AuthContext";
 import NewTicketModal from "@/components/NewTicketModal";
 import TicketDetailModal from "@/components/TicketDetailModal";
+import AssignTicketModal from "@/components/AssignTicketModal";
+import ChamadosTabs from "@/components/chamados/ChamadosTabs";
 import { supabase } from "@/integrations/supabase/client";
 import MyGoalCard from "@/components/metas/MyGoalCard";
 import { calcBusinessMinutes, formatBusinessTime, getSlaStatus } from "@/lib/businessHours";
