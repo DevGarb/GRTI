@@ -100,7 +100,8 @@ export default function ChamadosAbertos() {
     });
 
   return (
-    <div className="space-y-6 max-w-7xl">
+    <div className="space-y-4 max-w-7xl">
+      <ChamadosTabs />
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-foreground">Chamados em Aberto</h1>
