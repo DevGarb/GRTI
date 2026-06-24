@@ -79,7 +79,7 @@ export default function ProjectOverview({ project, sprints, onAddToActive, onCre
   const totalTickets = tickets.length;
   const completedTickets = tickets.filter((t) => RESOLVED_STATUSES.includes(t.status)).length;
   const totalTasks = tasks.length;
-  const completedTasks = tasks.filter((t) => t.status === "done").length;
+  const completedTasks = tasks.filter((t) => t.status === "Concluído" || t.status === "done").length;
   const totalSprints = sprints.length;
   const sprintsByStatus = {
     ativa: sprints.filter((s) => s.status === "ativa").length,

@@ -15,6 +15,12 @@ import Preventivas from "@/pages/Preventivas";
 import Patrimonio from "@/pages/Patrimonio";
 import Projetos from "@/pages/Projetos";
 import ProjetoDetalhe from "@/pages/ProjetoDetalhe";
+import ProjetosLayout from "@/pages/projetos/ProjetosLayout";
+import ProjetosDashboard from "@/pages/projetos/ProjetosDashboard";
+import ProjetosBacklog from "@/pages/projetos/ProjetosBacklog";
+import ProjetosSprints from "@/pages/projetos/ProjetosSprints";
+import ProjetosCalendario from "@/pages/projetos/ProjetosCalendario";
+import ProjetosMVP from "@/pages/projetos/ProjetosMVP";
 import Configuracoes from "@/pages/Configuracoes";
 import Login from "@/pages/Login";
 import WhiteLabel from "@/pages/WhiteLabel";
@@ -127,7 +133,14 @@ const App = () => (
                       <Route path="/webhook-logs" element={<MenuGuard menuKey="webhook-logs"><AdminRoute><WebhookLogs /></AdminRoute></MenuGuard>} />
                       <Route path="/preventivas" element={<MenuGuard menuKey="preventivas"><Preventivas /></MenuGuard>} />
                       <Route path="/patrimonio" element={<MenuGuard menuKey="patrimonio"><Patrimonio /></MenuGuard>} />
-                      <Route path="/projetos" element={<MenuGuard menuKey="projetos"><Projetos /></MenuGuard>} />
+                      <Route path="/projetos" element={<MenuGuard menuKey="projetos"><ProjetosLayout /></MenuGuard>}>
+                        <Route index element={<ProjetosDashboard />} />
+                        <Route path="lista" element={<Projetos />} />
+                        <Route path="backlog" element={<ProjetosBacklog />} />
+                        <Route path="sprints" element={<ProjetosSprints />} />
+                        <Route path="calendario" element={<ProjetosCalendario />} />
+                        <Route path="mvp" element={<ProjetosMVP />} />
+                      </Route>
                       <Route path="/projetos/:id" element={<MenuGuard menuKey="projetos"><ProjetoDetalhe /></MenuGuard>} />
                       <Route path="/configuracoes" element={<MenuGuard menuKey="configuracoes"><Configuracoes /></MenuGuard>} />
                       <Route path="/white-label" element={<MenuGuard menuKey="white-label"><AdminRoute><WhiteLabel /></AdminRoute></MenuGuard>} />

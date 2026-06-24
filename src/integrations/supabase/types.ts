@@ -187,6 +187,44 @@ export type Database = {
         }
         Relationships: []
       }
+      delivery_reschedules: {
+        Row: {
+          created_at: string
+          id: string
+          new_date: string
+          old_date: string | null
+          reason: string
+          task_id: string
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          new_date: string
+          old_date?: string | null
+          reason: string
+          task_id: string
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          new_date?: string
+          old_date?: string | null
+          reason?: string
+          task_id?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "delivery_reschedules_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "project_tasks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       evaluations: {
         Row: {
           comment: string | null
@@ -282,6 +320,66 @@ export type Database = {
           timezone?: string
           updated_at?: string
           webhook_url?: string | null
+        }
+        Relationships: []
+      }
+      mvp_awards: {
+        Row: {
+          amount_brl: number
+          approved_at: string | null
+          approved_by: string | null
+          award_level: string
+          created_at: string
+          final_score: number
+          id: string
+          month: number
+          notes: string | null
+          on_time_rate: number
+          organization_id: string
+          quality_rate: number
+          rework_rate: number
+          status: string
+          updated_at: string
+          user_id: string
+          year: number
+        }
+        Insert: {
+          amount_brl?: number
+          approved_at?: string | null
+          approved_by?: string | null
+          award_level?: string
+          created_at?: string
+          final_score?: number
+          id?: string
+          month: number
+          notes?: string | null
+          on_time_rate?: number
+          organization_id: string
+          quality_rate?: number
+          rework_rate?: number
+          status?: string
+          updated_at?: string
+          user_id: string
+          year: number
+        }
+        Update: {
+          amount_brl?: number
+          approved_at?: string | null
+          approved_by?: string | null
+          award_level?: string
+          created_at?: string
+          final_score?: number
+          id?: string
+          month?: number
+          notes?: string | null
+          on_time_rate?: number
+          organization_id?: string
+          quality_rate?: number
+          rework_rate?: number
+          status?: string
+          updated_at?: string
+          user_id?: string
+          year?: number
         }
         Relationships: []
       }
@@ -1380,12 +1478,18 @@ export type Database = {
       project_tasks: {
         Row: {
           assignee_id: string | null
+          co_assignee_id: string | null
           created_at: string
           created_by: string
+          delivered_date: string | null
           description: string | null
           id: string
           organization_id: string | null
+          planned_date: string | null
+          priority: string
           project_id: string
+          reopened_at: string | null
+          rework_count: number
           sprint_id: string | null
           status: string
           story_points: number
@@ -1394,12 +1498,18 @@ export type Database = {
         }
         Insert: {
           assignee_id?: string | null
+          co_assignee_id?: string | null
           created_at?: string
           created_by: string
+          delivered_date?: string | null
           description?: string | null
           id?: string
           organization_id?: string | null
+          planned_date?: string | null
+          priority?: string
           project_id: string
+          reopened_at?: string | null
+          rework_count?: number
           sprint_id?: string | null
           status?: string
           story_points?: number
@@ -1408,12 +1518,18 @@ export type Database = {
         }
         Update: {
           assignee_id?: string | null
+          co_assignee_id?: string | null
           created_at?: string
           created_by?: string
+          delivered_date?: string | null
           description?: string | null
           id?: string
           organization_id?: string | null
+          planned_date?: string | null
+          priority?: string
           project_id?: string
+          reopened_at?: string | null
+          rework_count?: number
           sprint_id?: string | null
           status?: string
           story_points?: number
@@ -1424,6 +1540,7 @@ export type Database = {
       }
       projects: {
         Row: {
+          co_owner_id: string | null
           code: string | null
           created_at: string
           description: string | null
@@ -1433,11 +1550,15 @@ export type Database = {
           name: string
           organization_id: string | null
           owner_id: string | null
+          planned_end_date: string | null
+          priority: string
+          progress_percent: number
           start_date: string | null
           status: string
           updated_at: string
         }
         Insert: {
+          co_owner_id?: string | null
           code?: string | null
           created_at?: string
           description?: string | null
@@ -1447,11 +1568,15 @@ export type Database = {
           name: string
           organization_id?: string | null
           owner_id?: string | null
+          planned_end_date?: string | null
+          priority?: string
+          progress_percent?: number
           start_date?: string | null
           status?: string
           updated_at?: string
         }
         Update: {
+          co_owner_id?: string | null
           code?: string | null
           created_at?: string
           description?: string | null
@@ -1461,6 +1586,9 @@ export type Database = {
           name?: string
           organization_id?: string | null
           owner_id?: string | null
+          planned_end_date?: string | null
+          priority?: string
+          progress_percent?: number
           start_date?: string | null
           status?: string
           updated_at?: string
@@ -1510,6 +1638,50 @@ export type Database = {
           },
         ]
       }
+      sprint_quality_checks: {
+        Row: {
+          backlog_ok: boolean
+          checked_at: string
+          checked_by: string | null
+          doc_ok: boolean
+          evidence_ok: boolean
+          homolog_ok: boolean
+          id: string
+          sprint_id: string
+          standards_ok: boolean
+        }
+        Insert: {
+          backlog_ok?: boolean
+          checked_at?: string
+          checked_by?: string | null
+          doc_ok?: boolean
+          evidence_ok?: boolean
+          homolog_ok?: boolean
+          id?: string
+          sprint_id: string
+          standards_ok?: boolean
+        }
+        Update: {
+          backlog_ok?: boolean
+          checked_at?: string
+          checked_by?: string | null
+          doc_ok?: boolean
+          evidence_ok?: boolean
+          homolog_ok?: boolean
+          id?: string
+          sprint_id?: string
+          standards_ok?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sprint_quality_checks_sprint_id_fkey"
+            columns: ["sprint_id"]
+            isOneToOne: true
+            referencedRelation: "sprints"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       sprints: {
         Row: {
           activated_at: string | null
@@ -1521,7 +1693,9 @@ export type Database = {
           id: string
           name: string
           organization_id: string | null
+          owner_id: string | null
           project_id: string
+          quality_score: number | null
           start_date: string | null
           status: string
           updated_at: string
@@ -1536,7 +1710,9 @@ export type Database = {
           id?: string
           name: string
           organization_id?: string | null
+          owner_id?: string | null
           project_id: string
+          quality_score?: number | null
           start_date?: string | null
           status?: string
           updated_at?: string
@@ -1551,7 +1727,9 @@ export type Database = {
           id?: string
           name?: string
           organization_id?: string | null
+          owner_id?: string | null
           project_id?: string
+          quality_score?: number | null
           start_date?: string | null
           status?: string
           updated_at?: string
@@ -1593,6 +1771,41 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      task_status_history: {
+        Row: {
+          changed_at: string
+          changed_by: string | null
+          id: string
+          new_status: string
+          old_status: string | null
+          task_id: string
+        }
+        Insert: {
+          changed_at?: string
+          changed_by?: string | null
+          id?: string
+          new_status: string
+          old_status?: string | null
+          task_id: string
+        }
+        Update: {
+          changed_at?: string
+          changed_by?: string | null
+          id?: string
+          new_status?: string
+          old_status?: string | null
+          task_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "task_status_history_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "project_tasks"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       ticket_attachments: {
         Row: {
@@ -2052,8 +2265,27 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      approve_mvp_award: {
+        Args: { _approve: boolean; _id: string; _notes: string }
+        Returns: undefined
+      }
       business_minutes_between: {
         Args: { _end: string; _start: string }
+        Returns: number
+      }
+      close_sprint_with_checklist: {
+        Args: {
+          _backlog_ok: boolean
+          _doc_ok: boolean
+          _evidence_ok: boolean
+          _homolog_ok: boolean
+          _sprint_id: string
+          _standards_ok: boolean
+        }
+        Returns: number
+      }
+      compute_mvp_awards: {
+        Args: { _month: number; _organization_id: string; _year: number }
         Returns: number
       }
       current_org_role: {
@@ -2122,6 +2354,23 @@ export type Database = {
           user_id: string
         }[]
       }
+      get_mvp_metrics: {
+        Args: { _month: number; _organization_id: string; _year: number }
+        Returns: {
+          amount_brl: number
+          award_level: string
+          final_score: number
+          full_name: string
+          on_time: number
+          on_time_rate: number
+          op_efficiency: number
+          quality_rate: number
+          rework_rate: number
+          reworks: number
+          total_deliveries: number
+          user_id: string
+        }[]
+      }
       get_org_technicians: {
         Args: never
         Returns: {
@@ -2130,6 +2379,10 @@ export type Database = {
           full_name: string
           user_id: string
         }[]
+      }
+      get_projects_dashboard: {
+        Args: { _from: string; _organization_id: string; _to: string }
+        Returns: Json
       }
       has_role: {
         Args: {
@@ -2156,6 +2409,10 @@ export type Database = {
       is_super_admin: { Args: { _user_id: string }; Returns: boolean }
       move_ticket_to_organization: {
         Args: { _target_org: string; _ticket_id: string }
+        Returns: undefined
+      }
+      recompute_project_progress: {
+        Args: { _project_id: string }
         Returns: undefined
       }
     }
