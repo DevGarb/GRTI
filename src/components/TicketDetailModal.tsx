@@ -144,6 +144,7 @@ export default function TicketDetailModal({ ticket, onClose }: Props) {
   const [showReworkDialog, setShowReworkDialog] = useState(false);
   const [reworkReason, setReworkReason] = useState("");
   const [isReworking, setIsReworking] = useState(false);
+  const [showAssignModal, setShowAssignModal] = useState(false);
   const { orgs: userOrgs } = useUserOrganizations();
   const moveTicketOrg = useMoveTicketOrg();
   const moveCandidateOrgs = userOrgs.filter((o) => o.id !== (ticket as any).organization_id);
