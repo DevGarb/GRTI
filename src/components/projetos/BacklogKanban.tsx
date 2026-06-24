@@ -15,6 +15,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { GripVertical, AlertCircle } from "lucide-react";
 import { useState } from "react";
 import { BacklogItem, TASK_STATUSES, TASK_PRIORITIES, useUpdateBacklogItem } from "@/hooks/useBacklog";
+import ReworkDialog from "@/components/projetos/ReworkDialog";
+import { useAuth } from "@/contexts/AuthContext";
 
 const STATUS_STYLES: Record<string, { bg: string; ring: string; label: string }> = {
   Pendente: { bg: "bg-slate-500/10", ring: "ring-slate-500/30", label: "text-slate-700 dark:text-slate-300" },
