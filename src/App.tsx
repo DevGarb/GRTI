@@ -23,6 +23,7 @@ import ProjetosCalendario from "@/pages/projetos/ProjetosCalendario";
 import ProjetosMVP from "@/pages/projetos/ProjetosMVP";
 import ProjetosMeuMVP from "@/pages/projetos/ProjetosMeuMVP";
 import ProjetosPenalidades from "@/pages/projetos/ProjetosPenalidades";
+import ChamadosCalendario from "@/pages/chamados/ChamadosCalendario";
 import Configuracoes from "@/pages/Configuracoes";
 import Login from "@/pages/Login";
 import WhiteLabel from "@/pages/WhiteLabel";
