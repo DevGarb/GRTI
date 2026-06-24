@@ -265,6 +265,7 @@ export default function Chamados() {
   const [showModal, setShowModal] = useState(false);
   const [viewMode, setViewMode] = useState<"list" | "kanban">("list");
   const [selectedTicket, setSelectedTicket] = useState<Ticket | null>(null);
+  const [assignTicketId, setAssignTicketId] = useState<string | null>(null);
   const [expandedUser, setExpandedUser] = useState<string | null>(null);
   const [searchText, setSearchText] = useState("");
   const [statusFilter, setStatusFilter] = useState("Todos Status");
