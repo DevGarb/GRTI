@@ -335,8 +335,7 @@ export default function TicketDetailModal({ ticket, onClose }: Props) {
 
   // Technician starts working
   const handleStartService = async () => {
-    // Update started_at when technician begins
-    await supabase.from("tickets").update({ started_at: new Date().toISOString() }).eq("id", ticket.id);
+    // started_at é preenchido automaticamente pelo trigger trg_set_ticket_started_at
     await handleStatusChange("Em Andamento");
     await addHistory("started");
     dispatchWebhookEvent(ticket.id, "ticket_started");
