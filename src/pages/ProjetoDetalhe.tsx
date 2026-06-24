@@ -59,7 +59,40 @@ export default function ProjetoDetalhe() {
             <Badge variant="outline">{project.status}</Badge>
           </div>
           {project.goal && <p className="text-sm text-muted-foreground mt-0.5">{project.goal}</p>}
+          {project.status === "Concluído" && (project.size || project.value_brl != null) && (
+            <div className="flex flex-wrap items-center gap-2 mt-1 text-[11px] text-muted-foreground">
+              <span className="inline-flex items-center gap-1 text-emerald-600 dark:text-emerald-400 font-medium">
+                <CheckCircle2 className="h-3 w-3" />
+                Concluído{project.completed_at ? ` em ${new Date(project.completed_at).toLocaleDateString("pt-BR")}` : ""}
+              </span>
+              {project.size && <Badge variant="outline" className="text-[10px]">{SIZE_LABEL[project.size] || project.size}</Badge>}
+              {project.value_brl != null && <span className="font-mono">{formatBRL(Number(project.value_brl))}</span>}
+            </div>
+          )}
         </div>
+        {isAdmin && project.status !== "Concluído" && (
+          <Button size="sm" onClick={() => setCompleteOpen(true)}>
+            <CheckCircle2 className="h-3.5 w-3.5 mr-1" /> Concluir projeto
+          </Button>
+        )}
+        {isAdmin && project.status === "Concluído" && (
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              if (confirm("Reabrir este projeto? Ele voltará para 'Em Andamento'.")) {
+                updateMut.mutate({
+                  id: project.id,
+                  status: "Em Andamento",
+                  completed_at: null,
+                  completed_by: null,
+                } as any);
+              }
+            }}
+          >
+            <RotateCcw className="h-3.5 w-3.5 mr-1" /> Reabrir
+          </Button>
+        )}
         <Button variant="outline" size="sm" onClick={() => setEditProjectOpen(true)}>
           <Pencil className="h-3.5 w-3.5 mr-1" /> Editar
         </Button>
