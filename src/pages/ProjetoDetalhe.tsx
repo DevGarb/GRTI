@@ -25,12 +25,16 @@ export default function ProjetoDetalhe() {
   const { data: project, isLoading } = useProject(id);
   const { data: sprints = [] } = useSprints(id);
   const deleteMut = useDeleteProject();
+  const updateMut = useUpdateProject();
+  const { hasRole } = useAuth();
+  const isAdmin = hasRole("admin") || hasRole("super_admin" as any);
 
   const [sprintModalOpen, setSprintModalOpen] = useState(false);
   const [editProjectOpen, setEditProjectOpen] = useState(false);
   const [addToActiveOpen, setAddToActiveOpen] = useState(false);
   const [addToBacklogOpen, setAddToBacklogOpen] = useState(false);
   const [newTaskOpen, setNewTaskOpen] = useState(false);
+  const [completeOpen, setCompleteOpen] = useState(false);
 
   if (isLoading) return <div className="p-6 text-sm text-muted-foreground">Carregando projeto...</div>;
   if (!project) return <div className="p-6">Projeto não encontrado.</div>;
