@@ -21,6 +21,9 @@ export interface Ticket {
   sla_deadline: string | null;
   started_at: string | null;
   picked_at: string | null;
+  due_date?: string | null;
+  due_date_set_by?: string | null;
+  due_date_set_at?: string | null;
   original_assigned_to: string | null;
   project_id?: string | null;
   sprint_id?: string | null;
