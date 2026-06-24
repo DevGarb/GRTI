@@ -213,9 +213,7 @@ function TicketTable({ tickets, onSelect, scoreMap, showScore, workMinutesMap, m
   );
 }
 
-function AvailableTicketsSection({ tickets, onSelect, title, description, variant = "expired" }: { tickets: Ticket[]; onSelect: (t: Ticket) => void; title?: string; description?: string; variant?: "expired" | "open" }) {
-  const pickTicket = usePickTicket();
-
+function AvailableTicketsSection({ tickets, onSelect, onAssign, title, description, variant = "expired" }: { tickets: Ticket[]; onSelect: (t: Ticket) => void; onAssign: (id: string) => void; title?: string; description?: string; variant?: "expired" | "open" }) {
   const isExpired = variant === "expired";
   const borderColor = isExpired ? "border-red-300 dark:border-red-700" : "border-amber-300 dark:border-amber-700";
   const headerBg = isExpired ? "bg-red-50 dark:bg-red-950/30" : "bg-amber-50 dark:bg-amber-950/30";
@@ -250,9 +248,8 @@ function AvailableTicketsSection({ tickets, onSelect, title, description, varian
               </div>
             </div>
             <button
-              onClick={() => pickTicket.mutate(ticket.id)}
-              disabled={pickTicket.isPending}
-              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-emerald-600 text-white text-sm font-semibold hover:bg-emerald-700 transition-colors disabled:opacity-50 shrink-0"
+              onClick={() => onAssign(ticket.id)}
+              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-emerald-600 text-white text-sm font-semibold hover:bg-emerald-700 transition-colors shrink-0"
             >
               <HandMetal className="h-4 w-4" />
               Atribuir para mim
