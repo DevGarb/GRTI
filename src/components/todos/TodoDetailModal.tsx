@@ -11,14 +11,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { toast } from "sonner";
-import type { TodoWithAuthor } from "@/hooks/useTodos";
-import { useTodos } from "@/hooks/useTodos";
+import type { Todo, TodoWithAuthor } from "@/hooks/useTodos";
 import { QUADRANT_LABEL } from "./NewTodoModal";
 
 interface Props {
   todo: TodoWithAuthor | null;
   open: boolean;
   onOpenChange: (v: boolean) => void;
+  onUpdate: (id: string, patch: Partial<Todo>) => void | Promise<void>;
 }
 
 interface Comment {
@@ -49,9 +49,9 @@ const fieldLabel: Record<string, string> = {
   due_date: "Prazo",
 };
 
-export default function TodoDetailModal({ todo, open, onOpenChange }: Props) {
+export default function TodoDetailModal({ todo, open, onOpenChange, onUpdate }: Props) {
   const { user } = useAuth();
-  const { updateTodo } = useTodos();
+  const updateTodo = onUpdate;
   const [comments, setComments] = useState<Comment[]>([]);
   const [history, setHistory] = useState<HistoryEntry[]>([]);
   const [text, setText] = useState("");
