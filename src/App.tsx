@@ -23,6 +23,7 @@ import ProjetosCalendario from "@/pages/projetos/ProjetosCalendario";
 import ProjetosMVP from "@/pages/projetos/ProjetosMVP";
 import ProjetosMeuMVP from "@/pages/projetos/ProjetosMeuMVP";
 import ProjetosPenalidades from "@/pages/projetos/ProjetosPenalidades";
+import ChamadosCalendario from "@/pages/chamados/ChamadosCalendario";
 import Configuracoes from "@/pages/Configuracoes";
 import Login from "@/pages/Login";
 import WhiteLabel from "@/pages/WhiteLabel";
@@ -123,6 +124,7 @@ const App = () => (
                       <Route path="/" element={<MenuGuard menuKey="dashboard"><AdminRoute><Dashboard /></AdminRoute></MenuGuard>} />
                       <Route path="/metricas-gerenciais" element={<MenuGuard menuKey="metricas-gerenciais"><AdminRoute><MetricasGerenciais /></AdminRoute></MenuGuard>} />
                       <Route path="/chamados" element={<MenuGuard menuKey="chamados"><Chamados /></MenuGuard>} />
+                      <Route path="/chamados/calendario" element={<MenuGuard menuKey="chamados"><ChamadosCalendario /></MenuGuard>} />
                       <Route path="/chamados-abertos" element={<MenuGuard menuKey="chamados-abertos"><ChamadosAbertos /></MenuGuard>} />
                       <Route path="/todos" element={<MenuGuard menuKey="todos"><Todos /></MenuGuard>} />
                       <Route path="/usuarios" element={<MenuGuard menuKey="usuarios"><AdminRoute><Usuarios /></AdminRoute></MenuGuard>} />

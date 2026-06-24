@@ -2,17 +2,18 @@ import { useState, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
 import { Clock, HandMetal, Search } from "lucide-react";
 import { StatusBadge, PriorityBadge } from "@/components/StatusBadge";
-import { usePickTicket } from "@/hooks/useTickets";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import TicketDetailModal from "@/components/TicketDetailModal";
+import AssignTicketModal from "@/components/AssignTicketModal";
+import ChamadosTabs from "@/components/chamados/ChamadosTabs";
 import type { Ticket } from "@/hooks/useTickets";
 
 export default function ChamadosAbertos() {
   const { profile, user } = useAuth();
   const orgId = profile?.organization_id;
-  const pickTicket = usePickTicket();
+  const [assignTicketId, setAssignTicketId] = useState<string | null>(null);
   const [selectedTicket, setSelectedTicket] = useState<Ticket | null>(null);
   const [searchText, setSearchText] = useState("");
   const [searchParams, setSearchParams] = useSearchParams();
@@ -99,7 +100,8 @@ export default function ChamadosAbertos() {
     });
 
   return (
-    <div className="space-y-6 max-w-7xl">
+    <div className="space-y-4 max-w-7xl">
+      <ChamadosTabs />
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-foreground">Chamados em Aberto</h1>
@@ -161,9 +163,8 @@ export default function ChamadosAbertos() {
                   </div>
                 </div>
                 <button
-                  onClick={() => pickTicket.mutate(ticket.id)}
-                  disabled={pickTicket.isPending}
-                  className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-emerald-600 text-white text-sm font-semibold hover:bg-emerald-700 transition-colors disabled:opacity-50 shrink-0"
+                  onClick={() => setAssignTicketId(ticket.id)}
+                  className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-emerald-600 text-white text-sm font-semibold hover:bg-emerald-700 transition-colors shrink-0"
                 >
                   <HandMetal className="h-4 w-4" />
                   Atribuir para mim
@@ -175,6 +176,13 @@ export default function ChamadosAbertos() {
       )}
 
       {selectedTicket && <TicketDetailModal ticket={selectedTicket} onClose={() => setSelectedTicket(null)} />}
+      {assignTicketId && (
+        <AssignTicketModal
+          ticketId={assignTicketId}
+          mode="self"
+          onClose={() => setAssignTicketId(null)}
+        />
+      )}
     </div>
   );
 }

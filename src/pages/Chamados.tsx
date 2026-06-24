@@ -4,10 +4,12 @@ import { Search, Filter, ChevronDown, ChevronRight, Plus, User, RefreshCw, Inbox
 import KanbanBoard from "@/components/KanbanBoard";
 import MonthSelector, { getCurrentMonthValue, getMonthDateRange } from "@/components/MonthSelector";
 import { StatusBadge, PriorityBadge } from "@/components/StatusBadge";
-import { useTickets, Ticket, usePickTicket, useBulkDeleteTickets } from "@/hooks/useTickets";
+import { useTickets, Ticket, useBulkDeleteTickets } from "@/hooks/useTickets";
 import { useAuth } from "@/contexts/AuthContext";
 import NewTicketModal from "@/components/NewTicketModal";
 import TicketDetailModal from "@/components/TicketDetailModal";
+import AssignTicketModal from "@/components/AssignTicketModal";
+import ChamadosTabs from "@/components/chamados/ChamadosTabs";
 import { supabase } from "@/integrations/supabase/client";
 import MyGoalCard from "@/components/metas/MyGoalCard";
 import { calcBusinessMinutes, formatBusinessTime, getSlaStatus } from "@/lib/businessHours";
@@ -211,9 +213,7 @@ function TicketTable({ tickets, onSelect, scoreMap, showScore, workMinutesMap, m
   );
 }
 
-function AvailableTicketsSection({ tickets, onSelect, title, description, variant = "expired" }: { tickets: Ticket[]; onSelect: (t: Ticket) => void; title?: string; description?: string; variant?: "expired" | "open" }) {
-  const pickTicket = usePickTicket();
-
+function AvailableTicketsSection({ tickets, onSelect, onAssign, title, description, variant = "expired" }: { tickets: Ticket[]; onSelect: (t: Ticket) => void; onAssign: (id: string) => void; title?: string; description?: string; variant?: "expired" | "open" }) {
   const isExpired = variant === "expired";
   const borderColor = isExpired ? "border-red-300 dark:border-red-700" : "border-amber-300 dark:border-amber-700";
   const headerBg = isExpired ? "bg-red-50 dark:bg-red-950/30" : "bg-amber-50 dark:bg-amber-950/30";
@@ -248,9 +248,8 @@ function AvailableTicketsSection({ tickets, onSelect, title, description, varian
               </div>
             </div>
             <button
-              onClick={() => pickTicket.mutate(ticket.id)}
-              disabled={pickTicket.isPending}
-              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-emerald-600 text-white text-sm font-semibold hover:bg-emerald-700 transition-colors disabled:opacity-50 shrink-0"
+              onClick={() => onAssign(ticket.id)}
+              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-emerald-600 text-white text-sm font-semibold hover:bg-emerald-700 transition-colors shrink-0"
             >
               <HandMetal className="h-4 w-4" />
               Atribuir para mim
@@ -266,6 +265,7 @@ export default function Chamados() {
   const [showModal, setShowModal] = useState(false);
   const [viewMode, setViewMode] = useState<"list" | "kanban">("list");
   const [selectedTicket, setSelectedTicket] = useState<Ticket | null>(null);
+  const [assignTicketId, setAssignTicketId] = useState<string | null>(null);
   const [expandedUser, setExpandedUser] = useState<string | null>(null);
   const [searchText, setSearchText] = useState("");
   const [statusFilter, setStatusFilter] = useState("Todos Status");
@@ -442,7 +442,8 @@ export default function Chamados() {
     : {};
 
   return (
-    <div className="space-y-6 max-w-7xl">
+    <div className="space-y-4 max-w-7xl">
+      <ChamadosTabs />
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold text-foreground">Chamados</h1>
         <div className="flex items-center gap-2">
@@ -647,6 +648,7 @@ export default function Chamados() {
                 <AvailableTicketsSection
                   tickets={availableTickets}
                   onSelect={setSelectedTicket}
+                  onAssign={setAssignTicketId}
                   title="Disponíveis para assumir"
                   description={`${availableTickets.length} chamado${availableTickets.length !== 1 ? 's' : ''} com SLA expirado`}
                   variant="expired"
@@ -688,6 +690,13 @@ export default function Chamados() {
 
       {showModal && <NewTicketModal onClose={() => setShowModal(false)} />}
       {selectedTicket && <TicketDetailModal ticket={selectedTicket} onClose={() => setSelectedTicket(null)} />}
+      {assignTicketId && (
+        <AssignTicketModal
+          ticketId={assignTicketId}
+          mode="self"
+          onClose={() => setAssignTicketId(null)}
+        />
+      )}
 
       {selectionMode && selectedIds.size > 0 && (
         <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 px-4 py-3 rounded-xl bg-background border-2 border-destructive shadow-2xl">
