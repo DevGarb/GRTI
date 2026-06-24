@@ -163,116 +163,130 @@ export default function ProjetosMVP() {
         </div>
       </div>
 
-      <div className="grid gap-3 md:grid-cols-3">
-        <Card>
-          <CardContent className="p-4 flex items-center gap-3">
-            <Trophy className="h-8 w-8 text-amber-500" />
-            <div>
-              <p className="text-xs text-muted-foreground">Total aprovado</p>
-              <p className="text-2xl font-bold">R$ {totals.aprovado.toFixed(0)}</p>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4 flex items-center gap-3">
-            <Medal className="h-8 w-8 text-amber-600" />
-            <div>
-              <p className="text-xs text-muted-foreground">Ouros aprovados</p>
-              <p className="text-2xl font-bold">{totals.ouros}</p>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4 flex items-center gap-3">
-            <Medal className="h-8 w-8 text-slate-400" />
-            <div>
-              <p className="text-xs text-muted-foreground">Pratas aprovadas</p>
-              <p className="text-2xl font-bold">{totals.pratas}</p>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+      <Tabs defaultValue="tabela">
+        <TabsList>
+          <TabsTrigger value="tabela">Tabela</TabsTrigger>
+          <TabsTrigger value="graficos">Gráficos & Ranking</TabsTrigger>
+        </TabsList>
 
-      <Card>
-        <CardContent className="p-0">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Colaborador</TableHead>
-                <TableHead className="text-right">Entregas</TableHead>
-                <TableHead className="text-right">No prazo</TableHead>
-                <TableHead className="text-right">Qualidade</TableHead>
-                <TableHead className="text-right">Retrabalho</TableHead>
-                <TableHead className="text-right">Final</TableHead>
-                <TableHead>Nível</TableHead>
-                <TableHead className="text-right">Valor</TableHead>
-                <TableHead>Status</TableHead>
-                {isAdmin && <TableHead></TableHead>}
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {isLoading ? (
-                <TableRow><TableCell colSpan={10} className="text-center text-sm text-muted-foreground py-6">Carregando...</TableCell></TableRow>
-              ) : metrics.length === 0 ? (
-                <TableRow><TableCell colSpan={10} className="text-center text-sm text-muted-foreground py-6">Sem dados para o período.</TableCell></TableRow>
-              ) : (
-                metrics.map((m) => {
-                  const a = awardByUser.get(m.user_id);
-                  const lvl = a?.award_level || m.award_level;
-                  const value = a?.amount_brl ?? m.amount_brl;
-                  const status = a?.status || "—";
-                  return (
-                    <TableRow key={m.user_id}>
-                      <TableCell className="font-medium">{m.full_name}</TableCell>
-                      <TableCell className="text-right">{m.total_deliveries}</TableCell>
-                      <TableCell className="text-right">{m.on_time_rate}%</TableCell>
-                      <TableCell className="text-right">{m.quality_rate}%</TableCell>
-                      <TableCell className="text-right">{m.rework_rate}%</TableCell>
-                      <TableCell className="text-right font-semibold">{m.final_score}%</TableCell>
-                      <TableCell>
-                        {lvl === "ouro" && <Badge className="bg-amber-500/20 text-amber-700">Ouro</Badge>}
-                        {lvl === "prata" && <Badge className="bg-slate-400/20 text-slate-700">Prata</Badge>}
-                        {lvl === "none" && <span className="text-muted-foreground text-xs">—</span>}
-                      </TableCell>
-                      <TableCell className="text-right">R$ {Number(value).toFixed(0)}</TableCell>
-                      <TableCell>
-                        <Badge
-                          variant="outline"
-                          className={
-                            status === "aprovado"
-                              ? "bg-emerald-500/15 text-emerald-700"
-                              : status === "rejeitado"
-                                ? "bg-red-500/15 text-red-700"
-                                : status === "pendente"
-                                  ? "bg-amber-500/15 text-amber-700"
-                                  : ""
-                          }
-                        >
-                          {status}
-                        </Badge>
-                      </TableCell>
-                      {isAdmin && (
-                        <TableCell className="text-right">
-                          {a && a.status !== "aprovado" && (
-                            <Button size="sm" variant="ghost" onClick={() => setApproveDlg({ id: a.id, approve: true })}>
-                              <CheckCircle2 className="h-4 w-4 text-emerald-600" />
-                            </Button>
+        <TabsContent value="tabela" className="space-y-4 mt-4">
+          <div className="grid gap-3 md:grid-cols-3">
+            <Card>
+              <CardContent className="p-4 flex items-center gap-3">
+                <Trophy className="h-8 w-8 text-amber-500" />
+                <div>
+                  <p className="text-xs text-muted-foreground">Total aprovado</p>
+                  <p className="text-2xl font-bold">R$ {totals.aprovado.toFixed(0)}</p>
+                </div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="p-4 flex items-center gap-3">
+                <Medal className="h-8 w-8 text-amber-600" />
+                <div>
+                  <p className="text-xs text-muted-foreground">Ouros aprovados</p>
+                  <p className="text-2xl font-bold">{totals.ouros}</p>
+                </div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="p-4 flex items-center gap-3">
+                <Medal className="h-8 w-8 text-slate-400" />
+                <div>
+                  <p className="text-xs text-muted-foreground">Pratas aprovadas</p>
+                  <p className="text-2xl font-bold">{totals.pratas}</p>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          <Card>
+            <CardContent className="p-0">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Colaborador</TableHead>
+                    <TableHead className="text-right">Entregas</TableHead>
+                    <TableHead className="text-right">No prazo</TableHead>
+                    <TableHead className="text-right">Qualidade</TableHead>
+                    <TableHead className="text-right">Retrabalho</TableHead>
+                    <TableHead className="text-right">Final</TableHead>
+                    <TableHead>Nível</TableHead>
+                    <TableHead className="text-right">Valor</TableHead>
+                    <TableHead>Status</TableHead>
+                    {isAdmin && <TableHead></TableHead>}
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {isLoading ? (
+                    <TableRow><TableCell colSpan={10} className="text-center text-sm text-muted-foreground py-6">Carregando...</TableCell></TableRow>
+                  ) : metrics.length === 0 ? (
+                    <TableRow><TableCell colSpan={10} className="text-center text-sm text-muted-foreground py-6">Sem dados para o período.</TableCell></TableRow>
+                  ) : (
+                    metrics.map((m) => {
+                      const a = awardByUser.get(m.user_id);
+                      const lvl = a?.award_level || m.award_level;
+                      const value = a?.amount_brl ?? m.amount_brl;
+                      const status = a?.status || "—";
+                      return (
+                        <TableRow key={m.user_id}>
+                          <TableCell className="font-medium">{m.full_name}</TableCell>
+                          <TableCell className="text-right">{m.total_deliveries}</TableCell>
+                          <TableCell className="text-right">{m.on_time_rate}%</TableCell>
+                          <TableCell className="text-right">{m.quality_rate}%</TableCell>
+                          <TableCell className="text-right">{m.rework_rate}%</TableCell>
+                          <TableCell className="text-right font-semibold">{m.final_score}%</TableCell>
+                          <TableCell>
+                            {lvl === "ouro" && <Badge className="bg-amber-500/20 text-amber-700">Ouro</Badge>}
+                            {lvl === "prata" && <Badge className="bg-slate-400/20 text-slate-700">Prata</Badge>}
+                            {lvl === "none" && <span className="text-muted-foreground text-xs">—</span>}
+                          </TableCell>
+                          <TableCell className="text-right">R$ {Number(value).toFixed(0)}</TableCell>
+                          <TableCell>
+                            <Badge
+                              variant="outline"
+                              className={
+                                status === "aprovado"
+                                  ? "bg-emerald-500/15 text-emerald-700"
+                                  : status === "rejeitado"
+                                    ? "bg-red-500/15 text-red-700"
+                                    : status === "pendente"
+                                      ? "bg-amber-500/15 text-amber-700"
+                                      : ""
+                              }
+                            >
+                              {status}
+                            </Badge>
+                          </TableCell>
+                          {isAdmin && (
+                            <TableCell className="text-right">
+                              {a && a.status !== "aprovado" && (
+                                <Button size="sm" variant="ghost" onClick={() => setApproveDlg({ id: a.id, approve: true })}>
+                                  <CheckCircle2 className="h-4 w-4 text-emerald-600" />
+                                </Button>
+                              )}
+                              {a && a.status !== "rejeitado" && (
+                                <Button size="sm" variant="ghost" onClick={() => setApproveDlg({ id: a.id, approve: false })}>
+                                  <XCircle className="h-4 w-4 text-red-600" />
+                                </Button>
+                              )}
+                            </TableCell>
                           )}
-                          {a && a.status !== "rejeitado" && (
-                            <Button size="sm" variant="ghost" onClick={() => setApproveDlg({ id: a.id, approve: false })}>
-                              <XCircle className="h-4 w-4 text-red-600" />
-                            </Button>
-                          )}
-                        </TableCell>
-                      )}
-                    </TableRow>
-                  );
-                })
-              )}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
+                        </TableRow>
+                      );
+                    })
+                  )}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="graficos" className="mt-4">
+          <MvpTeamCharts year={year} month={month} />
+        </TabsContent>
+      </Tabs>
+
 
       <Dialog open={!!approveDlg} onOpenChange={(v) => !v && setApproveDlg(null)}>
         <DialogContent>
