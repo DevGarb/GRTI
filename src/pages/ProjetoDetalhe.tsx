@@ -1,11 +1,12 @@
 import { useState } from "react";
 import { Link, useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, FolderKanban, Plus, Pencil, Trash2 } from "lucide-react";
+import { ArrowLeft, FolderKanban, Plus, Pencil, Trash2, CheckCircle2, RotateCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { useProject, useDeleteProject } from "@/hooks/useProjects";
+import { useProject, useDeleteProject, useUpdateProject } from "@/hooks/useProjects";
 import { useSprints } from "@/hooks/useSprints";
+import { useAuth } from "@/contexts/AuthContext";
 import SprintCard from "@/components/projetos/SprintCard";
 import SprintItems from "@/components/projetos/SprintItems";
 import NewSprintModal from "@/components/projetos/NewSprintModal";
@@ -13,6 +14,10 @@ import NewProjectModal from "@/components/projetos/NewProjectModal";
 import AddTicketsToSprintModal from "@/components/projetos/AddTicketsToSprintModal";
 import NewTaskModal from "@/components/projetos/NewTaskModal";
 import ProjectOverview from "@/components/projetos/ProjectOverview";
+import CompleteProjectModal, { SIZE_LABEL } from "@/components/projetos/CompleteProjectModal";
+
+const formatBRL = (v: number) =>
+  new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(v);
 
 export default function ProjetoDetalhe() {
   const { id } = useParams<{ id: string }>();
