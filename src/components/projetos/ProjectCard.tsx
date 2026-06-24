@@ -3,7 +3,16 @@ import { ProjectAggregate } from "@/hooks/useProjects";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
-import { Calendar, Ticket, Zap } from "lucide-react";
+import { Calendar, Ticket, Zap, DollarSign, CheckCircle2 } from "lucide-react";
+
+const SIZE_LABEL: Record<string, string> = {
+  pequeno: "Pequeno porte",
+  medio: "Médio porte",
+  grande: "Grande porte",
+};
+
+const formatBRL = (v: number) =>
+  new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(v);
 
 const statusStyles: Record<string, string> = {
   "Planejamento": "bg-amber-500/15 text-amber-700 dark:text-amber-300 border-amber-500/30",
