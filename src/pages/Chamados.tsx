@@ -690,6 +690,13 @@ export default function Chamados() {
 
       {showModal && <NewTicketModal onClose={() => setShowModal(false)} />}
       {selectedTicket && <TicketDetailModal ticket={selectedTicket} onClose={() => setSelectedTicket(null)} />}
+      {assignTicketId && (
+        <AssignTicketModal
+          ticketId={assignTicketId}
+          mode="self"
+          onClose={() => setAssignTicketId(null)}
+        />
+      )}
 
       {selectionMode && selectedIds.size > 0 && (
         <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 px-4 py-3 rounded-xl bg-background border-2 border-destructive shadow-2xl">
