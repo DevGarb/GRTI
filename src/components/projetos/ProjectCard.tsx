@@ -65,6 +65,23 @@ export default function ProjectCard({ project }: { project: ProjectAggregate }) 
             </span>
           )}
         </div>
+
+        {project.status === "Concluído" && (project.size || project.value_brl != null || project.completed_at) && (
+          <div className="flex flex-wrap items-center gap-2 mt-3 pt-3 border-t border-border text-[11px]">
+            <span className="inline-flex items-center gap-1 text-emerald-600 dark:text-emerald-400 font-medium">
+              <CheckCircle2 className="h-3 w-3" />
+              {project.completed_at ? new Date(project.completed_at).toLocaleDateString("pt-BR") : "Concluído"}
+            </span>
+            {project.size && (
+              <Badge variant="outline" className="text-[10px]">{SIZE_LABEL[project.size] || project.size}</Badge>
+            )}
+            {project.value_brl != null && (
+              <span className="inline-flex items-center gap-1 ml-auto font-mono text-foreground">
+                <DollarSign className="h-3 w-3" /> {formatBRL(Number(project.value_brl))}
+              </span>
+            )}
+          </div>
+        )}
       </div>
     </Link>
   );
