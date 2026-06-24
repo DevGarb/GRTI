@@ -3,7 +3,16 @@ import { ProjectAggregate } from "@/hooks/useProjects";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
-import { Calendar, Ticket, Zap } from "lucide-react";
+import { Calendar, Ticket, Zap, DollarSign, CheckCircle2 } from "lucide-react";
+
+const SIZE_LABEL: Record<string, string> = {
+  pequeno: "Pequeno porte",
+  medio: "Médio porte",
+  grande: "Grande porte",
+};
+
+const formatBRL = (v: number) =>
+  new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(v);
 
 const statusStyles: Record<string, string> = {
   "Planejamento": "bg-amber-500/15 text-amber-700 dark:text-amber-300 border-amber-500/30",
@@ -56,6 +65,23 @@ export default function ProjectCard({ project }: { project: ProjectAggregate }) 
             </span>
           )}
         </div>
+
+        {project.status === "Concluído" && (project.size || project.value_brl != null || project.completed_at) && (
+          <div className="flex flex-wrap items-center gap-2 mt-3 pt-3 border-t border-border text-[11px]">
+            <span className="inline-flex items-center gap-1 text-emerald-600 dark:text-emerald-400 font-medium">
+              <CheckCircle2 className="h-3 w-3" />
+              {project.completed_at ? new Date(project.completed_at).toLocaleDateString("pt-BR") : "Concluído"}
+            </span>
+            {project.size && (
+              <Badge variant="outline" className="text-[10px]">{SIZE_LABEL[project.size] || project.size}</Badge>
+            )}
+            {project.value_brl != null && (
+              <span className="inline-flex items-center gap-1 ml-auto font-mono text-foreground">
+                <DollarSign className="h-3 w-3" /> {formatBRL(Number(project.value_brl))}
+              </span>
+            )}
+          </div>
+        )}
       </div>
     </Link>
   );

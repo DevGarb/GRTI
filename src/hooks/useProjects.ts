@@ -17,6 +17,10 @@ export interface Project {
   organization_id: string | null;
   created_at: string;
   updated_at: string;
+  size?: string | null;
+  value_brl?: number | null;
+  completed_at?: string | null;
+  completed_by?: string | null;
 }
 
 export interface ProjectAggregate extends Project {

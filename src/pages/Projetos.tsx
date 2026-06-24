@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { FolderKanban, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useProjects } from "@/hooks/useProjects";
 import ProjectCard from "@/components/projetos/ProjectCard";
 import NewProjectModal from "@/components/projetos/NewProjectModal";
@@ -8,6 +9,9 @@ import NewProjectModal from "@/components/projetos/NewProjectModal";
 export default function Projetos() {
   const { data: projects = [], isLoading } = useProjects();
   const [modalOpen, setModalOpen] = useState(false);
+
+  const ativos = projects.filter((p) => p.status !== "Concluído");
+  const concluidos = projects.filter((p) => p.status === "Concluído");
 
   return (
     <div className="space-y-6 max-w-7xl">
@@ -28,21 +32,44 @@ export default function Projetos() {
 
       {isLoading ? (
         <div className="text-sm text-muted-foreground">Carregando projetos...</div>
-      ) : projects.length === 0 ? (
-        <div className="card-elevated p-10 text-center">
-          <FolderKanban className="h-10 w-10 mx-auto text-muted-foreground mb-3" />
-          <h3 className="font-semibold">Nenhum projeto criado</h3>
-          <p className="text-sm text-muted-foreground mt-1">
-            Crie um projeto para começar a planejar sprints e vincular chamados.
-          </p>
-          <Button className="mt-4" onClick={() => setModalOpen(true)}>
-            <Plus className="h-4 w-4 mr-1" /> Criar primeiro projeto
-          </Button>
-        </div>
       ) : (
-        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-          {projects.map((p) => <ProjectCard key={p.id} project={p} />)}
-        </div>
+        <Tabs defaultValue="ativos">
+          <TabsList>
+            <TabsTrigger value="ativos">Ativos ({ativos.length})</TabsTrigger>
+            <TabsTrigger value="concluidos">Concluídos ({concluidos.length})</TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="ativos" className="mt-4">
+            {ativos.length === 0 ? (
+              <div className="card-elevated p-10 text-center">
+                <FolderKanban className="h-10 w-10 mx-auto text-muted-foreground mb-3" />
+                <h3 className="font-semibold">Nenhum projeto ativo</h3>
+                <p className="text-sm text-muted-foreground mt-1">
+                  Crie um projeto para começar a planejar sprints e vincular chamados.
+                </p>
+                <Button className="mt-4" onClick={() => setModalOpen(true)}>
+                  <Plus className="h-4 w-4 mr-1" /> Criar primeiro projeto
+                </Button>
+              </div>
+            ) : (
+              <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+                {ativos.map((p) => <ProjectCard key={p.id} project={p} />)}
+              </div>
+            )}
+          </TabsContent>
+
+          <TabsContent value="concluidos" className="mt-4">
+            {concluidos.length === 0 ? (
+              <div className="card-elevated p-10 text-center text-sm text-muted-foreground">
+                Nenhum projeto concluído ainda.
+              </div>
+            ) : (
+              <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+                {concluidos.map((p) => <ProjectCard key={p.id} project={p} />)}
+              </div>
+            )}
+          </TabsContent>
+        </Tabs>
       )}
 
       <NewProjectModal open={modalOpen} onOpenChange={setModalOpen} />
