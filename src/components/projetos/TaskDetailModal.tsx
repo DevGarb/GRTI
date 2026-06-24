@@ -86,9 +86,11 @@ export default function TaskDetailModal({ open, onOpenChange, task }: Props) {
               <Select value={status} onValueChange={setStatus}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="todo">A fazer</SelectItem>
-                  <SelectItem value="doing">Em andamento</SelectItem>
-                  <SelectItem value="done">Concluída</SelectItem>
+                  <SelectItem value="Pendente">Pendente</SelectItem>
+                  <SelectItem value="Em Desenvolvimento">Em Desenvolvimento</SelectItem>
+                  <SelectItem value="Em Homologação">Em Homologação</SelectItem>
+                  <SelectItem value="Concluído">Concluído</SelectItem>
+                  <SelectItem value="Retrabalho">Retrabalho</SelectItem>
                 </SelectContent>
               </Select>
             </div>

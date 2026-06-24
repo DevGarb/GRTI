@@ -75,7 +75,7 @@ export function useSprints(projectId: string | undefined) {
         const sTickets = (tickets || []).filter((t: any) => t.sprint_id === s.id);
         const sTasks = (tasks || []).filter((t: any) => t.sprint_id === s.id);
         const completedTickets = sTickets.filter((t: any) => RESOLVED_STATUSES.includes(t.status)).length;
-        const completedTasks = sTasks.filter((t: any) => t.status === "done").length;
+        const completedTasks = sTasks.filter((t: any) => t.status === "Concluído" || t.status === "done").length;
         const total = sTickets.length + sTasks.length;
         const done = completedTickets + completedTasks;
         return {

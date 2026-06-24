@@ -43,7 +43,7 @@ export function useCreateProjectTask() {
         .from("project_tasks")
         .insert({
           ...input,
-          status: input.status || "todo",
+          status: input.status || "Pendente",
           story_points: input.story_points ?? 1,
           created_by: user!.id,
           organization_id: profile?.organization_id ?? null,
