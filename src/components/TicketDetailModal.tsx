@@ -570,45 +570,30 @@ export default function TicketDetailModal({ ticket, onClose }: Props) {
             <div className="flex items-center gap-3">
               <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider w-24">Técnico Responsável</span>
               {canEditPeople ? (
-                <select
-                  defaultValue={ticket.assigned_to || ""}
-                  onChange={async (e) => {
-                    const newUserId = e.target.value || null;
-                    const oldName = ticket.assignedProfile?.full_name || "Não atribuído";
-                    const newProfile = techProfiles.find(p => p.user_id === newUserId);
-                    const wasUnassignedFlow = (status === "Aberto" || status === "Disponível");
-                    const shouldAutoStart = newUserId && wasUnassignedFlow;
-
-                    const updates: any = { assigned_to: newUserId };
-                    if (shouldAutoStart) {
-                      updates.status = "Em Andamento";
-                      updates.picked_at = new Date().toISOString();
-                      updates.started_at = new Date().toISOString();
-                    }
-                    updateTicket.mutate({ id: ticket.id, ...updates });
-                    await addHistory("assigned_change", oldName, newProfile?.full_name || "Não atribuído");
-
-                    if (shouldAutoStart) {
-                      setStatus("Em Andamento");
-                      updateTicketStatusInCache("Em Andamento");
-                      await addHistory("status_change", status, "Em Andamento");
-                      dispatchWebhookEvent(ticket.id, "ticket_assigned");
-                      supabase.functions.invoke("send-whatsapp", {
-                        body: { ticket_id: ticket.id, event_type: "assigned" },
-                      }).catch(() => {});
-                    }
-                  }}
-                  className="px-3 py-2 rounded-lg border border-input bg-background text-sm text-foreground"
-                >
-                  <option value="">Não atribuído</option>
-                  {techProfiles.map((p) => (
-                    <option key={p.user_id} value={p.user_id}>{p.full_name}</option>
-                  ))}
-                </select>
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-medium text-foreground">
+                    {ticket.assignedProfile?.full_name || "Não atribuído"}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setShowAssignModal(true)}
+                    className="text-xs px-2 py-1 rounded-md border border-input hover:bg-muted text-foreground"
+                  >
+                    {ticket.assigned_to ? "Alterar" : "Atribuir"}
+                  </button>
+                </div>
               ) : (
                 <span className="text-sm font-medium text-foreground">{ticket.assignedProfile?.full_name || "Não atribuído"}</span>
               )}
             </div>
+            {ticket.due_date && (
+              <div className="flex items-center gap-3">
+                <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider w-24">Entrega</span>
+                <span className={`text-sm font-medium ${new Date(ticket.due_date) < new Date(new Date().toDateString()) && status !== "Fechado" && status !== "Aprovado" ? "text-red-600 dark:text-red-400" : "text-foreground"}`}>
+                  {new Date(ticket.due_date + "T00:00:00").toLocaleDateString("pt-BR")}
+                </span>
+              </div>
+            )}
           </div>
 
           {/* Priority */}
