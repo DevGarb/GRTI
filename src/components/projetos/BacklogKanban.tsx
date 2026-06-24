@@ -15,6 +15,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { GripVertical, AlertCircle } from "lucide-react";
 import { useState } from "react";
 import { BacklogItem, TASK_STATUSES, TASK_PRIORITIES, useUpdateBacklogItem } from "@/hooks/useBacklog";
+import ReworkDialog from "@/components/projetos/ReworkDialog";
+import { useAuth } from "@/contexts/AuthContext";
 
 const STATUS_STYLES: Record<string, { bg: string; ring: string; label: string }> = {
   Pendente: { bg: "bg-slate-500/10", ring: "ring-slate-500/30", label: "text-slate-700 dark:text-slate-300" },
@@ -121,8 +123,10 @@ function Column({ status, items }: { status: string; items: BacklogItem[] }) {
 
 export default function BacklogKanban({ items }: { items: BacklogItem[] }) {
   const update = useUpdateBacklogItem();
+  const { user } = useAuth();
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }));
   const [activeId, setActiveId] = useState<string | null>(null);
+  const [reworkPending, setReworkPending] = useState<{ task: BacklogItem; newStatus: string } | null>(null);
 
   const grouped = useMemo(() => {
     const g: Record<string, BacklogItem[]> = {};
@@ -141,25 +145,49 @@ export default function BacklogKanban({ items }: { items: BacklogItem[] }) {
     if (!newStatus || !TASK_STATUSES.includes(newStatus)) return;
     const item = items.find((i) => i.id === taskId);
     if (!item || item.status === newStatus) return;
+    // Concluído → outro status exige registro de retrabalho
+    if (item.status === "Concluído" && newStatus !== "Concluído") {
+      setReworkPending({ task: item, newStatus });
+      return;
+    }
     update.mutate({ id: taskId, status: newStatus });
   };
 
   const activeItem = activeId ? items.find((i) => i.id === activeId) : null;
 
   return (
-    <DndContext
-      sensors={sensors}
-      collisionDetection={closestCenter}
-      onDragStart={(e) => setActiveId(String(e.active.id))}
-      onDragEnd={handleDragEnd}
-      onDragCancel={() => setActiveId(null)}
-    >
-      <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-5">
-        {TASK_STATUSES.map((s) => (
-          <Column key={s} status={s} items={grouped[s]} />
-        ))}
-      </div>
-      <DragOverlay>{activeItem ? <TaskCard item={activeItem} dragging /> : null}</DragOverlay>
-    </DndContext>
+    <>
+      <DndContext
+        sensors={sensors}
+        collisionDetection={closestCenter}
+        onDragStart={(e) => setActiveId(String(e.active.id))}
+        onDragEnd={handleDragEnd}
+        onDragCancel={() => setActiveId(null)}
+      >
+        <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-5">
+          {TASK_STATUSES.map((s) => (
+            <Column key={s} status={s} items={grouped[s]} />
+          ))}
+        </div>
+        <DragOverlay>{activeItem ? <TaskCard item={activeItem} dragging /> : null}</DragOverlay>
+      </DndContext>
+      <ReworkDialog
+        open={!!reworkPending}
+        onCancel={() => setReworkPending(null)}
+        taskTitle={reworkPending?.task.title}
+        onConfirm={({ category, reason, notes }) => {
+          if (!reworkPending) return;
+          update.mutate({
+            id: reworkPending.task.id,
+            status: "Retrabalho",
+            rework_category: category,
+            rework_reason: reason,
+            rework_notes: notes,
+            rework_requested_by: user?.id,
+          } as any);
+          setReworkPending(null);
+        }}
+      />
+    </>
   );
 }

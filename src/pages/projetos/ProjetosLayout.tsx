@@ -1,6 +1,7 @@
 import { NavLink, Outlet } from "react-router-dom";
-import { LayoutDashboard, FolderKanban, ListTodo, Zap, Calendar, Trophy } from "lucide-react";
+import { LayoutDashboard, FolderKanban, ListTodo, Zap, Calendar, Trophy, User, ShieldAlert } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/contexts/AuthContext";
 
 const tabs = [
   { to: "/projetos", label: "Dashboard", icon: LayoutDashboard, end: true },
@@ -8,14 +9,19 @@ const tabs = [
   { to: "/projetos/backlog", label: "Backlog", icon: ListTodo },
   { to: "/projetos/sprints", label: "Sprints", icon: Zap },
   { to: "/projetos/calendario", label: "Calendário", icon: Calendar },
-  { to: "/projetos/mvp", label: "MVP", icon: Trophy },
+  { to: "/projetos/meu-mvp", label: "Meu MVP", icon: User },
+  { to: "/projetos/mvp", label: "MVP Equipe", icon: Trophy },
+  { to: "/projetos/penalidades", label: "Penalidades", icon: ShieldAlert, adminOnly: true },
 ];
 
 export default function ProjetosLayout() {
+  const { hasRole } = useAuth();
+  const isAdmin = hasRole("admin") || hasRole("super_admin") || hasRole("desenvolvedor" as any);
+  const visible = tabs.filter((t) => !t.adminOnly || isAdmin);
   return (
     <div className="space-y-4">
       <nav className="flex flex-wrap items-center gap-1 border-b border-border pb-1">
-        {tabs.map((t) => (
+        {visible.map((t) => (
           <NavLink
             key={t.to}
             to={t.to}
