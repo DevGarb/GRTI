@@ -442,7 +442,8 @@ export default function Chamados() {
     : {};
 
   return (
-    <div className="space-y-6 max-w-7xl">
+    <div className="space-y-4 max-w-7xl">
+      <ChamadosTabs />
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold text-foreground">Chamados</h1>
         <div className="flex items-center gap-2">
