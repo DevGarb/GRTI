@@ -1670,6 +1670,8 @@ export type Database = {
         Row: {
           co_owner_id: string | null
           code: string | null
+          completed_at: string | null
+          completed_by: string | null
           created_at: string
           description: string | null
           end_date: string | null
@@ -1681,13 +1683,17 @@ export type Database = {
           planned_end_date: string | null
           priority: string
           progress_percent: number
+          size: string | null
           start_date: string | null
           status: string
           updated_at: string
+          value_brl: number | null
         }
         Insert: {
           co_owner_id?: string | null
           code?: string | null
+          completed_at?: string | null
+          completed_by?: string | null
           created_at?: string
           description?: string | null
           end_date?: string | null
@@ -1699,13 +1705,17 @@ export type Database = {
           planned_end_date?: string | null
           priority?: string
           progress_percent?: number
+          size?: string | null
           start_date?: string | null
           status?: string
           updated_at?: string
+          value_brl?: number | null
         }
         Update: {
           co_owner_id?: string | null
           code?: string | null
+          completed_at?: string | null
+          completed_by?: string | null
           created_at?: string
           description?: string | null
           end_date?: string | null
@@ -1717,9 +1727,11 @@ export type Database = {
           planned_end_date?: string | null
           priority?: string
           progress_percent?: number
+          size?: string | null
           start_date?: string | null
           status?: string
           updated_at?: string
+          value_brl?: number | null
         }
         Relationships: [
           {
