@@ -175,6 +175,13 @@ export default function ProjetoDetalhe() {
         defaultSprintId={null}
       />
       <NewTaskModal open={newTaskOpen} onOpenChange={setNewTaskOpen} projectId={project.id} />
+      <CompleteProjectModal
+        open={completeOpen}
+        onOpenChange={setCompleteOpen}
+        projectId={project.id}
+        initialSize={project.size}
+        initialValue={project.value_brl != null ? Number(project.value_brl) : null}
+      />
     </div>
   );
 }
