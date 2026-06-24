@@ -193,37 +193,47 @@ export function usePickTicket() {
   const { user } = useAuth();
 
   return useMutation({
-    mutationFn: async (ticketId: string) => {
+    mutationFn: async (input: string | { ticketId: string; dueDate?: string }) => {
+      const ticketId = typeof input === "string" ? input : input.ticketId;
+      const dueDate = typeof input === "string" ? undefined : input.dueDate;
+
+      const updates: any = {
+        assigned_to: user!.id,
+        picked_at: new Date().toISOString(),
+        // status permanece "Aberto" — técnico inicia o atendimento manualmente
+      };
+      if (dueDate) {
+        updates.due_date = dueDate;
+        updates.due_date_set_by = user!.id;
+        updates.due_date_set_at = new Date().toISOString();
+      }
+
       const { data, error } = await supabase
         .from("tickets")
-        .update({
-          assigned_to: user!.id,
-          status: "Em Andamento",
-          picked_at: new Date().toISOString(),
-          started_at: new Date().toISOString(),
-        })
+        .update(updates)
         .eq("id", ticketId)
         .select()
         .single();
       if (error) throw error;
 
-      // Record history
       await supabase.from("ticket_history").insert({
         ticket_id: ticketId,
         user_id: user!.id,
         action: "picked",
-        old_value: "Disponível",
-        new_value: "Em Andamento",
+        old_value: "Não atribuído",
+        new_value: "Atribuído ao próprio técnico",
       });
 
       return data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["tickets"] });
-      toast.success("Chamado assumido com sucesso!");
+      queryClient.invalidateQueries({ queryKey: ["open-tickets"] });
+      queryClient.invalidateQueries({ queryKey: ["tickets-calendar"] });
+      toast.success("Chamado atribuído com sucesso!");
     },
     onError: (e: Error) => {
-      toast.error("Erro ao assumir chamado: " + e.message);
+      toast.error("Erro ao atribuir chamado: " + e.message);
     },
   });
 }
