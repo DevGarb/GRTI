@@ -476,7 +476,24 @@ export default function TicketDetailModal({ ticket, onClose }: Props) {
               <p className="text-xs text-muted-foreground">
                 {new Date(ticket.created_at).toLocaleDateString("pt-BR")}
               </p>
-              <StatusBadge status={status} />
+              {(isAdmin || isSuperAdmin) ? (
+                <select
+                  value={status}
+                  onChange={(e) => handleStatusChange(e.target.value)}
+                  className="px-2 py-0.5 rounded-full text-[11px] font-semibold border border-input bg-background text-foreground cursor-pointer hover:bg-muted transition-colors"
+                  title="Alterar status (admin)"
+                >
+                  <option value="Aberto">Aberto</option>
+                  <option value="Em Andamento">Em Andamento</option>
+                  <option value="Aguardando Aprovação">Aguardando Aprovação</option>
+                  <option value="Aprovado">Aprovado</option>
+                  <option value="Fechado">Fechado</option>
+                  <option value="Disponível">Disponível</option>
+                </select>
+              ) : (
+                <StatusBadge status={status} />
+              )}
+
               {reworkCount > 0 && (
                 <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400 border border-orange-200 dark:border-orange-800">
                   <RefreshCw className="h-3 w-3" />
