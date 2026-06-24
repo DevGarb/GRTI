@@ -1161,6 +1161,17 @@ export default function TicketDetailModal({ ticket, onClose }: Props) {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+      {showAssignModal && (
+        <AssignTicketModal
+          ticketId={ticket.id}
+          currentAssignee={ticket.assigned_to}
+          mode={isAdmin || isSuperAdmin ? "admin" : "self"}
+          onClose={() => setShowAssignModal(false)}
+          onAssigned={() => {
+            queryClient.invalidateQueries({ queryKey: ["tickets"] });
+          }}
+        />
+      )}
     </div>
   );
 }
