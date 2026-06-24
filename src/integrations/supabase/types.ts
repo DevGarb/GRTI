@@ -2063,6 +2063,9 @@ export type Database = {
           created_at: string
           created_by: string
           description: string | null
+          due_date: string | null
+          due_date_set_at: string | null
+          due_date_set_by: string | null
           id: string
           last_seen_by_requester_at: string | null
           organization_id: string | null
@@ -2087,6 +2090,9 @@ export type Database = {
           created_at?: string
           created_by: string
           description?: string | null
+          due_date?: string | null
+          due_date_set_at?: string | null
+          due_date_set_by?: string | null
           id?: string
           last_seen_by_requester_at?: string | null
           organization_id?: string | null
@@ -2111,6 +2117,9 @@ export type Database = {
           created_at?: string
           created_by?: string
           description?: string | null
+          due_date?: string | null
+          due_date_set_at?: string | null
+          due_date_set_by?: string | null
           id?: string
           last_seen_by_requester_at?: string | null
           organization_id?: string | null
