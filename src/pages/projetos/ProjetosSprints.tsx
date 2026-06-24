@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -6,7 +6,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Label } from "@/components/ui/label";
 import {
   Dialog,
   DialogContent,
@@ -15,9 +14,24 @@ import {
   DialogFooter,
   DialogDescription,
 } from "@/components/ui/dialog";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
 import { Link } from "react-router-dom";
-import { CheckCircle2, ExternalLink, Zap, ShieldCheck } from "lucide-react";
+import {
+  CheckCircle2,
+  ExternalLink,
+  ShieldCheck,
+  Paperclip,
+  ChevronDown,
+  AlertTriangle,
+  BarChart3,
+  X,
+} from "lucide-react";
 import { toast } from "sonner";
+import SprintMetricsPanel from "@/components/projetos/SprintMetricsPanel";
 
 interface SprintRow {
   id: string;
@@ -76,6 +90,16 @@ function useAllSprints() {
   });
 }
 
+type CheckKey = "doc_ok" | "evidence_ok" | "homolog_ok" | "backlog_ok" | "standards_ok";
+
+const CHECKLIST: { key: CheckKey; label: string; hint: string }[] = [
+  { key: "doc_ok", label: "Documentação atualizada", hint: "Wiki, README, changelog" },
+  { key: "evidence_ok", label: "Evidências de testes anexadas", hint: "Prints, vídeos, logs" },
+  { key: "homolog_ok", label: "Homologação realizada", hint: "Aprovação do PO/cliente" },
+  { key: "backlog_ok", label: "Backlog atualizado", hint: "Tarefas e status revisados" },
+  { key: "standards_ok", label: "Conformidade com padrões técnicos", hint: "Code review, lint, padrões" },
+];
+
 function CloseSprintDialog({
   sprint,
   open,
@@ -86,17 +110,48 @@ function CloseSprintDialog({
   onOpenChange: (v: boolean) => void;
 }) {
   const qc = useQueryClient();
-  const [checks, setChecks] = useState({
+  const [checks, setChecks] = useState<Record<CheckKey, boolean>>({
     doc_ok: false,
     evidence_ok: false,
     homolog_ok: false,
     backlog_ok: false,
     standards_ok: false,
   });
+  const [evidences, setEvidences] = useState<Record<CheckKey, { url: string; name: string } | null>>({
+    doc_ok: null,
+    evidence_ok: null,
+    homolog_ok: null,
+    backlog_ok: null,
+    standards_ok: null,
+  });
+  const [uploading, setUploading] = useState<CheckKey | null>(null);
+  const inputs = useRef<Record<CheckKey, HTMLInputElement | null>>({} as any);
+
+  const handleUpload = async (key: CheckKey, file: File) => {
+    if (!sprint) return;
+    setUploading(key);
+    try {
+      const path = `sprint-quality/${sprint.id}/${key}-${Date.now()}-${file.name.replace(/[^a-zA-Z0-9._-]/g, "_")}`;
+      const { data, error } = await supabase.storage
+        .from("attachments")
+        .upload(path, file, { upsert: false, contentType: file.type || undefined });
+      if (error) throw error;
+      const { data: urlData } = supabase.storage.from("attachments").getPublicUrl(data.path);
+      setEvidences((p) => ({ ...p, [key]: { url: urlData.publicUrl, name: file.name } }));
+    } catch (e: any) {
+      toast.error("Erro no upload: " + e.message);
+    } finally {
+      setUploading(null);
+    }
+  };
 
   const close = useMutation({
     mutationFn: async () => {
       if (!sprint) return;
+      const evidencesPayload: Record<string, string> = {};
+      (Object.keys(evidences) as CheckKey[]).forEach((k) => {
+        if (evidences[k]) evidencesPayload[k] = evidences[k]!.url;
+      });
       const { error } = await (supabase as any).rpc("close_sprint_with_checklist", {
         _sprint_id: sprint.id,
         _doc_ok: checks.doc_ok,
@@ -104,6 +159,7 @@ function CloseSprintDialog({
         _homolog_ok: checks.homolog_ok,
         _backlog_ok: checks.backlog_ok,
         _standards_ok: checks.standards_ok,
+        _evidences: evidencesPayload,
       });
       if (error) throw error;
     },
@@ -118,42 +174,114 @@ function CloseSprintDialog({
   });
 
   const allChecked = Object.values(checks).every(Boolean);
+  const allEvidenced = (Object.keys(checks) as CheckKey[]).every((k) => !!evidences[k]);
+  const canClose = allChecked && allEvidenced;
   const score = Object.values(checks).filter(Boolean).length * 20;
-
-  const items = [
-    { key: "doc_ok", label: "Documentação atualizada" },
-    { key: "evidence_ok", label: "Evidências anexadas" },
-    { key: "homolog_ok", label: "Homologação realizada" },
-    { key: "backlog_ok", label: "Backlog atualizado" },
-    { key: "standards_ok", label: "Conformidade com padrões técnicos" },
-  ];
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
+      <DialogContent className="max-w-lg">
         <DialogHeader>
           <DialogTitle>Encerrar sprint — {sprint?.name}</DialogTitle>
           <DialogDescription>
-            Marque cada item do checklist de qualidade (peso 20% cada). Todos precisam ser confirmados para encerrar.
+            Confirme cada item (peso 20%) e <strong>anexe uma evidência</strong>. Todos os 5 itens precisam estar
+            confirmados e com evidência para encerrar.
           </DialogDescription>
         </DialogHeader>
-        <div className="space-y-2 py-2">
-          {items.map((it) => (
-            <label key={it.key} className="flex items-center gap-2 p-2 rounded hover:bg-muted/50 cursor-pointer">
-              <Checkbox
-                checked={(checks as any)[it.key]}
-                onCheckedChange={(v) => setChecks((p) => ({ ...p, [it.key]: !!v }))}
-              />
-              <span className="text-sm">{it.label}</span>
-            </label>
-          ))}
+
+        <div className="space-y-2 py-1 max-h-[50vh] overflow-y-auto">
+          {CHECKLIST.map((it) => {
+            const ev = evidences[it.key];
+            const checked = checks[it.key];
+            const ok = checked && !!ev;
+            return (
+              <div
+                key={it.key}
+                className={`rounded-md border p-2.5 transition-colors ${
+                  ok ? "border-emerald-500/40 bg-emerald-500/5" : "border-border"
+                }`}
+              >
+                <div className="flex items-start gap-2">
+                  <Checkbox
+                    className="mt-0.5"
+                    checked={checked}
+                    onCheckedChange={(v) => setChecks((p) => ({ ...p, [it.key]: !!v }))}
+                  />
+                  <div className="flex-1 min-w-0">
+                    <div className="text-sm font-medium">{it.label}</div>
+                    <div className="text-[11px] text-muted-foreground">{it.hint}</div>
+
+                    <div className="mt-1.5 flex items-center gap-2">
+                      <input
+                        ref={(el) => (inputs.current[it.key] = el)}
+                        type="file"
+                        className="hidden"
+                        onChange={(e) => {
+                          const f = e.target.files?.[0];
+                          if (f) handleUpload(it.key, f);
+                          e.target.value = "";
+                        }}
+                      />
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="outline"
+                        className="h-6 text-[11px] gap-1"
+                        disabled={uploading === it.key}
+                        onClick={() => inputs.current[it.key]?.click()}
+                      >
+                        <Paperclip className="h-3 w-3" />
+                        {uploading === it.key ? "Enviando..." : ev ? "Substituir" : "Anexar evidência"}
+                      </Button>
+                      {ev ? (
+                        <div className="flex items-center gap-1 text-[11px] text-emerald-700 max-w-[220px]">
+                          <a
+                            href={ev.url}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="truncate underline"
+                            title={ev.name}
+                          >
+                            {ev.name}
+                          </a>
+                          <button
+                            type="button"
+                            onClick={() => setEvidences((p) => ({ ...p, [it.key]: null }))}
+                            className="text-muted-foreground hover:text-foreground"
+                          >
+                            <X className="h-3 w-3" />
+                          </button>
+                        </div>
+                      ) : (
+                        <span className="text-[10px] text-amber-600">Obrigatório</span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
         </div>
-        <div className="text-sm">
-          Qualidade técnica calculada: <strong>{score}%</strong>
+
+        <div className="flex items-center justify-between text-sm">
+          <div>
+            Qualidade técnica: <strong>{score}%</strong>
+          </div>
+          {!canClose && (
+            <div className="flex items-center gap-1 text-[11px] text-amber-700">
+              <AlertTriangle className="h-3 w-3" />
+              {!allChecked
+                ? "Confirme todos os itens"
+                : "Anexe a evidência de todos os itens"}
+            </div>
+          )}
         </div>
+
         <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>Cancelar</Button>
-          <Button onClick={() => close.mutate()} disabled={!allChecked || close.isPending}>
+          <Button variant="outline" onClick={() => onOpenChange(false)}>
+            Cancelar
+          </Button>
+          <Button onClick={() => close.mutate()} disabled={!canClose || close.isPending}>
             Encerrar sprint
           </Button>
         </DialogFooter>
@@ -165,24 +293,30 @@ function CloseSprintDialog({
 export default function ProjetosSprints() {
   const { data: sprints = [], isLoading } = useAllSprints();
   const [toClose, setToClose] = useState<SprintRow | null>(null);
+  const [expandedMetrics, setExpandedMetrics] = useState<Record<string, boolean>>({});
 
   return (
     <div className="space-y-4">
       <div>
         <h1 className="text-2xl font-bold">Sprints</h1>
-        <p className="text-sm text-muted-foreground">Acompanhe sprints, taxa de conclusão e qualidade.</p>
+        <p className="text-sm text-muted-foreground">
+          Acompanhe burndown, velocidade, qualidade e fechamento das sprints.
+        </p>
       </div>
 
       {isLoading ? (
         <div className="text-sm text-muted-foreground">Carregando sprints...</div>
       ) : sprints.length === 0 ? (
-        <div className="card-elevated p-8 text-center text-sm text-muted-foreground">Nenhuma sprint cadastrada.</div>
+        <div className="card-elevated p-8 text-center text-sm text-muted-foreground">
+          Nenhuma sprint cadastrada.
+        </div>
       ) : (
         <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
           {sprints.map((s) => {
             const concl = s.total_tasks > 0 ? Math.round((s.completed / s.total_tasks) * 100) : 0;
             const retrab = s.total_tasks > 0 ? Math.round((s.reworks / s.total_tasks) * 100) : 0;
             const efic = Math.round(concl * (1 - Math.min(retrab, 100) / 100));
+            const open = !!expandedMetrics[s.id];
             return (
               <Card key={s.id}>
                 <CardHeader className="pb-2">
@@ -236,6 +370,26 @@ export default function ProjetosSprints() {
                       <ShieldCheck className="h-3 w-3" /> Qualidade técnica: <strong>{s.quality_score}%</strong>
                     </div>
                   )}
+
+                  <Collapsible
+                    open={open}
+                    onOpenChange={(v) => setExpandedMetrics((p) => ({ ...p, [s.id]: v }))}
+                  >
+                    <CollapsibleTrigger asChild>
+                      <Button variant="ghost" size="sm" className="w-full justify-between h-7 text-xs">
+                        <span className="flex items-center gap-1">
+                          <BarChart3 className="h-3.5 w-3.5" /> Burndown e velocidade
+                        </span>
+                        <ChevronDown className={`h-3.5 w-3.5 transition-transform ${open ? "rotate-180" : ""}`} />
+                      </Button>
+                    </CollapsibleTrigger>
+                    <CollapsibleContent>
+                      <div className="pt-2 border-t mt-1">
+                        <SprintMetricsPanel sprintId={s.id} projectId={s.project_id} />
+                      </div>
+                    </CollapsibleContent>
+                  </Collapsible>
+
                   <div className="flex gap-2 pt-1">
                     <Button asChild size="sm" variant="outline" className="flex-1">
                       <Link to={`/projetos/${s.project_id}`}>
@@ -255,11 +409,7 @@ export default function ProjetosSprints() {
         </div>
       )}
 
-      <CloseSprintDialog
-        sprint={toClose}
-        open={!!toClose}
-        onOpenChange={(v) => !v && setToClose(null)}
-      />
+      <CloseSprintDialog sprint={toClose} open={!!toClose} onOpenChange={(v) => !v && setToClose(null)} />
     </div>
   );
 }

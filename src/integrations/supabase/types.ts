@@ -1645,6 +1645,7 @@ export type Database = {
           checked_by: string | null
           doc_ok: boolean
           evidence_ok: boolean
+          evidences: Json
           homolog_ok: boolean
           id: string
           sprint_id: string
@@ -1656,6 +1657,7 @@ export type Database = {
           checked_by?: string | null
           doc_ok?: boolean
           evidence_ok?: boolean
+          evidences?: Json
           homolog_ok?: boolean
           id?: string
           sprint_id: string
@@ -1667,6 +1669,7 @@ export type Database = {
           checked_by?: string | null
           doc_ok?: boolean
           evidence_ok?: boolean
+          evidences?: Json
           homolog_ok?: boolean
           id?: string
           sprint_id?: string
@@ -2278,6 +2281,7 @@ export type Database = {
           _backlog_ok: boolean
           _doc_ok: boolean
           _evidence_ok: boolean
+          _evidences?: Json
           _homolog_ok: boolean
           _sprint_id: string
           _standards_ok: boolean
