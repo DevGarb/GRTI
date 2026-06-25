@@ -712,7 +712,11 @@ export default function Usuarios() {
       {permissionsUser && (
         <UserPermissionsModal
           user={permissionsUser}
-          onClose={() => setPermissionsUser(null)}
+          onClose={() => {
+            setPermissionsUser(null);
+            queryClient.invalidateQueries({ queryKey: ["user-applied-presets", adminOrgId] });
+            queryClient.invalidateQueries({ queryKey: ["all-user-overrides", adminOrgId] });
+          }}
         />
       )}
     </div>
