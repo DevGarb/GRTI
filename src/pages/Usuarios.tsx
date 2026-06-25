@@ -443,6 +443,24 @@ export default function Usuarios() {
                         <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-medium ${roleColors[role]}`}>
                           {roleLabels[role]}
                         </span>
+                        {(() => {
+                          const ps = !isSuperAdminUser(user) ? presetStatusFor(user.user_id) : null;
+                          if (!ps) return null;
+                          const toneCls =
+                            ps.tone === "primary"
+                              ? "bg-primary/10 text-primary"
+                              : ps.tone === "amber"
+                              ? "bg-amber-500/15 text-amber-700 dark:text-amber-400"
+                              : "bg-muted text-muted-foreground";
+                          return (
+                            <span
+                              className={`hidden md:inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium ${toneCls}`}
+                              title={ps.label}
+                            >
+                              {ps.label}
+                            </span>
+                          );
+                        })()}
                         <span className="text-[11px] text-muted-foreground hidden sm:block">
                           {new Date(user.created_at).toLocaleDateString("pt-BR")}
                         </span>
