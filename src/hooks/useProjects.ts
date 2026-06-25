@@ -77,7 +77,13 @@ export function useProjects() {
         .select("project_id, status")
         .in("project_id", projectIds);
 
-      const ownerIds = projects.map((p) => p.owner_id).filter(Boolean) as string[];
+      const ownerIds = Array.from(
+        new Set(
+          projects
+            .flatMap((p) => [p.owner_id, p.co_owner_id])
+            .filter(Boolean) as string[]
+        )
+      );
       const { data: owners } = ownerIds.length
         ? await supabase.from("profiles").select("user_id, full_name").in("user_id", ownerIds)
         : { data: [] as any[] };
@@ -92,6 +98,7 @@ export function useProjects() {
         return {
           ...p,
           ownerName: p.owner_id ? ownerMap.get(p.owner_id) : null,
+          coOwnerName: p.co_owner_id ? ownerMap.get(p.co_owner_id) : null,
           totalLinkedTickets: pTickets.length,
           completedTickets,
           activeSprints,
