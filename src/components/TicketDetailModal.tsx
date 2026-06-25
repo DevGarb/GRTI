@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import { X, User, Tag, Paperclip, Star, ChevronDown, ChevronRight, LayoutList, Play, CheckCircle2, RotateCcw, ThumbsUp, ThumbsDown, RefreshCw, HandMetal, AlertTriangle, Clock, Trash2, Award, FolderKanban, Building2 } from "lucide-react";
 import { useUserOrganizations } from "@/hooks/useUserOrganizations";
 import { useMoveTicketOrg } from "@/hooks/useMoveTicketOrg";
