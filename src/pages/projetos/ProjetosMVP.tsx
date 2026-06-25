@@ -295,7 +295,7 @@ export default function ProjetosMVP() {
         <div>
           <h1 className="text-2xl font-bold">Dashboard MVP & Premiação</h1>
           <p className="text-sm text-muted-foreground">
-            Duas trilhas independentes (Chamados e Projetos). Em cada uma: Prata ≥ 90% (R$ 300) · Ouro = 100% (R$ 500).
+            Duas trilhas independentes (Chamados e Projetos). Chamados: Prata ≥ 90% (R$ 300) · Ouro = 100% (R$ 500). Projetos: soma dos valores (R$) dos projetos concluídos no mês quando ≥ 90% (fallback R$ 300/500).
           </p>
         </div>
         <div className="flex items-center gap-2">
