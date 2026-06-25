@@ -33,15 +33,13 @@ export default function CompleteProjectModal({ open, onOpenChange, projectId, in
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const [size, setSize] = useState<string>(initialSize || "medio");
-  const [value, setValue] = useState<string>(
-    initialValue != null ? String(initialValue) : String(SIZE_DEFAULTS[initialSize || "medio"])
-  );
+  const [value, setValue] = useState<string>(initialValue != null ? String(initialValue) : "");
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     if (open) {
       setSize(initialSize || "medio");
-      setValue(initialValue != null ? String(initialValue) : String(SIZE_DEFAULTS[initialSize || "medio"]));
+      setValue(initialValue != null ? String(initialValue) : "");
     }
   }, [open, initialSize, initialValue]);
 
@@ -52,13 +50,15 @@ export default function CompleteProjectModal({ open, onOpenChange, projectId, in
 
   const handleConfirm = async () => {
     setSaving(true);
-    const numericValue = parseFloat(value.replace(",", "."));
+    const trimmed = value.trim();
+    const parsed = trimmed === "" ? NaN : parseFloat(trimmed.replace(",", "."));
+    const finalValue = isNaN(parsed) ? SIZE_DEFAULTS[size] ?? null : parsed;
     const { error } = await supabase
       .from("projects")
       .update({
         status: "Concluído",
         size,
-        value_brl: isNaN(numericValue) ? null : numericValue,
+        value_brl: finalValue,
         completed_at: new Date().toISOString(),
         completed_by: user?.id ?? null,
       })
