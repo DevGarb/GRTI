@@ -1,9 +1,10 @@
 import { useEffect, useState } from "react";
-import { X, Check, Ban, Minus } from "lucide-react";
+import { X, Check, Ban, Minus, Sparkles } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { menuItems, defaultAccess, type Roles } from "@/config/menuItems";
 import { toast } from "sonner";
+import { usePermissionPresets } from "@/hooks/usePermissionPresets";
 
 type State = "default" | "grant" | "block";
 
