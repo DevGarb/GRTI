@@ -14,6 +14,7 @@ export interface Project {
   start_date: string | null;
   end_date: string | null;
   owner_id: string | null;
+  co_owner_id: string | null;
   organization_id: string | null;
   created_at: string;
   updated_at: string;
@@ -25,6 +26,7 @@ export interface Project {
 
 export interface ProjectAggregate extends Project {
   ownerName?: string | null;
+  coOwnerName?: string | null;
   totalLinkedTickets: number;
   completedTickets: number;
   activeSprints: number;
