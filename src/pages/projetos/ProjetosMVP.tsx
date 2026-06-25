@@ -23,16 +23,17 @@ import {
 } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { Trophy, Medal, RefreshCw, CheckCircle2, XCircle } from "lucide-react";
+import { Trophy, Medal, RefreshCw, CheckCircle2, XCircle, Headphones, FolderKanban } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import MvpTeamCharts from "@/components/projetos/MvpTeamCharts";
 import MvpSimulator from "@/components/projetos/MvpSimulator";
-import { useMvpMetrics } from "@/hooks/useProjetosDashboard";
+import { useMvpMetrics, useMvpChamadosMetrics } from "@/hooks/useProjetosDashboard";
 import { toast } from "sonner";
 
 interface AwardRow {
   id: string;
   user_id: string;
+  track: "chamados" | "projetos";
   on_time_rate: number;
   quality_rate: number;
   rework_rate: number;
@@ -62,7 +63,8 @@ export default function ProjetosMVP() {
   const [approveDlg, setApproveDlg] = useState<{ id: string; approve: boolean } | null>(null);
   const [notes, setNotes] = useState("");
 
-  const { data: metrics = [], isLoading } = useMvpMetrics(year, month);
+  const { data: projMetrics = [], isLoading: loadingProj } = useMvpMetrics(year, month);
+  const { data: chamMetrics = [], isLoading: loadingCham } = useMvpChamadosMetrics(year, month);
 
   const { data: awards = [] } = useQuery({
     queryKey: ["mvp-awards", orgId, year, month],
@@ -91,7 +93,7 @@ export default function ProjetosMVP() {
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["mvp-awards"] });
-      toast.success("Premiações calculadas");
+      toast.success("Premiações calculadas (Chamados + Projetos)");
     },
     onError: (e: Error) => toast.error("Erro: " + e.message),
   });
@@ -115,19 +117,177 @@ export default function ProjetosMVP() {
     onError: (e: Error) => toast.error("Erro: " + e.message),
   });
 
-  const awardByUser = new Map(awards.map((a) => [a.user_id, a]));
+  const awardKey = (uid: string, track: "chamados" | "projetos") => `${uid}::${track}`;
+  const awardMap = new Map(awards.map((a) => [awardKey(a.user_id, a.track), a]));
 
-  const totals = awards.reduce(
-    (acc, a) => {
-      if (a.status === "aprovado") {
-        acc.aprovado += a.amount_brl;
-        if (a.award_level === "ouro") acc.ouros++;
-        if (a.award_level === "prata") acc.pratas++;
-      }
-      return acc;
-    },
-    { aprovado: 0, ouros: 0, pratas: 0 }
-  );
+  const totalsFor = (track: "chamados" | "projetos") =>
+    awards
+      .filter((a) => a.track === track)
+      .reduce(
+        (acc, a) => {
+          if (a.status === "aprovado") {
+            acc.aprovado += Number(a.amount_brl) || 0;
+            if (a.award_level === "ouro") acc.ouros++;
+            if (a.award_level === "prata") acc.pratas++;
+          }
+          return acc;
+        },
+        { aprovado: 0, ouros: 0, pratas: 0 }
+      );
+
+  function TrackTable({
+    track,
+    rows,
+    loading,
+    columns,
+  }: {
+    track: "chamados" | "projetos";
+    rows: Array<any>;
+    loading: boolean;
+    columns: "chamados" | "projetos";
+  }) {
+    const totals = totalsFor(track);
+    return (
+      <div className="space-y-4">
+        <div className="grid gap-3 md:grid-cols-3">
+          <Card>
+            <CardContent className="p-4 flex items-center gap-3">
+              <Trophy className="h-8 w-8 text-amber-500" />
+              <div>
+                <p className="text-xs text-muted-foreground">Total aprovado</p>
+                <p className="text-2xl font-bold">R$ {totals.aprovado.toFixed(0)}</p>
+              </div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="p-4 flex items-center gap-3">
+              <Medal className="h-8 w-8 text-amber-600" />
+              <div>
+                <p className="text-xs text-muted-foreground">Ouros aprovados</p>
+                <p className="text-2xl font-bold">{totals.ouros}</p>
+              </div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="p-4 flex items-center gap-3">
+              <Medal className="h-8 w-8 text-slate-400" />
+              <div>
+                <p className="text-xs text-muted-foreground">Pratas aprovadas</p>
+                <p className="text-2xl font-bold">{totals.pratas}</p>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        <Card>
+          <CardContent className="p-0">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Colaborador</TableHead>
+                  {columns === "chamados" ? (
+                    <>
+                      <TableHead className="text-right">Fechados</TableHead>
+                      <TableHead className="text-right">No prazo</TableHead>
+                      <TableHead className="text-right">CSAT</TableHead>
+                      <TableHead className="text-right">Retrabalho</TableHead>
+                      <TableHead className="text-right">Pontos cat.</TableHead>
+                    </>
+                  ) : (
+                    <>
+                      <TableHead className="text-right">Entregas</TableHead>
+                      <TableHead className="text-right">No prazo</TableHead>
+                      <TableHead className="text-right">Qualidade</TableHead>
+                      <TableHead className="text-right">Retrabalho</TableHead>
+                    </>
+                  )}
+                  <TableHead className="text-right">Final</TableHead>
+                  <TableHead>Nível</TableHead>
+                  <TableHead className="text-right">Valor</TableHead>
+                  <TableHead>Status</TableHead>
+                  {isAdmin && <TableHead></TableHead>}
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {loading ? (
+                  <TableRow><TableCell colSpan={11} className="text-center text-sm text-muted-foreground py-6">Carregando...</TableCell></TableRow>
+                ) : rows.length === 0 ? (
+                  <TableRow><TableCell colSpan={11} className="text-center text-sm text-muted-foreground py-6">Sem dados para o período.</TableCell></TableRow>
+                ) : (
+                  rows.map((m: any) => {
+                    const a = awardMap.get(awardKey(m.user_id, track));
+                    const lvl = a?.award_level || m.award_level;
+                    const value = a?.amount_brl ?? m.amount_brl;
+                    const status = a?.status || "—";
+                    return (
+                      <TableRow key={m.user_id}>
+                        <TableCell className="font-medium">{m.full_name}</TableCell>
+                        {columns === "chamados" ? (
+                          <>
+                            <TableCell className="text-right">{m.total_closed}</TableCell>
+                            <TableCell className="text-right">{m.on_time_rate}%</TableCell>
+                            <TableCell className="text-right">
+                              {m.csat_count > 0 ? `${Number(m.csat_avg).toFixed(1)} (${m.csat_count})` : "—"}
+                            </TableCell>
+                            <TableCell className="text-right">{m.rework_rate}%</TableCell>
+                            <TableCell className="text-right">{Number(m.category_points).toFixed(0)}</TableCell>
+                          </>
+                        ) : (
+                          <>
+                            <TableCell className="text-right">{m.total_deliveries}</TableCell>
+                            <TableCell className="text-right">{m.on_time_rate}%</TableCell>
+                            <TableCell className="text-right">{m.quality_rate}%</TableCell>
+                            <TableCell className="text-right">{m.rework_rate}%</TableCell>
+                          </>
+                        )}
+                        <TableCell className="text-right font-semibold">{m.final_score}%</TableCell>
+                        <TableCell>
+                          {lvl === "ouro" && <Badge className="bg-amber-500/20 text-amber-700">Ouro</Badge>}
+                          {lvl === "prata" && <Badge className="bg-slate-400/20 text-slate-700">Prata</Badge>}
+                          {lvl === "none" && <span className="text-muted-foreground text-xs">—</span>}
+                        </TableCell>
+                        <TableCell className="text-right">R$ {Number(value).toFixed(0)}</TableCell>
+                        <TableCell>
+                          <Badge
+                            variant="outline"
+                            className={
+                              status === "aprovado"
+                                ? "bg-emerald-500/15 text-emerald-700"
+                                : status === "rejeitado"
+                                  ? "bg-red-500/15 text-red-700"
+                                  : status === "pendente"
+                                    ? "bg-amber-500/15 text-amber-700"
+                                    : ""
+                            }
+                          >
+                            {status}
+                          </Badge>
+                        </TableCell>
+                        {isAdmin && (
+                          <TableCell className="text-right">
+                            {a && a.status !== "aprovado" && (
+                              <Button size="sm" variant="ghost" onClick={() => setApproveDlg({ id: a.id, approve: true })}>
+                                <CheckCircle2 className="h-4 w-4 text-emerald-600" />
+                              </Button>
+                            )}
+                            {a && a.status !== "rejeitado" && (
+                              <Button size="sm" variant="ghost" onClick={() => setApproveDlg({ id: a.id, approve: false })}>
+                                <XCircle className="h-4 w-4 text-red-600" />
+                              </Button>
+                            )}
+                          </TableCell>
+                        )}
+                      </TableRow>
+                    );
+                  })
+                )}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-4">
@@ -135,8 +295,7 @@ export default function ProjetosMVP() {
         <div>
           <h1 className="text-2xl font-bold">Dashboard MVP & Premiação</h1>
           <p className="text-sm text-muted-foreground">
-            Eficiência Final = (Prazo ÷ Planejadas) × (Qualidade ÷ 100) × (1 − Retrabalho).
-            Prata ≥ 90% (R$ 300) · Ouro = 100% (R$ 500).
+            Duas trilhas independentes (Chamados e Projetos). Em cada uma: Prata ≥ 90% (R$ 300) · Ouro = 100% (R$ 500).
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -164,124 +323,20 @@ export default function ProjetosMVP() {
         </div>
       </div>
 
-      <Tabs defaultValue="tabela">
+      <Tabs defaultValue="chamados">
         <TabsList>
-          <TabsTrigger value="tabela">Tabela</TabsTrigger>
+          <TabsTrigger value="chamados" className="gap-1"><Headphones className="h-4 w-4" /> Chamados</TabsTrigger>
+          <TabsTrigger value="projetos" className="gap-1"><FolderKanban className="h-4 w-4" /> Projetos</TabsTrigger>
           <TabsTrigger value="graficos">Gráficos & Ranking</TabsTrigger>
           <TabsTrigger value="simulador">Simulador</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="tabela" className="space-y-4 mt-4">
-          <div className="grid gap-3 md:grid-cols-3">
-            <Card>
-              <CardContent className="p-4 flex items-center gap-3">
-                <Trophy className="h-8 w-8 text-amber-500" />
-                <div>
-                  <p className="text-xs text-muted-foreground">Total aprovado</p>
-                  <p className="text-2xl font-bold">R$ {totals.aprovado.toFixed(0)}</p>
-                </div>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardContent className="p-4 flex items-center gap-3">
-                <Medal className="h-8 w-8 text-amber-600" />
-                <div>
-                  <p className="text-xs text-muted-foreground">Ouros aprovados</p>
-                  <p className="text-2xl font-bold">{totals.ouros}</p>
-                </div>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardContent className="p-4 flex items-center gap-3">
-                <Medal className="h-8 w-8 text-slate-400" />
-                <div>
-                  <p className="text-xs text-muted-foreground">Pratas aprovadas</p>
-                  <p className="text-2xl font-bold">{totals.pratas}</p>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
+        <TabsContent value="chamados" className="mt-4">
+          <TrackTable track="chamados" rows={chamMetrics} loading={loadingCham} columns="chamados" />
+        </TabsContent>
 
-          <Card>
-            <CardContent className="p-0">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Colaborador</TableHead>
-                    <TableHead className="text-right">Entregas</TableHead>
-                    <TableHead className="text-right">No prazo</TableHead>
-                    <TableHead className="text-right">Qualidade</TableHead>
-                    <TableHead className="text-right">Retrabalho</TableHead>
-                    <TableHead className="text-right">Final</TableHead>
-                    <TableHead>Nível</TableHead>
-                    <TableHead className="text-right">Valor</TableHead>
-                    <TableHead>Status</TableHead>
-                    {isAdmin && <TableHead></TableHead>}
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {isLoading ? (
-                    <TableRow><TableCell colSpan={10} className="text-center text-sm text-muted-foreground py-6">Carregando...</TableCell></TableRow>
-                  ) : metrics.length === 0 ? (
-                    <TableRow><TableCell colSpan={10} className="text-center text-sm text-muted-foreground py-6">Sem dados para o período.</TableCell></TableRow>
-                  ) : (
-                    metrics.map((m) => {
-                      const a = awardByUser.get(m.user_id);
-                      const lvl = a?.award_level || m.award_level;
-                      const value = a?.amount_brl ?? m.amount_brl;
-                      const status = a?.status || "—";
-                      return (
-                        <TableRow key={m.user_id}>
-                          <TableCell className="font-medium">{m.full_name}</TableCell>
-                          <TableCell className="text-right">{m.total_deliveries}</TableCell>
-                          <TableCell className="text-right">{m.on_time_rate}%</TableCell>
-                          <TableCell className="text-right">{m.quality_rate}%</TableCell>
-                          <TableCell className="text-right">{m.rework_rate}%</TableCell>
-                          <TableCell className="text-right font-semibold">{m.final_score}%</TableCell>
-                          <TableCell>
-                            {lvl === "ouro" && <Badge className="bg-amber-500/20 text-amber-700">Ouro</Badge>}
-                            {lvl === "prata" && <Badge className="bg-slate-400/20 text-slate-700">Prata</Badge>}
-                            {lvl === "none" && <span className="text-muted-foreground text-xs">—</span>}
-                          </TableCell>
-                          <TableCell className="text-right">R$ {Number(value).toFixed(0)}</TableCell>
-                          <TableCell>
-                            <Badge
-                              variant="outline"
-                              className={
-                                status === "aprovado"
-                                  ? "bg-emerald-500/15 text-emerald-700"
-                                  : status === "rejeitado"
-                                    ? "bg-red-500/15 text-red-700"
-                                    : status === "pendente"
-                                      ? "bg-amber-500/15 text-amber-700"
-                                      : ""
-                              }
-                            >
-                              {status}
-                            </Badge>
-                          </TableCell>
-                          {isAdmin && (
-                            <TableCell className="text-right">
-                              {a && a.status !== "aprovado" && (
-                                <Button size="sm" variant="ghost" onClick={() => setApproveDlg({ id: a.id, approve: true })}>
-                                  <CheckCircle2 className="h-4 w-4 text-emerald-600" />
-                                </Button>
-                              )}
-                              {a && a.status !== "rejeitado" && (
-                                <Button size="sm" variant="ghost" onClick={() => setApproveDlg({ id: a.id, approve: false })}>
-                                  <XCircle className="h-4 w-4 text-red-600" />
-                                </Button>
-                              )}
-                            </TableCell>
-                          )}
-                        </TableRow>
-                      );
-                    })
-                  )}
-                </TableBody>
-              </Table>
-            </CardContent>
-          </Card>
+        <TabsContent value="projetos" className="mt-4">
+          <TrackTable track="projetos" rows={projMetrics} loading={loadingProj} columns="projetos" />
         </TabsContent>
 
         <TabsContent value="graficos" className="mt-4">
@@ -292,7 +347,6 @@ export default function ProjetosMVP() {
           <MvpSimulator year={year} month={month} />
         </TabsContent>
       </Tabs>
-
 
       <Dialog open={!!approveDlg} onOpenChange={(v) => !v && setApproveDlg(null)}>
         <DialogContent>

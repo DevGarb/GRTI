@@ -33,6 +33,7 @@ export function useProjetosDashboard(from: Date, to: Date) {
   });
 }
 
+
 export interface MvpRow {
   user_id: string;
   full_name: string;
@@ -43,6 +44,23 @@ export interface MvpRow {
   quality_rate: number;
   rework_rate: number;
   op_efficiency: number;
+  final_score: number;
+  award_level: "ouro" | "prata" | "none";
+  amount_brl: number;
+}
+
+export interface MvpChamadosRow {
+  user_id: string;
+  full_name: string;
+  total_closed: number;
+  on_time: number;
+  on_time_rate: number;
+  csat_avg: number;
+  csat_count: number;
+  csat_rate: number;
+  reworks: number;
+  rework_rate: number;
+  category_points: number;
   final_score: number;
   award_level: "ouro" | "prata" | "none";
   amount_brl: number;
@@ -61,6 +79,24 @@ export function useMvpMetrics(year: number, month: number) {
       });
       if (error) throw error;
       return (data || []) as MvpRow[];
+    },
+    enabled: !!orgId,
+  });
+}
+
+export function useMvpChamadosMetrics(year: number, month: number) {
+  const { profile } = useAuth();
+  const orgId = profile?.organization_id ?? null;
+  return useQuery({
+    queryKey: ["mvp-chamados-metrics", orgId, year, month],
+    queryFn: async () => {
+      const { data, error } = await (supabase as any).rpc("get_mvp_chamados_metrics", {
+        _organization_id: orgId,
+        _year: year,
+        _month: month,
+      });
+      if (error) throw error;
+      return (data || []) as MvpChamadosRow[];
     },
     enabled: !!orgId,
   });
