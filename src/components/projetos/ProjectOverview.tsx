@@ -288,9 +288,23 @@ export default function ProjectOverview({ project, sprints, onAddToActive, onCre
       </div>
 
       {/* Sobre o projeto */}
-      {(project.description || project.start_date || project.end_date) && (
+      {(project.description || project.start_date || project.end_date || ownerName || coOwnerName) && (
         <div className="card-elevated p-5">
           <h4 className="text-sm font-semibold mb-2">Sobre o projeto</h4>
+          {(ownerName || coOwnerName) && (
+            <div className="flex flex-wrap items-center gap-2 mb-3">
+              {ownerName && (
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-primary/10 text-primary text-xs font-medium">
+                  <User className="h-3.5 w-3.5" /> Responsável: {ownerName}
+                </span>
+              )}
+              {coOwnerName && (
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-muted text-muted-foreground text-xs font-medium">
+                  <Users className="h-3.5 w-3.5" /> Co-responsável: {coOwnerName}
+                </span>
+              )}
+            </div>
+          )}
           {project.description && (
             <p className="text-sm text-muted-foreground whitespace-pre-wrap">{project.description}</p>
           )}
