@@ -72,16 +72,30 @@ export default function MyGoalCard({ year, month }: Props) {
 
       const ids = (closedTickets || []).map((t) => t.id);
 
-      // Pontuação (meta)
+      // Pontuação = soma dos pontos da categoria de cada chamado fechado
       let totalPoints = 0;
       if (ids.length > 0) {
-        const { data: metaEvals } = await supabase
-          .from("evaluations")
-          .select("score")
-          .eq("type", "meta")
-          .in("ticket_id", ids);
-        totalPoints = (metaEvals || []).reduce((s, e) => s + (e.score || 0), 0);
+        const { data: ticketsCat } = await supabase
+          .from("tickets")
+          .select("category_id")
+          .in("id", ids);
+        const catIds = Array.from(
+          new Set((ticketsCat || []).map((t: any) => t.category_id).filter(Boolean))
+        );
+        let catScores = new Map<string, number>();
+        if (catIds.length > 0) {
+          const { data: cats } = await supabase
+            .from("categories")
+            .select("id, score")
+            .in("id", catIds);
+          catScores = new Map((cats || []).map((c: any) => [c.id, Number(c.score || 0)]));
+        }
+        totalPoints = (ticketsCat || []).reduce(
+          (s: number, t: any) => s + (catScores.get(t.category_id) || 0),
+          0
+        );
       }
+
 
       // Nota média (satisfaction)
       let avgScore = 0;
