@@ -33,6 +33,7 @@ import Historico from "@/pages/Historico";
 import Auditoria from "@/pages/Auditoria";
 
 import Avaliacoes from "@/pages/Avaliacoes";
+import MetasLayout from "@/pages/metas/MetasLayout";
 import MetasTecnicos from "@/pages/MetasTecnicos";
 import WebhookLogs from "@/pages/WebhookLogs";
 import Planos from "@/pages/Planos";
@@ -129,7 +130,12 @@ const App = () => (
                       <Route path="/todos" element={<MenuGuard menuKey="todos"><Todos /></MenuGuard>} />
                       <Route path="/usuarios" element={<MenuGuard menuKey="usuarios"><AdminRoute><Usuarios /></AdminRoute></MenuGuard>} />
                       <Route path="/avaliacoes" element={<MenuGuard menuKey="avaliacoes"><AdminRoute><Avaliacoes /></AdminRoute></MenuGuard>} />
-                      <Route path="/metas" element={<MenuGuard menuKey="metas"><MetasTecnicos /></MenuGuard>} />
+                      <Route path="/metas" element={<MenuGuard menuKey="metas"><MetasLayout /></MenuGuard>}>
+                        <Route index element={<MetasTecnicos />} />
+                        <Route path="meu-mvp" element={<ProjetosMeuMVP />} />
+                        <Route path="mvp" element={<AdminRoute><ProjetosMVP /></AdminRoute>} />
+                        <Route path="penalidades" element={<AdminRoute><ProjetosPenalidades /></AdminRoute>} />
+                      </Route>
                       <Route path="/historico" element={<MenuGuard menuKey="historico"><AdminRoute><Historico /></AdminRoute></MenuGuard>} />
                       <Route path="/auditoria" element={<MenuGuard menuKey="auditoria"><AdminRoute><Auditoria /></AdminRoute></MenuGuard>} />
 
@@ -143,9 +149,6 @@ const App = () => (
                         <Route path="backlog" element={<ProjetosBacklog />} />
                         <Route path="sprints" element={<ProjetosSprints />} />
                         <Route path="calendario" element={<ProjetosCalendario />} />
-                        <Route path="mvp" element={<ProjetosMVP />} />
-                        <Route path="meu-mvp" element={<ProjetosMeuMVP />} />
-                        <Route path="penalidades" element={<AdminRoute><ProjetosPenalidades /></AdminRoute>} />
                       </Route>
                       <Route path="/projetos/:id" element={<MenuGuard menuKey="projetos"><ProjetoDetalhe /></MenuGuard>} />
                       <Route path="/configuracoes" element={<MenuGuard menuKey="configuracoes"><Configuracoes /></MenuGuard>} />

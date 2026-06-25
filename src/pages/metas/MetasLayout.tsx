@@ -1,17 +1,16 @@
 import { NavLink, Outlet } from "react-router-dom";
-import { LayoutDashboard, FolderKanban, ListTodo, Zap, Calendar } from "lucide-react";
+import { Target, User, Trophy, ShieldAlert } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
 
 const tabs = [
-  { to: "/projetos", label: "Dashboard", icon: LayoutDashboard, end: true },
-  { to: "/projetos/lista", label: "Projetos", icon: FolderKanban },
-  { to: "/projetos/backlog", label: "Backlog", icon: ListTodo },
-  { to: "/projetos/sprints", label: "Sprints", icon: Zap },
-  { to: "/projetos/calendario", label: "Calendário", icon: Calendar },
+  { to: "/metas", label: "Desempenho", icon: Target, end: true },
+  { to: "/metas/meu-mvp", label: "Meu MVP", icon: User },
+  { to: "/metas/mvp", label: "MVP Equipe", icon: Trophy, adminOnly: true },
+  { to: "/metas/penalidades", label: "Penalidades", icon: ShieldAlert, adminOnly: true },
 ];
 
-export default function ProjetosLayout() {
+export default function MetasLayout() {
   const { hasRole } = useAuth();
   const isAdmin = hasRole("admin") || hasRole("super_admin") || hasRole("desenvolvedor" as any);
   const visible = tabs.filter((t) => !t.adminOnly || isAdmin);
