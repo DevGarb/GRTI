@@ -26,6 +26,7 @@ import { Label } from "@/components/ui/label";
 import { Trophy, Medal, RefreshCw, CheckCircle2, XCircle } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import MvpTeamCharts from "@/components/projetos/MvpTeamCharts";
+import MvpSimulator from "@/components/projetos/MvpSimulator";
 import { useMvpMetrics } from "@/hooks/useProjetosDashboard";
 import { toast } from "sonner";
 
@@ -167,6 +168,7 @@ export default function ProjetosMVP() {
         <TabsList>
           <TabsTrigger value="tabela">Tabela</TabsTrigger>
           <TabsTrigger value="graficos">Gráficos & Ranking</TabsTrigger>
+          <TabsTrigger value="simulador">Simulador</TabsTrigger>
         </TabsList>
 
         <TabsContent value="tabela" className="space-y-4 mt-4">
@@ -284,6 +286,10 @@ export default function ProjetosMVP() {
 
         <TabsContent value="graficos" className="mt-4">
           <MvpTeamCharts year={year} month={month} />
+        </TabsContent>
+
+        <TabsContent value="simulador" className="mt-4">
+          <MvpSimulator year={year} month={month} />
         </TabsContent>
       </Tabs>
 
