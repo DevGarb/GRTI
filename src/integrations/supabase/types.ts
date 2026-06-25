@@ -380,6 +380,7 @@ export type Database = {
           quality_rate: number
           rework_rate: number
           status: string
+          track: string
           updated_at: string
           user_id: string
           year: number
@@ -399,6 +400,7 @@ export type Database = {
           quality_rate?: number
           rework_rate?: number
           status?: string
+          track?: string
           updated_at?: string
           user_id: string
           year: number
@@ -418,6 +420,7 @@ export type Database = {
           quality_rate?: number
           rework_rate?: number
           status?: string
+          track?: string
           updated_at?: string
           user_id?: string
           year?: number
@@ -2596,6 +2599,25 @@ export type Database = {
           total_closed: number
           total_points: number
           total_work_minutes: number
+          user_id: string
+        }[]
+      }
+      get_mvp_chamados_metrics: {
+        Args: { _month: number; _organization_id: string; _year: number }
+        Returns: {
+          amount_brl: number
+          award_level: string
+          category_points: number
+          csat_avg: number
+          csat_count: number
+          csat_rate: number
+          final_score: number
+          full_name: string
+          on_time: number
+          on_time_rate: number
+          rework_rate: number
+          reworks: number
+          total_closed: number
           user_id: string
         }[]
       }
