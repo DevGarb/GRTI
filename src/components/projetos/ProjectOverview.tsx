@@ -77,6 +77,19 @@ export default function ProjectOverview({ project, sprints, onAddToActive, onCre
   const { data: tickets = [] } = useProjectTickets(project.id);
   const { data: tasks = [] } = useProjectTasks(project.id);
 
+  const ownerIds = [project.owner_id, project.co_owner_id].filter(Boolean) as string[];
+  const { data: ownerProfiles = [] } = useQuery({
+    queryKey: ["project-owners", project.id, ownerIds.join(",")],
+    queryFn: async () => {
+      if (ownerIds.length === 0) return [];
+      const { data } = await supabase.from("profiles").select("user_id, full_name").in("user_id", ownerIds);
+      return data || [];
+    },
+    enabled: ownerIds.length > 0,
+  });
+  const ownerName = ownerProfiles.find((p: any) => p.user_id === project.owner_id)?.full_name;
+  const coOwnerName = ownerProfiles.find((p: any) => p.user_id === project.co_owner_id)?.full_name;
+
   // KPIs
   const totalTickets = tickets.length;
   const completedTickets = tickets.filter((t) => RESOLVED_STATUSES.includes(t.status)).length;
