@@ -47,7 +47,7 @@ export default function CompleteProjectModal({ open, onOpenChange, projectId, in
 
   const handleSizeChange = (s: string) => {
     setSize(s);
-    setValue(String(SIZE_DEFAULTS[s] ?? 0));
+    // Não sobrescreve o valor digitado pelo usuário — mantém o que está no campo.
   };
 
   const handleConfirm = async () => {
