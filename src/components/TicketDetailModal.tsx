@@ -247,6 +247,60 @@ export default function TicketDetailModal({ ticket, onClose }: Props) {
     },
   });
 
+  const { data: reworkEntries = [] } = useQuery({
+    queryKey: ["ticket-rework-entries", ticket.id],
+    enabled: showReworkAuditDialog,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("ticket_history")
+        .select("id, user_id, action, old_value, new_value, created_at")
+        .eq("ticket_id", ticket.id)
+        .eq("action", "rework")
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      const userIds = Array.from(new Set((data || []).map((d: any) => d.user_id).filter(Boolean)));
+      let names: Record<string, string> = {};
+      if (userIds.length) {
+        const { data: profs } = await supabase
+          .from("profiles")
+          .select("user_id, full_name")
+          .in("user_id", userIds);
+        names = Object.fromEntries((profs || []).map((p: any) => [p.user_id, p.full_name]));
+      }
+      return (data || []).map((d: any) => ({ ...d, author_name: names[d.user_id] || "—" }));
+    },
+  });
+
+  const handleRemoveRework = async (entryId: string) => {
+    if (!removeReworkReason.trim()) {
+      toast.error("Informe o motivo da remoção.");
+      return;
+    }
+    try {
+      setIsRemovingRework(true);
+      const { error } = await supabase.from("ticket_history").delete().eq("id", entryId);
+      if (error) throw error;
+      await supabase.from("ticket_history").insert({
+        ticket_id: ticket.id,
+        user_id: user!.id,
+        action: "rework_removed",
+        old_value: null,
+        new_value: `Motivo: ${removeReworkReason.trim()}`,
+      });
+      queryClient.invalidateQueries({ queryKey: ["ticket-rework-count", ticket.id] });
+      queryClient.invalidateQueries({ queryKey: ["ticket-rework-entries", ticket.id] });
+      queryClient.invalidateQueries({ queryKey: ["ticket-history", ticket.id] });
+      queryClient.invalidateQueries({ queryKey: ["tickets"] });
+      toast.success("Marcação de retrabalho removida.");
+      setRemovingReworkId(null);
+      setRemoveReworkReason("");
+    } catch (e: any) {
+      toast.error(e?.message || "Erro ao remover retrabalho.");
+    } finally {
+      setIsRemovingRework(false);
+    }
+  };
+
   const { data: categories = [] } = useQuery({
     queryKey: ["categories"],
     queryFn: async () => {
