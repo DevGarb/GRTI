@@ -65,6 +65,7 @@ function CategoryTreePicker({
   };
 
   const nodeRefs = useRef<Map<string, HTMLDivElement | null>>(new Map());
+  const containerRef = useRef<HTMLDivElement | null>(null);
 
   const renderNode = (cat: Category, depth: number): JSX.Element => {
     const children = getChildren(cat.id);
@@ -89,7 +90,11 @@ function CategoryTreePicker({
               if (willExpand) {
                 requestAnimationFrame(() => {
                   const el = nodeRefs.current.get(cat.id);
-                  el?.scrollIntoView({ behavior: "smooth", block: "start" });
+                  const container = containerRef.current;
+                  if (el && container) {
+                    const elTop = el.offsetTop - container.offsetTop;
+                    container.scrollTo({ top: elTop - 4, behavior: "smooth" });
+                  }
                 });
               }
             }
@@ -120,7 +125,8 @@ function CategoryTreePicker({
 
 
   return (
-    <div className="max-h-96 overflow-y-auto border border-border rounded-lg p-2 space-y-0.5 bg-background">
+    <div ref={containerRef} className="max-h-96 overflow-y-auto border border-border rounded-lg p-2 space-y-0.5 bg-background">
+
       {macros.length === 0 ? (
         <p className="text-xs text-muted-foreground p-2">Nenhuma categoria cadastrada.</p>
       ) : (
