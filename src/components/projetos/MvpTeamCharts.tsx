@@ -12,6 +12,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useMvpMetrics, useMvpChamadosMetrics } from "@/hooks/useProjetosDashboard";
 import { Trophy, Medal, Award, Headphones, FolderKanban } from "lucide-react";
+import MvpSyncStatusBanner from "./MvpSyncStatusBanner";
 
 type Track = "chamados" | "projetos";
 
