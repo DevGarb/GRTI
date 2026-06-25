@@ -2585,7 +2585,7 @@ export type Database = {
         }[]
       }
       get_metas_tecnicos: {
-        Args: { _month: number; _year: number }
+        Args: { _month?: number; _year?: number }
         Returns: {
           avg_score: number
           evaluations_count: number
