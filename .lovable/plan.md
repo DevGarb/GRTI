@@ -1,27 +1,49 @@
-## Problema
+## Diagnóstico
 
-A função `get_mvp_metrics` atribui projetos concluídos a `COALESCE(completed_by, owner_id)`, então todos os 4 projetos foram para você (admin que clicou em "Concluir projeto"), em vez de irem para Danilo, Victor e Gabriel Caminha.
+A aba **Gráficos & Ranking** (`MvpTeamCharts.tsx`) usa RPCs antigas (`get_mvp_team_evolution`, `get_mvp_team_ranking`) criadas antes da reforma das duas trilhas (Chamados/Projetos). Por isso:
 
-## Regra desejada
+- A "Evolução mensal" vem vazia (a RPC só lê dados antigos de `mvp_awards` agregados, sem separar trilha).
+- "Entregas vs Retrabalhos" e "Retrabalhos por colaborador" ficam zerados.
+- "Qualidade técnica" mostra 100% fixo (não bate com os valores reais das tabelas Chamados/Projetos).
+- "Ranking de Sprints/Projetos" não considera os projetos concluídos via `CompleteProjectModal` nem a soma de valores.
 
-- **Responsável (owner_id)**: 1 entrega + 100% do `value_brl`
-- **Co-responsável (co_owner_id)**: 1 entrega + 50% do `value_brl`
-- **Quem clicou em "Concluir"** (completed_by): ignorado para fins de MVP
+Ou seja: a tela existe mas está desconectada do resto. Preciso decidir entre **melhorar** (sincronizar) ou **excluir**.
 
-## Mudança
+---
 
-Migration única reescrevendo `public.get_mvp_metrics` para que o CTE `project_deliveries` gere até 2 linhas por projeto:
+## Opção A — Melhorar e sincronizar (recomendada)
 
-```text
-project_deliveries:
-  owner_id     → d_delivery=1, d_value = value_brl,          d_on_time = (completed_at <= planned_end_date)
-  co_owner_id  → d_delivery=1, d_value = value_brl * 0.5,    d_on_time idem
-```
+Refazer a aba consumindo os mesmos dados que já alimentam as abas Chamados e Projetos (`get_mvp_chamados_metrics` + `get_mvp_metrics`), trazendo valor real:
 
-Mantém o restante da lógica (task_deliveries, agregação, on_time_rate, quality, rework, final_score, níveis Ouro/Prata).
+**Conteúdo proposto:**
 
-Após aprovar, clique em **Recalcular mês** na aba MVP Equipe → Projetos. Danilo, Victor e Gabriel Caminha passam a aparecer com suas entregas; co-responsáveis recebem metade do valor de cada projeto onde figuram.
+1. **Toggle de trilha** no topo: `Chamados | Projetos | Consolidado`.
+2. **Evolução mensal (últimos 3/6/12 meses)** — nova RPC `get_mvp_evolution_v2(track, months_back)` que itera os meses e roda as métricas atuais, plotando: Score final médio, % no prazo, % retrabalho.
+3. **Ranking de colaboradores do mês** (cards/tabela):
+   - Trilha Chamados: fechados, no prazo %, CSAT, retrabalho %, pontos cat. → ordenado por Final.
+   - Trilha Projetos: entregas, no prazo %, qualidade %, retrabalho %, R$ acumulado → ordenado por Final.
+4. **Top 3 do mês com medalhas** (Ouro/Prata) já calculados em `mvp_awards`.
+5. **Gráfico "Valor R$ aprovado por colaborador"** (trilha Projetos).
+6. **Gráfico "CSAT vs Retrabalho"** scatter (trilha Chamados).
+7. Remover charts vazios atuais (Retrabalhos/Qualidade isolados) — substituídos pelos novos.
 
-## Sem mudanças de frontend
+**Técnico:**
+- Migration nova: `get_mvp_evolution_v2(_organization_id, _track, _months_back)` que reaproveita lógica das RPCs existentes.
+- Reescrever `src/components/projetos/MvpTeamCharts.tsx` consumindo `useMvpMetrics`/`useMvpChamadosMetrics` (já existem) + a nova RPC de evolução.
+- Atualizar `src/hooks/useMvpExtra.ts` (substituir `useMvpEvolution`/`useMvpTeamRanking` por versões com track).
+- Sem mudanças em outras telas.
 
-A legenda atual já cobre "soma dos valores dos projetos". Nenhum componente React precisa ser alterado.
+---
+
+## Opção B — Excluir a aba
+
+- Remover o `<TabsTrigger value="graficos">` e o `<TabsContent>` em `src/pages/projetos/ProjetosMVP.tsx`.
+- Remover `src/components/projetos/MvpTeamCharts.tsx`.
+- Manter (opcional) `MvpSimulator` na aba Simulador.
+- Deixar `useMvpEvolution`/`useMvpTeamRanking` órfãos no hook (ou removê-los).
+
+Rápido, mas perde a visão histórica/comparativa entre meses.
+
+---
+
+**Qual caminho seguir?** Minha recomendação é a **Opção A** — temos os dados, só falta plugar; vira a tela de "visão executiva" da premiação.
