@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { X, Check, Ban, Minus, Sparkles } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -20,6 +20,7 @@ export default function UserPermissionsModal({ user, onClose }: Props) {
   const [saving, setSaving] = useState(false);
   const [orgName, setOrgName] = useState<string>("");
   const [orgRoles, setOrgRoles] = useState<string[]>([]);
+  const [appliedPresetId, setAppliedPresetId] = useState<string | null>(null);
   const orgId = profile?.organization_id || null;
 
   const userRoles: Roles = {
@@ -34,7 +35,7 @@ export default function UserPermissionsModal({ user, onClose }: Props) {
     let cancelled = false;
     setLoading(true);
     (async () => {
-      const [overridesRes, rolesRes, orgRes] = await Promise.all([
+      const [overridesRes, rolesRes, orgRes, appliedRes] = await Promise.all([
         supabase
           .from("user_menu_overrides")
           .select("menu_key, granted")
@@ -50,6 +51,12 @@ export default function UserPermissionsModal({ user, onClose }: Props) {
           .select("name")
           .eq("id", orgId)
           .maybeSingle(),
+        (supabase as any)
+          .from("user_applied_presets")
+          .select("preset_id")
+          .eq("user_id", user.user_id)
+          .eq("organization_id", orgId)
+          .maybeSingle(),
       ]);
       if (cancelled) return;
       const map: Record<string, State> = {};
@@ -59,6 +66,7 @@ export default function UserPermissionsModal({ user, onClose }: Props) {
       setStates(map);
       setOrgRoles((rolesRes.data || []).map((r: any) => r.role));
       setOrgName(orgRes.data?.name || "");
+      setAppliedPresetId(appliedRes?.data?.preset_id || null);
       setLoading(false);
     })();
     return () => { cancelled = true; };
@@ -68,6 +76,61 @@ export default function UserPermissionsModal({ user, onClose }: Props) {
     setStates((prev) => ({ ...prev, [key]: s }));
   };
 
+  const { presets } = usePermissionPresets();
+
+  const appliedPreset = useMemo(
+    () => presets.find((p) => p.id === appliedPresetId) || null,
+    [presets, appliedPresetId]
+  );
+
+  const overridesEqual = (
+    a: Record<string, State>,
+    b: Record<string, State | "grant" | "block">
+  ) => {
+    const cleanA = Object.fromEntries(Object.entries(a).filter(([, v]) => v !== "default"));
+    const keys = new Set([...Object.keys(cleanA), ...Object.keys(b)]);
+    for (const k of keys) {
+      if ((cleanA as any)[k] !== (b as any)[k]) return false;
+    }
+    return true;
+  };
+
+  const isCustomized = useMemo(() => {
+    if (!appliedPreset) return false;
+    return !overridesEqual(states, appliedPreset.overrides as any);
+  }, [states, appliedPreset]);
+
+  const statusBadge = () => {
+    if (loading) return null;
+    if (appliedPreset && !isCustomized) {
+      return (
+        <span className="inline-flex items-center gap-1 text-[10px] font-medium px-2 py-0.5 rounded-full bg-primary/10 text-primary">
+          Padrão atual: {appliedPreset.name}
+        </span>
+      );
+    }
+    if (appliedPreset && isCustomized) {
+      return (
+        <span className="inline-flex items-center gap-1 text-[10px] font-medium px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-700 dark:text-amber-400">
+          Personalizado (baseado em {appliedPreset.name})
+        </span>
+      );
+    }
+    const hasAny = Object.values(states).some((s) => s !== "default");
+    if (hasAny) {
+      return (
+        <span className="inline-flex items-center gap-1 text-[10px] font-medium px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-700 dark:text-amber-400">
+          Personalizado
+        </span>
+      );
+    }
+    return (
+      <span className="inline-flex items-center gap-1 text-[10px] font-medium px-2 py-0.5 rounded-full bg-muted text-muted-foreground">
+        Padrão do sistema
+      </span>
+    );
+  };
+
   const save = async () => {
     if (!orgId) {
       toast.error("Selecione uma organização ativa primeiro");
@@ -75,7 +138,6 @@ export default function UserPermissionsModal({ user, onClose }: Props) {
     }
     setSaving(true);
     try {
-      // Delete only this org's overrides for this user, then re-insert non-default
       const { error: delErr } = await supabase
         .from("user_menu_overrides")
         .delete()
@@ -97,6 +159,30 @@ export default function UserPermissionsModal({ user, onClose }: Props) {
         const { error: insErr } = await supabase.from("user_menu_overrides").insert(rows);
         if (insErr) throw insErr;
       }
+
+      // Persist applied preset relationship
+      if (appliedPresetId) {
+        const { error: upErr } = await (supabase as any)
+          .from("user_applied_presets")
+          .upsert(
+            {
+              user_id: user.user_id,
+              organization_id: orgId,
+              preset_id: appliedPresetId,
+              applied_by: profile?.user_id,
+              updated_at: new Date().toISOString(),
+            },
+            { onConflict: "user_id,organization_id" }
+          );
+        if (upErr) throw upErr;
+      } else {
+        await (supabase as any)
+          .from("user_applied_presets")
+          .delete()
+          .eq("user_id", user.user_id)
+          .eq("organization_id", orgId);
+      }
+
       toast.success("Permissões salvas");
       onClose();
     } catch (e: any) {
@@ -106,11 +192,10 @@ export default function UserPermissionsModal({ user, onClose }: Props) {
     }
   };
 
-  const { presets } = usePermissionPresets();
-
   const applyPreset = (id: string) => {
     if (id === "__reset__") {
       setStates({});
+      setAppliedPresetId(null);
       toast.success("Permissões resetadas ao padrão do sistema. Clique em Salvar para confirmar.");
       return;
     }
@@ -121,6 +206,7 @@ export default function UserPermissionsModal({ user, onClose }: Props) {
       next[k] = v as State;
     });
     setStates(next);
+    setAppliedPresetId(preset.id);
     toast.success(`Padrão "${preset.name}" aplicado. Clique em Salvar para confirmar.`);
   };
 
@@ -134,6 +220,7 @@ export default function UserPermissionsModal({ user, onClose }: Props) {
               {user.full_name}
               {orgName && <> · <span className="font-medium">{orgName}</span></>}
             </p>
+            <div className="mt-1.5">{statusBadge()}</div>
           </div>
           <div className="flex items-center gap-2 shrink-0">
             <div className="relative">
