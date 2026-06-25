@@ -278,26 +278,32 @@ export default function TicketDetailModal({ ticket, onClose }: Props) {
     }
     try {
       setIsRemovingRework(true);
-      const { data: deleted, error } = await supabase
-        .from("ticket_history")
-        .delete()
-        .eq("id", entryId)
-        .select("id");
-      if (error) throw error;
-      if (!deleted || deleted.length === 0) {
-        throw new Error("Sem permissão para remover essa marcação. Confirme que você é Administrador desta organização.");
-      }
-
-      await supabase.from("ticket_history").insert({
-        ticket_id: ticket.id,
-        user_id: user!.id,
-        action: "rework_removed",
-        old_value: null,
-        new_value: `Motivo: ${removeReworkReason.trim()}`,
+      const { error } = await (supabase as any).rpc("invalidate_ticket_rework", {
+        _history_id: entryId,
+        _reason: removeReworkReason.trim(),
       });
+      if (error) throw error;
+
+      queryClient.setQueryData(["ticket-rework-count", ticket.id], (old: number | undefined) =>
+        Math.max(0, (old || 0) - 1)
+      );
+      queryClient.setQueryData(["ticket-rework-entries", ticket.id], (old: any[] | undefined) =>
+        (old || []).filter((entry) => entry.id !== entryId)
+      );
+      queryClient.setQueriesData({ queryKey: ["tickets"] }, (old: any) =>
+        Array.isArray(old)
+          ? old.map((t) => t.id === ticket.id
+            ? { ...t, reworkCount: Math.max(0, (t.reworkCount || 0) - 1) }
+            : t)
+          : old
+      );
+
       queryClient.invalidateQueries({ queryKey: ["ticket-rework-count", ticket.id] });
       queryClient.invalidateQueries({ queryKey: ["ticket-rework-entries", ticket.id] });
       queryClient.invalidateQueries({ queryKey: ["ticket-history", ticket.id] });
+      queryClient.invalidateQueries({ queryKey: ["metas-tecnicos"] });
+      queryClient.invalidateQueries({ queryKey: ["management-metrics"] });
+      queryClient.invalidateQueries({ queryKey: ["dashboard-metrics"] });
       queryClient.invalidateQueries({ queryKey: ["tickets"] });
       toast.success("Marcação de retrabalho removida.");
       setRemovingReworkId(null);
@@ -1279,7 +1285,11 @@ export default function TicketDetailModal({ ticket, onClose }: Props) {
       )}
 
       <Dialog open={showReworkAuditDialog} onOpenChange={(o) => { setShowReworkAuditDialog(o); if (!o) { setRemovingReworkId(null); setRemoveReworkReason(""); } }}>
-        <DialogContent className="max-w-lg">
+        <DialogContent
+          className="max-w-lg"
+          onClick={(e) => e.stopPropagation()}
+          onPointerDown={(e) => e.stopPropagation()}
+        >
           <DialogHeader>
             <DialogTitle>Validar marcações de retrabalho</DialogTitle>
             <DialogDescription>
@@ -1310,48 +1320,47 @@ export default function TicketDetailModal({ ticket, onClose }: Props) {
                     <div className="text-sm mt-1 text-foreground/80 whitespace-pre-wrap break-words">{e.new_value}</div>
                   )}
                   <div className="mt-2">
-                    <AlertDialog
-                      open={isRemovingThis}
-                      onOpenChange={(o) => {
-                        if (o) { setRemovingReworkId(e.id); setRemoveReworkReason(""); }
-                        else if (!isRemovingRework) { setRemovingReworkId(null); setRemoveReworkReason(""); }
-                      }}
-                    >
-                      <AlertDialogTrigger asChild>
-                        <button
-                          type="button"
-                          className="text-xs text-destructive hover:underline"
-                        >
-                          Remover marcação
-                        </button>
-                      </AlertDialogTrigger>
-                      <AlertDialogContent>
-                        <AlertDialogHeader>
-                          <AlertDialogTitle>Remover marcação de retrabalho?</AlertDialogTitle>
-                          <AlertDialogDescription>
-                            Informe abaixo o motivo pelo qual essa marcação não deveria ter sido considerada retrabalho. A observação ficará registrada no histórico do chamado.
-                          </AlertDialogDescription>
-                        </AlertDialogHeader>
+                    {isRemovingThis ? (
+                      <div className="space-y-2 rounded-md border border-destructive/30 bg-destructive/5 p-2">
+                        <label className="text-xs font-medium text-muted-foreground">
+                          Motivo do “não retrabalho”
+                        </label>
                         <textarea
                           autoFocus
                           value={removeReworkReason}
                           onChange={(ev) => setRemoveReworkReason(ev.target.value)}
-                          placeholder="Motivo do 'não retrabalho' (obrigatório)"
-                          className="w-full text-sm px-2 py-2 rounded border border-input bg-background"
+                          placeholder="Explique por que esta marcação não deve contar como retrabalho..."
+                          className="w-full text-sm px-2 py-2 rounded border border-input bg-background resize-none"
                           rows={3}
                         />
-                        <AlertDialogFooter>
-                          <AlertDialogCancel disabled={isRemovingRework}>Cancelar</AlertDialogCancel>
-                          <AlertDialogAction
-                            disabled={!removeReworkReason.trim() || isRemovingRework}
-                            onClick={(ev) => { ev.preventDefault(); handleRemoveRework(e.id); }}
-                            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                        <div className="flex justify-end gap-2">
+                          <button
+                            type="button"
+                            disabled={isRemovingRework}
+                            onClick={() => { setRemovingReworkId(null); setRemoveReworkReason(""); }}
+                            className="text-xs px-2 py-1 rounded border border-input hover:bg-muted disabled:opacity-50"
                           >
-                            {isRemovingRework ? "Removendo..." : "Confirmar remoção"}
-                          </AlertDialogAction>
-                        </AlertDialogFooter>
-                      </AlertDialogContent>
-                    </AlertDialog>
+                            Cancelar
+                          </button>
+                          <button
+                            type="button"
+                            disabled={!removeReworkReason.trim() || isRemovingRework}
+                            onClick={() => handleRemoveRework(e.id)}
+                            className="text-xs px-2 py-1 rounded bg-destructive text-destructive-foreground hover:bg-destructive/90 disabled:opacity-50"
+                          >
+                            {isRemovingRework ? "Validando..." : "Confirmar não retrabalho"}
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => { setRemovingReworkId(e.id); setRemoveReworkReason(""); }}
+                        className="text-xs text-destructive hover:underline"
+                      >
+                        Remover marcação
+                      </button>
+                    )}
                   </div>
 
                 </div>

@@ -2585,7 +2585,7 @@ export type Database = {
         }[]
       }
       get_metas_tecnicos: {
-        Args: { _month: number; _year: number }
+        Args: { _month?: number; _year?: number }
         Returns: {
           avg_score: number
           evaluations_count: number
@@ -2667,6 +2667,10 @@ export type Database = {
           _user_id: string
         }
         Returns: boolean
+      }
+      invalidate_ticket_rework: {
+        Args: { _history_id: string; _reason: string }
+        Returns: undefined
       }
       is_member_of_org: { Args: { _org: string }; Returns: boolean }
       is_op_staff: { Args: { _org: string }; Returns: boolean }

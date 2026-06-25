@@ -40,6 +40,8 @@ export default function TicketHistory({ ticketId, createdAt }: Props) {
     approved: "Aprovado",
     evaluated: "Avaliado",
     rework: "Retrabalhado",
+    rework_invalidated: "Retrabalho invalidado",
+    rework_removed: "Não retrabalho validado",
   };
 
   return (
