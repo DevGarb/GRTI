@@ -12,6 +12,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useMvpMetrics, useMvpChamadosMetrics } from "@/hooks/useProjetosDashboard";
 import { Trophy, Medal, Award, Headphones, FolderKanban } from "lucide-react";
+import MvpSyncStatusBanner from "./MvpSyncStatusBanner";
 
 type Track = "chamados" | "projetos";
 
@@ -99,6 +100,28 @@ export default function MvpTeamCharts({ year, month }: { year: number; month: nu
           </SelectContent>
         </Select>
       </div>
+
+      <MvpSyncStatusBanner
+        year={year}
+        month={month}
+        track={track}
+        rankingRows={ranking}
+        evolutionLastPoint={
+          evolution.length
+            ? (() => {
+                const last = evolution[evolution.length - 1];
+                return {
+                  year: last.year,
+                  month: last.month,
+                  total_deliveries: Number(last.total_deliveries),
+                  total_value: Number(last.total_value),
+                  avg_final: Number(last.avg_final),
+                };
+              })()
+            : null
+        }
+      />
+
 
       {/* Top 3 */}
       <div className="grid gap-3 md:grid-cols-3">
