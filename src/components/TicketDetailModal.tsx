@@ -278,8 +278,16 @@ export default function TicketDetailModal({ ticket, onClose }: Props) {
     }
     try {
       setIsRemovingRework(true);
-      const { error } = await supabase.from("ticket_history").delete().eq("id", entryId);
+      const { data: deleted, error } = await supabase
+        .from("ticket_history")
+        .delete()
+        .eq("id", entryId)
+        .select("id");
       if (error) throw error;
+      if (!deleted || deleted.length === 0) {
+        throw new Error("Sem permissão para remover essa marcação. Confirme que você é Administrador desta organização.");
+      }
+
       await supabase.from("ticket_history").insert({
         ticket_id: ticket.id,
         user_id: user!.id,
