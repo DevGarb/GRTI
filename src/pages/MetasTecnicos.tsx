@@ -305,7 +305,10 @@ export default function MetasTecnicos() {
       </div>
 
       {activeTab === "definir" && isAdmin ? (
-        <GoalsManager year={selectedYear} month={selectedMonth} />
+        <div className="space-y-6">
+          <PreventivasMonthlyTarget year={selectedYear} month={selectedMonth} />
+          <GoalsManager year={selectedYear} month={selectedMonth} />
+        </div>
       ) : (
         <>
           {/* Summary cards */}
