@@ -286,6 +286,16 @@ export default function Usuarios() {
     <div className="space-y-6 max-w-5xl">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold text-foreground">Usuários</h1>
+      </div>
+
+      <Tabs defaultValue="users" className="w-full">
+        <TabsList>
+          <TabsTrigger value="users">Usuários</TabsTrigger>
+          {isAdmin && <TabsTrigger value="presets">Padrões de Permissão</TabsTrigger>}
+        </TabsList>
+
+        <TabsContent value="users" className="space-y-6 mt-6">
+          <div className="flex items-center justify-end gap-2">
         {isAdmin && (
           <div className="flex items-center gap-2">
             <button
