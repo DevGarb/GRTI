@@ -1,30 +1,37 @@
-## Permitir admin editar/remover marcações de Retrabalho
+## Problema
 
-Hoje o badge laranja `Retrabalho (Nx)` no topo do modal do chamado vem da contagem de linhas em `ticket_history` com `action='rework'`. Não há como o admin desfazer uma marcação feita por engano.
+As notas exibidas (1.9, 1.9, 3.1, 2.8) estão muito abaixo do real porque a função `get_metas_tecnicos` calcula a média assim:
 
-### Mudanças
+- Faz `LEFT JOIN evaluations` e usa `COALESCE(e.score, 0)`.
+- Resultado: todo chamado **sem avaliação** entra na média como **0**, puxando a nota para baixo.
+- Além disso, `evaluations_count` está retornando o total de chamados fechados (`COUNT(pt.id)`) em vez do número real de avaliações.
 
-**1. UI — `src/components/TicketDetailModal.tsx`**
-- Tornar o badge `Retrabalho (Nx)` clicável **apenas para admin/superadmin** (mantém visual atual, vira botão).
-- Ao clicar, abrir um `Dialog` "Validar marcações de retrabalho" listando cada entrada `rework` do histórico do chamado, mostrando:
-  - Data/hora
-  - Autor (quem marcou)
-  - Motivo (`details`)
-  - Origem: solicitante reprovou / admin reabriu fechado
-  - Botão **"Remover marcação"** com `AlertDialog` de confirmação.
-- Para não-admins, o badge continua apenas informativo (sem clique).
+Por isso o Felipe com poucos chamados realmente avaliados aparece com 1.9 em vez da nota verdadeira (~4.x).
 
-**2. Ação de remoção**
-- Deletar a linha de `ticket_history` correspondente (id específico).
-- Registrar uma nova entrada de histórico `action='rework_removed'` com o motivo informado pelo admin (textarea obrigatória) para manter auditoria de quem invalidou.
-- Invalidar queries: `ticket-rework-count`, `ticket-history`, `tickets`.
-- Toast de sucesso/erro.
+## Correção
 
-**3. RLS / banco**
-- `ticket_history` já é gerenciado por triggers/edge; verificar se há policy de DELETE para admin. Se não houver, adicionar via migration:
-  - Policy `DELETE` em `public.ticket_history` permitindo quando `has_role(auth.uid(), 'Administrador')` ou superadmin, restrita ao mesmo `organization_id` do ticket.
-- Nada muda para colaboradores/técnicos.
+Migration ajustando `public.get_metas_tecnicos`:
 
-### Fora do escopo
-- Não altera a lógica de criação de retrabalho (reprovação pelo solicitante e botão "Marcar como Retrabalho e Reabrir" continuam iguais).
-- Não mexe nas penalidades de MVP (são calculadas a partir de `project_tasks`, não desse contador).
+1. No CTE `evals`, deixar `score` como `NULL` quando não houver avaliação (remover o `COALESCE(..,0)`).
+2. No `per_ticket`, manter `score` podendo ser `NULL`.
+3. Trocar o cálculo da média para considerar apenas chamados avaliados:
+   ```sql
+   ROUND(AVG(pt.score) FILTER (WHERE pt.score IS NOT NULL), 2)
+   ```
+   (ou `AVG(pt.score) WHERE pt.score > 0`).
+4. Ajustar `evaluations_count` para refletir o real:
+   ```sql
+   COUNT(pt.score) FILTER (WHERE pt.score IS NOT NULL)::int
+   ```
+5. Para os `tickets` no JSON, manter `score` como veio (sem forçar 0), assim a UI consegue diferenciar "sem avaliação" de "nota 0".
+
+Nada muda no frontend — só a RPC. As demais métricas (pontos, tempo, retrabalho, preventivas) ficam intactas.
+
+## Validação
+
+Após aplicar, conferir com:
+```sql
+SELECT user_id, full_name, total_closed, evaluations_count, avg_score
+FROM get_metas_tecnicos(2026, 6);
+```
+e comparar contra `SELECT AVG(score) FROM evaluations WHERE type='meta' AND ticket_id IN (...)`.
