@@ -9,6 +9,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import { maskPhone, maskCPF, unmask, isValidCPF } from "@/lib/masks";
+import { usePermissionPresets } from "@/hooks/usePermissionPresets";
 
 interface ProfileWithRoles {
   user_id: string;
@@ -75,6 +76,56 @@ export default function Usuarios() {
   const queryClient = useQueryClient();
   const isAdmin = hasRole("admin");
   const adminOrgId = profile?.organization_id ?? null;
+  const { presets } = usePermissionPresets();
+
+  const { data: appliedPresets = [] } = useQuery({
+    queryKey: ["user-applied-presets", adminOrgId],
+    enabled: !!adminOrgId,
+    queryFn: async () => {
+      const { data, error } = await (supabase as any)
+        .from("user_applied_presets")
+        .select("user_id, preset_id")
+        .eq("organization_id", adminOrgId);
+      if (error) throw error;
+      return (data || []) as { user_id: string; preset_id: string }[];
+    },
+  });
+
+  const { data: allOverrides = [] } = useQuery({
+    queryKey: ["all-user-overrides", adminOrgId],
+    enabled: !!adminOrgId,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("user_menu_overrides")
+        .select("user_id, menu_key, granted")
+        .eq("organization_id", adminOrgId);
+      if (error) throw error;
+      return data || [];
+    },
+  });
+
+  const presetStatusFor = (userId: string): { label: string; tone: "primary" | "amber" | "muted" } | null => {
+    const applied = appliedPresets.find((a) => a.user_id === userId);
+    const userOv = allOverrides.filter((o: any) => o.user_id === userId);
+    const ovMap: Record<string, "grant" | "block"> = {};
+    userOv.forEach((o: any) => { ovMap[o.menu_key] = o.granted ? "grant" : "block"; });
+    if (applied) {
+      const preset = presets.find((p) => p.id === applied.preset_id);
+      if (!preset) return null;
+      const presetOv = preset.overrides || {};
+      const keys = new Set([...Object.keys(ovMap), ...Object.keys(presetOv)]);
+      let equal = true;
+      for (const k of keys) {
+        if ((ovMap as any)[k] !== (presetOv as any)[k]) { equal = false; break; }
+      }
+      return equal
+        ? { label: `Padrão: ${preset.name}`, tone: "primary" }
+        : { label: `Personalizado (${preset.name})`, tone: "amber" };
+    }
+    if (userOv.length > 0) return { label: "Personalizado", tone: "amber" };
+    return null;
+  };
+
 
   const { data: users = [], isLoading } = useQuery({
     queryKey: ["admin-users", adminOrgId],
@@ -392,6 +443,24 @@ export default function Usuarios() {
                         <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-medium ${roleColors[role]}`}>
                           {roleLabels[role]}
                         </span>
+                        {(() => {
+                          const ps = !isSuperAdminUser(user) ? presetStatusFor(user.user_id) : null;
+                          if (!ps) return null;
+                          const toneCls =
+                            ps.tone === "primary"
+                              ? "bg-primary/10 text-primary"
+                              : ps.tone === "amber"
+                              ? "bg-amber-500/15 text-amber-700 dark:text-amber-400"
+                              : "bg-muted text-muted-foreground";
+                          return (
+                            <span
+                              className={`hidden md:inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium ${toneCls}`}
+                              title={ps.label}
+                            >
+                              {ps.label}
+                            </span>
+                          );
+                        })()}
                         <span className="text-[11px] text-muted-foreground hidden sm:block">
                           {new Date(user.created_at).toLocaleDateString("pt-BR")}
                         </span>
@@ -661,7 +730,11 @@ export default function Usuarios() {
       {permissionsUser && (
         <UserPermissionsModal
           user={permissionsUser}
-          onClose={() => setPermissionsUser(null)}
+          onClose={() => {
+            setPermissionsUser(null);
+            queryClient.invalidateQueries({ queryKey: ["user-applied-presets", adminOrgId] });
+            queryClient.invalidateQueries({ queryKey: ["all-user-overrides", adminOrgId] });
+          }}
         />
       )}
     </div>

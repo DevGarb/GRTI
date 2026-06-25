@@ -2207,6 +2207,44 @@ export type Database = {
           },
         ]
       }
+      user_applied_presets: {
+        Row: {
+          applied_by: string | null
+          created_at: string
+          id: string
+          organization_id: string
+          preset_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          applied_by?: string | null
+          created_at?: string
+          id?: string
+          organization_id: string
+          preset_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          applied_by?: string | null
+          created_at?: string
+          id?: string
+          organization_id?: string
+          preset_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_applied_presets_preset_id_fkey"
+            columns: ["preset_id"]
+            isOneToOne: false
+            referencedRelation: "menu_permission_presets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_menu_overrides: {
         Row: {
           created_at: string
