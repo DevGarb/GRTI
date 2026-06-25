@@ -1301,42 +1301,51 @@ export default function TicketDetailModal({ ticket, onClose }: Props) {
                   {e.new_value && (
                     <div className="text-sm mt-1 text-foreground/80 whitespace-pre-wrap break-words">{e.new_value}</div>
                   )}
-                  {!isRemovingThis ? (
-                    <button
-                      type="button"
-                      onClick={() => { setRemovingReworkId(e.id); setRemoveReworkReason(""); }}
-                      className="mt-2 text-xs text-destructive hover:underline"
+                  <div className="mt-2">
+                    <AlertDialog
+                      open={isRemovingThis}
+                      onOpenChange={(o) => {
+                        if (o) { setRemovingReworkId(e.id); setRemoveReworkReason(""); }
+                        else if (!isRemovingRework) { setRemovingReworkId(null); setRemoveReworkReason(""); }
+                      }}
                     >
-                      Remover marcação
-                    </button>
-                  ) : (
-                    <div className="mt-2 space-y-2">
-                      <textarea
-                        value={removeReworkReason}
-                        onChange={(ev) => setRemoveReworkReason(ev.target.value)}
-                        placeholder="Motivo da remoção (obrigatório)"
-                        className="w-full text-sm px-2 py-1.5 rounded border border-input bg-background"
-                        rows={2}
-                      />
-                      <div className="flex gap-2 justify-end">
+                      <AlertDialogTrigger asChild>
                         <button
                           type="button"
-                          onClick={() => { setRemovingReworkId(null); setRemoveReworkReason(""); }}
-                          className="text-xs px-3 py-1.5 rounded border border-input hover:bg-muted"
+                          className="text-xs text-destructive hover:underline"
                         >
-                          Cancelar
+                          Remover marcação
                         </button>
-                        <button
-                          type="button"
-                          disabled={!removeReworkReason.trim() || isRemovingRework}
-                          onClick={() => handleRemoveRework(e.id)}
-                          className="text-xs px-3 py-1.5 rounded bg-destructive text-destructive-foreground hover:opacity-90 disabled:opacity-50"
-                        >
-                          {isRemovingRework ? "Removendo..." : "Confirmar remoção"}
-                        </button>
-                      </div>
-                    </div>
-                  )}
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>Remover marcação de retrabalho?</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            Informe abaixo o motivo pelo qual essa marcação não deveria ter sido considerada retrabalho. A observação ficará registrada no histórico do chamado.
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <textarea
+                          autoFocus
+                          value={removeReworkReason}
+                          onChange={(ev) => setRemoveReworkReason(ev.target.value)}
+                          placeholder="Motivo do 'não retrabalho' (obrigatório)"
+                          className="w-full text-sm px-2 py-2 rounded border border-input bg-background"
+                          rows={3}
+                        />
+                        <AlertDialogFooter>
+                          <AlertDialogCancel disabled={isRemovingRework}>Cancelar</AlertDialogCancel>
+                          <AlertDialogAction
+                            disabled={!removeReworkReason.trim() || isRemovingRework}
+                            onClick={(ev) => { ev.preventDefault(); handleRemoveRework(e.id); }}
+                            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                          >
+                            {isRemovingRework ? "Removendo..." : "Confirmar remoção"}
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
+                  </div>
+
                 </div>
               );
             })}
