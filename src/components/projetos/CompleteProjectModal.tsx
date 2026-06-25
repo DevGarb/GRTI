@@ -10,9 +10,9 @@ import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 
 const SIZE_DEFAULTS: Record<string, number> = {
-  pequeno: 5000,
-  medio: 15000,
-  grande: 50000,
+  pequeno: 300,
+  medio: 500,
+  grande: 800,
 };
 
 const SIZE_LABEL: Record<string, string> = {
