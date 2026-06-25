@@ -1,23 +1,58 @@
 ## Objetivo
-Garantir no modal **Concluir projeto** que o valor digitado pelo usuário sempre prevaleça, e usar o sugerido (Pequeno R$ 300 / Médio R$ 500 / Grande R$ 800) apenas como fallback quando o campo estiver vazio.
 
-## Mudanças em `src/components/projetos/CompleteProjectModal.tsx`
+Na aba **Metas**, deixar explícito quantas preventivas precisam ser feitas no mês selecionado, agrupadas por tipo de equipamento (Notebook, Desktop, Impressora, Servidor), com sugestão automática de divisão entre os técnicos responsáveis. Assim o admin vê, por exemplo, "Julho: 8 notebooks → 4 por técnico" e já consegue definir as metas individuais.
 
-1. **Inicialização do campo Valor**
-   - Ao abrir o modal, se `initialValue` existir → preencher com ele.
-   - Se não existir → deixar o campo **vazio** (placeholder mostrando o sugerido do porte atual, ex.: "Sugerido: 300"), em vez de já preencher com o default.
+## O que será feito
 
-2. **Troca de porte (handleSizeChange)**
-   - Continuar **sem sobrescrever** o que o usuário digitou.
-   - Apenas atualizar o placeholder do input para refletir o sugerido do novo porte.
+### 1. Novo componente `PreventivasMonthlyTarget.tsx` (em `src/components/metas/`)
+Card destacado, exibido no topo da aba Metas (acima do `GoalsManager`), apenas para admin.
 
-3. **Confirmação (handleConfirm)**
-   - Se o campo `value` estiver vazio/inválido → usar `SIZE_DEFAULTS[size]` como valor salvo.
-   - Se tiver valor digitado → salvar exatamente o que foi digitado (`parseFloat`).
-   - Nunca salvar `null` por esquecimento — sempre algum número (digitado ou sugerido).
+Para o mês/ano selecionados, calcula a demanda de preventivas a partir do `useOverdueEquipment()` (já existe) usando a lógica:
+- **Vencidas** (`status === "overdue"`) → entram no mês atual (precisam ser feitas o quanto antes).
+- **A vencer no mês selecionado** → equipamentos cuja próxima data prevista (`last_date + interval_days`) cai dentro do mês/ano selecionados.
+- Quando o mês selecionado é futuro, soma o que já está vencido hoje + o que vencerá naquele mês.
 
-4. **Texto auxiliar**
-   - Ajustar a legenda abaixo do input para algo como: *"Deixe em branco para usar o valor sugerido do porte selecionado."*
+Layout do card:
 
-## Fora de escopo
-- Sem alterações de schema, hooks, ProjectCard ou outros componentes — só o modal.
+```text
+┌──────────────────────────────────────────────────────────────┐
+│ 🔧 Preventivas a executar — Julho/2026                       │
+│                                                              │
+│  Total: 8 equipamentos                                       │
+│  ┌──────────┬──────────┬───────────┬───────────┐             │
+│  │ Notebook │ Desktop  │ Impressora│ Servidor  │             │
+│  │    6     │    1     │     1     │     0     │             │
+│  │ 4 venc.  │ — venc.  │ 1 a venc. │           │             │
+│  └──────────┴──────────┴───────────┴───────────┘             │
+│                                                              │
+│  Dividir entre: [ 2 ] técnicos  →  Meta sugerida:            │
+│  Notebook 3/téc · Desktop 1/téc (1 sobrando) · Impressora …  │
+│                                                              │
+│  [Aplicar como meta "Preventivas Realizadas" dos técnicos]   │
+└──────────────────────────────────────────────────────────────┘
+```
+
+- Campo numérico "Dividir entre N técnicos" (padrão 2). Mostra `Math.ceil(total/N)` por tipo + indicação de sobra (`ceil*N - total`).
+- Botão **"Aplicar como meta"** abre um diálogo listando os técnicos com role `tecnico`/`desenvolvedor` para o admin marcar quem recebe e confirmar; ao confirmar, cria/atualiza a meta `preventivas_done` de cada técnico selecionado em `performance_goals` com o valor sugerido (ceil do total / nº de selecionados). Reutiliza o fluxo já existente de upsert do `GoalsManager`.
+- Tipos com valor 0 aparecem em cinza claro.
+
+### 2. Integração na página de Metas
+- Localizar a página/aba que renderiza `GoalsManager` (provavelmente `src/pages/Configuracoes.tsx` ou `src/pages/Dashboard.tsx` — verificar antes de editar) e inserir `<PreventivasMonthlyTarget year={year} month={month} />` acima de `<GoalsManager />`, passando os mesmos `year`/`month` já controlados.
+- Visível apenas quando `hasRole("admin")`.
+
+### 3. Nenhuma mudança de schema
+Os dados vêm de `preventive_maintenance` + `maintenance_intervals` via hooks já existentes. Sem migração.
+
+## Detalhes técnicos
+
+- Reutilizar `useOverdueEquipment()` e calcular `nextDue = last_date + interval_days`.
+- Filtro do mês: `nextDue.getMonth() === month && nextDue.getFullYear() === year` **OU** (`status === "overdue"` e mês selecionado = mês atual/futuro).
+- Equipamentos sem nenhum registro de preventiva (caso existam em `patrimonio` mas nunca tiveram PM) ficam fora deste card — fora do escopo agora; pode ser uma melhoria futura.
+- Agrupamento por `equipment_type` usando os 4 tipos fixos da página de Preventivas (Desktop / Notebook / Impressora / Servidor).
+- Botão "Aplicar como meta" usa upsert em `performance_goals` com `metric = "preventivas_done"`, `target_value = ceil(total/Nselecionados)`, `reference_month`/`reference_year` do filtro atual. Invalida `["performance-goals"]` para o `GoalsManager` recarregar.
+
+## Fora do escopo
+
+- Mudar a aba Preventivas em si.
+- Criar tabela de "meta de preventivas" separada — usamos a métrica `preventivas_done` que já existe.
+- Considerar equipamentos do `patrimonio` que nunca tiveram PM registrada.
