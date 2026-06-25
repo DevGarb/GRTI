@@ -84,7 +84,9 @@ export default function CompleteProjectModal({ open, onOpenChange, projectId, in
           <div className="space-y-2">
             <Label>Porte do projeto</Label>
             <Select value={size} onValueChange={handleSizeChange}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectTrigger>
+                <SelectValue>{SIZE_LABEL[size] || size}</SelectValue>
+              </SelectTrigger>
               <SelectContent>
                 {Object.entries(SIZE_LABEL).map(([k, v]) => (
                   <SelectItem key={k} value={k}>{v} (sugerido R$ {SIZE_DEFAULTS[k].toLocaleString("pt-BR")})</SelectItem>
