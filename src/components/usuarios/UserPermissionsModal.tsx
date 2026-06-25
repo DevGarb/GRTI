@@ -185,7 +185,7 @@ export default function UserPermissionsModal({ user, onClose }: Props) {
                     </div>
                   </div>
                   <div className="flex gap-1 shrink-0">
-                    {(["default", "grant", "block"] as State[]).map((s) => {
+                    {(["grant", "block"] as State[]).map((s) => {
                       const labels = { default: "Padrão", grant: "Liberar", block: "Bloquear" };
                       const Icons = { default: Minus, grant: Check, block: Ban };
                       const Icon = Icons[s];
