@@ -1,58 +1,30 @@
-## Objetivo
+## Problema
+A trilha **MVP → Projetos** calcula entregas a partir de `project_tasks` (tarefas individuais com `delivered_date` e `assignee_id`). Concluir o projeto pelo modal "Concluir projeto" só grava `status/size/value_brl/completed_at/completed_by` na tabela `projects` — não gera tarefas. Resultado: 0 entregas, 0 no ranking, R$ 0 aprovado.
 
-Na aba **Metas**, deixar explícito quantas preventivas precisam ser feitas no mês selecionado, agrupadas por tipo de equipamento (Notebook, Desktop, Impressora, Servidor), com sugestão automática de divisão entre os técnicos responsáveis. Assim o admin vê, por exemplo, "Julho: 8 notebooks → 4 por técnico" e já consegue definir as metas individuais.
+## Solução proposta
+Fazer a trilha Projetos do MVP contabilizar **projetos concluídos** (não apenas tarefas), preservando a lógica de tarefas para quem usa Kanban.
 
-## O que será feito
+### 1. Atualizar `get_mvp_metrics(org, year, month)` (migration)
+Unir duas fontes por usuário no mês:
 
-### 1. Novo componente `PreventivasMonthlyTarget.tsx` (em `src/components/metas/`)
-Card destacado, exibido no topo da aba Metas (acima do `GoalsManager`), apenas para admin.
+- **Projetos concluídos**: `projects` onde `completed_at` está no mês e `completed_by` definido (fallback `owner_id`). Cada projeto = 1 entrega.
+  - `on_time` = `completed_at::date <= planned_end_date` (quando houver); sem `planned_end_date`, conta como no prazo.
+  - `value_brl` somado vira o `amount_brl` base da trilha projetos (substituindo o valor fixo 300/500 do nível prata/ouro **apenas se** o projeto tiver valor; caso contrário mantém regra atual).
+  - `reworks` derivado de `SUM(project_tasks.rework_count)` por projeto (0 se não houver tarefas).
+- **Tarefas concluídas** (lógica atual) somam às entregas de quem usa Kanban.
 
-Para o mês/ano selecionados, calcula a demanda de preventivas a partir do `useOverdueEquipment()` (já existe) usando a lógica:
-- **Vencidas** (`status === "overdue"`) → entram no mês atual (precisam ser feitas o quanto antes).
-- **A vencer no mês selecionado** → equipamentos cuja próxima data prevista (`last_date + interval_days`) cai dentro do mês/ano selecionados.
-- Quando o mês selecionado é futuro, soma o que já está vencido hoje + o que vencerá naquele mês.
+### 2. Ajustar `compute_mvp_awards` (mesma migration)
+Na trilha projetos, se o usuário tiver projetos com `value_brl > 0` no mês, usar **soma de `value_brl` aprovado** como `amount_brl`, substituindo o 300/500. Manter o gating por nível (prata ≥ 90%, ouro ≥ 100%) — sem nível = R$ 0.
 
-Layout do card:
+### 3. Ajustar texto do header em `ProjetosMVP.tsx`
+A legenda atual ("Prata ≥ 90% (R$ 300) · Ouro = 100% (R$ 500)") precisa indicar que, em Projetos, o valor pago é a **soma dos valores dos projetos aprovados no mês** quando definido, com fallback 300/500.
 
-```text
-┌──────────────────────────────────────────────────────────────┐
-│ 🔧 Preventivas a executar — Julho/2026                       │
-│                                                              │
-│  Total: 8 equipamentos                                       │
-│  ┌──────────┬──────────┬───────────┬───────────┐             │
-│  │ Notebook │ Desktop  │ Impressora│ Servidor  │             │
-│  │    6     │    1     │     1     │     0     │             │
-│  │ 4 venc.  │ — venc.  │ 1 a venc. │           │             │
-│  └──────────┴──────────┴───────────┴───────────┘             │
-│                                                              │
-│  Dividir entre: [ 2 ] técnicos  →  Meta sugerida:            │
-│  Notebook 3/téc · Desktop 1/téc (1 sobrando) · Impressora …  │
-│                                                              │
-│  [Aplicar como meta "Preventivas Realizadas" dos técnicos]   │
-└──────────────────────────────────────────────────────────────┘
-```
-
-- Campo numérico "Dividir entre N técnicos" (padrão 2). Mostra `Math.ceil(total/N)` por tipo + indicação de sobra (`ceil*N - total`).
-- Botão **"Aplicar como meta"** abre um diálogo listando os técnicos com role `tecnico`/`desenvolvedor` para o admin marcar quem recebe e confirmar; ao confirmar, cria/atualiza a meta `preventivas_done` de cada técnico selecionado em `performance_goals` com o valor sugerido (ceil do total / nº de selecionados). Reutiliza o fluxo já existente de upsert do `GoalsManager`.
-- Tipos com valor 0 aparecem em cinza claro.
-
-### 2. Integração na página de Metas
-- Localizar a página/aba que renderiza `GoalsManager` (provavelmente `src/pages/Configuracoes.tsx` ou `src/pages/Dashboard.tsx` — verificar antes de editar) e inserir `<PreventivasMonthlyTarget year={year} month={month} />` acima de `<GoalsManager />`, passando os mesmos `year`/`month` já controlados.
-- Visível apenas quando `hasRole("admin")`.
-
-### 3. Nenhuma mudança de schema
-Os dados vêm de `preventive_maintenance` + `maintenance_intervals` via hooks já existentes. Sem migração.
-
-## Detalhes técnicos
-
-- Reutilizar `useOverdueEquipment()` e calcular `nextDue = last_date + interval_days`.
-- Filtro do mês: `nextDue.getMonth() === month && nextDue.getFullYear() === year` **OU** (`status === "overdue"` e mês selecionado = mês atual/futuro).
-- Equipamentos sem nenhum registro de preventiva (caso existam em `patrimonio` mas nunca tiveram PM) ficam fora deste card — fora do escopo agora; pode ser uma melhoria futura.
-- Agrupamento por `equipment_type` usando os 4 tipos fixos da página de Preventivas (Desktop / Notebook / Impressora / Servidor).
-- Botão "Aplicar como meta" usa upsert em `performance_goals` com `metric = "preventivas_done"`, `target_value = ceil(total/Nselecionados)`, `reference_month`/`reference_year` do filtro atual. Invalida `["performance-goals"]` para o `GoalsManager` recarregar.
+### 4. Recalcular o mês corrente
+Após a migration, rodar `compute_mvp_awards` para junho/2026 da organização afetada para popular as 4 entregas existentes.
 
 ## Fora do escopo
+- Trilha Chamados (já funciona via `get_mvp_chamados_metrics`).
+- Penalidades, aprovação manual, regras de qualidade de sprint.
 
-- Mudar a aba Preventivas em si.
-- Criar tabela de "meta de preventivas" separada — usamos a métrica `preventivas_done` que já existe.
-- Considerar equipamentos do `patrimonio` que nunca tiveram PM registrada.
+## Pergunta antes de implementar
+Quando o projeto não tem `planned_end_date`, conta como **no prazo** (proposta acima) ou **fora do prazo**? E o `amount_brl` deve ser a **soma dos `value_brl`** dos projetos concluídos no mês (substituindo 300/500), correto?
