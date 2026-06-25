@@ -1,25 +1,27 @@
-## Adicionar Responsável e Co-responsável aos Projetos
+## Problema
 
-Os campos `owner_id` e `co_owner_id` já existem na tabela `projects`, mas não estão expostos na UI. Vou conectá-los nos pontos de criação, edição e visualização.
+A função `get_mvp_metrics` atribui projetos concluídos a `COALESCE(completed_by, owner_id)`, então todos os 4 projetos foram para você (admin que clicou em "Concluir projeto"), em vez de irem para Danilo, Victor e Gabriel Caminha.
 
-### 1. `NewProjectModal.tsx`
-- Adicionar dois selects no formulário de criação:
-  - **Responsável** (obrigatório) — lista de usuários da organização (técnicos/desenvolvedores/admins).
-  - **Co-responsável** (opcional) — mesma lista, excluindo o já selecionado como responsável.
-- Enviar `owner_id` e `co_owner_id` no insert do projeto.
+## Regra desejada
 
-### 2. `useProjects.ts`
-- Buscar `co_owner_id` no select e mapear `coOwnerName` junto com `ownerName` (uma única query a `profiles` para os dois conjuntos de IDs).
-- Atualizar a interface `Project` / `ProjectInput` para incluir `co_owner_id`.
+- **Responsável (owner_id)**: 1 entrega + 100% do `value_brl`
+- **Co-responsável (co_owner_id)**: 1 entrega + 50% do `value_brl`
+- **Quem clicou em "Concluir"** (completed_by): ignorado para fins de MVP
 
-### 3. `ProjectCard.tsx` / `ProjectOverview.tsx`
-- Mostrar avatar + nome do **Responsável** e badge secundária do **Co-responsável** no card e no cabeçalho do overview.
+## Mudança
 
-### 4. Edição
-- Se houver modal/aba de edição de projeto (verificar em `ProjectOverview`), adicionar os mesmos dois selects para alterar responsáveis depois da criação. Caso não exista hoje, adicionar um pequeno popover "Editar responsáveis" no overview restrito a admin/owner atual.
+Migration única reescrevendo `public.get_mvp_metrics` para que o CTE `project_deliveries` gere até 2 linhas por projeto:
 
-### 5. Sem mudanças no banco
-Schema já contempla os campos; nenhuma migração necessária.
+```text
+project_deliveries:
+  owner_id     → d_delivery=1, d_value = value_brl,          d_on_time = (completed_at <= planned_end_date)
+  co_owner_id  → d_delivery=1, d_value = value_brl * 0.5,    d_on_time idem
+```
 
-### Observação
-Quer que o **Responsável** seja obrigatório na criação ou opcional (assumindo o criador como padrão quando vazio)?
+Mantém o restante da lógica (task_deliveries, agregação, on_time_rate, quality, rework, final_score, níveis Ouro/Prata).
+
+Após aprovar, clique em **Recalcular mês** na aba MVP Equipe → Projetos. Danilo, Victor e Gabriel Caminha passam a aparecer com suas entregas; co-responsáveis recebem metade do valor de cada projeto onde figuram.
+
+## Sem mudanças de frontend
+
+A legenda atual já cobre "soma dos valores dos projetos". Nenhum componente React precisa ser alterado.
