@@ -1,27 +1,46 @@
-## Substituir o calendário de chamados por grade mensal estilo Projetos
+## Padrões de Permissão de Menu
 
-Trocar a visualização atual (`Calendar` shadcn + lista lateral) na rota `/chamados/calendario` por uma grade mensal igual à de `ProjetosCalendario`, com cards retangulares (um por linha) dentro de cada dia. Clicar em um card abre o `TicketDetailModal` existente.
+Permitir que admins criem "padrões" reutilizáveis (conjunto de overrides liberar/bloquear por menu) e apliquem rapidamente no modal de permissões de cada usuário, sem ter que clicar item por item.
 
-### Mudanças
+### 1. Banco de dados (migração)
 
-**`src/pages/chamados/ChamadosCalendario.tsx`** — reescrita:
-- Manter o filtro de técnico (admin) e a query de tickets do mês (`due_date` entre `startOfMonth`/`endOfMonth`).
-- Substituir o componente `<Calendar>` por uma grade `grid-cols-7` (Dom–Sáb) com `eachDayOfInterval(startOfWeek..endOfWeek)` do mês corrente.
-- Cabeçalho: título "Calendário de Chamados", navegação de mês (◀ Mês YYYY ▶) à direita usando `ChevronLeft`/`ChevronRight` e `addMonths`.
-- Legenda de cores compacta acima da grade:
-  - verde = Fechado/Aprovado
-  - vermelho = vencido (due_date < hoje e status aberto)
-  - âmbar = Em Andamento
-  - azul = Aberto/Disponível
-- Cada célula de dia:
-  - altura mínima `min-h-[110px]`, número do dia no topo (menor mês = `opacity-40`, hoje = `ring-2 ring-primary`).
-  - lista vertical (`space-y-1`) de cards de chamado: retângulos largos e baixos (`w-full px-1.5 py-0.5 rounded border text-[10px] truncate`), cor pela função `colorFor(status, due_date)`, `title` com prioridade + técnico.
-  - mostrar até 4 cards; se houver mais, "+N mais" como texto.
-  - `onClick` abre `TicketDetailModal` com o ticket clicado (`stopPropagation` não necessário — célula não tem handler).
-- Remover seleção de dia e lista lateral; remover drag/drop (não solicitado).
-- Manter `ChamadosTabs` no topo.
+Nova tabela `public.menu_permission_presets`:
+- `organization_id` (FK organizations, escopo por organização — compartilhada entre admins da org)
+- `name` (texto, único por organização)
+- `description` (opcional)
+- `overrides` (jsonb): `{ "<menu_key>": "grant" | "block", ... }` — itens omitidos = "Padrão (do sistema)"
+- `created_by`, `created_at`, `updated_at`
+
+GRANTs para `authenticated` e `service_role`. RLS:
+- SELECT: membros da org (`is_member_of_org`)
+- INSERT/UPDATE/DELETE: somente admin da org (`has_role_in_org('admin')`) ou super admin
+
+Trigger `update_updated_at_column`.
+
+### 2. Nova sub-aba em `/usuarios` — "Padrões de Permissão"
+
+Reorganizar `src/pages/Usuarios.tsx` para usar abas no topo:
+- **Usuários** (conteúdo atual)
+- **Padrões de Permissão** (novo)
+
+Aba nova mostra:
+- Botão "Novo Padrão"
+- Lista (cards/tabela) dos padrões da org: nome, descrição, contagem de itens liberados/bloqueados, ações Editar/Excluir
+- Modal de criação/edição (`PermissionPresetModal`): nome, descrição, e a mesma matriz de menus do `UserPermissionsModal` com os três estados (Padrão/Liberar/Bloquear). Salva em `menu_permission_presets`.
+
+### 3. Modal `UserPermissionsModal` — dropdown de padrões
+
+No header do modal, ao lado de "Permissões de Menu":
+- **Dropdown "Aplicar padrão ▾"** lista os padrões da org + opção "Padrão do sistema (resetar)".
+- Selecionar um padrão → **substitui tudo**: zera os estados atuais e aplica os overrides do padrão (itens não definidos no padrão viram "Padrão"). Mostra toast "Padrão aplicado — clique em Salvar para confirmar".
+- Os botões **Liberar** e **Bloquear** de cada linha continuam funcionando para personalização pontual após aplicar.
+- O botão/coluna isolado "Padrão" (reset por linha) **é removido** desta versão; o reset agora é via dropdown ("Padrão do sistema").
+
+Nenhuma alteração na tabela `user_menu_overrides` — o dropdown só preenche o `states` local antes do save existente.
 
 ### Detalhes técnicos
-- Reutilizar a função `colorFor` adaptada para status de ticket (`Fechado`/`Aprovado` → verde; vencido → vermelho; `Em Andamento` → âmbar; default → azul).
-- Estado: `cursor: Date`, `selectedTicket: Ticket | null`.
-- Sem alterações de banco, hooks ou outros arquivos.
+
+- Arquivos novos: `src/components/usuarios/PermissionPresetModal.tsx`, `src/components/usuarios/PermissionPresetsTab.tsx`, `src/hooks/usePermissionPresets.ts`.
+- Editar: `src/pages/Usuarios.tsx` (envelopar com `<Tabs>` shadcn), `src/components/usuarios/UserPermissionsModal.tsx` (adicionar dropdown, remover botão "Padrão" por linha, manter Liberar/Bloquear).
+- Tipos Supabase regeneram após migration aprovada.
+- Sem mudanças em `useMenuAccess` nem na lógica de runtime — padrões são apenas atalhos para gravar overrides existentes.

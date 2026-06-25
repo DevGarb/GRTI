@@ -1,9 +1,10 @@
 import { useEffect, useState } from "react";
-import { X, Check, Ban, Minus } from "lucide-react";
+import { X, Check, Ban, Minus, Sparkles } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { menuItems, defaultAccess, type Roles } from "@/config/menuItems";
 import { toast } from "sonner";
+import { usePermissionPresets } from "@/hooks/usePermissionPresets";
 
 type State = "default" | "grant" | "block";
 
@@ -105,20 +106,63 @@ export default function UserPermissionsModal({ user, onClose }: Props) {
     }
   };
 
+  const { presets } = usePermissionPresets();
+
+  const applyPreset = (id: string) => {
+    if (id === "__reset__") {
+      setStates({});
+      toast.success("Permissões resetadas ao padrão do sistema. Clique em Salvar para confirmar.");
+      return;
+    }
+    const preset = presets.find((p) => p.id === id);
+    if (!preset) return;
+    const next: Record<string, State> = {};
+    Object.entries(preset.overrides || {}).forEach(([k, v]) => {
+      next[k] = v as State;
+    });
+    setStates(next);
+    toast.success(`Padrão "${preset.name}" aplicado. Clique em Salvar para confirmar.`);
+  };
+
   return (
     <div className="fixed inset-0 z-50 bg-foreground/30 backdrop-blur-sm flex items-center justify-center p-4">
       <div className="bg-card border border-border rounded-lg w-full max-w-2xl max-h-[85vh] flex flex-col shadow-lg">
-        <div className="flex items-center justify-between p-4 border-b border-border">
-          <div>
+        <div className="flex items-center justify-between gap-3 p-4 border-b border-border">
+          <div className="min-w-0">
             <h2 className="text-base font-semibold">Permissões de Menu</h2>
-            <p className="text-xs text-muted-foreground">
+            <p className="text-xs text-muted-foreground truncate">
               {user.full_name}
               {orgName && <> · <span className="font-medium">{orgName}</span></>}
             </p>
           </div>
-          <button onClick={onClose} className="p-1 text-muted-foreground hover:text-foreground">
-            <X className="h-4 w-4" />
-          </button>
+          <div className="flex items-center gap-2 shrink-0">
+            <div className="relative">
+              <Sparkles className="absolute left-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
+              <select
+                onChange={(e) => {
+                  if (e.target.value) {
+                    applyPreset(e.target.value);
+                    e.target.value = "";
+                  }
+                }}
+                defaultValue=""
+                className="pl-7 pr-2 py-1.5 text-xs rounded-md border border-input bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring/20"
+              >
+                <option value="" disabled>Aplicar padrão…</option>
+                {presets.length > 0 && (
+                  <optgroup label="Padrões da organização">
+                    {presets.map((p) => (
+                      <option key={p.id} value={p.id}>{p.name}</option>
+                    ))}
+                  </optgroup>
+                )}
+                <option value="__reset__">Padrão do sistema (resetar)</option>
+              </select>
+            </div>
+            <button onClick={onClose} className="p-1 text-muted-foreground hover:text-foreground">
+              <X className="h-4 w-4" />
+            </button>
+          </div>
         </div>
 
         <div className="flex-1 overflow-auto p-4 space-y-1">
@@ -141,7 +185,7 @@ export default function UserPermissionsModal({ user, onClose }: Props) {
                     </div>
                   </div>
                   <div className="flex gap-1 shrink-0">
-                    {(["default", "grant", "block"] as State[]).map((s) => {
+                    {(["grant", "block"] as State[]).map((s) => {
                       const labels = { default: "Padrão", grant: "Liberar", block: "Bloquear" };
                       const Icons = { default: Minus, grant: Check, block: Ban };
                       const Icon = Icons[s];

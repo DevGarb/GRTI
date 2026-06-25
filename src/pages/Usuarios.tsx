@@ -2,6 +2,8 @@ import { useState } from "react";
 import { Users, Shield, Search, UserPlus, ChevronDown, ChevronRight, Pencil, X, User, Crown, FileUp, Download, Code, KeyRound, Trash2 } from "lucide-react";
 import ImportUsersModal from "@/components/usuarios/ImportUsersModal";
 import UserPermissionsModal from "@/components/usuarios/UserPermissionsModal";
+import PermissionPresetsTab from "@/components/usuarios/PermissionPresetsTab";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -284,6 +286,16 @@ export default function Usuarios() {
     <div className="space-y-6 max-w-5xl">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold text-foreground">Usuários</h1>
+      </div>
+
+      <Tabs defaultValue="users" className="w-full">
+        <TabsList>
+          <TabsTrigger value="users">Usuários</TabsTrigger>
+          {isAdmin && <TabsTrigger value="presets">Padrões de Permissão</TabsTrigger>}
+        </TabsList>
+
+        <TabsContent value="users" className="space-y-6 mt-6">
+          <div className="flex items-center justify-end gap-2">
         {isAdmin && (
           <div className="flex items-center gap-2">
             <button
@@ -425,6 +437,16 @@ export default function Usuarios() {
           })}
         </div>
       )}
+        </TabsContent>
+
+        {isAdmin && (
+          <TabsContent value="presets" className="mt-6">
+            <PermissionPresetsTab />
+          </TabsContent>
+        )}
+      </Tabs>
+
+
 
       {/* Edit Modal */}
       {editingUser && (
