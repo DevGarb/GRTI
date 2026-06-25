@@ -130,6 +130,7 @@ interface CreateProjectInput {
   start_date?: string | null;
   end_date?: string | null;
   owner_id?: string | null;
+  co_owner_id?: string | null;
 }
 
 export function useCreateProject() {
