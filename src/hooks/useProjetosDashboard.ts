@@ -33,20 +33,6 @@ export function useProjetosDashboard(from: Date, to: Date) {
   });
 }
 
-export interface MvpRow {
-  user_id: string;
-  full_name: string;
-  total_deliveries: number;
-  on_time: number;
-  reworks: number;
-  on_time_rate: number;
-  quality_rate: number;
-  rework_rate: number;
-  op_efficiency: number;
-  final_score: number;
-  award_level: "ouro" | "prata" | "none";
-  amount_brl: number;
-}
 
 export interface MvpRow {
   user_id: string;
