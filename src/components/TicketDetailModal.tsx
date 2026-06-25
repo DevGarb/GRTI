@@ -1269,6 +1269,90 @@ export default function TicketDetailModal({ ticket, onClose }: Props) {
           }}
         />
       )}
+
+      <Dialog open={showReworkAuditDialog} onOpenChange={(o) => { setShowReworkAuditDialog(o); if (!o) { setRemovingReworkId(null); setRemoveReworkReason(""); } }}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Validar marcações de retrabalho</DialogTitle>
+            <DialogDescription>
+              Remova marcações registradas por engano. A remoção fica registrada no histórico do chamado.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2 max-h-[55vh] overflow-y-auto">
+            {reworkEntries.length === 0 && (
+              <div className="text-sm text-muted-foreground text-center py-4">
+                Nenhuma marcação de retrabalho encontrada.
+              </div>
+            )}
+            {reworkEntries.map((e: any) => {
+              const origin = e.old_value === "Fechado"
+                ? "Admin reabriu chamado fechado"
+                : e.old_value === "Aguardando Aprovação"
+                  ? "Solicitante reprovou"
+                  : "Marcação manual";
+              const isRemovingThis = removingReworkId === e.id;
+              return (
+                <div key={e.id} className="border border-border rounded-md p-3 bg-muted/30">
+                  <div className="flex items-center justify-between gap-2 text-xs text-muted-foreground">
+                    <span>{new Date(e.created_at).toLocaleString("pt-BR")}</span>
+                    <span className="px-1.5 py-0.5 rounded bg-background border border-border">{origin}</span>
+                  </div>
+                  <div className="text-sm mt-1"><strong>Por:</strong> {e.author_name}</div>
+                  {e.new_value && (
+                    <div className="text-sm mt-1 text-foreground/80 whitespace-pre-wrap break-words">{e.new_value}</div>
+                  )}
+                  {!isRemovingThis ? (
+                    <button
+                      type="button"
+                      onClick={() => { setRemovingReworkId(e.id); setRemoveReworkReason(""); }}
+                      className="mt-2 text-xs text-destructive hover:underline"
+                    >
+                      Remover marcação
+                    </button>
+                  ) : (
+                    <div className="mt-2 space-y-2">
+                      <textarea
+                        value={removeReworkReason}
+                        onChange={(ev) => setRemoveReworkReason(ev.target.value)}
+                        placeholder="Motivo da remoção (obrigatório)"
+                        className="w-full text-sm px-2 py-1.5 rounded border border-input bg-background"
+                        rows={2}
+                      />
+                      <div className="flex gap-2 justify-end">
+                        <button
+                          type="button"
+                          onClick={() => { setRemovingReworkId(null); setRemoveReworkReason(""); }}
+                          className="text-xs px-3 py-1.5 rounded border border-input hover:bg-muted"
+                        >
+                          Cancelar
+                        </button>
+                        <button
+                          type="button"
+                          disabled={!removeReworkReason.trim() || isRemovingRework}
+                          onClick={() => handleRemoveRework(e.id)}
+                          className="text-xs px-3 py-1.5 rounded bg-destructive text-destructive-foreground hover:opacity-90 disabled:opacity-50"
+                        >
+                          {isRemovingRework ? "Removendo..." : "Confirmar remoção"}
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+          <DialogFooter>
+            <button
+              type="button"
+              onClick={() => setShowReworkAuditDialog(false)}
+              className="text-sm px-3 py-1.5 rounded border border-input hover:bg-muted"
+            >
+              Fechar
+            </button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
     </div>
   );
 }
