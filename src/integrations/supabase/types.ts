@@ -2621,6 +2621,23 @@ export type Database = {
           user_id: string
         }[]
       }
+      get_mvp_evolution_v2: {
+        Args: {
+          _months_back?: number
+          _organization_id: string
+          _track: string
+        }
+        Returns: {
+          avg_final: number
+          avg_on_time: number
+          avg_rework: number
+          label: string
+          month: number
+          total_deliveries: number
+          total_value: number
+          year: number
+        }[]
+      }
       get_mvp_individual: {
         Args: {
           _month: number
