@@ -283,6 +283,21 @@ export default function TicketDetailModal({ ticket, onClose }: Props) {
         _reason: removeReworkReason.trim(),
       });
       if (error) throw error;
+
+      queryClient.setQueryData(["ticket-rework-count", ticket.id], (old: number | undefined) =>
+        Math.max(0, (old || 0) - 1)
+      );
+      queryClient.setQueryData(["ticket-rework-entries", ticket.id], (old: any[] | undefined) =>
+        (old || []).filter((entry) => entry.id !== entryId)
+      );
+      queryClient.setQueriesData({ queryKey: ["tickets"] }, (old: any) =>
+        Array.isArray(old)
+          ? old.map((t) => t.id === ticket.id
+            ? { ...t, reworkCount: Math.max(0, (t.reworkCount || 0) - 1) }
+            : t)
+          : old
+      );
+
       queryClient.invalidateQueries({ queryKey: ["ticket-rework-count", ticket.id] });
       queryClient.invalidateQueries({ queryKey: ["ticket-rework-entries", ticket.id] });
       queryClient.invalidateQueries({ queryKey: ["ticket-history", ticket.id] });
@@ -1270,7 +1285,11 @@ export default function TicketDetailModal({ ticket, onClose }: Props) {
       )}
 
       <Dialog open={showReworkAuditDialog} onOpenChange={(o) => { setShowReworkAuditDialog(o); if (!o) { setRemovingReworkId(null); setRemoveReworkReason(""); } }}>
-        <DialogContent className="max-w-lg">
+        <DialogContent
+          className="max-w-lg"
+          onClick={(e) => e.stopPropagation()}
+          onPointerDown={(e) => e.stopPropagation()}
+        >
           <DialogHeader>
             <DialogTitle>Validar marcações de retrabalho</DialogTitle>
             <DialogDescription>
