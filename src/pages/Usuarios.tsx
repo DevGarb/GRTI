@@ -437,6 +437,16 @@ export default function Usuarios() {
           })}
         </div>
       )}
+        </TabsContent>
+
+        {isAdmin && (
+          <TabsContent value="presets" className="mt-6">
+            <PermissionPresetsTab />
+          </TabsContent>
+        )}
+      </Tabs>
+
+
 
       {/* Edit Modal */}
       {editingUser && (
