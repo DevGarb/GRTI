@@ -2668,6 +2668,10 @@ export type Database = {
         }
         Returns: boolean
       }
+      invalidate_ticket_rework: {
+        Args: { _history_id: string; _reason: string }
+        Returns: undefined
+      }
       is_member_of_org: { Args: { _org: string }; Returns: boolean }
       is_op_staff: { Args: { _org: string }; Returns: boolean }
       is_same_organization: {
