@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useGoals } from "@/hooks/useGoals";
 import GoalsManager from "@/components/metas/GoalsManager";
+import PreventivasMonthlyTarget from "@/components/metas/PreventivasMonthlyTarget";
 import GoalsSummaryCards from "@/components/metas/GoalsSummaryCards";
 import { BUSINESS_HOURS_PER_DAY } from "@/lib/businessHours";
 
