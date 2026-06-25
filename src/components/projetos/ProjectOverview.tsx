@@ -1,8 +1,10 @@
-import { Plus, ArrowRight, Ticket, ListTodo, Layers, TrendingUp } from "lucide-react";
+import { Plus, ArrowRight, Ticket, ListTodo, Layers, TrendingUp, User, Users } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
+import { supabase } from "@/integrations/supabase/client";
 import { Project } from "@/hooks/useProjects";
 import { SprintWithProgress } from "@/hooks/useSprints";
 import { useProjectTickets } from "@/hooks/useProjectTickets";
