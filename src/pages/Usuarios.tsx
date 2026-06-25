@@ -95,12 +95,26 @@ export default function Usuarios() {
     queryKey: ["all-user-overrides", adminOrgId],
     enabled: !!adminOrgId,
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("user_menu_overrides")
-        .select("user_id, menu_key, granted")
-        .eq("organization_id", adminOrgId);
-      if (error) throw error;
-      return data || [];
+      // Paginate to avoid PostgREST default row cap (~1000) that was making
+      // some users look "Personalizado" when they actually matched the preset.
+      const pageSize = 1000;
+      let from = 0;
+      const all: { user_id: string; menu_key: string; granted: boolean }[] = [];
+      // Loop until a page returns fewer rows than pageSize
+      // eslint-disable-next-line no-constant-condition
+      while (true) {
+        const { data, error } = await supabase
+          .from("user_menu_overrides")
+          .select("user_id, menu_key, granted")
+          .eq("organization_id", adminOrgId)
+          .range(from, from + pageSize - 1);
+        if (error) throw error;
+        const rows = (data || []) as typeof all;
+        all.push(...rows);
+        if (rows.length < pageSize) break;
+        from += pageSize;
+      }
+      return all;
     },
   });
 
