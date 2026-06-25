@@ -25,6 +25,7 @@ export default function ChamadosAbertos() {
         .from("tickets")
         .select("*")
         .in("status", ["Aberto", "Disponível"])
+        .is("assigned_to", null)
         .order("created_at", { ascending: false });
 
       if (orgId) {
