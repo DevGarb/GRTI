@@ -581,10 +581,22 @@ export default function TicketDetailModal({ ticket, onClose }: Props) {
               )}
 
               {reworkCount > 0 && (
-                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400 border border-orange-200 dark:border-orange-800">
-                  <RefreshCw className="h-3 w-3" />
-                  Retrabalho ({reworkCount}x)
-                </span>
+                (isAdmin || isSuperAdmin) ? (
+                  <button
+                    type="button"
+                    onClick={() => setShowReworkAuditDialog(true)}
+                    title="Validar/remover marcações de retrabalho"
+                    className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400 border border-orange-200 dark:border-orange-800 hover:bg-orange-200 dark:hover:bg-orange-900/50 transition-colors cursor-pointer"
+                  >
+                    <RefreshCw className="h-3 w-3" />
+                    Retrabalho ({reworkCount}x)
+                  </button>
+                ) : (
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400 border border-orange-200 dark:border-orange-800">
+                    <RefreshCw className="h-3 w-3" />
+                    Retrabalho ({reworkCount}x)
+                  </span>
+                )
               )}
               {(ticket as any).project_id && (
                 <a
