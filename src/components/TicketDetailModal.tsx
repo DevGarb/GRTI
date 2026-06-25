@@ -64,6 +64,8 @@ function CategoryTreePicker({
     });
   };
 
+  const nodeRefs = useRef<Map<string, HTMLDivElement | null>>(new Map());
+
   const renderNode = (cat: Category, depth: number): JSX.Element => {
     const children = getChildren(cat.id);
     const isExpanded = expanded.has(cat.id);
@@ -71,14 +73,25 @@ function CategoryTreePicker({
     const isSelected = selectedId === cat.id;
 
     return (
-      <div key={cat.id} style={{ marginLeft: depth * 16 }}>
+      <div
+        key={cat.id}
+        ref={(el) => { nodeRefs.current.set(cat.id, el); }}
+        style={{ marginLeft: depth * 16 }}
+      >
         <button
           type="button"
           onClick={() => {
             if (isItem) {
               onSelect(cat.id, cat.score);
             } else {
+              const willExpand = !isExpanded;
               toggleExpand(cat.id);
+              if (willExpand) {
+                requestAnimationFrame(() => {
+                  const el = nodeRefs.current.get(cat.id);
+                  el?.scrollIntoView({ behavior: "smooth", block: "start" });
+                });
+              }
             }
           }}
           className={`w-full flex items-center gap-2 px-2.5 py-1.5 rounded-md text-sm transition-colors text-left ${
@@ -104,6 +117,7 @@ function CategoryTreePicker({
       </div>
     );
   };
+
 
   return (
     <div className="max-h-96 overflow-y-auto border border-border rounded-lg p-2 space-y-0.5 bg-background">
