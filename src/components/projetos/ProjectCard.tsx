@@ -54,7 +54,22 @@ export default function ProjectCard({ project }: { project: ProjectAggregate }) 
           <Progress value={pct} className="h-1.5" />
         </div>
 
-        <div className="flex items-center gap-4 mt-4 text-[11px] text-muted-foreground">
+        {(project.ownerName || project.coOwnerName) && (
+          <div className="flex items-center flex-wrap gap-2 mt-3 text-[11px]">
+            {project.ownerName && (
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-primary/10 text-primary">
+                <User className="h-3 w-3" /> {project.ownerName}
+              </span>
+            )}
+            {project.coOwnerName && (
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-muted text-muted-foreground">
+                <Users className="h-3 w-3" /> {project.coOwnerName}
+              </span>
+            )}
+          </div>
+        )}
+
+        <div className="flex items-center gap-4 mt-3 text-[11px] text-muted-foreground">
           <span className="flex items-center gap-1"><Ticket className="h-3 w-3" /> {project.totalLinkedTickets} chamados</span>
           <span className="flex items-center gap-1"><Zap className="h-3 w-3" /> {project.activeSprints} sprint(s) ativa(s)</span>
           {project.start_date && (
