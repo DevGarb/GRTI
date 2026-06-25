@@ -3,7 +3,7 @@ import { ProjectAggregate } from "@/hooks/useProjects";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
-import { Calendar, Ticket, Zap, DollarSign, CheckCircle2 } from "lucide-react";
+import { Calendar, Ticket, Zap, DollarSign, CheckCircle2, User, Users } from "lucide-react";
 
 const SIZE_LABEL: Record<string, string> = {
   pequeno: "Pequeno porte",
