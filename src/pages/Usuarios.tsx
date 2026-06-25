@@ -9,6 +9,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import { maskPhone, maskCPF, unmask, isValidCPF } from "@/lib/masks";
+import { usePermissionPresets } from "@/hooks/usePermissionPresets";
 
 interface ProfileWithRoles {
   user_id: string;
