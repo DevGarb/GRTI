@@ -1,38 +1,23 @@
-## Plano para corrigir as notas erradas
+## Objetivo
+Garantir no modal **Concluir projeto** que o valor digitado pelo usuário sempre prevaleça, e usar o sugerido (Pequeno R$ 300 / Médio R$ 500 / Grande R$ 800) apenas como fallback quando o campo estiver vazio.
 
-### Diagnóstico
-- A tela **Metas & Desempenho** está exibindo **Nota Média** usando avaliações do tipo `meta`.
-- Hoje `meta` representa a **pontuação da categoria** do chamado, geralmente 1, 2, 3 etc., então a nota fica artificialmente baixa.
-- A nota correta do usuário deve vir da avaliação de satisfação (`satisfaction`), que é a nota de 1 a 5 dada no fechamento/aprovação.
-- A **Pontuação Total** deve continuar vindo da categoria/subcategoria do chamado, não da nota de satisfação.
+## Mudanças em `src/components/projetos/CompleteProjectModal.tsx`
 
-### Correções propostas
-1. **Corrigir a função de metas dos técnicos**
-   - Atualizar `get_metas_tecnicos` para:
-     - `avg_score` = média das avaliações `satisfaction`.
-     - `evaluations_count` = quantidade real de avaliações `satisfaction`.
-     - `total_points` = soma da pontuação da categoria/subcategoria do chamado.
-     - Lista de chamados mostrar:
-       - `Pontos` = pontos da categoria.
-       - `Nota` = satisfação do solicitante, ou “Sem avaliação”.
+1. **Inicialização do campo Valor**
+   - Ao abrir o modal, se `initialValue` existir → preencher com ele.
+   - Se não existir → deixar o campo **vazio** (placeholder mostrando o sugerido do porte atual, ex.: "Sugerido: 300"), em vez de já preencher com o default.
 
-2. **Corrigir duplicidade/ambiguidade de avaliação**
-   - Separar explicitamente no SQL:
-     - `satisfaction_score` para nota do usuário.
-     - `category_points` para pontuação da meta.
-   - Evitar que a pontuação da categoria seja tratada como nota média.
+2. **Troca de porte (handleSizeChange)**
+   - Continuar **sem sobrescrever** o que o usuário digitou.
+   - Apenas atualizar o placeholder do input para refletir o sugerido do novo porte.
 
-3. **Ajustar MVP de Chamados para manter coerência**
-   - Conferir `get_mvp_chamados_metrics`, que já usa `satisfaction` para CSAT.
-   - Ajustar a contagem de retrabalho para ignorar retrabalhos invalidados, se ainda houver algum ponto contando errado.
-   - Manter as trilhas independentes: Chamados e Projetos.
+3. **Confirmação (handleConfirm)**
+   - Se o campo `value` estiver vazio/inválido → usar `SIZE_DEFAULTS[size]` como valor salvo.
+   - Se tiver valor digitado → salvar exatamente o que foi digitado (`parseFloat`).
+   - Nunca salvar `null` por esquecimento — sempre algum número (digitado ou sugerido).
 
-4. **Corrigir progresso visual das metas, se necessário**
-   - Garantir que a meta `Nota Média` compare contra nota real de satisfação, ex.: 4.5/5.
-   - Garantir que a meta `Pontuação` compare contra soma de pontos das categorias.
-   - Manter `Retrabalho Máximo (%)` como métrica inversa.
+4. **Texto auxiliar**
+   - Ajustar a legenda abaixo do input para algo como: *"Deixe em branco para usar o valor sugerido do porte selecionado."*
 
-5. **Validação final**
-   - Comparar os valores retornados pelo banco com uma consulta manual por técnico no mês atual.
-   - Confirmar que Felipe, Izabele, Danilo e Victor passam a mostrar notas próximas da média de satisfação real, e não a média da pontuação das categorias.
-   - Rodar o linter do backend após a migração e corrigir apenas alertas relacionados a essa alteração.
+## Fora de escopo
+- Sem alterações de schema, hooks, ProjectCard ou outros componentes — só o modal.
