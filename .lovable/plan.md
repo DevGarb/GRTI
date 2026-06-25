@@ -1,87 +1,38 @@
-## Objetivo
+## Plano para corrigir as notas erradas
 
-Tornar a aba **Metas → MVP** funcional de ponta a ponta, com **duas trilhas independentes de premiação** (Chamados e Projetos) sincronizadas com os dados reais.
+### Diagnóstico
+- A tela **Metas & Desempenho** está exibindo **Nota Média** usando avaliações do tipo `meta`.
+- Hoje `meta` representa a **pontuação da categoria** do chamado, geralmente 1, 2, 3 etc., então a nota fica artificialmente baixa.
+- A nota correta do usuário deve vir da avaliação de satisfação (`satisfaction`), que é a nota de 1 a 5 dada no fechamento/aprovação.
+- A **Pontuação Total** deve continuar vindo da categoria/subcategoria do chamado, não da nota de satisfação.
 
----
+### Correções propostas
+1. **Corrigir a função de metas dos técnicos**
+   - Atualizar `get_metas_tecnicos` para:
+     - `avg_score` = média das avaliações `satisfaction`.
+     - `evaluations_count` = quantidade real de avaliações `satisfaction`.
+     - `total_points` = soma da pontuação da categoria/subcategoria do chamado.
+     - Lista de chamados mostrar:
+       - `Pontos` = pontos da categoria.
+       - `Nota` = satisfação do solicitante, ou “Sem avaliação”.
 
-## 1. Trilhas de Premiação
+2. **Corrigir duplicidade/ambiguidade de avaliação**
+   - Separar explicitamente no SQL:
+     - `satisfaction_score` para nota do usuário.
+     - `category_points` para pontuação da meta.
+   - Evitar que a pontuação da categoria seja tratada como nota média.
 
-Cada colaborador pode concorrer/ganhar em uma ou nas duas trilhas no mesmo mês:
+3. **Ajustar MVP de Chamados para manter coerência**
+   - Conferir `get_mvp_chamados_metrics`, que já usa `satisfaction` para CSAT.
+   - Ajustar a contagem de retrabalho para ignorar retrabalhos invalidados, se ainda houver algum ponto contando errado.
+   - Manter as trilhas independentes: Chamados e Projetos.
 
-| Trilha | Fonte | Prêmios |
-|---|---|---|
-| **Chamados** | `tickets` + `evaluations` + `ticket_history` | Prata ≥ 90% (R$ 300) · Ouro = 100% (R$ 500) |
-| **Projetos** | `project_tasks` + `sprints` (lógica atual) | Prata ≥ 90% (R$ 300) · Ouro = 100% (R$ 500) |
+4. **Corrigir progresso visual das metas, se necessário**
+   - Garantir que a meta `Nota Média` compare contra nota real de satisfação, ex.: 4.5/5.
+   - Garantir que a meta `Pontuação` compare contra soma de pontos das categorias.
+   - Manter `Retrabalho Máximo (%)` como métrica inversa.
 
-Penalidades (`mvp_penalties`) continuam aplicando por trilha conforme `scope` (`mvp`/`operacional`).
-
----
-
-## 2. Fórmula da trilha Chamados
-
-Considera chamados `Fechado` no mês do colaborador (`assigned_to`):
-
-```text
-on_time_rate     = fechados dentro do due_date ÷ total fechados
-csat_rate        = AVG(evaluations.score WHERE type='satisfaction') × 20   (1-5 → %)
-rework_rate      = retrabalhos válidos ÷ total fechados
-                   (ignora ticket_history.action='rework_invalidated')
-category_points  = SUM(categories.score) dos chamados fechados (exibido, não entra no %)
-
-final_chamados   = on_time_rate × (csat_rate / 100) × (1 − rework_rate) × 100
-```
-
-Sem CSAT no mês → usa 100% (não pune quem não recebeu avaliação).
-
----
-
-## 3. Mudanças no Banco
-
-### Migration única
-- **`get_mvp_chamados_metrics(_org, _year, _month)`** — nova RPC retornando linhas com `user_id, full_name, total_closed, on_time, on_time_rate, csat_avg, csat_count, csat_rate, reworks, rework_rate, category_points, final_score, award_level, amount_brl`.
-- **`get_mvp_metrics`** (existente) — mantida intacta para a trilha Projetos.
-- **`mvp_awards`**: adicionar coluna `track text NOT NULL DEFAULT 'projetos'` (`'chamados'` ou `'projetos'`) e trocar `UNIQUE(user_id, organization_id, year, month)` por `UNIQUE(user_id, organization_id, year, month, track)`. Backfill nas linhas atuais como `'projetos'`.
-- **`compute_mvp_awards`**: estender para receber `_track text` opcional (default `'ambas'`); itera nas duas RPCs e grava com `track` correspondente, aplicando penalidades.
-- **`approve_mvp_award`**: sem mudança (chave já é id).
-- **`get_mvp_individual` / `get_mvp_team_ranking`**: retornar bloco `chamados` em paralelo ao `projetos` (mesma estrutura).
-
-### GRANTs
-Garantir `GRANT EXECUTE` nas novas funções para `authenticated`.
-
----
-
-## 4. Mudanças na UI
-
-### `src/pages/projetos/ProjetosMVP.tsx` (acessada via `/metas/mvp`)
-- Adicionar **seletor de trilha** (Tabs internos: "Chamados" / "Projetos") acima da Tabela.
-- Cada trilha mostra sua própria tabela, KPIs (Total aprovado, Ouros, Pratas) e botões de aprovar/rejeitar.
-- Botão **Recalcular mês** passa a calcular as duas trilhas de uma vez.
-- Subtítulo da página atualizado para refletir duas trilhas.
-
-### `src/pages/projetos/ProjetosMeuMVP.tsx` (acessada via `/metas/meu-mvp`)
-- Cabeçalho passa a mostrar **dois cards de premiação lado a lado** (Chamados / Projetos), cada um com seu Final %, nível e valor.
-- Grid de KPIs ganha seção "Chamados" (entregas no prazo, CSAT, retrabalhos, pontos por categoria) acima da seção "Projetos" atual.
-- "Projeções" mostra o que falta para Ouro em cada trilha.
-
-### Hooks
-- `useMvpMetrics` (em `useProjetosDashboard.ts`) → renomear retorno para `projetos` e criar irmão `useMvpChamadosMetrics`.
-- `useMvpIndividual` → tipo passa a expor `{ chamados, projetos }`.
-- `useMvpTeamRanking` → idem.
-
----
-
-## 5. Validação
-
-1. Rodar `compute_mvp_awards` para o mês corrente e conferir se aparecem 2 linhas por colaborador em `mvp_awards` (track chamados + projetos).
-2. Abrir `/metas/mvp` como admin: trocar entre tabs, aprovar uma premiação de cada trilha.
-3. Abrir `/metas/meu-mvp` como técnico (Felipe/Izabele) e confirmar que a trilha Chamados tem peso real e a de Projetos fica zerada/baixa.
-4. Mesma checagem como dev (Danilo/Victor) confirmando trilha Projetos forte e Chamados com volume menor.
-5. Aplicar uma penalidade de scope `mvp` e ver redução só na trilha correspondente.
-
----
-
-## Resumo técnico das alterações
-
-- **DB**: 1 migration (nova RPC chamados, coluna `track`, ajuste UNIQUE, update em `compute_mvp_awards`, `get_mvp_individual`, `get_mvp_team_ranking`).
-- **Frontend**: 2 páginas (`ProjetosMVP.tsx`, `ProjetosMeuMVP.tsx`) + 2 hooks (`useProjetosDashboard.ts`, `useMvpExtra.ts`).
-- **Sem mudanças** em: lista de chamados, projetos, sprints, penalidades.
+5. **Validação final**
+   - Comparar os valores retornados pelo banco com uma consulta manual por técnico no mês atual.
+   - Confirmar que Felipe, Izabele, Danilo e Victor passam a mostrar notas próximas da média de satisfação real, e não a média da pontuação das categorias.
+   - Rodar o linter do backend após a migração e corrigir apenas alertas relacionados a essa alteração.
