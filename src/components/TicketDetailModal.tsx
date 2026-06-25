@@ -278,26 +278,17 @@ export default function TicketDetailModal({ ticket, onClose }: Props) {
     }
     try {
       setIsRemovingRework(true);
-      const { data: deleted, error } = await supabase
-        .from("ticket_history")
-        .delete()
-        .eq("id", entryId)
-        .select("id");
-      if (error) throw error;
-      if (!deleted || deleted.length === 0) {
-        throw new Error("Sem permissão para remover essa marcação. Confirme que você é Administrador desta organização.");
-      }
-
-      await supabase.from("ticket_history").insert({
-        ticket_id: ticket.id,
-        user_id: user!.id,
-        action: "rework_removed",
-        old_value: null,
-        new_value: `Motivo: ${removeReworkReason.trim()}`,
+      const { error } = await (supabase as any).rpc("invalidate_ticket_rework", {
+        _history_id: entryId,
+        _reason: removeReworkReason.trim(),
       });
+      if (error) throw error;
       queryClient.invalidateQueries({ queryKey: ["ticket-rework-count", ticket.id] });
       queryClient.invalidateQueries({ queryKey: ["ticket-rework-entries", ticket.id] });
       queryClient.invalidateQueries({ queryKey: ["ticket-history", ticket.id] });
+      queryClient.invalidateQueries({ queryKey: ["metas-tecnicos"] });
+      queryClient.invalidateQueries({ queryKey: ["management-metrics"] });
+      queryClient.invalidateQueries({ queryKey: ["dashboard-metrics"] });
       queryClient.invalidateQueries({ queryKey: ["tickets"] });
       toast.success("Marcação de retrabalho removida.");
       setRemovingReworkId(null);
