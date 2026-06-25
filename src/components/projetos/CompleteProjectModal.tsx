@@ -102,9 +102,11 @@ export default function CompleteProjectModal({ open, onOpenChange, projectId, in
               min="0"
               value={value}
               onChange={(e) => setValue(e.target.value)}
-              placeholder="0,00"
+              placeholder={`Sugerido: ${SIZE_DEFAULTS[size]?.toLocaleString("pt-BR") ?? "0"}`}
             />
-            <p className="text-xs text-muted-foreground">Valor editável — ajuste conforme o projeto.</p>
+            <p className="text-xs text-muted-foreground">
+              Deixe em branco para usar o valor sugerido do porte selecionado (R$ {SIZE_DEFAULTS[size]?.toLocaleString("pt-BR") ?? "0"}).
+            </p>
           </div>
         </div>
         <DialogFooter>
