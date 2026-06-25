@@ -3,7 +3,7 @@ import { LayoutDashboard, FolderKanban, ListTodo, Zap, Calendar } from "lucide-r
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
 
-const tabs = [
+const tabs: Array<{ to: string; label: string; icon: any; end?: boolean; adminOnly?: boolean }> = [
   { to: "/projetos", label: "Dashboard", icon: LayoutDashboard, end: true },
   { to: "/projetos/lista", label: "Projetos", icon: FolderKanban },
   { to: "/projetos/backlog", label: "Backlog", icon: ListTodo },
