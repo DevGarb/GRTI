@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Monitor, Laptop, Printer, Server, Search, Package, Calendar, User, MapPin } from "lucide-react";
-import { format } from "date-fns";
+import { format, parseISO } from "date-fns";
 import type { Preventiva } from "@/hooks/usePreventivas";
 
 interface Props {
