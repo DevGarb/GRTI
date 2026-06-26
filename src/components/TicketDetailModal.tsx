@@ -697,12 +697,43 @@ export default function TicketDetailModal({ ticket, onClose }: Props) {
                 <span className="text-sm font-medium text-foreground">{ticket.assignedProfile?.full_name || "Não atribuído"}</span>
               )}
             </div>
-            {ticket.due_date && (
+            {(ticket.due_date || canEditPeople) && (
               <div className="flex items-center gap-3">
                 <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider w-24">Entrega</span>
-                <span className={`text-sm font-medium ${new Date(ticket.due_date) < new Date(new Date().toDateString()) && status !== "Fechado" && status !== "Aprovado" ? "text-red-600 dark:text-red-400" : "text-foreground"}`}>
-                  {new Date(ticket.due_date + "T00:00:00").toLocaleDateString("pt-BR")}
-                </span>
+                {canEditPeople ? (
+                  <input
+                    type="date"
+                    value={ticket.due_date || ""}
+                    onChange={async (e) => {
+                      const newDate = e.target.value || null;
+                      const { error } = await supabase
+                        .from("tickets")
+                        .update({
+                          due_date: newDate,
+                          due_date_set_by: user!.id,
+                          due_date_set_at: new Date().toISOString(),
+                        })
+                        .eq("id", ticket.id);
+                      if (error) { toast.error("Erro ao atualizar entrega: " + error.message); return; }
+                      await supabase.from("ticket_history").insert({
+                        ticket_id: ticket.id,
+                        user_id: user!.id,
+                        action: "due_date_change",
+                        old_value: ticket.due_date || "—",
+                        new_value: newDate || "—",
+                      });
+                      toast.success("Data de entrega atualizada");
+                      queryClient.invalidateQueries({ queryKey: ["tickets"] });
+                      queryClient.invalidateQueries({ queryKey: ["tickets-calendar"] });
+                      queryClient.invalidateQueries({ queryKey: ["ticket-history", ticket.id] });
+                    }}
+                    className={`text-sm px-2 py-1 rounded-md border border-input bg-background ${ticket.due_date && new Date(ticket.due_date) < new Date(new Date().toDateString()) && status !== "Fechado" && status !== "Aprovado" ? "text-red-600 dark:text-red-400" : "text-foreground"}`}
+                  />
+                ) : (
+                  <span className={`text-sm font-medium ${new Date(ticket.due_date!) < new Date(new Date().toDateString()) && status !== "Fechado" && status !== "Aprovado" ? "text-red-600 dark:text-red-400" : "text-foreground"}`}>
+                    {new Date(ticket.due_date + "T00:00:00").toLocaleDateString("pt-BR")}
+                  </span>
+                )}
               </div>
             )}
           </div>
