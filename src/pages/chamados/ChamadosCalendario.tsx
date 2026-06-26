@@ -185,7 +185,12 @@ export default function ChamadosCalendario() {
                   </button>
                 ))}
                 {dayItems.length > 4 && (
-                  <div className="text-[10px] text-muted-foreground">+{dayItems.length - 4} mais</div>
+                  <button
+                    onClick={() => setDayModal({ date: day, tickets: dayItems })}
+                    className="text-[10px] text-primary hover:underline font-medium"
+                  >
+                    +{dayItems.length - 4} mais
+                  </button>
                 )}
               </div>
             </div>
@@ -196,6 +201,40 @@ export default function ChamadosCalendario() {
       {selectedTicket && (
         <TicketDetailModal ticket={selectedTicket} onClose={() => setSelectedTicket(null)} />
       )}
+
+      <Dialog open={!!dayModal} onOpenChange={(o) => !o && setDayModal(null)}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>
+              Chamados em {dayModal && format(dayModal.date, "dd 'de' MMMM 'de' yyyy", { locale: ptBR })}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-2 max-h-[60vh] overflow-y-auto pr-1">
+            {dayModal?.tickets.map((t) => (
+              <button
+                key={t.id}
+                onClick={() => {
+                  setDayModal(null);
+                  setSelectedTicket(t);
+                }}
+                className={cn(
+                  "w-full text-left px-3 py-2 rounded-lg border hover:opacity-80 transition-opacity",
+                  colorFor(t.status, t.due_date)
+                )}
+              >
+                <div className="text-sm font-medium truncate">{t.title}</div>
+                <div className="flex items-center gap-2 mt-1 flex-wrap">
+                  <StatusBadge status={t.status} />
+                  <PriorityBadge priority={t.priority} />
+                  {t.assignedProfile?.full_name && (
+                    <span className="text-[11px] opacity-80">· {t.assignedProfile.full_name}</span>
+                  )}
+                </div>
+              </button>
+            ))}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
