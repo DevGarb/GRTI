@@ -33,6 +33,8 @@ export default function EditPatrimonioModal({ patrimonio, onClose }: Props) {
   const [photoPreview, setPhotoPreview] = useState<string | null>(patrimonio.photo_url || null);
   const [removePhoto, setRemovePhoto] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [transferReason, setTransferReason] = useState("");
+  const responsibleChanged = responsible.trim() !== (patrimonio.responsible || "").trim();
 
   const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
