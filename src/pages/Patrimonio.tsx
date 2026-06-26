@@ -3,7 +3,7 @@ import { Package, Search, Monitor, Laptop, Printer, Server, Calendar, User, MapP
 import { usePatrimonio, useDeletePatrimonio, type PatrimonioItem } from "@/hooks/usePatrimonio";
 import { usePreventivas } from "@/hooks/usePreventivas";
 import { useAuth } from "@/contexts/AuthContext";
-import { format } from "date-fns";
+import { format, parseISO } from "date-fns";
 import { toast } from "sonner";
 import QRCode from "qrcode";
 import JSZip from "jszip";
