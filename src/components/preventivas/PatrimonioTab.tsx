@@ -186,7 +186,7 @@ export default function PatrimonioTab({ preventivas }: Props) {
                             <Calendar className="h-4 w-4 text-muted-foreground" />
                             <div>
                               <p className="text-sm font-medium text-foreground">
-                                {format(new Date(h.execution_date), "dd/MM/yyyy")}
+                                {format(parseISO(h.execution_date), "dd/MM/yyyy")}
                               </p>
                               <p className="text-xs text-muted-foreground">
                                 Técnico: {h.creatorName || "—"}
