@@ -573,7 +573,7 @@ function MaintenanceCountdown({
         <div className="flex items-center gap-2 text-xs text-gray-600 pt-2 border-t border-white/60">
           <Calendar className="h-3.5 w-3.5 text-gray-400" />
           <span>
-            Última: <span className="font-semibold text-gray-700">{format(new Date(last.execution_date), "dd/MM/yyyy")}</span>
+            Última: <span className="font-semibold text-gray-700">{format(parseISO(last.execution_date), "dd/MM/yyyy")}</span>
             {last.responsible && <span className="text-gray-500"> por {last.responsible}</span>}
           </span>
         </div>
