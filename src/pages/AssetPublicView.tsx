@@ -154,7 +154,7 @@ export default function AssetPublicView() {
 
   const maintHealth = useMemo(() => {
     if (!asset) return { state: "none" as MaintHealth, nextDate: null, daysLeft: null };
-    const last = asset.last_maintenance ? new Date(asset.last_maintenance.execution_date) : null;
+    const last = asset.last_maintenance ? parseISO(asset.last_maintenance.execution_date) : null;
     return computeMaintenanceHealth(last, asset.maintenance_interval_days);
   }, [asset]);
 
