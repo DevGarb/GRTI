@@ -1,5 +1,5 @@
 import { Monitor, Laptop, Printer, Server, Clock, AlertTriangle, AlertCircle, CheckCircle2 } from "lucide-react";
-import { format } from "date-fns";
+import { format, parseISO } from "date-fns";
 import type { OverdueEquipment } from "@/hooks/usePreventivas";
 
 interface Equipment {
