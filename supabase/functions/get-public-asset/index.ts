@@ -122,10 +122,10 @@ Deno.serve(async (req) => {
     {
       const { data: hist } = await supabase
         .from("patrimonio_history")
-        .select("changed_at, field, old_value, new_value, changed_by")
+        .select("changed_at, field, old_value, new_value, changed_by, reason")
         .eq("patrimonio_id", data.id)
         .order("changed_at", { ascending: false })
-        .limit(50);
+        .limit(100);
 
       const rows = hist ?? [];
       // Resolver nomes
