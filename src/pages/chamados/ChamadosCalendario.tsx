@@ -24,9 +24,14 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { StatusBadge, PriorityBadge } from "@/components/StatusBadge";
 import type { Ticket } from "@/hooks/useTickets";
 
-function colorFor(status: string, dueDate: string | null) {
+function colorFor(status: string, dueDate: string | null, reworkCount = 0) {
+  // Entregue: verde, mesmo que tenha passado do prazo
   if (status === "Fechado" || status === "Aprovado")
     return "bg-emerald-500/20 border-emerald-500/50 text-emerald-800 dark:text-emerald-200";
+  // Retrabalho pendente: vermelho
+  if (reworkCount > 0)
+    return "bg-red-500/20 border-red-500/50 text-red-800 dark:text-red-200";
+  // Aberto/Em Andamento vencido: vermelho
   const isLate = dueDate && new Date(dueDate) < startOfDay(new Date());
   if (isLate) return "bg-red-500/20 border-red-500/50 text-red-800 dark:text-red-200";
   if (status === "Em Andamento")
