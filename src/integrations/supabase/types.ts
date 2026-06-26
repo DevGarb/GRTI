@@ -1453,6 +1453,7 @@ export type Database = {
           old_value: string | null
           organization_id: string | null
           patrimonio_id: string
+          reason: string | null
         }
         Insert: {
           changed_at?: string
@@ -1463,6 +1464,7 @@ export type Database = {
           old_value?: string | null
           organization_id?: string | null
           patrimonio_id: string
+          reason?: string | null
         }
         Update: {
           changed_at?: string
@@ -1473,6 +1475,7 @@ export type Database = {
           old_value?: string | null
           organization_id?: string | null
           patrimonio_id?: string
+          reason?: string | null
         }
         Relationships: []
       }
@@ -2750,6 +2753,14 @@ export type Database = {
           _user_id: string
         }
         Returns: string
+      }
+      transfer_patrimonio_responsible: {
+        Args: {
+          _new_responsible: string
+          _patrimonio_id: string
+          _reason?: string
+        }
+        Returns: undefined
       }
     }
     Enums: {

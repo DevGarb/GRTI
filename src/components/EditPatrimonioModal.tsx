@@ -33,6 +33,8 @@ export default function EditPatrimonioModal({ patrimonio, onClose }: Props) {
   const [photoPreview, setPhotoPreview] = useState<string | null>(patrimonio.photo_url || null);
   const [removePhoto, setRemovePhoto] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [transferReason, setTransferReason] = useState("");
+  const responsibleChanged = responsible.trim() !== (patrimonio.responsible || "").trim();
 
   const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -61,6 +63,18 @@ export default function EditPatrimonioModal({ patrimonio, onClose }: Props) {
     setUploading(true);
     try {
       const photoUrl = await uploadPhoto();
+
+      // Se mudou o responsável, registrar transferência com motivo via RPC
+      if (responsibleChanged) {
+        const { error: rpcError } = await supabase.rpc("transfer_patrimonio_responsible", {
+          _patrimonio_id: patrimonio.id,
+          _new_responsible: responsible.trim(),
+          _reason: transferReason.trim() || null,
+        });
+        if (rpcError) throw rpcError;
+        toast.success("Transferência registrada no histórico");
+      }
+
       updatePatrimonio.mutate(
         {
           id: patrimonio.id,
@@ -70,7 +84,8 @@ export default function EditPatrimonioModal({ patrimonio, onClose }: Props) {
           model: model.trim(),
           serial_number: serialNumber.trim(),
           sector,
-          responsible: responsible.trim(),
+          // responsible já atualizado via RPC quando mudou
+          ...(responsibleChanged ? {} : { responsible: responsible.trim() }),
           location: location.trim(),
           notes: notes.trim() || undefined,
           status,
@@ -79,11 +94,12 @@ export default function EditPatrimonioModal({ patrimonio, onClose }: Props) {
         { onSuccess: () => onClose() }
       );
     } catch (e: any) {
-      toast.error("Erro ao enviar foto: " + e.message);
+      toast.error("Erro: " + e.message);
     } finally {
       setUploading(false);
     }
   };
+
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
@@ -172,6 +188,23 @@ export default function EditPatrimonioModal({ patrimonio, onClose }: Props) {
               <input value={responsible} onChange={(e) => setResponsible(e.target.value)} className="mt-1.5 w-full px-3 py-2.5 rounded-lg border border-input bg-background text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring/20" />
             </div>
           </div>
+
+          {responsibleChanged && (
+            <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 space-y-2">
+              <div className="text-xs font-semibold text-amber-800">
+                Transferência detectada: <span className="font-normal">"{patrimonio.responsible || "—"}" → "{responsible || "—"}"</span>
+              </div>
+              <label className="block text-xs font-medium text-amber-900">
+                Motivo da transferência <span className="text-amber-700 font-normal">(opcional, fica registrado no histórico)</span>
+              </label>
+              <input
+                value={transferReason}
+                onChange={(e) => setTransferReason(e.target.value)}
+                placeholder="Ex: Mudança de setor, novo colaborador, devolução..."
+                className="w-full px-3 py-2 rounded-lg border border-amber-300 bg-white text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-amber-300"
+              />
+            </div>
+          )}
 
           <div className="grid grid-cols-2 gap-3">
             <div>

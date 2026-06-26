@@ -31,7 +31,7 @@ interface PublicAsset {
   last_maintenance: { execution_date: string; responsible: string | null; notes: string | null; checklist: Record<string, unknown> | null } | null;
   maintenance_interval_days: number | null;
   maintenance_interval_source?: "configured" | "default";
-  relocation_history: Array<{ changed_at: string; field: string; old_value: string | null; new_value: string | null; changed_by_name: string | null }>;
+  relocation_history: Array<{ changed_at: string; field: string; old_value: string | null; new_value: string | null; changed_by_name: string | null; reason: string | null }>;
   responsible_history: Array<{ from: string | null; to: string | null; started_at: string; ended_at: string | null; changed_by_name: string | null }>;
 }
 
@@ -148,8 +148,7 @@ export default function AssetPublicView() {
   };
   const retryDisabled = cooldown || isFetching;
 
-  const [showTimeline, setShowTimeline] = useState(false);
-  const [showResponsibles, setShowResponsibles] = useState(true);
+  const [timelineFilter, setTimelineFilter] = useState<"all" | "responsible" | "sector" | "location" | "status">("all");
   const [showChecklist, setShowChecklist] = useState(false);
 
   const maintHealth = useMemo(() => {
@@ -358,110 +357,15 @@ export default function AssetPublicView() {
           </div>
         </div>
 
-        {/* 12a. Histórico de Responsáveis (destaque) */}
-        <CollapsibleCard
+        {/* 12. Linha do tempo unificada — DESTAQUE */}
+        <UnifiedTimeline
           primary={primary}
-          open={showResponsibles}
-          onToggle={() => setShowResponsibles((v) => !v)}
-          icon={<User className="h-4 w-4" />}
-          title="Histórico de responsáveis"
-          count={
-            (asset.responsible_history?.length ?? 0) +
-            (asset.responsible && (asset.responsible_history?.length ?? 0) === 0 ? 1 : 0)
-          }
-        >
-          {(() => {
-            const hist = asset.responsible_history ?? [];
-            if (hist.length === 0 && !asset.responsible) {
-              return (
-                <p className="text-xs text-gray-500 pt-2">
-                  Nenhum responsável registrado ainda.
-                </p>
-              );
-            }
-            // Ordem decrescente (mais recente primeiro)
-            const items = hist.slice().reverse();
-            return (
-              <ol className="relative border-l-2 pt-2 space-y-3 ml-1.5" style={{ borderColor: rgba(primary, 0.2) }}>
-                {items.length === 0 && asset.responsible && (
-                  <li className="pl-4 relative">
-                    <span
-                      className="absolute -left-[7px] top-1 h-3 w-3 rounded-full border-2 border-white animate-pulse"
-                      style={{ backgroundColor: primary }}
-                    />
-                    <p className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: primary }}>
-                      Atual
-                    </p>
-                    <p className="text-sm font-semibold text-gray-800">{asset.responsible}</p>
-                    <p className="text-[11px] text-gray-500">Responsável desde o cadastro</p>
-                  </li>
-                )}
-                {items.map((h, i) => {
-                  const isCurrent = i === 0 && h.ended_at === null;
-                  return (
-                    <li key={i} className="pl-4 relative">
-                      <span
-                        className={`absolute -left-[7px] top-1 h-3 w-3 rounded-full border-2 border-white ${isCurrent ? "animate-pulse" : ""}`}
-                        style={{ backgroundColor: isCurrent ? primary : rgba(primary, 0.5) }}
-                      />
-                      <p className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: isCurrent ? primary : "#9ca3af" }}>
-                        {isCurrent ? "Atual" : "Anterior"}
-                      </p>
-                      <p className="text-sm font-semibold text-gray-800">
-                        {h.to || <span className="italic text-gray-400">Sem responsável</span>}
-                      </p>
-                      <p className="text-[11px] text-gray-500">
-                        {format(new Date(h.started_at), "dd/MM/yyyy")}
-                        {h.ended_at ? ` – ${format(new Date(h.ended_at), "dd/MM/yyyy")}` : " – atual"}
-                        {h.from && <span className="text-gray-400"> · veio de {h.from}</span>}
-                      </p>
-                      {h.changed_by_name && (
-                        <p className="text-[11px] text-gray-400">Atribuído por {h.changed_by_name}</p>
-                      )}
-                    </li>
-                  );
-                })}
-              </ol>
-            );
-          })()}
-        </CollapsibleCard>
+          currentResponsible={asset.responsible}
+          history={asset.relocation_history}
+          filter={timelineFilter}
+          onFilterChange={setTimelineFilter}
+        />
 
-        {/* 12b. Linha do tempo geral (colapsável) */}
-        <CollapsibleCard
-          primary={primary}
-          open={showTimeline}
-          onToggle={() => setShowTimeline((v) => !v)}
-          icon={<Clock className="h-4 w-4" />}
-          title="Linha do tempo do equipamento"
-          count={asset.relocation_history.length}
-        >
-          {asset.relocation_history.length === 0 ? (
-            <p className="text-xs text-gray-500 pt-2">
-              Sem alterações registradas. O histórico passa a ser registrado a partir das próximas edições do patrimônio.
-            </p>
-          ) : (
-            <ol className="relative border-l-2 pt-2 space-y-3 ml-1.5" style={{ borderColor: rgba(primary, 0.2) }}>
-              {asset.relocation_history.map((h, i) => (
-                <li key={i} className="pl-4 relative">
-                  <span
-                    className="absolute -left-[7px] top-1 h-3 w-3 rounded-full border-2 border-white"
-                    style={{ backgroundColor: primary }}
-                  />
-                  <p className="text-[11px] text-gray-400 uppercase tracking-wider">
-                    {format(new Date(h.changed_at), "dd/MM/yyyy HH:mm")}
-                    {h.changed_by_name && <span className="normal-case"> · por {h.changed_by_name}</span>}
-                  </p>
-                  <p className="text-sm text-gray-700">
-                    <span className="font-semibold">{fieldLabels[h.field] || h.field}</span>
-                    : <span className="text-gray-500">{h.old_value || "—"}</span>
-                    <span className="mx-1.5 text-gray-400">→</span>
-                    <span className="text-gray-800">{h.new_value || "—"}</span>
-                  </p>
-                </li>
-              ))}
-            </ol>
-          )}
-        </CollapsibleCard>
 
         <p className="text-center text-[11px] text-gray-400 pb-4">
           Gerado automaticamente pelo sistema de gestão de patrimônio
@@ -640,3 +544,137 @@ function CollapsibleCard({
     </div>
   );
 }
+
+/* ──────────────── Timeline Unificada ──────────────── */
+
+type TimelineFilter = "all" | "responsible" | "sector" | "location" | "status";
+
+const fieldMeta: Record<string, { label: string; icon: React.ReactNode; dot: string; bg: string; text: string }> = {
+  responsible: { label: "Responsável", icon: <User className="h-3.5 w-3.5" />, dot: "bg-blue-500", bg: "bg-blue-50", text: "text-blue-700" },
+  sector:      { label: "Setor",       icon: <Building2 className="h-3.5 w-3.5" />, dot: "bg-amber-500", bg: "bg-amber-50", text: "text-amber-700" },
+  location:    { label: "Localização", icon: <Activity className="h-3.5 w-3.5" />, dot: "bg-violet-500", bg: "bg-violet-50", text: "text-violet-700" },
+  status:      { label: "Status",      icon: <CheckCircle2 className="h-3.5 w-3.5" />, dot: "bg-slate-500", bg: "bg-slate-100", text: "text-slate-700" },
+};
+
+function UnifiedTimeline({
+  primary,
+  currentResponsible,
+  history,
+  filter,
+  onFilterChange,
+}: {
+  primary: string;
+  currentResponsible: string | null;
+  history: Array<{ changed_at: string; field: string; old_value: string | null; new_value: string | null; changed_by_name: string | null; reason: string | null }>;
+  filter: TimelineFilter;
+  onFilterChange: (f: TimelineFilter) => void;
+}) {
+  const items = filter === "all" ? history : history.filter((h) => h.field === filter);
+  const responsibleEntries = history.filter((h) => h.field === "responsible");
+  const lastResponsibleChange = responsibleEntries[0]; // already desc
+
+  const chips: Array<{ key: TimelineFilter; label: string }> = [
+    { key: "all", label: `Todos (${history.length})` },
+    { key: "responsible", label: `Responsável (${history.filter((h) => h.field === "responsible").length})` },
+    { key: "sector", label: `Setor (${history.filter((h) => h.field === "sector").length})` },
+    { key: "location", label: `Localização (${history.filter((h) => h.field === "location").length})` },
+    { key: "status", label: `Status (${history.filter((h) => h.field === "status").length})` },
+  ];
+
+  return (
+    <div className="bg-white rounded-2xl shadow-md overflow-hidden" style={{ borderTop: `3px solid ${primary}` }}>
+      {/* Header com responsável atual */}
+      <div className="px-4 sm:px-5 py-4 border-b border-gray-100" style={{ background: `linear-gradient(135deg, ${rgba(primary, 0.08)} 0%, transparent 100%)` }}>
+        <div className="flex items-start gap-3">
+          <span className="h-10 w-10 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: rgba(primary, 0.12), color: primary }}>
+            <Clock className="h-5 w-5" />
+          </span>
+          <div className="flex-1 min-w-0">
+            <p className="text-[11px] text-gray-500 uppercase tracking-wider font-semibold">Linha do tempo do equipamento</p>
+            {currentResponsible ? (
+              <>
+                <p className="text-sm text-gray-500 mt-0.5">Responsável atual</p>
+                <p className="text-base font-bold text-gray-900 truncate">{currentResponsible}</p>
+                {lastResponsibleChange && (
+                  <p className="text-[11px] text-gray-500 mt-0.5">
+                    Desde {format(new Date(lastResponsibleChange.changed_at), "dd/MM/yyyy")}
+                    {lastResponsibleChange.changed_by_name && <> · por {lastResponsibleChange.changed_by_name}</>}
+                  </p>
+                )}
+              </>
+            ) : (
+              <p className="text-sm text-gray-500 italic mt-1">Sem responsável atribuído</p>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Filtros */}
+      <div className="px-4 sm:px-5 py-3 border-b border-gray-100 flex gap-1.5 overflow-x-auto">
+        {chips.map((c) => {
+          const active = filter === c.key;
+          return (
+            <button
+              key={c.key}
+              onClick={() => onFilterChange(c.key)}
+              className={`shrink-0 px-3 py-1.5 rounded-full text-[11px] font-semibold transition-colors ${
+                active ? "text-white" : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+              }`}
+              style={active ? { backgroundColor: primary } : undefined}
+            >
+              {c.label}
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Timeline */}
+      <div className="px-4 sm:px-5 py-4">
+        {items.length === 0 ? (
+          <p className="text-xs text-gray-500 py-3 text-center">
+            Sem alterações registradas{filter !== "all" ? " para este filtro" : ""}.
+          </p>
+        ) : (
+          <ol className="relative border-l-2 space-y-4 ml-1.5" style={{ borderColor: rgba(primary, 0.18) }}>
+            {items.map((h, i) => {
+              const meta = fieldMeta[h.field] || fieldMeta.status;
+              const isLatest = i === 0;
+              return (
+                <li key={i} className="pl-4 relative">
+                  <span
+                    className={`absolute -left-[7px] top-1.5 h-3 w-3 rounded-full border-2 border-white ${meta.dot} ${isLatest ? "ring-2 ring-offset-1" : ""}`}
+                    style={isLatest ? { boxShadow: `0 0 0 2px ${rgba(primary, 0.3)}` } : undefined}
+                  />
+                  <div className="flex items-center gap-1.5 mb-1">
+                    <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${meta.bg} ${meta.text}`}>
+                      {meta.icon}
+                      {meta.label}
+                    </span>
+                    {isLatest && (
+                      <span className="text-[10px] font-bold uppercase tracking-wider" style={{ color: primary }}>· Mais recente</span>
+                    )}
+                  </div>
+                  <p className="text-sm text-gray-800 leading-snug">
+                    <span className="text-gray-500">{h.old_value || "—"}</span>
+                    <span className="mx-1.5 text-gray-400">→</span>
+                    <span className="font-semibold text-gray-900">{h.new_value || "—"}</span>
+                  </p>
+                  <p className="text-[11px] text-gray-500 mt-0.5">
+                    {format(new Date(h.changed_at), "dd/MM/yyyy 'às' HH:mm")}
+                    {h.changed_by_name && <> · por <span className="font-medium">{h.changed_by_name}</span></>}
+                  </p>
+                  {h.reason && (
+                    <p className="text-[11px] text-gray-600 mt-1 italic bg-gray-50 border-l-2 border-gray-200 pl-2 py-1 rounded-r">
+                      "{h.reason}"
+                    </p>
+                  )}
+                </li>
+              );
+            })}
+          </ol>
+        )}
+      </div>
+    </div>
+  );
+}
+
