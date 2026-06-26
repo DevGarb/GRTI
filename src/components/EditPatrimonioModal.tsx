@@ -63,6 +63,18 @@ export default function EditPatrimonioModal({ patrimonio, onClose }: Props) {
     setUploading(true);
     try {
       const photoUrl = await uploadPhoto();
+
+      // Se mudou o responsável, registrar transferência com motivo via RPC
+      if (responsibleChanged) {
+        const { error: rpcError } = await supabase.rpc("transfer_patrimonio_responsible", {
+          _patrimonio_id: patrimonio.id,
+          _new_responsible: responsible.trim(),
+          _reason: transferReason.trim() || null,
+        });
+        if (rpcError) throw rpcError;
+        toast.success("Transferência registrada no histórico");
+      }
+
       updatePatrimonio.mutate(
         {
           id: patrimonio.id,
@@ -72,7 +84,8 @@ export default function EditPatrimonioModal({ patrimonio, onClose }: Props) {
           model: model.trim(),
           serial_number: serialNumber.trim(),
           sector,
-          responsible: responsible.trim(),
+          // responsible já atualizado via RPC quando mudou
+          ...(responsibleChanged ? {} : { responsible: responsible.trim() }),
           location: location.trim(),
           notes: notes.trim() || undefined,
           status,
@@ -81,11 +94,12 @@ export default function EditPatrimonioModal({ patrimonio, onClose }: Props) {
         { onSuccess: () => onClose() }
       );
     } catch (e: any) {
-      toast.error("Erro ao enviar foto: " + e.message);
+      toast.error("Erro: " + e.message);
     } finally {
       setUploading(false);
     }
   };
+
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
