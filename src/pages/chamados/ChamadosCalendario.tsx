@@ -26,7 +26,7 @@ import type { Ticket } from "@/hooks/useTickets";
 
 function colorFor(status: string, dueDate: string | null, reworkCount = 0) {
   // Entregue: verde, mesmo que tenha passado do prazo
-  if (status === "Fechado" || status === "Aprovado")
+  if (status === "Fechado" || status === "Aprovado" || status === "Aguardando Aprovação")
     return "bg-emerald-500/20 border-emerald-500/50 text-emerald-800 dark:text-emerald-200";
   // Retrabalho pendente: vermelho
   if (reworkCount > 0)
