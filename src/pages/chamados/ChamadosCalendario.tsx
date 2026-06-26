@@ -24,9 +24,14 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { StatusBadge, PriorityBadge } from "@/components/StatusBadge";
 import type { Ticket } from "@/hooks/useTickets";
 
-function colorFor(status: string, dueDate: string | null) {
+function colorFor(status: string, dueDate: string | null, reworkCount = 0) {
+  // Entregue: verde, mesmo que tenha passado do prazo
   if (status === "Fechado" || status === "Aprovado")
     return "bg-emerald-500/20 border-emerald-500/50 text-emerald-800 dark:text-emerald-200";
+  // Retrabalho pendente: vermelho
+  if (reworkCount > 0)
+    return "bg-red-500/20 border-red-500/50 text-red-800 dark:text-red-200";
+  // Aberto/Em Andamento vencido: vermelho
   const isLate = dueDate && new Date(dueDate) < startOfDay(new Date());
   if (isLate) return "bg-red-500/20 border-red-500/50 text-red-800 dark:text-red-200";
   if (status === "Em Andamento")
@@ -64,13 +69,21 @@ export default function ChamadosCalendario() {
         ...data.map((t: any) => t.assigned_to).filter(Boolean),
         ...data.map((t: any) => t.created_by),
       ])] as string[];
-      const { data: profs } = await supabase
-        .from("profiles")
-        .select("user_id, full_name")
-        .in("user_id", ids);
+      const ticketIds = data.map((t: any) => t.id);
+      const [{ data: profs }, { data: reworkHistory }] = await Promise.all([
+        supabase.from("profiles").select("user_id, full_name").in("user_id", ids),
+        ticketIds.length
+          ? supabase.from("ticket_history").select("ticket_id").in("ticket_id", ticketIds).eq("action", "rework")
+          : Promise.resolve({ data: [] as any[] }),
+      ]);
       const m = new Map((profs || []).map((p) => [p.user_id, p.full_name]));
+      const reworkMap = new Map<string, number>();
+      (reworkHistory || []).forEach((h: any) => {
+        reworkMap.set(h.ticket_id, (reworkMap.get(h.ticket_id) || 0) + 1);
+      });
       return data.map((t: any) => ({
         ...t,
+        reworkCount: reworkMap.get(t.id) || 0,
         assignedProfile: t.assigned_to ? { full_name: m.get(t.assigned_to) || "" } : null,
         creatorProfile: { full_name: m.get(t.created_by) || "" },
       })) as Ticket[];
@@ -148,7 +161,7 @@ export default function ChamadosCalendario() {
         <span className="inline-flex items-center gap-1"><span className="w-2.5 h-2.5 rounded bg-emerald-500" />Fechado/Aprovado</span>
         <span className="inline-flex items-center gap-1"><span className="w-2.5 h-2.5 rounded bg-blue-500" />Aberto</span>
         <span className="inline-flex items-center gap-1"><span className="w-2.5 h-2.5 rounded bg-amber-500" />Em Andamento</span>
-        <span className="inline-flex items-center gap-1"><span className="w-2.5 h-2.5 rounded bg-red-500" />Vencido</span>
+        <span className="inline-flex items-center gap-1"><span className="w-2.5 h-2.5 rounded bg-red-500" />Vencido ou Retrabalho</span>
       </div>
 
       <div className="grid grid-cols-7 gap-px bg-border rounded-lg overflow-hidden">
@@ -178,7 +191,7 @@ export default function ChamadosCalendario() {
                     title={`${t.title} — ${t.priority}${t.assignedProfile?.full_name ? ` · ${t.assignedProfile.full_name}` : ""}`}
                     className={cn(
                       "w-full text-left px-1.5 py-0.5 rounded border text-[10px] truncate hover:opacity-80 transition-opacity",
-                      colorFor(t.status, t.due_date)
+                      colorFor(t.status, t.due_date, t.reworkCount)
                     )}
                   >
                     {t.title}
@@ -219,7 +232,7 @@ export default function ChamadosCalendario() {
                 }}
                 className={cn(
                   "w-full text-left px-3 py-2 rounded-lg border hover:opacity-80 transition-opacity",
-                  colorFor(t.status, t.due_date)
+                  colorFor(t.status, t.due_date, t.reworkCount)
                 )}
               >
                 <div className="text-sm font-medium truncate">{t.title}</div>
