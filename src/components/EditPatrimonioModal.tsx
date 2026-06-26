@@ -189,6 +189,23 @@ export default function EditPatrimonioModal({ patrimonio, onClose }: Props) {
             </div>
           </div>
 
+          {responsibleChanged && (
+            <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 space-y-2">
+              <div className="text-xs font-semibold text-amber-800">
+                Transferência detectada: <span className="font-normal">"{patrimonio.responsible || "—"}" → "{responsible || "—"}"</span>
+              </div>
+              <label className="block text-xs font-medium text-amber-900">
+                Motivo da transferência <span className="text-amber-700 font-normal">(opcional, fica registrado no histórico)</span>
+              </label>
+              <input
+                value={transferReason}
+                onChange={(e) => setTransferReason(e.target.value)}
+                placeholder="Ex: Mudança de setor, novo colaborador, devolução..."
+                className="w-full px-3 py-2 rounded-lg border border-amber-300 bg-white text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-amber-300"
+              />
+            </div>
+          )}
+
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="text-sm font-medium text-foreground">Localização</label>
