@@ -469,7 +469,7 @@ export default function Patrimonio() {
                                   <div className="flex items-center gap-3">
                                     <Calendar className="h-4 w-4 text-muted-foreground" />
                                     <div>
-                                      <p className="text-sm font-medium text-foreground">{format(new Date(h.execution_date), "dd/MM/yyyy")}</p>
+                                      <p className="text-sm font-medium text-foreground">{format(parseISO(h.execution_date), "dd/MM/yyyy")}</p>
                                       <p className="text-xs text-muted-foreground">Técnico: {h.creatorName || "—"}</p>
                                     </div>
                                   </div>
