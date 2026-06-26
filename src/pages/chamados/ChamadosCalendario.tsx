@@ -42,6 +42,7 @@ export default function ChamadosCalendario() {
   const [cursor, setCursor] = useState<Date>(new Date());
   const [filterUser, setFilterUser] = useState<string>(isAdmin ? "all" : (user?.id || ""));
   const [selectedTicket, setSelectedTicket] = useState<Ticket | null>(null);
+  const [dayModal, setDayModal] = useState<{ date: Date; tickets: Ticket[] } | null>(null);
 
   const { data: tickets = [] } = useQuery({
     queryKey: ["tickets-calendar", orgId, filterUser, cursor.toISOString().slice(0, 7)],
