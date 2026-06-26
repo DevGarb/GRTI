@@ -69,13 +69,21 @@ export default function ChamadosCalendario() {
         ...data.map((t: any) => t.assigned_to).filter(Boolean),
         ...data.map((t: any) => t.created_by),
       ])] as string[];
-      const { data: profs } = await supabase
-        .from("profiles")
-        .select("user_id, full_name")
-        .in("user_id", ids);
+      const ticketIds = data.map((t: any) => t.id);
+      const [{ data: profs }, { data: reworkHistory }] = await Promise.all([
+        supabase.from("profiles").select("user_id, full_name").in("user_id", ids),
+        ticketIds.length
+          ? supabase.from("ticket_history").select("ticket_id").in("ticket_id", ticketIds).eq("action", "rework")
+          : Promise.resolve({ data: [] as any[] }),
+      ]);
       const m = new Map((profs || []).map((p) => [p.user_id, p.full_name]));
+      const reworkMap = new Map<string, number>();
+      (reworkHistory || []).forEach((h: any) => {
+        reworkMap.set(h.ticket_id, (reworkMap.get(h.ticket_id) || 0) + 1);
+      });
       return data.map((t: any) => ({
         ...t,
+        reworkCount: reworkMap.get(t.id) || 0,
         assignedProfile: t.assigned_to ? { full_name: m.get(t.assigned_to) || "" } : null,
         creatorProfile: { full_name: m.get(t.created_by) || "" },
       })) as Ticket[];
