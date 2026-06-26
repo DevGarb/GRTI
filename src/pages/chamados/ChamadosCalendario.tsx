@@ -232,7 +232,7 @@ export default function ChamadosCalendario() {
                 }}
                 className={cn(
                   "w-full text-left px-3 py-2 rounded-lg border hover:opacity-80 transition-opacity",
-                  colorFor(t.status, t.due_date)
+                  colorFor(t.status, t.due_date, t.reworkCount)
                 )}
               >
                 <div className="text-sm font-medium truncate">{t.title}</div>
