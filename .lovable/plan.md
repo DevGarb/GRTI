@@ -1,27 +1,23 @@
-## Ajuste de cores no Calendário de Chamados
+## Bug: datas das preventivas exibidas com D-1
 
-Atualizar a função `colorFor` em `src/pages/chamados/ChamadosCalendario.tsx` para refletir a semântica: vermelho = pendência do técnico; verde = entregue.
+### Causa
+O campo `execution_date` é gravado como `date` ("YYYY-MM-DD"). No frontend, várias telas fazem `new Date("2026-06-26")`, que o JS interpreta como **meia-noite UTC**. Ao formatar no fuso de Brasília (UTC-3), a data renderiza como o dia anterior. Os dados no banco estão corretos — o bug é só na exibição.
 
-### Nova lógica de cor (em ordem de precedência)
+### Correção
+Trocar todo `new Date(execution_date)` por um parser que respeita o fuso local. Usar `parseISO` do `date-fns` (já é dependência) — para strings "YYYY-MM-DD" ele retorna meia-noite local, eliminando o shift.
 
-1. **Fechado / Aprovado** → verde (entregue, mesmo se passou do prazo — não é mais pendência).
-2. **Retrabalho** (`reworkCount > 0` e ainda não fechado) → vermelho.
-3. **Aberto / Em Andamento vencido** (`due_date < hoje`) → vermelho.
-4. **Em Andamento** no prazo → âmbar.
-5. **Aberto** no prazo → azul.
+### Arquivos a alterar
+- `src/components/preventivas/PreventivasTable.tsx` (linha 51)
+- `src/components/preventivas/PatrimonioTab.tsx` (linha 189)
+- `src/components/preventivas/MonthlyReport.tsx` (linha 42, usar `.getDate()` do parseISO)
+- `src/components/preventivas/EquipmentTable.tsx` (`lastDate` na grid)
+- `src/pages/Preventivas.tsx` (linha 89, geração do CSV)
+- `src/pages/Patrimonio.tsx` (linhas 388 e 472)
+- `src/pages/AssetPublicView.tsx` (linhas 157 e 576)
 
-### Mudanças
+Nada de banco, nada de schema. Só corrigir o parsing nas telas listadas.
 
-**`src/pages/chamados/ChamadosCalendario.tsx`**
-- `colorFor(status, dueDate, reworkCount)` recebe novo parâmetro.
-- Reordenar verificações: fechado/aprovado sai antes do check de atraso.
-- Incluir vermelho para chamados com retrabalho ativo.
-- Atualizar chamadas (`colorFor(t.status, t.due_date, t.reworkCount)`) nos cards do grid e no modal "ver mais".
-- Atualizar a legenda no topo: trocar "Vencido" por "Aberto/Andamento vencido ou Retrabalho".
-
-**Carregamento do `reworkCount`**
-- A query `tickets-calendar` atualmente não traz `reworkCount`. Adicionar um fetch leve em `ticket_history` (action=`rework`) para os IDs do mês, agrupar e mesclar — mesmo padrão usado em `useTickets.ts`.
-
-### Fora de escopo
-- `StatusBadge` continua igual (usado em outras telas).
-- Sem alterações de backend ou em outras visualizações de chamados.
+### Validação
+- Abrir `/preventivas`, verificar que a preventiva criada hoje aparece com a data de hoje.
+- Conferir `/patrimonio` (histórico) e a view pública do ativo.
+- Conferir o CSV exportado da aba Preventivas.

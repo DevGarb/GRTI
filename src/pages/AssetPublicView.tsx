@@ -6,7 +6,7 @@ import {
   User, Hash, Building2, Calendar, Package, CheckCircle2, AlertTriangle,
   XCircle, RefreshCw, Wrench, ChevronDown, Clock, Activity, Timer, ListChecks,
 } from "lucide-react";
-import { format, differenceInDays, addDays, differenceInMonths } from "date-fns";
+import { format, differenceInDays, addDays, differenceInMonths, parseISO } from "date-fns";
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string;
 const SUPABASE_ANON = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY as string;
@@ -154,7 +154,7 @@ export default function AssetPublicView() {
 
   const maintHealth = useMemo(() => {
     if (!asset) return { state: "none" as MaintHealth, nextDate: null, daysLeft: null };
-    const last = asset.last_maintenance ? new Date(asset.last_maintenance.execution_date) : null;
+    const last = asset.last_maintenance ? parseISO(asset.last_maintenance.execution_date) : null;
     return computeMaintenanceHealth(last, asset.maintenance_interval_days);
   }, [asset]);
 
@@ -573,7 +573,7 @@ function MaintenanceCountdown({
         <div className="flex items-center gap-2 text-xs text-gray-600 pt-2 border-t border-white/60">
           <Calendar className="h-3.5 w-3.5 text-gray-400" />
           <span>
-            Última: <span className="font-semibold text-gray-700">{format(new Date(last.execution_date), "dd/MM/yyyy")}</span>
+            Última: <span className="font-semibold text-gray-700">{format(parseISO(last.execution_date), "dd/MM/yyyy")}</span>
             {last.responsible && <span className="text-gray-500"> por {last.responsible}</span>}
           </span>
         </div>

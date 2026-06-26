@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { CheckCircle2, XCircle, ChevronDown, ChevronUp, Eye, Camera } from "lucide-react";
-import { format } from "date-fns";
+import { format, parseISO } from "date-fns";
 import type { Preventiva } from "@/hooks/usePreventivas";
 
 interface Props {
@@ -48,7 +48,7 @@ export default function PreventivasTable({ preventivas }: Props) {
                   onClick={() => setExpandedId(isExpanded ? null : p.id)}
                   className="hover:bg-muted/30 transition-colors cursor-pointer"
                 >
-                  <td className="px-4 py-3 text-foreground">{format(new Date(p.execution_date), "dd/MM/yyyy")}</td>
+                  <td className="px-4 py-3 text-foreground">{format(parseISO(p.execution_date), "dd/MM/yyyy")}</td>
                   <td className="px-4 py-3">
                     <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-muted text-foreground text-xs font-medium">
                       {p.equipment_type}

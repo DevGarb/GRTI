@@ -3,7 +3,7 @@ import { Plus, Wrench, Monitor, Laptop, Printer, Server, Search, Download, Filte
 import NewPreventivaModal from "@/components/NewPreventivaModal";
 import { usePreventivas, useOverdueEquipment, useMaintenanceIntervals, useUpdateInterval } from "@/hooks/usePreventivas";
 import { useAuth } from "@/contexts/AuthContext";
-import { format } from "date-fns";
+import { format, parseISO } from "date-fns";
 import OverdueAlerts from "@/components/preventivas/OverdueAlerts";
 import PreventivasTable from "@/components/preventivas/PreventivasTable";
 import EquipmentTable from "@/components/preventivas/EquipmentTable";
@@ -86,7 +86,7 @@ export default function Preventivas() {
     const rows = preventivas.map((p) => {
       const checked = Object.values(p.checklist).filter(Boolean).length;
       const total = Object.keys(p.checklist).length;
-      return `${format(new Date(p.execution_date), "dd/MM/yyyy")},${p.equipment_type},${p.asset_tag},${checked}/${total},${p.creatorName || ""},${(p.notes || "").replace(/,/g, ";")}`;
+      return `${format(parseISO(p.execution_date), "dd/MM/yyyy")},${p.equipment_type},${p.asset_tag},${checked}/${total},${p.creatorName || ""},${(p.notes || "").replace(/,/g, ";")}`;
     });
     const csv = [...headers, ...rows].join("\n");
     const blob = new Blob([csv], { type: "text/csv" });

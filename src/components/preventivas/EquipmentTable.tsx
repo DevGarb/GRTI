@@ -1,5 +1,5 @@
 import { Monitor, Laptop, Printer, Server, Clock, AlertTriangle, AlertCircle, CheckCircle2 } from "lucide-react";
-import { format } from "date-fns";
+import { format, parseISO } from "date-fns";
 import type { OverdueEquipment } from "@/hooks/usePreventivas";
 
 interface Equipment {
@@ -98,7 +98,7 @@ export default function EquipmentTable({ equipment, statusData }: Props) {
               </div>
               <div className="text-right">
                 <p className="text-muted-foreground text-xs">Última</p>
-                <p className="font-medium text-foreground">{format(new Date(eq.lastDate), "dd/MM/yyyy")}</p>
+                <p className="font-medium text-foreground">{format(parseISO(eq.lastDate), "dd/MM/yyyy")}</p>
               </div>
             </div>
           </div>

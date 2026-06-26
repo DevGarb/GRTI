@@ -3,7 +3,7 @@ import { Package, Search, Monitor, Laptop, Printer, Server, Calendar, User, MapP
 import { usePatrimonio, useDeletePatrimonio, type PatrimonioItem } from "@/hooks/usePatrimonio";
 import { usePreventivas } from "@/hooks/usePreventivas";
 import { useAuth } from "@/contexts/AuthContext";
-import { format } from "date-fns";
+import { format, parseISO } from "date-fns";
 import { toast } from "sonner";
 import QRCode from "qrcode";
 import JSZip from "jszip";
@@ -385,7 +385,7 @@ export default function Patrimonio() {
                     <p className="text-sm font-semibold text-foreground">{history.length} manutenções</p>
                     {history.length > 0 && (
                       <p className="text-xs text-muted-foreground">
-                        Última: {format(new Date(history.sort((a, b) => b.execution_date.localeCompare(a.execution_date))[0].execution_date), "dd/MM/yyyy")}
+                        Última: {format(parseISO(history.sort((a, b) => b.execution_date.localeCompare(a.execution_date))[0].execution_date), "dd/MM/yyyy")}
                       </p>
                     )}
                   </div>
@@ -469,7 +469,7 @@ export default function Patrimonio() {
                                   <div className="flex items-center gap-3">
                                     <Calendar className="h-4 w-4 text-muted-foreground" />
                                     <div>
-                                      <p className="text-sm font-medium text-foreground">{format(new Date(h.execution_date), "dd/MM/yyyy")}</p>
+                                      <p className="text-sm font-medium text-foreground">{format(parseISO(h.execution_date), "dd/MM/yyyy")}</p>
                                       <p className="text-xs text-muted-foreground">Técnico: {h.creatorName || "—"}</p>
                                     </div>
                                   </div>
