@@ -110,6 +110,7 @@ Deno.serve(async (req) => {
       old_value: string | null;
       new_value: string | null;
       changed_by_name: string | null;
+      reason: string | null;
     }> = [];
     let responsible_history: Array<{
       from: string | null;
