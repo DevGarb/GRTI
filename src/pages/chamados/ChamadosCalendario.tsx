@@ -26,7 +26,7 @@ import type { Ticket } from "@/hooks/useTickets";
 
 function colorFor(status: string, dueDate: string | null, reworkCount = 0) {
   // Entregue: verde, mesmo que tenha passado do prazo
-  if (status === "Fechado" || status === "Aprovado")
+  if (status === "Fechado" || status === "Aprovado" || status === "Aguardando Aprovação")
     return "bg-emerald-500/20 border-emerald-500/50 text-emerald-800 dark:text-emerald-200";
   // Retrabalho pendente: vermelho
   if (reworkCount > 0)
@@ -159,7 +159,7 @@ export default function ChamadosCalendario() {
       </div>
 
       <div className="flex items-center gap-3 text-xs text-muted-foreground flex-wrap">
-        <span className="inline-flex items-center gap-1"><span className="w-2.5 h-2.5 rounded bg-emerald-500" />Fechado/Aprovado</span>
+        <span className="inline-flex items-center gap-1"><span className="w-2.5 h-2.5 rounded bg-emerald-500" />Aguardando Aprovação/Aprovado/Fechado</span>
         <span className="inline-flex items-center gap-1"><span className="w-2.5 h-2.5 rounded bg-blue-500" />Aberto</span>
         <span className="inline-flex items-center gap-1"><span className="w-2.5 h-2.5 rounded bg-amber-500" />Em Andamento</span>
         <span className="inline-flex items-center gap-1"><span className="w-2.5 h-2.5 rounded bg-red-500" />Vencido ou Retrabalho</span>
