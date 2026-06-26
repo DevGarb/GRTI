@@ -20,6 +20,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import TicketDetailModal from "@/components/TicketDetailModal";
 import ChamadosTabs from "@/components/chamados/ChamadosTabs";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { StatusBadge, PriorityBadge } from "@/components/StatusBadge";
 import type { Ticket } from "@/hooks/useTickets";
 
 function colorFor(status: string, dueDate: string | null) {
