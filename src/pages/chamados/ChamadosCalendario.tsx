@@ -191,7 +191,7 @@ export default function ChamadosCalendario() {
                     title={`${t.title} — ${t.priority}${t.assignedProfile?.full_name ? ` · ${t.assignedProfile.full_name}` : ""}`}
                     className={cn(
                       "w-full text-left px-1.5 py-0.5 rounded border text-[10px] truncate hover:opacity-80 transition-opacity",
-                      colorFor(t.status, t.due_date)
+                      colorFor(t.status, t.due_date, t.reworkCount)
                     )}
                   >
                     {t.title}
