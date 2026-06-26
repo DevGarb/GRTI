@@ -1,6 +1,7 @@
 import { useMemo } from "react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend, LineChart, Line } from "recharts";
 import { CheckCircle2, XCircle, TrendingUp, Calendar } from "lucide-react";
+import { parseISO } from "date-fns";
 import type { Preventiva } from "@/hooks/usePreventivas";
 
 interface Props {
