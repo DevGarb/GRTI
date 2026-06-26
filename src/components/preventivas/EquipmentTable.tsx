@@ -98,7 +98,7 @@ export default function EquipmentTable({ equipment, statusData }: Props) {
               </div>
               <div className="text-right">
                 <p className="text-muted-foreground text-xs">Última</p>
-                <p className="font-medium text-foreground">{format(new Date(eq.lastDate), "dd/MM/yyyy")}</p>
+                <p className="font-medium text-foreground">{format(parseISO(eq.lastDate), "dd/MM/yyyy")}</p>
               </div>
             </div>
           </div>
