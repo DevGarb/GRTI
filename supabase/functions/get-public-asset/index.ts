@@ -149,6 +149,7 @@ Deno.serve(async (req) => {
         old_value: r.old_value,
         new_value: r.new_value,
         changed_by_name: r.changed_by ? nameMap.get(r.changed_by) ?? null : null,
+        reason: (r as { reason?: string | null }).reason ?? null,
       }));
 
       // Responsáveis em ordem ascendente
