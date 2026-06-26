@@ -86,7 +86,7 @@ export default function Preventivas() {
     const rows = preventivas.map((p) => {
       const checked = Object.values(p.checklist).filter(Boolean).length;
       const total = Object.keys(p.checklist).length;
-      return `${format(new Date(p.execution_date), "dd/MM/yyyy")},${p.equipment_type},${p.asset_tag},${checked}/${total},${p.creatorName || ""},${(p.notes || "").replace(/,/g, ";")}`;
+      return `${format(parseISO(p.execution_date), "dd/MM/yyyy")},${p.equipment_type},${p.asset_tag},${checked}/${total},${p.creatorName || ""},${(p.notes || "").replace(/,/g, ";")}`;
     });
     const csv = [...headers, ...rows].join("\n");
     const blob = new Blob([csv], { type: "text/csv" });
