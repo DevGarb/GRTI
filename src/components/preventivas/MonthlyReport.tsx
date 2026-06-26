@@ -40,7 +40,7 @@ export default function MonthlyReport({ preventivas, monthLabel, year }: Props) 
     // By day of month
     const dayMap = new Map<number, number>();
     preventivas.forEach((p) => {
-      const day = new Date(p.execution_date).getDate();
+      const day = parseISO(p.execution_date).getDate();
       dayMap.set(day, (dayMap.get(day) || 0) + 1);
     });
     const byDay = [...dayMap.entries()]
