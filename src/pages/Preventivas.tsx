@@ -3,7 +3,7 @@ import { Plus, Wrench, Monitor, Laptop, Printer, Server, Search, Download, Filte
 import NewPreventivaModal from "@/components/NewPreventivaModal";
 import { usePreventivas, useOverdueEquipment, useMaintenanceIntervals, useUpdateInterval } from "@/hooks/usePreventivas";
 import { useAuth } from "@/contexts/AuthContext";
-import { format } from "date-fns";
+import { format, parseISO } from "date-fns";
 import OverdueAlerts from "@/components/preventivas/OverdueAlerts";
 import PreventivasTable from "@/components/preventivas/PreventivasTable";
 import EquipmentTable from "@/components/preventivas/EquipmentTable";
