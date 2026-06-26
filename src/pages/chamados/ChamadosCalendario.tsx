@@ -31,11 +31,12 @@ function colorFor(status: string, dueDate: string | null, reworkCount = 0) {
   // Retrabalho pendente: vermelho
   if (reworkCount > 0)
     return "bg-red-500/20 border-red-500/50 text-red-800 dark:text-red-200";
-  // Aberto/Em Andamento vencido: vermelho
-  const isLate = dueDate && new Date(dueDate) < startOfDay(new Date());
-  if (isLate) return "bg-red-500/20 border-red-500/50 text-red-800 dark:text-red-200";
+  // Em Andamento: sempre amarelo (técnico já está executando)
   if (status === "Em Andamento")
     return "bg-amber-500/20 border-amber-500/50 text-amber-800 dark:text-amber-200";
+  // Aberto vencido: vermelho
+  const isLate = dueDate && new Date(dueDate) < startOfDay(new Date());
+  if (isLate) return "bg-red-500/20 border-red-500/50 text-red-800 dark:text-red-200";
   return "bg-blue-500/20 border-blue-500/50 text-blue-800 dark:text-blue-200";
 }
 
