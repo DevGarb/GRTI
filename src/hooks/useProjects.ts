@@ -32,6 +32,8 @@ export interface ProjectAggregate extends Project {
   completedTickets: number;
   activeSprints: number;
   totalSprints: number;
+  completedSprints: number;
+  sprintProgressPct: number;
   totalTasks: number;
   completedTasks: number;
   backlogTasks: number;
