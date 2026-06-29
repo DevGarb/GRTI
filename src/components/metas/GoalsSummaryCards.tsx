@@ -210,6 +210,23 @@ export default function GoalsSummaryCards({ stats, goals, formatHours }: Props) 
                       </div>
                     );
                   })}
+
+                  {/* Entrega de projetos extra (quando houver e não houver meta definida) */}
+                  {(tech.projectTasksDone ?? 0) > 0 &&
+                    !techGoals.some((g) => g.metric === "project_tasks_done") && (
+                      <div className="p-2.5 rounded-lg border border-blue-200 bg-blue-50/50 dark:border-blue-800 dark:bg-blue-900/20">
+                        <div className="flex items-center gap-1.5 mb-1">
+                          <Rocket className="h-3.5 w-3.5 text-blue-600 dark:text-blue-400" />
+                          <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide">
+                            Projetos
+                          </span>
+                        </div>
+                        <div className="text-base font-bold text-foreground leading-tight">
+                          {tech.projectTasksDone}
+                        </div>
+                        <div className="text-[10px] text-muted-foreground">entregues no mês</div>
+                      </div>
+                    )}
                 </div>
               </div>
             </div>
