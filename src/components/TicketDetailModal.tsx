@@ -4,7 +4,7 @@ import { useUserOrganizations } from "@/hooks/useUserOrganizations";
 import { useMoveTicketOrg } from "@/hooks/useMoveTicketOrg";
 import { StatusBadge, PriorityBadge } from "@/components/StatusBadge";
 import type { Ticket } from "@/hooks/useTickets";
-import { useUpdateTicket, usePickTicket, useTechnicianProfiles, useProfiles } from "@/hooks/useTickets";
+import { useUpdateTicket, usePickTicket, useTechnicianProfiles, useProfiles, invalidateMetricCaches } from "@/hooks/useTickets";
 import AssignTicketModal from "@/components/AssignTicketModal";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -1161,7 +1161,7 @@ export default function TicketDetailModal({ ticket, onClose }: Props) {
                             action: "delete",
                             details: { title: ticket.title, status: ticket.status },
                           });
-                          queryClient.invalidateQueries({ queryKey: ["tickets"] });
+                          invalidateMetricCaches(queryClient);
                           toast.success("Chamado excluído com sucesso");
                           onClose();
                         } catch (e: any) {
