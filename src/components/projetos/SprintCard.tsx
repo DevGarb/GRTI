@@ -165,6 +165,44 @@ export default function SprintCard({ sprint, projectId }: Props) {
         </div>
       )}
 
+      <div className="border-t px-4 py-2">
+        <Collapsible open={histOpen} onOpenChange={setHistOpen}>
+          <CollapsibleTrigger asChild>
+            <button className="flex items-center gap-1.5 text-[11px] text-muted-foreground hover:text-foreground">
+              <History className="h-3 w-3" />
+              Histórico da sprint
+              <ChevronDown className={cn("h-3 w-3 transition-transform", histOpen && "rotate-180")} />
+            </button>
+          </CollapsibleTrigger>
+          <CollapsibleContent>
+            <div className="mt-2 space-y-1 text-[11px]">
+              {history.isLoading && <p className="text-muted-foreground">Carregando…</p>}
+              {!history.isLoading && (history.data?.length || 0) === 0 && (
+                <p className="text-muted-foreground">Sem eventos registrados.</p>
+              )}
+              {(history.data || []).map((h: any) => (
+                <div key={h.id} className="flex items-start gap-2 py-0.5">
+                  <span className="px-1.5 py-0.5 rounded bg-muted font-mono text-[10px] uppercase">
+                    {h.action}
+                  </span>
+                  <div className="flex-1 min-w-0">
+                    <div className="text-foreground/80 truncate">
+                      {h.from_status ? `${h.from_status} → ` : ""}
+                      <strong>{h.to_status}</strong>
+                      {h.quality_score != null && ` · qualidade ${h.quality_score}%`}
+                    </div>
+                    <div className="text-muted-foreground">
+                      {new Date(h.created_at).toLocaleString("pt-BR")}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CollapsibleContent>
+        </Collapsible>
+      </div>
+
+
       <NewSprintModal open={editOpen} onOpenChange={setEditOpen} projectId={projectId} sprint={sprint} />
       <AddTicketsToSprintModal
         open={addOpen}
