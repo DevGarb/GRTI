@@ -4,8 +4,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
-import { Fancybox } from "@fancyapps/ui";
-import "@fancyapps/ui/dist/fancybox/fancybox.css";
 import { buildStorageFileName, createPendingFile, getAttachmentDisplayName, getClipboardImageFiles, isImageFile, revokePendingFiles } from "@/lib/attachments";
 
 interface Props {
