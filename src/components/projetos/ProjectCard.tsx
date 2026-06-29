@@ -23,10 +23,7 @@ const statusStyles: Record<string, string> = {
 };
 
 export default function ProjectCard({ project }: { project: ProjectAggregate }) {
-  const total = project.totalTasks || 1;
-  const pct = project.totalTasks > 0
-    ? Math.min(100, Math.round((project.completedTasks / total) * 100))
-    : 0;
+  const pct = project.sprintProgressPct;
 
   return (
     <Link to={`/projetos/${project.id}`} className="block">
@@ -49,12 +46,21 @@ export default function ProjectCard({ project }: { project: ProjectAggregate }) 
         </div>
 
         <div className="mt-4 space-y-2">
-          <div className="flex items-center justify-between text-[11px] text-muted-foreground">
-            <span>Tarefas concluídas</span>
-            <span className="font-mono">{project.completedTasks} / {project.totalTasks}</span>
-          </div>
-          <Progress value={pct} className="h-1.5" />
+          {project.totalSprints > 0 ? (
+            <>
+              <div className="flex items-center justify-between text-[11px] text-muted-foreground">
+                <span>Progresso por sprints</span>
+                <span className="font-mono">
+                  {project.completedSprints} / {project.totalSprints} ({pct}%)
+                </span>
+              </div>
+              <Progress value={pct} className="h-1.5" />
+            </>
+          ) : (
+            <div className="text-[11px] text-muted-foreground italic">Nenhuma sprint criada</div>
+          )}
         </div>
+
 
         {(project.ownerName || project.coOwnerName) && (
           <div className="flex items-center flex-wrap gap-2 mt-3 text-[11px]">

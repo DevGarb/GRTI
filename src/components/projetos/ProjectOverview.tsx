@@ -117,7 +117,8 @@ export default function ProjectOverview({ project, sprints, onAddToActive, onCre
   };
   const totalItems = totalTickets + totalTasks;
   const doneItems = completedTickets + completedTasks;
-  const overallPct = totalItems > 0 ? Math.round((doneItems / totalItems) * 100) : 0;
+  const sprintProgressPct =
+    totalSprints > 0 ? Math.round((sprintsByStatus.concluida / totalSprints) * 100) : 0;
 
   // Status dos chamados
   const statusCounts = tickets.reduce<Record<string, number>>((acc, t) => {
@@ -156,12 +157,14 @@ export default function ProjectOverview({ project, sprints, onAddToActive, onCre
         />
         <KpiCard
           icon={TrendingUp}
-          label="Progresso geral"
-          value={`${overallPct}%`}
+          label="Progresso por sprints"
+          value={`${sprintProgressPct}%`}
           hint={
             <div className="mt-1">
-              <Progress value={overallPct} className="h-1.5 [&>div]:bg-emerald-500" />
-              <div className="mt-1">{doneItems}/{totalItems} itens concluídos</div>
+              <Progress value={sprintProgressPct} className="h-1.5 [&>div]:bg-emerald-500" />
+              <div className="mt-1">
+                {sprintsByStatus.concluida}/{totalSprints} sprints concluídas · {doneItems}/{totalItems} itens
+              </div>
             </div>
           }
           accent="bg-emerald-500/15 text-emerald-600 dark:text-emerald-300"
