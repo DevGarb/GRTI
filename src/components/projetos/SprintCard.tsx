@@ -79,8 +79,15 @@ export default function SprintCard({ sprint, projectId }: Props) {
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
             <h3 className="text-sm font-semibold">{sprint.name}</h3>
-            <Badge className={cn("text-[10px] capitalize", statusColor[sprint.status] || statusColor.planejada)}>
-              {sprint.status}
+            <Badge
+              className={cn(
+                "text-[10px] capitalize",
+                fullyDone
+                  ? statusColor.concluida
+                  : statusColor[sprint.status] || statusColor.planejada
+              )}
+            >
+              {badgeStatus}
             </Badge>
             {sprint.start_date && (
               <span className="text-[11px] text-muted-foreground">
@@ -116,8 +123,16 @@ export default function SprintCard({ sprint, projectId }: Props) {
             </Button>
           )}
           {sprint.status === "ativa" && (
-            <Button size="sm" variant="outline" onClick={() => update.mutate({ id: sprint.id, status: "concluida" } as any)}>
-              <CheckCircle2 className="h-3 w-3 mr-1" /> Concluir
+            <Button
+              asChild
+              size="sm"
+              className={fullyDone ? "bg-emerald-600 hover:bg-emerald-700" : ""}
+              title="Encerrar sprint com checklist de qualidade e evidências"
+            >
+              <Link to="/projetos/sprints">
+                <ShieldCheck className="h-3 w-3 mr-1" />
+                {fullyDone ? "Oficializar encerramento" : "Encerrar (checklist)"}
+              </Link>
             </Button>
           )}
           {sprint.status === "concluida" && (
