@@ -114,9 +114,11 @@ export function useProjects() {
       return projects.map<ProjectAggregate>((p) => {
         const pTickets = (tickets || []).filter((t: any) => t.project_id === p.id);
         const completedTickets = pTickets.filter((t: any) => RESOLVED_STATUSES.includes(t.status)).length;
-        const activeSprints = (sprints || []).filter(
-          (s: any) => s.project_id === p.id && s.status === "ativa"
-        ).length;
+        const pSprints = (sprints || []).filter((s: any) => s.project_id === p.id);
+        const activeSprints = pSprints.filter((s: any) => s.status === "ativa").length;
+        const pTasks = (tasks || []).filter((t: any) => t.project_id === p.id);
+        const completedTasks = pTasks.filter((t: any) => t.status === "Concluído" || t.status === "done").length;
+        const backlogTasks = pTasks.filter((t: any) => !t.sprint_id).length;
         return {
           ...p,
           ownerName: p.owner_id ? ownerMap.get(p.owner_id) : null,
@@ -124,6 +126,10 @@ export function useProjects() {
           totalLinkedTickets: pTickets.length,
           completedTickets,
           activeSprints,
+          totalSprints: pSprints.length,
+          totalTasks: pTasks.length,
+          completedTasks,
+          backlogTasks,
         };
       });
     },
