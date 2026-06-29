@@ -25,6 +25,7 @@ import {
 } from "@/components/ui/dialog";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useBacklog, useRescheduleTask } from "@/hooks/useBacklog";
+import { useProjects } from "@/hooks/useProjects";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
