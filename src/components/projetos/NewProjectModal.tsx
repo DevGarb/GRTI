@@ -31,6 +31,19 @@ export default function NewProjectModal({ open, onOpenChange, project }: Props) 
   const [ownerId, setOwnerId] = useState<string>(project?.owner_id || "");
   const [coOwnerId, setCoOwnerId] = useState<string>(project?.co_owner_id || "");
 
+  // Ressincroniza estados sempre que abrir o modal ou trocar de projeto.
+  useEffect(() => {
+    if (!open) return;
+    setName(project?.name || "");
+    setCode(project?.code || "");
+    setDescription(project?.description || "");
+    setGoal(project?.goal || "");
+    setStartDate(project?.start_date || "");
+    setEndDate(project?.end_date || "");
+    setOwnerId(project?.owner_id || "");
+    setCoOwnerId(project?.co_owner_id || "");
+  }, [open, project?.id, project?.owner_id, project?.co_owner_id]);
+
   const reset = () => {
     if (!isEdit) {
       setName(""); setCode(""); setDescription(""); setGoal("");
@@ -39,7 +52,14 @@ export default function NewProjectModal({ open, onOpenChange, project }: Props) 
   };
 
   async function submit() {
-    if (!name.trim() || !ownerId) return;
+    if (!name.trim()) {
+      toast.error("Informe o nome do projeto");
+      return;
+    }
+    if (!ownerId) {
+      toast.error("Selecione um Responsável pelo projeto");
+      return;
+    }
     const payload: any = {
       name: name.trim(),
       code: code.trim() || undefined,
