@@ -2649,6 +2649,7 @@ export type Database = {
           preventivas_done: number
           rework_count: number
           tickets: Json
+          timed_tickets_count: number
           total_closed: number
           total_points: number
           total_work_minutes: number

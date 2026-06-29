@@ -84,7 +84,7 @@ export default function MetasTecnicos() {
       });
       if (error) throw error;
 
-      const rows = (data || []) as Array<{
+      const rows = ((data || []) as unknown) as Array<{
         user_id: string;
         full_name: string;
         total_closed: number;
@@ -94,6 +94,7 @@ export default function MetasTecnicos() {
         preventivas_done: number;
         rework_count: number;
         total_work_minutes: number;
+        timed_tickets_count?: number;
         tickets: Array<{
           title: string;
           score: number | null;
@@ -106,12 +107,13 @@ export default function MetasTecnicos() {
 
       const result: TechnicianStats[] = rows.map((r) => {
         const totalHours = Number(r.total_work_minutes || 0) / 60;
+        const timed = Number(r.timed_tickets_count || 0);
         return {
           userId: r.user_id,
           name: r.full_name || "Sem nome",
           totalClosed: r.total_closed,
           avgScore: Number(r.avg_score || 0),
-          avgResolutionHours: r.total_closed > 0 ? totalHours / r.total_closed : 0,
+          avgResolutionHours: timed > 0 ? totalHours / timed : 0,
           evaluations: r.evaluations_count,
           totalPoints: Number(r.total_points || 0),
           preventivasDone: r.preventivas_done,
