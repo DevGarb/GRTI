@@ -25,6 +25,7 @@ import {
 } from "@/components/ui/dialog";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useBacklog, useRescheduleTask } from "@/hooks/useBacklog";
+import { useProjects } from "@/hooks/useProjects";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
@@ -42,6 +43,7 @@ export default function ProjetosCalendario() {
   const [reschedule, setReschedule] = useState<{ taskId: string; oldDate: string | null; newDate: string } | null>(null);
   const [reason, setReason] = useState("");
   const { data: items = [] } = useBacklog();
+  const { data: projects = [] } = useProjects();
   const reschedMut = useRescheduleTask();
 
   const days = useMemo(() => {
@@ -51,15 +53,29 @@ export default function ProjetosCalendario() {
   }, [cursor]);
 
   const byDay = useMemo(() => {
-    const map = new Map<string, typeof items>();
+    const map = new Map<string, any[]>();
+    const push = (k: string, v: any) => {
+      if (!map.has(k)) map.set(k, []);
+      map.get(k)!.push(v);
+    };
     items.forEach((i) => {
       if (!i.planned_date) return;
-      const k = i.planned_date;
-      if (!map.has(k)) map.set(k, [] as any);
-      (map.get(k) as any).push(i);
+      push(i.planned_date, { ...i, _kind: "task" });
+    });
+    projects.forEach((p: any) => {
+      if (!p.end_date) return;
+      const status = p.completed_at ? "Concluído" : (p.status || "Planejada");
+      push(p.end_date, {
+        id: `proj-${p.id}`,
+        title: `📁 ${p.name}`,
+        project_name: p.name,
+        status,
+        planned_date: p.end_date,
+        _kind: "project",
+      });
     });
     return map;
-  }, [items]);
+  }, [items, projects]);
 
   function onDragStart(e: React.DragEvent, item: any) {
     e.dataTransfer.setData("text/plain", JSON.stringify({ id: item.id, planned: item.planned_date }));
@@ -142,11 +158,12 @@ export default function ProjetosCalendario() {
                 {dayItems.slice(0, 4).map((it: any) => (
                   <div
                     key={it.id}
-                    draggable
-                    onDragStart={(e) => onDragStart(e, it)}
+                    draggable={it._kind !== "project"}
+                    onDragStart={(e) => it._kind !== "project" && onDragStart(e, it)}
                     title={`${it.title} — ${it.project_name || ""}`}
                     className={cn(
-                      "px-1.5 py-0.5 rounded border text-[10px] truncate cursor-grab active:cursor-grabbing",
+                      "px-1.5 py-0.5 rounded border text-[10px] truncate",
+                      it._kind === "project" ? "cursor-default font-medium" : "cursor-grab active:cursor-grabbing",
                       colorFor(it.status, it.planned_date)
                     )}
                   >
