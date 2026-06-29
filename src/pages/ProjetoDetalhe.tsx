@@ -81,6 +81,30 @@ export default function ProjetoDetalhe() {
             <Badge variant="outline">{project.status}</Badge>
           </div>
           {project.goal && <p className="text-sm text-muted-foreground mt-0.5">{project.goal}</p>}
+          <div className="flex flex-wrap items-center gap-2 mt-1.5">
+            <button
+              type="button"
+              onClick={() => setEditProjectOpen(true)}
+              className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[11px] font-medium transition-colors ${
+                ownerName
+                  ? "bg-primary/10 text-primary hover:bg-primary/15"
+                  : "bg-amber-500/15 text-amber-700 dark:text-amber-300 hover:bg-amber-500/25"
+              }`}
+              title="Editar responsável"
+            >
+              <User className="h-3 w-3" />
+              Responsável: {ownerName || "definir"}
+            </button>
+            <button
+              type="button"
+              onClick={() => setEditProjectOpen(true)}
+              className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[11px] font-medium bg-muted text-muted-foreground hover:bg-muted/70 transition-colors"
+              title="Editar co-responsável"
+            >
+              <Users className="h-3 w-3" />
+              Co-responsável: {coOwnerName || "—"}
+            </button>
+          </div>
           {project.status === "Concluído" && (project.size || project.value_brl != null) && (
             <div className="flex flex-wrap items-center gap-2 mt-1 text-[11px] text-muted-foreground">
               <span className="inline-flex items-center gap-1 text-emerald-600 dark:text-emerald-400 font-medium">
