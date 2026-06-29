@@ -1,35 +1,19 @@
-## Objetivo
+## Problema
 
-Substituir a barra de progresso atual (que mistura tarefas/chamados) por um indicador claro baseado em **sprints concluídas vs total de sprints** do projeto, alinhado à regra unificada `isSprintEffectivelyDone` (status `concluida` OU 100% dos itens finalizados).
+Ao excluir um chamado, a aba **Metas** (cards de TMA, Pontos, etc.) não recalcula automaticamente. Os dados continuam mostrando o ticket antigo até atualizar manualmente (F5).
+
+Causa: o RPC `get_metas_tecnicos` lê direto da tabela `tickets`, então depois do DELETE o cálculo correto já está disponível no backend — porém o React Query mantém o cache da query `["metas-tecnicos", year, month]` (e queries irmãs de MVP/dashboard) porque os hooks de exclusão só invalidam `["tickets"]`.
+
+Hoje só `TicketDetailModal` (mudanças de status) invalida `metas-tecnicos`. Os hooks `useDeleteTicket` e `useBulkDeleteTickets` em `src/hooks/useTickets.ts` não. O mesmo vale para o delete inline do `TicketDetailModal.tsx` (linha ~1155).
 
 ## Mudanças
 
-### 1. `src/hooks/useProjects.ts`
-- Buscar também as **tarefas por sprint** (já feito) e os **chamados por sprint** para conseguir calcular o `donePct` de cada sprint usando a mesma regra do `useSprints`.
-- Adicionar ao `ProjectAggregate`:
-  - `completedSprints: number` — sprints com status `concluida` ou com 100% dos itens feitos.
-  - `sprintProgressPct: number` — `round(completedSprints / totalSprints * 100)`, `0` quando não há sprints.
-- Reaproveitar `isSprintEffectivelyDone` importado de `useSprints.ts`.
+1. **`src/hooks/useTickets.ts`** — em `useDeleteTicket.onSuccess` e `useBulkDeleteTickets.onSuccess`, invalidar também:
+   - `["metas-tecnicos"]`
+   - `["mvp-metrics"]`, `["mvp-chamados-metrics"]`, `["mvp-evolution"]`
+   - `["projetos-dashboard"]`, `["dashboard-metrics"]`
+   - `["tickets-calendar"]`, `["open-tickets"]`
 
-### 2. `src/components/projetos/ProjectCard.tsx`
-- Trocar o bloco "Tarefas concluídas" pelo novo indicador:
-  - Label: **"Progresso por sprints"**.
-  - Contagem: `{completedSprints} / {totalSprints} sprints`.
-  - `<Progress value={sprintProgressPct} />`.
-  - Quando `totalSprints === 0`: exibir estado vazio discreto ("Nenhuma sprint criada") sem barra.
-- Manter a linha de metadados (backlog, sprints ativas, datas, responsáveis).
+2. **`src/components/TicketDetailModal.tsx`** — no handler de exclusão (~linha 1155), aplicar a mesma lista de invalidações antes de fechar o modal.
 
-### 3. `src/components/projetos/ProjectOverview.tsx`
-- Alinhar o card de progresso do topo para usar a mesma métrica (sprints concluídas / total), mantendo o detalhamento de tarefas/chamados abaixo como informação complementar.
-
-## Regra de cálculo
-
-```text
-sprintDone(s)   = s.status == "concluida" OR (totalItens(s) > 0 AND donePct(s) == 100)
-completedSprints = count(sprintDone)
-sprintProgressPct = totalSprints == 0 ? 0 : round(completedSprints / totalSprints * 100)
-```
-
-## Fora de escopo
-- Nenhuma mudança em chamados, MVP ou métricas gerenciais.
-- Sem migrations — cálculo 100% no client, reaproveitando dados já consultados.
+Sem mudanças no backend — o RPC já recalcula corretamente; o bug é puramente de cache no frontend.
