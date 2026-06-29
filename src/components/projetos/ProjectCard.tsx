@@ -3,7 +3,7 @@ import { ProjectAggregate } from "@/hooks/useProjects";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
-import { Calendar, Ticket, Zap, DollarSign, CheckCircle2, User, Users } from "lucide-react";
+import { Calendar, ListTodo, Zap, DollarSign, CheckCircle2, User, Users, Layers } from "lucide-react";
 
 const SIZE_LABEL: Record<string, string> = {
   pequeno: "Pequeno porte",
@@ -23,8 +23,10 @@ const statusStyles: Record<string, string> = {
 };
 
 export default function ProjectCard({ project }: { project: ProjectAggregate }) {
-  const total = project.totalLinkedTickets || 1;
-  const pct = Math.min(100, Math.round((project.completedTickets / total) * 100));
+  const total = project.totalTasks || 1;
+  const pct = project.totalTasks > 0
+    ? Math.min(100, Math.round((project.completedTasks / total) * 100))
+    : 0;
 
   return (
     <Link to={`/projetos/${project.id}`} className="block">
@@ -48,8 +50,8 @@ export default function ProjectCard({ project }: { project: ProjectAggregate }) 
 
         <div className="mt-4 space-y-2">
           <div className="flex items-center justify-between text-[11px] text-muted-foreground">
-            <span>Chamados concluídos</span>
-            <span className="font-mono">{project.completedTickets} / {project.totalLinkedTickets}</span>
+            <span>Tarefas concluídas</span>
+            <span className="font-mono">{project.completedTasks} / {project.totalTasks}</span>
           </div>
           <Progress value={pct} className="h-1.5" />
         </div>
@@ -69,9 +71,10 @@ export default function ProjectCard({ project }: { project: ProjectAggregate }) 
           </div>
         )}
 
-        <div className="flex items-center gap-4 mt-3 text-[11px] text-muted-foreground">
-          <span className="flex items-center gap-1"><Ticket className="h-3 w-3" /> {project.totalLinkedTickets} chamados</span>
-          <span className="flex items-center gap-1"><Zap className="h-3 w-3" /> {project.activeSprints} sprint(s) ativa(s)</span>
+        <div className="flex items-center flex-wrap gap-x-4 gap-y-1 mt-3 text-[11px] text-muted-foreground">
+          <span className="flex items-center gap-1"><ListTodo className="h-3 w-3" /> {project.backlogTasks} no backlog</span>
+          <span className="flex items-center gap-1"><Layers className="h-3 w-3" /> {project.totalSprints} sprint(s)</span>
+          <span className="flex items-center gap-1"><Zap className="h-3 w-3" /> {project.activeSprints} ativa(s)</span>
           {project.start_date && (
             <span className="flex items-center gap-1 ml-auto">
               <Calendar className="h-3 w-3" />
@@ -80,6 +83,7 @@ export default function ProjectCard({ project }: { project: ProjectAggregate }) 
             </span>
           )}
         </div>
+
 
         {project.status === "Concluído" && (project.size || project.value_brl != null || project.completed_at) && (
           <div className="flex flex-wrap items-center gap-2 mt-3 pt-3 border-t border-border text-[11px]">
