@@ -6,7 +6,7 @@ import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { Project } from "@/hooks/useProjects";
-import { SprintWithProgress } from "@/hooks/useSprints";
+import { SprintWithProgress, isSprintEffectivelyDone } from "@/hooks/useSprints";
 import { useProjectTickets } from "@/hooks/useProjectTickets";
 import { useProjectTasks } from "@/hooks/useProjectTasks";
 
