@@ -92,13 +92,15 @@ export function useSprints(projectId: string | undefined) {
         const completedTasks = sTasks.filter((t: any) => t.status === "Concluído" || t.status === "done").length;
         const total = sTickets.length + sTasks.length;
         const done = completedTickets + completedTasks;
+        const donePct = total > 0 ? Math.round((done / total) * 100) : 0;
         return {
           ...s,
           ticketCount: sTickets.length,
           taskCount: sTasks.length,
           completedTickets,
           completedTasks,
-          donePct: total > 0 ? Math.round((done / total) * 100) : 0,
+          donePct,
+          effectiveStatus: isSprintEffectivelyDone(s.status, total, donePct) ? "concluida" : s.status,
         };
       });
     },
