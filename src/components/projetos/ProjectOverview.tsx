@@ -96,10 +96,15 @@ export default function ProjectOverview({ project, sprints, onAddToActive, onCre
   const totalTasks = tasks.length;
   const completedTasks = tasks.filter((t) => t.status === "Concluído" || t.status === "done").length;
   const totalSprints = sprints.length;
+  // Considera a sprint concluída quando o status for "concluida" OU
+  // quando todos os itens (chamados + tarefas) já foram finalizados (100%).
+  const isSprintDone = (s: SprintWithProgress) =>
+    s.status === "concluida" ||
+    ((s.ticketCount + s.taskCount) > 0 && s.donePct >= 100);
   const sprintsByStatus = {
-    ativa: sprints.filter((s) => s.status === "ativa").length,
-    planejada: sprints.filter((s) => s.status === "planejada").length,
-    concluida: sprints.filter((s) => s.status === "concluida").length,
+    ativa: sprints.filter((s) => s.status === "ativa" && !isSprintDone(s)).length,
+    planejada: sprints.filter((s) => s.status === "planejada" && !isSprintDone(s)).length,
+    concluida: sprints.filter(isSprintDone).length,
   };
   const totalItems = totalTickets + totalTasks;
   const doneItems = completedTickets + completedTasks;
