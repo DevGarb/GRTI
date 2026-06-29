@@ -6,7 +6,7 @@ import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { Project } from "@/hooks/useProjects";
-import { SprintWithProgress } from "@/hooks/useSprints";
+import { SprintWithProgress, isSprintEffectivelyDone } from "@/hooks/useSprints";
 import { useProjectTickets } from "@/hooks/useProjectTickets";
 import { useProjectTasks } from "@/hooks/useProjectTasks";
 
@@ -81,9 +81,21 @@ export default function ProjectOverview({ project, sprints, onAddToActive, onCre
   const { data: ownerProfiles = [] } = useQuery({
     queryKey: ["project-owners", project.id, ownerIds.join(",")],
     queryFn: async () => {
-      if (ownerIds.length === 0) return [];
-      const { data } = await supabase.from("profiles").select("user_id, full_name").in("user_id", ownerIds);
-      return data || [];
+      if (ownerIds.length === 0) return [] as Array<{ user_id: string; full_name: string }>;
+      // 1) tenta direto em profiles
+      const { data } = await supabase
+        .from("profiles")
+        .select("user_id, full_name")
+        .in("user_id", ownerIds);
+      const found = (data || []) as Array<{ user_id: string; full_name: string }>;
+      const missing = ownerIds.filter((id) => !found.some((p) => p.user_id === id));
+      if (missing.length === 0) return found;
+      // 2) fallback via RPC (mesma org) caso o RLS de profiles esconda algum
+      const { data: techs } = await (supabase as any).rpc("get_org_technicians");
+      const extra = ((techs as any[]) || [])
+        .filter((t: any) => missing.includes(t.user_id))
+        .map((t: any) => ({ user_id: t.user_id, full_name: t.full_name }));
+      return [...found, ...extra];
     },
     enabled: ownerIds.length > 0,
   });
@@ -96,11 +108,8 @@ export default function ProjectOverview({ project, sprints, onAddToActive, onCre
   const totalTasks = tasks.length;
   const completedTasks = tasks.filter((t) => t.status === "Concluído" || t.status === "done").length;
   const totalSprints = sprints.length;
-  // Considera a sprint concluída quando o status for "concluida" OU
-  // quando todos os itens (chamados + tarefas) já foram finalizados (100%).
   const isSprintDone = (s: SprintWithProgress) =>
-    s.status === "concluida" ||
-    ((s.ticketCount + s.taskCount) > 0 && s.donePct >= 100);
+    isSprintEffectivelyDone(s.status, s.ticketCount + s.taskCount, s.donePct);
   const sprintsByStatus = {
     ativa: sprints.filter((s) => s.status === "ativa" && !isSprintDone(s)).length,
     planejada: sprints.filter((s) => s.status === "planejada" && !isSprintDone(s)).length,

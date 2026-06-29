@@ -26,9 +26,23 @@ export interface SprintWithProgress extends Sprint {
   completedTickets: number;
   completedTasks: number;
   donePct: number;
+  effectiveStatus: "planejada" | "ativa" | "concluida" | "cancelada" | string;
 }
 
 const RESOLVED_STATUSES = ["Resolvido", "Aprovado", "Aguardando Aprovação", "Fechado"];
+
+/**
+ * Regra unificada: a sprint é considerada concluída quando o status oficial
+ * já é "concluida" OU quando 100% dos itens (chamados + tarefas) foram finalizados.
+ * Usado para padronizar a visão entre Overview, Sprints e Dashboard.
+ */
+export function isSprintEffectivelyDone(
+  status: string,
+  totalItems: number,
+  donePct: number
+): boolean {
+  return status === "concluida" || (totalItems > 0 && donePct >= 100);
+}
 
 export function useSprints(projectId: string | undefined) {
   const queryClient = useQueryClient();
@@ -78,13 +92,15 @@ export function useSprints(projectId: string | undefined) {
         const completedTasks = sTasks.filter((t: any) => t.status === "Concluído" || t.status === "done").length;
         const total = sTickets.length + sTasks.length;
         const done = completedTickets + completedTasks;
+        const donePct = total > 0 ? Math.round((done / total) * 100) : 0;
         return {
           ...s,
           ticketCount: sTickets.length,
           taskCount: sTasks.length,
           completedTickets,
           completedTasks,
-          donePct: total > 0 ? Math.round((done / total) * 100) : 0,
+          donePct,
+          effectiveStatus: isSprintEffectivelyDone(s.status, total, donePct) ? "concluida" : s.status,
         };
       });
     },

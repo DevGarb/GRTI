@@ -317,6 +317,20 @@ export default function ProjetosSprints() {
             const retrab = s.total_tasks > 0 ? Math.round((s.reworks / s.total_tasks) * 100) : 0;
             const efic = Math.round(concl * (1 - Math.min(retrab, 100) / 100));
             const open = !!expandedMetrics[s.id];
+            // Mesma regra usada no Visão Geral do projeto
+            const fullyDone = s.total_tasks > 0 && concl >= 100;
+            const isOfficial = s.status === "concluida";
+            const effectiveDone = isOfficial || fullyDone;
+            const badgeLabel = isOfficial
+              ? "concluida"
+              : fullyDone
+                ? "concluída (100%)"
+                : s.status;
+            const badgeClass = effectiveDone
+              ? "bg-emerald-500/15 text-emerald-700"
+              : s.status === "ativa"
+                ? "bg-blue-500/15 text-blue-700"
+                : "";
             return (
               <Card key={s.id}>
                 <CardHeader className="pb-2">
@@ -325,17 +339,8 @@ export default function ProjetosSprints() {
                       <CardTitle className="text-base truncate">{s.name}</CardTitle>
                       <p className="text-xs text-muted-foreground truncate">{s.project_name}</p>
                     </div>
-                    <Badge
-                      variant="outline"
-                      className={
-                        s.status === "ativa"
-                          ? "bg-blue-500/15 text-blue-700"
-                          : s.status === "concluida"
-                            ? "bg-emerald-500/15 text-emerald-700"
-                            : ""
-                      }
-                    >
-                      {s.status}
+                    <Badge variant="outline" className={badgeClass}>
+                      {badgeLabel}
                     </Badge>
                   </div>
                 </CardHeader>
@@ -396,9 +401,14 @@ export default function ProjetosSprints() {
                         <ExternalLink className="h-3.5 w-3.5 mr-1" /> Abrir projeto
                       </Link>
                     </Button>
-                    {s.status !== "concluida" && (
-                      <Button size="sm" onClick={() => setToClose(s)}>
-                        <CheckCircle2 className="h-3.5 w-3.5 mr-1" /> Encerrar
+                    {!isOfficial && (
+                      <Button
+                        size="sm"
+                        onClick={() => setToClose(s)}
+                        className={fullyDone ? "bg-emerald-600 hover:bg-emerald-700" : ""}
+                      >
+                        <CheckCircle2 className="h-3.5 w-3.5 mr-1" />
+                        {fullyDone ? "Oficializar encerramento" : "Encerrar"}
                       </Button>
                     )}
                   </div>

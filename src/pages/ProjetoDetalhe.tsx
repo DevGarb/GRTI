@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { Link, useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, FolderKanban, Plus, Pencil, Trash2, CheckCircle2, RotateCcw } from "lucide-react";
+import { ArrowLeft, FolderKanban, Plus, Pencil, Trash2, CheckCircle2, RotateCcw, User, Users } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
@@ -36,9 +38,29 @@ export default function ProjetoDetalhe() {
   const [newTaskOpen, setNewTaskOpen] = useState(false);
   const [completeOpen, setCompleteOpen] = useState(false);
 
+  const ownerIds = project ? [project.owner_id, project.co_owner_id].filter(Boolean) as string[] : [];
+  const { data: ownerProfiles = [] } = useQuery({
+    queryKey: ["projeto-detalhe-owners", id, ownerIds.join(",")],
+    queryFn: async () => {
+      if (ownerIds.length === 0) return [] as Array<{ user_id: string; full_name: string }>;
+      const { data } = await supabase.from("profiles").select("user_id, full_name").in("user_id", ownerIds);
+      const found = (data || []) as Array<{ user_id: string; full_name: string }>;
+      const missing = ownerIds.filter((uid) => !found.some((p) => p.user_id === uid));
+      if (missing.length === 0) return found;
+      const { data: techs } = await (supabase as any).rpc("get_org_technicians");
+      const extra = ((techs as any[]) || [])
+        .filter((t: any) => missing.includes(t.user_id))
+        .map((t: any) => ({ user_id: t.user_id, full_name: t.full_name }));
+      return [...found, ...extra];
+    },
+    enabled: ownerIds.length > 0,
+  });
+
   if (isLoading) return <div className="p-6 text-sm text-muted-foreground">Carregando projeto...</div>;
   if (!project) return <div className="p-6">Projeto não encontrado.</div>;
 
+  const ownerName = ownerProfiles.find((p: any) => p.user_id === project.owner_id)?.full_name;
+  const coOwnerName = ownerProfiles.find((p: any) => p.user_id === project.co_owner_id)?.full_name;
   const activeSprint = sprints.find((s) => s.status === "ativa");
 
   return (
@@ -59,6 +81,30 @@ export default function ProjetoDetalhe() {
             <Badge variant="outline">{project.status}</Badge>
           </div>
           {project.goal && <p className="text-sm text-muted-foreground mt-0.5">{project.goal}</p>}
+          <div className="flex flex-wrap items-center gap-2 mt-1.5">
+            <button
+              type="button"
+              onClick={() => setEditProjectOpen(true)}
+              className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[11px] font-medium transition-colors ${
+                ownerName
+                  ? "bg-primary/10 text-primary hover:bg-primary/15"
+                  : "bg-amber-500/15 text-amber-700 dark:text-amber-300 hover:bg-amber-500/25"
+              }`}
+              title="Editar responsável"
+            >
+              <User className="h-3 w-3" />
+              Responsável: {ownerName || "definir"}
+            </button>
+            <button
+              type="button"
+              onClick={() => setEditProjectOpen(true)}
+              className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[11px] font-medium bg-muted text-muted-foreground hover:bg-muted/70 transition-colors"
+              title="Editar co-responsável"
+            >
+              <Users className="h-3 w-3" />
+              Co-responsável: {coOwnerName || "—"}
+            </button>
+          </div>
           {project.status === "Concluído" && (project.size || project.value_brl != null) && (
             <div className="flex flex-wrap items-center gap-2 mt-1 text-[11px] text-muted-foreground">
               <span className="inline-flex items-center gap-1 text-emerald-600 dark:text-emerald-400 font-medium">

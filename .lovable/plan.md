@@ -1,50 +1,46 @@
 ## Objetivo
-Garantir que toda troca de responsável de patrimônio seja registrada e exibida com destaque na página pública do QR Code, em uma linha do tempo unificada (responsável + setor + localização + status), e refletir essas mudanças em tempo real ao escanear o QR.
+Resolver as 3 divergências da aba Projetos: status oficial da sprint encerrada, KPI consistente entre as telas e edição/visualização de Responsável e Co-responsável.
 
-## Backend (migration)
+## 1. Encerrar sprint — status oficial + histórico
 
-1. **Trigger de UPDATE em `patrimonio`** — auditar se o trigger `log_patrimonio_changes` cobre todos os campos relevantes (`responsible`, `sector`, `location`, `status`). Se faltar `status`, adicionar.
-2. **Bloquear UPDATE silencioso sem auditoria** — garantir que `auth.uid()` seja capturado mesmo em chamadas via service_role (fallback para `updated_by` se existir, senão deixar NULL e marcar "Sistema").
-3. **RPC `register_patrimonio_transfer(patrimonio_id, new_responsible, reason)`** — opcional: usada pelo modal de edição quando o admin quiser registrar explicitamente uma transferência com motivo (vai como `notes` na entrada do histórico).
-4. Adicionar coluna `reason TEXT` em `patrimonio_history` para guardar motivo de transferência.
+A RPC `close_sprint_with_checklist` já marca `sprints.status = 'concluida'` e grava `closed_at`. O problema é que a tela do projeto (`ProjectOverview`) lê o status sem rastrear histórico e o botão simples "Concluir" no `SprintCard` muda o status direto, sem registro.
 
-## Edge function `get-public-asset`
+Ajustes:
+- Criar tabela `sprint_history` (sprint_id, project_id, organization_id, action, from_status, to_status, score, notes, changed_by, created_at) com RLS por organização e GRANTs.
+- Atualizar `close_sprint_with_checklist` para inserir 1 linha em `sprint_history` (action `close`, com score e evidências resumidas).
+- Criar trigger `AFTER UPDATE` em `sprints` que registra mudanças manuais de status (ativar/concluir/reabrir/cancelar) feitas fora da RPC.
+- No `SprintCard`, a ação "Concluir" passa a abrir o mesmo `CloseSprintDialog` (já existente em `ProjetosSprints.tsx`) em vez de só fazer `update status='concluida'`, garantindo checklist + histórico em todos os pontos.
+- Expor um pequeno bloco "Histórico" no card da sprint (Collapsible) listando as últimas entradas de `sprint_history`.
 
-- Já retorna `responsible_history` e `relocation_history`. Incluir `reason` no payload.
-- Garantir ordenação consistente (desc por `changed_at`) e limite ampliado para 100.
+## 2. KPI consistente: sprint 100% conta como concluída
 
-## Frontend — `AssetPublicView` (página do QR)
+Hoje só `ProjectOverview` aplica a regra "status concluida OU 100% do escopo". As demais telas continuam mostrando "ativa".
 
-1. **Reformular o bloco principal** para uma única **"Linha do tempo do equipamento"** unificada e em destaque (não colapsada por padrão), mesclando:
-   - Trocas de responsável (badge azul, ícone User)
-   - Trocas de setor (badge âmbar, ícone Building)
-   - Trocas de localização (badge violeta, ícone MapPin)
-   - Trocas de status (badge cinza, ícone Activity)
-   - Manutenções preventivas executadas (badge verde, ícone Wrench)
-2. Card "Responsável atual" no topo com nome em destaque, data desde quando, e botão "Ver histórico completo" que rola para a timeline.
-3. Cada item da timeline mostra: data/hora, autor da mudança, "de → para" e motivo (quando houver).
-4. Filtros rápidos (chips) acima da timeline: Todos · Responsável · Setor · Localização · Manutenção.
+Ajustes:
+- Centralizar a regra em `src/hooks/useSprints.ts`, expondo um campo derivado `effectiveStatus` em `SprintWithProgress` (`concluida` quando `status='concluida'` ou `donePct>=100` e há itens).
+- Em `ProjetosSprints.tsx`: usar `effective_status` (calculado no `useMemo` a partir de `completed/total_tasks`) para:
+  - colorir/rotular o `Badge` ("concluída (100%)" quando ainda não houver fechamento oficial);
+  - esconder o botão "Encerrar" quando `status='concluida'`, mas mantê-lo destacado ("Oficializar encerramento") quando estiver 100% e ainda `ativa`.
+- `ProjectOverview` passa a usar o mesmo helper centralizado para não divergir.
 
-## Frontend — `EditPatrimonioModal`
+## 3. Responsável / Co-responsável — editar e visualizar
 
-- Quando o usuário alterar o campo `responsible`, abrir um sub-prompt "Motivo da transferência" (opcional) que é salvo na nova coluna `reason`.
-- Toast confirmando "Transferência registrada no histórico".
+Sintomas: ao clicar em "Editar" no projeto, os selects vêm vazios; o cabeçalho do projeto não mostra os nomes; em projetos antigos o badge some.
 
-## Frontend — `PatrimonioQRCodeModal`
+Causas:
+- `NewProjectModal` inicializa estados apenas no primeiro render (`useState(project?...)`); quando o modal é reaberto com outro projeto os valores não recarregam.
+- `ProjectOverview` consulta `profiles` direto, então quando o RLS esconde o perfil (usuário de outra organização ou inativo) o nome some.
+- O cabeçalho do `ProjetoDetalhe` (faixa azul com "Concluir projeto / Editar") não exibe badges de Responsável/Co-responsável.
 
-- Adicionar no rodapé do card uma linha "Última transferência: <data> · <para quem>" puxada do histórico, para conferência rápida antes de imprimir.
+Ajustes:
+- Em `NewProjectModal`: `useEffect` que ressincroniza todos os campos (incluindo `ownerId` e `coOwnerId`) sempre que `project` ou `open` mudar; reset completo ao fechar.
+- Em `ProjectOverview`: usar o mesmo fallback de `ProjectCard` (RPC `get_org_technicians`) para resolver `ownerName`/`coOwnerName` quando `profiles` retornar vazio.
+- No cabeçalho de `ProjetoDetalhe.tsx`: adicionar dois badges (Responsável, Co-responsável) ao lado do código/nome, com fallback "—" quando não definido, e tornar clicáveis para abrir o modal de edição já no foco do Responsável.
+- Tornar o campo Responsável obrigatório também no submit do modo Edit (hoje só bloqueia create), com mensagem clara.
 
-## Validação
+## Detalhes técnicos
 
-1. Editar um patrimônio existente trocando o responsável → confirmar entrada no `patrimonio_history` com `reason`.
-2. Abrir `/asset/<id>` em janela anônima → timeline unificada aparece, responsável atual em destaque, filtros funcionam.
-3. Testar com patrimônio sem histórico → mensagem "Sem alterações registradas".
-
-## Arquivos afetados
-
-- `supabase/migrations/<novo>.sql` (coluna `reason`, ajuste de trigger)
-- `supabase/functions/get-public-asset/index.ts`
-- `src/pages/AssetPublicView.tsx` (reformulação visual da timeline)
-- `src/components/EditPatrimonioModal.tsx` (prompt de motivo)
-- `src/components/PatrimonioQRCodeModal.tsx` (linha de última transferência)
-- `src/hooks/usePatrimonio.ts` (suporte ao campo `reason` no update)
+- Migration: criação de `public.sprint_history` + GRANTs + RLS (`SELECT` por `is_same_organization(organization_id)`, `INSERT` via security definer apenas) + trigger `sprints_status_history`.
+- RPC alterada: `close_sprint_with_checklist` ganha `INSERT INTO sprint_history(...)` antes do `RETURN`.
+- Helper: `isSprintEffectivelyDone(sprint)` em `src/hooks/useSprints.ts`, reutilizado por `ProjectOverview` e `ProjetosSprints`.
+- Sem alteração na contagem de MVP/Métricas (continuam dependendo de `status='concluida'` oficial — daí a importância do passo 1).

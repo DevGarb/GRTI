@@ -1,8 +1,12 @@
 import { useState } from "react";
-import { SprintWithProgress, useActivateSprint, useDeleteSprint, useUpdateSprint } from "@/hooks/useSprints";
+import { Link } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { SprintWithProgress, useActivateSprint, useDeleteSprint, useUpdateSprint, isSprintEffectivelyDone } from "@/hooks/useSprints";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import {
   ChevronDown,
   ChevronRight,
@@ -12,6 +16,8 @@ import {
   Pencil,
   Plus,
   RotateCcw,
+  History,
+  ShieldCheck,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import SprintItems from "./SprintItems";
@@ -34,6 +40,7 @@ export default function SprintCard({ sprint, projectId }: Props) {
   const [open, setOpen] = useState(sprint.status === "ativa");
   const [editOpen, setEditOpen] = useState(false);
   const [addOpen, setAddOpen] = useState(false);
+  const [histOpen, setHistOpen] = useState(false);
   const activate = useActivateSprint();
   const update = useUpdateSprint();
   const del = useDeleteSprint();
@@ -41,6 +48,27 @@ export default function SprintCard({ sprint, projectId }: Props) {
   const total = sprint.ticketCount + sprint.taskCount;
   const done = sprint.completedTickets + sprint.completedTasks;
   const canAdd = sprint.status === "planejada" || sprint.status === "ativa";
+  const fullyDone = isSprintEffectivelyDone(sprint.status, total, sprint.donePct);
+  const isOfficial = sprint.status === "concluida";
+  const badgeStatus = isOfficial
+    ? "concluida"
+    : fullyDone
+      ? "concluída (100%)"
+      : sprint.status;
+
+  const history = useQuery({
+    queryKey: ["sprint-history", sprint.id, histOpen],
+    enabled: histOpen,
+    queryFn: async () => {
+      const { data, error } = await (supabase as any)
+        .from("sprint_history")
+        .select("*")
+        .eq("sprint_id", sprint.id)
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return data || [];
+    },
+  });
 
   return (
     <div className="card-elevated">
@@ -51,8 +79,15 @@ export default function SprintCard({ sprint, projectId }: Props) {
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
             <h3 className="text-sm font-semibold">{sprint.name}</h3>
-            <Badge className={cn("text-[10px] capitalize", statusColor[sprint.status] || statusColor.planejada)}>
-              {sprint.status}
+            <Badge
+              className={cn(
+                "text-[10px] capitalize",
+                fullyDone
+                  ? statusColor.concluida
+                  : statusColor[sprint.status] || statusColor.planejada
+              )}
+            >
+              {badgeStatus}
             </Badge>
             {sprint.start_date && (
               <span className="text-[11px] text-muted-foreground">
@@ -88,8 +123,16 @@ export default function SprintCard({ sprint, projectId }: Props) {
             </Button>
           )}
           {sprint.status === "ativa" && (
-            <Button size="sm" variant="outline" onClick={() => update.mutate({ id: sprint.id, status: "concluida" } as any)}>
-              <CheckCircle2 className="h-3 w-3 mr-1" /> Concluir
+            <Button
+              asChild
+              size="sm"
+              className={fullyDone ? "bg-emerald-600 hover:bg-emerald-700" : ""}
+              title="Encerrar sprint com checklist de qualidade e evidências"
+            >
+              <Link to="/projetos/sprints">
+                <ShieldCheck className="h-3 w-3 mr-1" />
+                {fullyDone ? "Oficializar encerramento" : "Encerrar (checklist)"}
+              </Link>
             </Button>
           )}
           {sprint.status === "concluida" && (
@@ -121,6 +164,44 @@ export default function SprintCard({ sprint, projectId }: Props) {
           <SprintItems projectId={projectId} sprintId={sprint.id} />
         </div>
       )}
+
+      <div className="border-t px-4 py-2">
+        <Collapsible open={histOpen} onOpenChange={setHistOpen}>
+          <CollapsibleTrigger asChild>
+            <button className="flex items-center gap-1.5 text-[11px] text-muted-foreground hover:text-foreground">
+              <History className="h-3 w-3" />
+              Histórico da sprint
+              <ChevronDown className={cn("h-3 w-3 transition-transform", histOpen && "rotate-180")} />
+            </button>
+          </CollapsibleTrigger>
+          <CollapsibleContent>
+            <div className="mt-2 space-y-1 text-[11px]">
+              {history.isLoading && <p className="text-muted-foreground">Carregando…</p>}
+              {!history.isLoading && (history.data?.length || 0) === 0 && (
+                <p className="text-muted-foreground">Sem eventos registrados.</p>
+              )}
+              {(history.data || []).map((h: any) => (
+                <div key={h.id} className="flex items-start gap-2 py-0.5">
+                  <span className="px-1.5 py-0.5 rounded bg-muted font-mono text-[10px] uppercase">
+                    {h.action}
+                  </span>
+                  <div className="flex-1 min-w-0">
+                    <div className="text-foreground/80 truncate">
+                      {h.from_status ? `${h.from_status} → ` : ""}
+                      <strong>{h.to_status}</strong>
+                      {h.quality_score != null && ` · qualidade ${h.quality_score}%`}
+                    </div>
+                    <div className="text-muted-foreground">
+                      {new Date(h.created_at).toLocaleString("pt-BR")}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CollapsibleContent>
+        </Collapsible>
+      </div>
+
 
       <NewSprintModal open={editOpen} onOpenChange={setEditOpen} projectId={projectId} sprint={sprint} />
       <AddTicketsToSprintModal
