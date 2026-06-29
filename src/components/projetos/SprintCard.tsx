@@ -1,8 +1,12 @@
 import { useState } from "react";
-import { SprintWithProgress, useActivateSprint, useDeleteSprint, useUpdateSprint } from "@/hooks/useSprints";
+import { Link } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { SprintWithProgress, useActivateSprint, useDeleteSprint, useUpdateSprint, isSprintEffectivelyDone } from "@/hooks/useSprints";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import {
   ChevronDown,
   ChevronRight,
@@ -12,6 +16,8 @@ import {
   Pencil,
   Plus,
   RotateCcw,
+  History,
+  ShieldCheck,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import SprintItems from "./SprintItems";
