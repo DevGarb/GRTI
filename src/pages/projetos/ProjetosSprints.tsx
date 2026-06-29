@@ -174,8 +174,7 @@ function CloseSprintDialog({
   });
 
   const allChecked = Object.values(checks).every(Boolean);
-  const allEvidenced = (Object.keys(checks) as CheckKey[]).every((k) => !!evidences[k]);
-  const canClose = allChecked && allEvidenced;
+  const canClose = allChecked;
   const score = Object.values(checks).filter(Boolean).length * 20;
 
   return (
