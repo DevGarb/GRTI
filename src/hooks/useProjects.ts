@@ -123,6 +123,20 @@ export function useProjects() {
         const pTasks = (tasks || []).filter((t: any) => t.project_id === p.id);
         const completedTasks = pTasks.filter((t: any) => t.status === "Concluído" || t.status === "done").length;
         const backlogTasks = pTasks.filter((t: any) => !t.sprint_id).length;
+
+        const completedSprints = pSprints.filter((s: any) => {
+          const sTickets = (tickets || []).filter((t: any) => (t as any).sprint_id === s.id);
+          const sTasks = pTasks.filter((t: any) => t.sprint_id === s.id);
+          const totalItems = sTickets.length + sTasks.length;
+          const doneItems =
+            sTickets.filter((t: any) => RESOLVED_STATUSES.includes(t.status)).length +
+            sTasks.filter((t: any) => t.status === "Concluído" || t.status === "done").length;
+          const donePct = totalItems > 0 ? Math.round((doneItems / totalItems) * 100) : 0;
+          return isSprintEffectivelyDone(s.status, totalItems, donePct);
+        }).length;
+        const sprintProgressPct =
+          pSprints.length > 0 ? Math.round((completedSprints / pSprints.length) * 100) : 0;
+
         return {
           ...p,
           ownerName: p.owner_id ? ownerMap.get(p.owner_id) : null,
@@ -131,6 +145,8 @@ export function useProjects() {
           completedTickets,
           activeSprints,
           totalSprints: pSprints.length,
+          completedSprints,
+          sprintProgressPct,
           totalTasks: pTasks.length,
           completedTasks,
           backlogTasks,
