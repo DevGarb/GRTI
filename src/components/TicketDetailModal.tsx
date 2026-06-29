@@ -1161,7 +1161,7 @@ export default function TicketDetailModal({ ticket, onClose }: Props) {
                             action: "delete",
                             details: { title: ticket.title, status: ticket.status },
                           });
-                          queryClient.invalidateQueries({ queryKey: ["tickets"] });
+                          invalidateMetricCaches(queryClient);
                           toast.success("Chamado excluído com sucesso");
                           onClose();
                         } catch (e: any) {
