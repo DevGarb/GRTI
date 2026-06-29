@@ -1825,6 +1825,56 @@ export type Database = {
           },
         ]
       }
+      sprint_history: {
+        Row: {
+          action: string
+          changed_by: string | null
+          created_at: string
+          from_status: string | null
+          id: string
+          notes: string | null
+          organization_id: string | null
+          project_id: string | null
+          score: number | null
+          sprint_id: string
+          to_status: string | null
+        }
+        Insert: {
+          action: string
+          changed_by?: string | null
+          created_at?: string
+          from_status?: string | null
+          id?: string
+          notes?: string | null
+          organization_id?: string | null
+          project_id?: string | null
+          score?: number | null
+          sprint_id: string
+          to_status?: string | null
+        }
+        Update: {
+          action?: string
+          changed_by?: string | null
+          created_at?: string
+          from_status?: string | null
+          id?: string
+          notes?: string | null
+          organization_id?: string | null
+          project_id?: string | null
+          score?: number | null
+          sprint_id?: string
+          to_status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sprint_history_sprint_id_fkey"
+            columns: ["sprint_id"]
+            isOneToOne: false
+            referencedRelation: "sprints"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       sprint_quality_checks: {
         Row: {
           backlog_ok: boolean
@@ -2722,6 +2772,7 @@ export type Database = {
       }
       is_staff_user: { Args: { _user_id: string }; Returns: boolean }
       is_super_admin: { Args: { _user_id: string }; Returns: boolean }
+      jsonb_object_keys_count: { Args: { _j: Json }; Returns: number }
       move_ticket_to_organization: {
         Args: { _target_org: string; _ticket_id: string }
         Returns: undefined
