@@ -252,7 +252,7 @@ function CloseSprintDialog({
                           </button>
                         </div>
                       ) : (
-                        <span className="text-[10px] text-amber-600">Obrigatório</span>
+                        <span className="text-[10px] text-muted-foreground">Opcional</span>
                       )}
                     </div>
                   </div>
