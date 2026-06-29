@@ -38,9 +38,29 @@ export default function ProjetoDetalhe() {
   const [newTaskOpen, setNewTaskOpen] = useState(false);
   const [completeOpen, setCompleteOpen] = useState(false);
 
+  const ownerIds = project ? [project.owner_id, project.co_owner_id].filter(Boolean) as string[] : [];
+  const { data: ownerProfiles = [] } = useQuery({
+    queryKey: ["projeto-detalhe-owners", id, ownerIds.join(",")],
+    queryFn: async () => {
+      if (ownerIds.length === 0) return [] as Array<{ user_id: string; full_name: string }>;
+      const { data } = await supabase.from("profiles").select("user_id, full_name").in("user_id", ownerIds);
+      const found = (data || []) as Array<{ user_id: string; full_name: string }>;
+      const missing = ownerIds.filter((uid) => !found.some((p) => p.user_id === uid));
+      if (missing.length === 0) return found;
+      const { data: techs } = await (supabase as any).rpc("get_org_technicians");
+      const extra = ((techs as any[]) || [])
+        .filter((t: any) => missing.includes(t.user_id))
+        .map((t: any) => ({ user_id: t.user_id, full_name: t.full_name }));
+      return [...found, ...extra];
+    },
+    enabled: ownerIds.length > 0,
+  });
+
   if (isLoading) return <div className="p-6 text-sm text-muted-foreground">Carregando projeto...</div>;
   if (!project) return <div className="p-6">Projeto não encontrado.</div>;
 
+  const ownerName = ownerProfiles.find((p: any) => p.user_id === project.owner_id)?.full_name;
+  const coOwnerName = ownerProfiles.find((p: any) => p.user_id === project.co_owner_id)?.full_name;
   const activeSprint = sprints.find((s) => s.status === "ativa");
 
   return (
