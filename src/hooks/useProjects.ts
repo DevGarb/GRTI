@@ -30,6 +30,10 @@ export interface ProjectAggregate extends Project {
   totalLinkedTickets: number;
   completedTickets: number;
   activeSprints: number;
+  totalSprints: number;
+  totalTasks: number;
+  completedTasks: number;
+  backlogTasks: number;
 }
 
 const RESOLVED_STATUSES = ["Resolvido", "Aprovado", "Aguardando Aprovação", "Fechado"];
