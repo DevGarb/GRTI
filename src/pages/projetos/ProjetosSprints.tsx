@@ -174,8 +174,7 @@ function CloseSprintDialog({
   });
 
   const allChecked = Object.values(checks).every(Boolean);
-  const allEvidenced = (Object.keys(checks) as CheckKey[]).every((k) => !!evidences[k]);
-  const canClose = allChecked && allEvidenced;
+  const canClose = allChecked;
   const score = Object.values(checks).filter(Boolean).length * 20;
 
   return (
@@ -184,8 +183,8 @@ function CloseSprintDialog({
         <DialogHeader>
           <DialogTitle>Encerrar sprint — {sprint?.name}</DialogTitle>
           <DialogDescription>
-            Confirme cada item (peso 20%) e <strong>anexe uma evidência</strong>. Todos os 5 itens precisam estar
-            confirmados e com evidência para encerrar.
+            Confirme cada item (peso 20%). As evidências são <strong>opcionais</strong>, mas recomendadas para
+            rastreabilidade.
           </DialogDescription>
         </DialogHeader>
 
@@ -193,7 +192,7 @@ function CloseSprintDialog({
           {CHECKLIST.map((it) => {
             const ev = evidences[it.key];
             const checked = checks[it.key];
-            const ok = checked && !!ev;
+            const ok = checked;
             return (
               <div
                 key={it.key}
@@ -253,7 +252,7 @@ function CloseSprintDialog({
                           </button>
                         </div>
                       ) : (
-                        <span className="text-[10px] text-amber-600">Obrigatório</span>
+                        <span className="text-[10px] text-muted-foreground">Opcional</span>
                       )}
                     </div>
                   </div>
@@ -270,9 +269,7 @@ function CloseSprintDialog({
           {!canClose && (
             <div className="flex items-center gap-1 text-[11px] text-amber-700">
               <AlertTriangle className="h-3 w-3" />
-              {!allChecked
-                ? "Confirme todos os itens"
-                : "Anexe a evidência de todos os itens"}
+              Confirme todos os itens
             </div>
           )}
         </div>
