@@ -158,11 +158,12 @@ export default function ProjetosCalendario() {
                 {dayItems.slice(0, 4).map((it: any) => (
                   <div
                     key={it.id}
-                    draggable
-                    onDragStart={(e) => onDragStart(e, it)}
+                    draggable={it._kind !== "project"}
+                    onDragStart={(e) => it._kind !== "project" && onDragStart(e, it)}
                     title={`${it.title} — ${it.project_name || ""}`}
                     className={cn(
-                      "px-1.5 py-0.5 rounded border text-[10px] truncate cursor-grab active:cursor-grabbing",
+                      "px-1.5 py-0.5 rounded border text-[10px] truncate",
+                      it._kind === "project" ? "cursor-default font-medium" : "cursor-grab active:cursor-grabbing",
                       colorFor(it.status, it.planned_date)
                     )}
                   >
