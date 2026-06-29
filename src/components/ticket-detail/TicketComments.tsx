@@ -36,14 +36,6 @@ export default function TicketComments({ ticketId }: Props) {
     return () => revokePendingFiles(pendingFilesRef.current);
   }, []);
 
-  useEffect(() => {
-    Fancybox.bind(`[data-fancybox="comments-${ticketId}"]`, {});
-    return () => {
-      Fancybox.unbind(`[data-fancybox="comments-${ticketId}"]`);
-      Fancybox.close();
-    };
-  }, [ticketId]);
-
   const { data: comments = [] } = useQuery({
     queryKey: ["ticket-comments", ticketId],
     queryFn: async () => {
