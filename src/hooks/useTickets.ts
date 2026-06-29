@@ -238,6 +238,24 @@ export function usePickTicket() {
   });
 }
 
+const METRIC_QUERY_KEYS = [
+  "tickets",
+  "metas-tecnicos",
+  "mvp-metrics",
+  "mvp-chamados-metrics",
+  "mvp-evolution",
+  "projetos-dashboard",
+  "dashboard-metrics",
+  "tickets-calendar",
+  "open-tickets",
+];
+
+function invalidateMetricCaches(queryClient: ReturnType<typeof useQueryClient>) {
+  METRIC_QUERY_KEYS.forEach((key) => {
+    queryClient.invalidateQueries({ queryKey: [key] });
+  });
+}
+
 export function useDeleteTicket() {
   const queryClient = useQueryClient();
 
@@ -247,7 +265,7 @@ export function useDeleteTicket() {
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["tickets"] });
+      invalidateMetricCaches(queryClient);
       toast.success("Chamado excluído!");
     },
     onError: (e: Error) => {
@@ -267,7 +285,7 @@ export function useBulkDeleteTickets() {
       return ids.length;
     },
     onSuccess: (count) => {
-      queryClient.invalidateQueries({ queryKey: ["tickets"] });
+      invalidateMetricCaches(queryClient);
       toast.success(`${count} chamado${count !== 1 ? "s" : ""} excluído${count !== 1 ? "s" : ""}!`);
     },
     onError: (e: Error) => {
@@ -275,6 +293,9 @@ export function useBulkDeleteTickets() {
     },
   });
 }
+
+export { invalidateMetricCaches };
+
 
 export function useProfiles() {
   return useQuery({
