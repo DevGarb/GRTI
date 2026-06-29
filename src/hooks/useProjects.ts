@@ -81,8 +81,9 @@ export function useProjects() {
 
       const { data: sprints } = await supabase
         .from("sprints")
-        .select("project_id, status")
+        .select("id, project_id, status")
         .in("project_id", projectIds);
+
 
       const { data: tasks } = await supabase
         .from("project_tasks")
