@@ -184,8 +184,8 @@ function CloseSprintDialog({
         <DialogHeader>
           <DialogTitle>Encerrar sprint — {sprint?.name}</DialogTitle>
           <DialogDescription>
-            Confirme cada item (peso 20%) e <strong>anexe uma evidência</strong>. Todos os 5 itens precisam estar
-            confirmados e com evidência para encerrar.
+            Confirme cada item (peso 20%). As evidências são <strong>opcionais</strong>, mas recomendadas para
+            rastreabilidade.
           </DialogDescription>
         </DialogHeader>
 
@@ -193,7 +193,7 @@ function CloseSprintDialog({
           {CHECKLIST.map((it) => {
             const ev = evidences[it.key];
             const checked = checks[it.key];
-            const ok = checked && !!ev;
+            const ok = checked;
             return (
               <div
                 key={it.key}
