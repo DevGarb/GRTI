@@ -81,6 +81,12 @@ export function useProjects() {
         .select("project_id, status")
         .in("project_id", projectIds);
 
+      const { data: tasks } = await supabase
+        .from("project_tasks")
+        .select("project_id, sprint_id, status")
+        .in("project_id", projectIds);
+
+
       const ownerIds = Array.from(
         new Set(
           projects
