@@ -43,6 +43,7 @@ export default function ProjetosCalendario() {
   const [reschedule, setReschedule] = useState<{ taskId: string; oldDate: string | null; newDate: string } | null>(null);
   const [reason, setReason] = useState("");
   const { data: items = [] } = useBacklog();
+  const { data: projects = [] } = useProjects();
   const reschedMut = useRescheduleTask();
 
   const days = useMemo(() => {
@@ -52,15 +53,29 @@ export default function ProjetosCalendario() {
   }, [cursor]);
 
   const byDay = useMemo(() => {
-    const map = new Map<string, typeof items>();
+    const map = new Map<string, any[]>();
+    const push = (k: string, v: any) => {
+      if (!map.has(k)) map.set(k, []);
+      map.get(k)!.push(v);
+    };
     items.forEach((i) => {
       if (!i.planned_date) return;
-      const k = i.planned_date;
-      if (!map.has(k)) map.set(k, [] as any);
-      (map.get(k) as any).push(i);
+      push(i.planned_date, { ...i, _kind: "task" });
+    });
+    projects.forEach((p: any) => {
+      if (!p.end_date) return;
+      const status = p.completed_at ? "Concluído" : (p.status || "Planejada");
+      push(p.end_date, {
+        id: `proj-${p.id}`,
+        title: `📁 ${p.name}`,
+        project_name: p.name,
+        status,
+        planned_date: p.end_date,
+        _kind: "project",
+      });
     });
     return map;
-  }, [items]);
+  }, [items, projects]);
 
   function onDragStart(e: React.DragEvent, item: any) {
     e.dataTransfer.setData("text/plain", JSON.stringify({ id: item.id, planned: item.planned_date }));
