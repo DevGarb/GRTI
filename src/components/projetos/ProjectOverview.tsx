@@ -157,12 +157,14 @@ export default function ProjectOverview({ project, sprints, onAddToActive, onCre
         />
         <KpiCard
           icon={TrendingUp}
-          label="Progresso geral"
-          value={`${overallPct}%`}
+          label="Progresso por sprints"
+          value={`${sprintProgressPct}%`}
           hint={
             <div className="mt-1">
-              <Progress value={overallPct} className="h-1.5 [&>div]:bg-emerald-500" />
-              <div className="mt-1">{doneItems}/{totalItems} itens concluídos</div>
+              <Progress value={sprintProgressPct} className="h-1.5 [&>div]:bg-emerald-500" />
+              <div className="mt-1">
+                {sprintsByStatus.concluida}/{totalSprints} sprints concluídas · {doneItems}/{totalItems} itens
+              </div>
             </div>
           }
           accent="bg-emerald-500/15 text-emerald-600 dark:text-emerald-300"
