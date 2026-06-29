@@ -40,6 +40,7 @@ export default function SprintCard({ sprint, projectId }: Props) {
   const [open, setOpen] = useState(sprint.status === "ativa");
   const [editOpen, setEditOpen] = useState(false);
   const [addOpen, setAddOpen] = useState(false);
+  const [histOpen, setHistOpen] = useState(false);
   const activate = useActivateSprint();
   const update = useUpdateSprint();
   const del = useDeleteSprint();
@@ -47,6 +48,27 @@ export default function SprintCard({ sprint, projectId }: Props) {
   const total = sprint.ticketCount + sprint.taskCount;
   const done = sprint.completedTickets + sprint.completedTasks;
   const canAdd = sprint.status === "planejada" || sprint.status === "ativa";
+  const fullyDone = isSprintEffectivelyDone(sprint.status, total, sprint.donePct);
+  const isOfficial = sprint.status === "concluida";
+  const badgeStatus = isOfficial
+    ? "concluida"
+    : fullyDone
+      ? "concluída (100%)"
+      : sprint.status;
+
+  const history = useQuery({
+    queryKey: ["sprint-history", sprint.id, histOpen],
+    enabled: histOpen,
+    queryFn: async () => {
+      const { data, error } = await (supabase as any)
+        .from("sprint_history")
+        .select("*")
+        .eq("sprint_id", sprint.id)
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return data || [];
+    },
+  });
 
   return (
     <div className="card-elevated">
