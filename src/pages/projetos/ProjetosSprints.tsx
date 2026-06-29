@@ -269,9 +269,7 @@ function CloseSprintDialog({
           {!canClose && (
             <div className="flex items-center gap-1 text-[11px] text-amber-700">
               <AlertTriangle className="h-3 w-3" />
-              {!allChecked
-                ? "Confirme todos os itens"
-                : "Anexe a evidência de todos os itens"}
+              Confirme todos os itens
             </div>
           )}
         </div>
