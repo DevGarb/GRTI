@@ -84,10 +84,22 @@ export function useProjects() {
             .filter(Boolean) as string[]
         )
       );
-      const { data: owners } = ownerIds.length
-        ? await supabase.from("profiles").select("user_id, full_name").in("user_id", ownerIds)
-        : { data: [] as any[] };
-      const ownerMap = new Map((owners || []).map((o: any) => [o.user_id, o.full_name]));
+      const ownerMap = new Map<string, string>();
+      if (ownerIds.length) {
+        const { data: owners } = await supabase
+          .from("profiles")
+          .select("user_id, full_name")
+          .in("user_id", ownerIds);
+        (owners || []).forEach((o: any) => ownerMap.set(o.user_id, o.full_name));
+        // Fallback via SECURITY DEFINER RPC for any owner not visible via RLS
+        const missing = ownerIds.filter((id) => !ownerMap.has(id));
+        if (missing.length) {
+          const { data: techs } = await supabase.rpc("get_org_technicians");
+          (techs || []).forEach((t: any) => {
+            if (missing.includes(t.user_id)) ownerMap.set(t.user_id, t.full_name);
+          });
+        }
+      }
 
       return projects.map<ProjectAggregate>((p) => {
         const pTickets = (tickets || []).filter((t: any) => t.project_id === p.id);
