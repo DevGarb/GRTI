@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { Link, useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, FolderKanban, Plus, Pencil, Trash2, CheckCircle2, RotateCcw } from "lucide-react";
+import { ArrowLeft, FolderKanban, Plus, Pencil, Trash2, CheckCircle2, RotateCcw, User, Users } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
