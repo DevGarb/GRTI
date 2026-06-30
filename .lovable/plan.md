@@ -1,58 +1,82 @@
-## Bug
+## Confirmação sobre o Victor
 
-Datas "date-only" (`YYYY-MM-DD` vindas do Postgres como `date`) estão sendo formatadas via `new Date("2026-07-02").toLocaleDateString("pt-BR")`. O JS parseia a string ISO como **UTC 00:00**, e o navegador em BRT (UTC-3) renderiza como 21:00 do dia anterior → exibe **01/07** em vez de **02/07**. Já corrigido pontualmente nas preventivas com `parseISO`, mas a regressão está espalhada por todo o sistema.
+Sim — o **Victor Hugo Coriolano Borges** está com o **mesmo bug do Danilo**, e em escala ainda maior:
 
-## Solução
+- **62 chamados** fechados em junho/2026
+- **42 deles (68%)** não têm a transição `status_change → "Em Andamento"` no histórico
+- Vários estão com janela bruta de **+400 horas** (ex.: "Eventos - Resolve" = 477h) porque o `started_at` cai no `created_at` e o cálculo legado vai até `closed_at`
 
-Criar um helper único e substituir todas as ocorrências para garantir consistência.
+O **Victor Vasconcelos** não tem chamados fechados nesse período, então não é afetado agora.
 
-### 1) Novo arquivo `src/lib/dateFormat.ts`
+O Danilo (64 chamados) já passou pelo backfill anterior e está consistente.
 
-Helpers tolerantes a `string | Date | null`:
+---
 
-- `formatDateBR(v)` → `dd/MM/yyyy`
-- `formatDateShortBR(v)` → `dd/MM`
-- `formatDateTimeBR(v)` → `dd/MM/yyyy HH:mm`
-- `formatDateTimeFullBR(v)` → `dd/MM/yyyy HH:mm:ss`
+## Plano de ação
 
-Regra interna: se a string casar com `^\d{4}-\d{2}-\d{2}$`, parsear como data **local** (`new Date(y, m-1, d)`); caso contrário usar `new Date(v)` normalmente (timestamps com timezone permanecem corretos).
+### Parte 1 — Corrigir o Victor (mesmo tratamento do Danilo)
 
-### 2) Substituir nos componentes
+Migração de dados (sem mexer em functions, triggers, nem em chamados já consistentes):
 
-Trocar `new Date(x).toLocaleDateString("pt-BR")` e `format(new Date(x), "dd/MM/yyyy"...)` pelos novos helpers nestes arquivos (campos `date`/planned_date/start_date/end_date/due_date/reference_date/last_date e também `created_at`/`completed_at` por padronização):
+1. Para cada chamado do Victor Hugo fechado sem transição `Em Andamento` no histórico, sintetizar eventos baseados em sinais reais:
+   - `started_at` ← primeiro entre: `picked_at`, primeiro `ticket_history.action='assigned'` para o Victor, ou primeiro comentário técnico do Victor (o que vier antes do `closed_at`).
+   - Inserir `ticket_history` sintéticos: `status_change → "Em Andamento"` no novo `started_at` e `status_change → "Aguardando Aprovação"` (ou `Fechado`) imediatamente antes do `closed_at` quando não houver outro sinal de pausa.
+2. Não tocar nos 20 chamados que já têm histórico correto.
+3. Recalcular cache (invalidar `metas-tecnicos`, `mvp-metrics`).
 
-- `src/components/TicketDetailModal.tsx`
-- `src/components/projetos/ProjectCard.tsx`
-- `src/components/projetos/ProjectOverview.tsx`
-- `src/components/projetos/SprintCard.tsx`
-- `src/components/projetos/TaskDetailModal.tsx`
-- `src/components/preventivas/OverdueAlerts.tsx`
-- `src/components/preventivas/PatrimonioTab.tsx`
-- `src/components/preventivas/EquipmentTable.tsx`
-- `src/components/todos/TodoRow.tsx`
-- `src/components/todos/TodoDetailModal.tsx`
-- `src/components/operacional/OpNotesPanel.tsx`
-- `src/components/ticket-detail/TicketComments.tsx`
-- `src/components/ticket-detail/TicketHistory.tsx`
-- `src/components/superadmin/ApiTokensTab.tsx`
-- `src/components/metas/PreventivasMonthlyTarget.tsx`
-- `src/pages/projetos/ProjetosBacklog.tsx`
-- `src/pages/projetos/ProjetosCalendario.tsx`
-- `src/pages/projetos/ProjetosSprints.tsx`
-- `src/pages/projetos/ProjetosPenalidades.tsx`
-- `src/pages/Preventivas.tsx`
-- `src/pages/chamados/ChamadosCalendario.tsx`
-- `src/pages/Chamados.tsx`, `Avaliacoes.tsx`, `Historico.tsx`, `Auditoria.tsx`, `Usuarios.tsx`, `Todos.tsx`, `Patrimonio.tsx`, `OpEntregas.tsx`, `OpOficina.tsx`, `ProjetoDetalhe.tsx`, `SuperAdmin.tsx`, `WebhookLogs.tsx`, `MetricasGerenciais.tsx`, `AssetPublicView.tsx`, `dashboard/DashboardPadrao.tsx`
-- `src/components/KanbanBoard.tsx`
+### Parte 2 — Verificação automática de distorções
 
-### 3) Calendários (mês/grid)
+Criar mecanismo passivo de detecção (sem alterar nenhuma function/trigger crítica de TMA, top-ups ou MVP):
 
-Em `ProjetosCalendario.tsx` e `chamados/ChamadosCalendario.tsx`, o agrupamento por dia já usa `format(day,'yyyy-MM-dd')` + `parseISO` (correto). Apenas garantir que toda exibição de `start_date`/`end_date`/`planned_date` passe pelos helpers.
+**Nova tabela** `ticket_tma_anomalies` (audit-only, não entra em cálculo):
+- `ticket_id`, `assigned_to`, `anomaly_type`, `severity`, `detected_at`, `details jsonb`, `reviewed_at`, `reviewed_by`, `dismissed`, `notes`
 
-### 4) Sem mudanças no backend
+**Função `detect_tma_anomalies()`** (SECURITY DEFINER, idempotente, apenas LEITURA das tabelas operacionais + INSERT/UPDATE na tabela nova). Sinaliza um chamado quando qualquer regra dispara:
 
-O bug é 100% de renderização no frontend. Datas continuam armazenadas como `date`/`timestamptz` normalmente.
+| Tipo                         | Regra                                                                                  | Severidade |
+|------------------------------|----------------------------------------------------------------------------------------|------------|
+| `missing_em_andamento`       | `status='Fechado'` e nenhum `status_change → "Em Andamento"` no histórico              | alta       |
+| `missing_close_event`        | `status='Fechado'` e nenhum `status_change → "Aguardando Aprovação/Aprovado/Fechado"` | alta       |
+| `inflated_window`            | janela bruta > 5× a janela útil do ticket (created→closed vs business minutes)         | média      |
+| `started_after_closed`       | `started_at > closed_at`                                                               | crítica    |
+| `assigned_without_started`   | `picked_at` definido há > 4h úteis sem entrar em "Em Andamento"                        | baixa      |
+| `long_open_no_activity`      | `status='Aberto'`/`Em Andamento` há > 7 dias sem comentário nem mudança               | média      |
 
-### Validação
+**Cron** (`pg_cron`, 1×/dia às 04:00): roda `detect_tma_anomalies()` para chamados modificados nas últimas 48h + um varredura completa dos abertos. Não modifica `tickets`, nem `started_at`, nem `ticket_history`.
 
-- Criar um chamado/projeto/sprint/preventiva com data 02/07 e confirmar que aparece **02/07** em: card de projeto, card de sprint, backlog, calendário de projetos, calendário de chamados, modal de detalhe do chamado, lista de preventivas, alertas de atraso, penalidades, todos.
+### Parte 3 — UI: "Revisão de TMA" (admin only)
+
+Sub-aba dentro de **Metas → MVP** (ou Auditoria) chamada **"Revisão de TMA"**:
+
+- Lista paginada das anomalias não resolvidas, agrupadas por técnico
+- Para cada item: chamado, tipo de anomalia, severidade, valor detectado, técnico
+- Ações por linha:
+  - **Abrir chamado** (reaproveita `TicketDetailModal` — admin já pode editar `Início Atend.` lá)
+  - **Marcar como revisado** (preenche `reviewed_at`/`reviewed_by`)
+  - **Descartar com nota** (`dismissed=true`, exige `notes`)
+- Badge de contagem no menu lateral quando há anomalias críticas/altas pendentes.
+
+### Parte 4 — Garantias de não-regressão
+
+- A função de detecção é **somente leitura** sobre `tickets`/`ticket_history`.
+- `get_metas_tecnicos`, triggers de `started_at`, MVP awards e penalidades **não são alterados**.
+- Top-ups, `compute_mvp_awards`, `get_mvp_metrics`, `get_mvp_evolution_v2` permanecem como estão.
+- A nova tabela e o cron só *observam*; toda correção continua sendo manual via modal pelo admin.
+
+---
+
+## Arquivos previstos
+
+**Backend (migration única):**
+- `CREATE TABLE public.ticket_tma_anomalies` + GRANTs + RLS (admin/super_admin)
+- `CREATE FUNCTION public.detect_tma_anomalies()` SECURITY DEFINER
+- `SELECT cron.schedule('detect-tma-anomalies-daily', ...)`
+- Data fix do Victor (UPDATE/INSERT pontual em `tickets` + `ticket_history` dele)
+
+**Frontend:**
+- `src/hooks/useTmaAnomalies.ts`
+- `src/components/metas/TmaAnomaliesPanel.tsx`
+- Integração da sub-aba em `src/pages/metas/MetasLayout.tsx` (ou criação de `src/pages/metas/MetasRevisaoTMA.tsx`)
+- Badge de contagem no menu (`src/components/AppLayout.tsx`)
+
+Posso seguir com a implementação?

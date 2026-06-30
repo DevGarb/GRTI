@@ -2164,6 +2164,65 @@ export type Database = {
           },
         ]
       }
+      ticket_tma_anomalies: {
+        Row: {
+          anomaly_type: string
+          assigned_to: string | null
+          created_at: string
+          details: Json
+          detected_at: string
+          dismissed: boolean
+          id: string
+          notes: string | null
+          organization_id: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          severity: string
+          ticket_id: string
+          updated_at: string
+        }
+        Insert: {
+          anomaly_type: string
+          assigned_to?: string | null
+          created_at?: string
+          details?: Json
+          detected_at?: string
+          dismissed?: boolean
+          id?: string
+          notes?: string | null
+          organization_id?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          severity: string
+          ticket_id: string
+          updated_at?: string
+        }
+        Update: {
+          anomaly_type?: string
+          assigned_to?: string | null
+          created_at?: string
+          details?: Json
+          detected_at?: string
+          dismissed?: boolean
+          id?: string
+          notes?: string | null
+          organization_id?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          severity?: string
+          ticket_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ticket_tma_anomalies_ticket_id_fkey"
+            columns: ["ticket_id"]
+            isOneToOne: false
+            referencedRelation: "tickets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       tickets: {
         Row: {
           assigned_to: string | null
@@ -2595,6 +2654,14 @@ export type Database = {
           _user_id: string
         }
         Returns: boolean
+      }
+      detect_tma_anomalies: {
+        Args: { _lookback_days?: number }
+        Returns: {
+          result_inserted: number
+          result_type: string
+          result_updated: number
+        }[]
       }
       get_executive_overview: {
         Args: { _organization_id: string }
