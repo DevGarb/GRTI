@@ -131,8 +131,16 @@ export async function fetchTicketWorkMinutes(
       // assumimos que parou em updated_at).
       const start = t.started_at ? new Date(t.started_at) : null;
       if (start) {
-        const end = t.status === WORKING_STATUS ? now : new Date(t.updated_at);
-        if (end > start) total = calcBusinessMinutes(start, end);
+        // Para tickets legados sem histórico: usa closed_at (se houver) em vez
+        // de updated_at, para evitar inflar o tempo quando o admin edita o
+        // chamado depois do fechamento (ex.: invalidar retrabalho).
+        const endRaw =
+          t.status === WORKING_STATUS
+            ? now
+            : t.closed_at
+              ? new Date(t.closed_at)
+              : new Date(t.updated_at);
+        if (endRaw > start) total = calcBusinessMinutes(start, endRaw);
       }
       result.set(t.id, total);
       continue;
