@@ -10,6 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
+import { formatDateBR } from "@/lib/dateFormat";
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from "@/components/ui/dialog";
 import {
@@ -207,7 +208,7 @@ export default function ProjetosPenalidades() {
               <TableRow><TableCell colSpan={8} className="text-center py-6 text-sm text-muted-foreground">Sem penalidades.</TableCell></TableRow>
             ) : items.map((p: Penalty) => (
               <TableRow key={p.id}>
-                <TableCell className="text-xs">{new Date(p.reference_date).toLocaleDateString("pt-BR")}</TableCell>
+                <TableCell className="text-xs">{formatDateBR(p.reference_date)}</TableCell>
                 <TableCell className="font-medium">{p.user_name}</TableCell>
                 <TableCell><Badge variant="outline">{typeLabel(p.type)}</Badge></TableCell>
                 <TableCell className="text-xs text-red-600">
