@@ -100,9 +100,10 @@ export function useReviewAnomaly() {
 
 export function useRunAnomalyDetection() {
   const qc = useQueryClient();
-  return useMutation({
-    mutationFn: async (lookbackDays = 60) => {
-      const { data, error } = await (supabase as any).rpc("detect_tma_anomalies", { _lookback_days: lookbackDays });
+  return useMutation<unknown, Error, number | void>({
+    mutationFn: async (lookbackDays) => {
+      const days = typeof lookbackDays === "number" ? lookbackDays : 60;
+      const { data, error } = await (supabase as any).rpc("detect_tma_anomalies", { _lookback_days: days });
       if (error) throw error;
       return data;
     },
