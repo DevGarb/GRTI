@@ -1,82 +1,32 @@
-## Confirmação sobre o Victor
+## Problema
 
-Sim — o **Victor Hugo Coriolano Borges** está com o **mesmo bug do Danilo**, e em escala ainda maior:
+Felipe (4d) e Izabele (3d 3h) estão com TMA inflado pelo **mesmo bug** que afetou Danilo e Victor Hugo:
+- Felipe: **103 de 128** chamados fechados em junho/26 sem o evento "Em Andamento" no histórico.
+- Izabele: **89 de 105** chamados na mesma situação.
 
-- **62 chamados** fechados em junho/2026
-- **42 deles (68%)** não têm a transição `status_change → "Em Andamento"` no histórico
-- Vários estão com janela bruta de **+400 horas** (ex.: "Eventos - Resolve" = 477h) porque o `started_at` cai no `created_at` e o cálculo legado vai até `closed_at`
+Sem esse evento, a função `get_metas_tecnicos` cai no fallback `created_at → closed_at`, contando dias inteiros (inclusive fora do horário) em vez do tempo real de atendimento.
 
-O **Victor Vasconcelos** não tem chamados fechados nesse período, então não é afetado agora.
+## Solução
 
-O Danilo (64 chamados) já passou pelo backfill anterior e está consistente.
+Aplicar exatamente o mesmo backfill já usado para Danilo e Victor Hugo, escopado **apenas** aos chamados de junho/26 do Felipe e da Izabele que estão sem evento "Em Andamento":
 
----
+1. Para cada chamado afetado, determinar o `started_at` real a partir do primeiro sinal de trabalho disponível, na ordem:
+   - primeiro `ticket_comments.created_at` do próprio técnico atribuído;
+   - `picked_at` (se existir);
+   - evento de atribuição em `ticket_history`;
+   - como último recurso, `closed_at − 1h` limitado a horário comercial.
+2. Atualizar `tickets.started_at` para esse timestamp (somente quando o atual estiver vazio ou anterior ao sinal real).
+3. Inserir evento sintético em `ticket_history` (`action='status_change'`, `old_value='Aberto'`, `new_value='Em Andamento'`, `created_at = started_at`) marcado como backfill, para a função `get_metas_tecnicos` enxergar a janela correta.
+4. Não tocar em triggers, funções de TMA/MVP, top-ups, nem em chamados de outros técnicos ou de outros meses.
 
-## Plano de ação
+## Validação
 
-### Parte 1 — Corrigir o Victor (mesmo tratamento do Danilo)
+- Reexecutar a métrica e confirmar que Felipe e Izabele caem para faixas coerentes (esperado abaixo de 8h, em linha com Danilo/Victor).
+- Rodar `detect_tma_anomalies` para confirmar que os `missing_em_andamento` desses dois caem para ~0 em junho/26.
+- Confirmar visualmente na aba **Metas** que os outros técnicos continuam iguais.
 
-Migração de dados (sem mexer em functions, triggers, nem em chamados já consistentes):
+## Detalhes técnicos
 
-1. Para cada chamado do Victor Hugo fechado sem transição `Em Andamento` no histórico, sintetizar eventos baseados em sinais reais:
-   - `started_at` ← primeiro entre: `picked_at`, primeiro `ticket_history.action='assigned'` para o Victor, ou primeiro comentário técnico do Victor (o que vier antes do `closed_at`).
-   - Inserir `ticket_history` sintéticos: `status_change → "Em Andamento"` no novo `started_at` e `status_change → "Aguardando Aprovação"` (ou `Fechado`) imediatamente antes do `closed_at` quando não houver outro sinal de pausa.
-2. Não tocar nos 20 chamados que já têm histórico correto.
-3. Recalcular cache (invalidar `metas-tecnicos`, `mvp-metrics`).
-
-### Parte 2 — Verificação automática de distorções
-
-Criar mecanismo passivo de detecção (sem alterar nenhuma function/trigger crítica de TMA, top-ups ou MVP):
-
-**Nova tabela** `ticket_tma_anomalies` (audit-only, não entra em cálculo):
-- `ticket_id`, `assigned_to`, `anomaly_type`, `severity`, `detected_at`, `details jsonb`, `reviewed_at`, `reviewed_by`, `dismissed`, `notes`
-
-**Função `detect_tma_anomalies()`** (SECURITY DEFINER, idempotente, apenas LEITURA das tabelas operacionais + INSERT/UPDATE na tabela nova). Sinaliza um chamado quando qualquer regra dispara:
-
-| Tipo                         | Regra                                                                                  | Severidade |
-|------------------------------|----------------------------------------------------------------------------------------|------------|
-| `missing_em_andamento`       | `status='Fechado'` e nenhum `status_change → "Em Andamento"` no histórico              | alta       |
-| `missing_close_event`        | `status='Fechado'` e nenhum `status_change → "Aguardando Aprovação/Aprovado/Fechado"` | alta       |
-| `inflated_window`            | janela bruta > 5× a janela útil do ticket (created→closed vs business minutes)         | média      |
-| `started_after_closed`       | `started_at > closed_at`                                                               | crítica    |
-| `assigned_without_started`   | `picked_at` definido há > 4h úteis sem entrar em "Em Andamento"                        | baixa      |
-| `long_open_no_activity`      | `status='Aberto'`/`Em Andamento` há > 7 dias sem comentário nem mudança               | média      |
-
-**Cron** (`pg_cron`, 1×/dia às 04:00): roda `detect_tma_anomalies()` para chamados modificados nas últimas 48h + um varredura completa dos abertos. Não modifica `tickets`, nem `started_at`, nem `ticket_history`.
-
-### Parte 3 — UI: "Revisão de TMA" (admin only)
-
-Sub-aba dentro de **Metas → MVP** (ou Auditoria) chamada **"Revisão de TMA"**:
-
-- Lista paginada das anomalias não resolvidas, agrupadas por técnico
-- Para cada item: chamado, tipo de anomalia, severidade, valor detectado, técnico
-- Ações por linha:
-  - **Abrir chamado** (reaproveita `TicketDetailModal` — admin já pode editar `Início Atend.` lá)
-  - **Marcar como revisado** (preenche `reviewed_at`/`reviewed_by`)
-  - **Descartar com nota** (`dismissed=true`, exige `notes`)
-- Badge de contagem no menu lateral quando há anomalias críticas/altas pendentes.
-
-### Parte 4 — Garantias de não-regressão
-
-- A função de detecção é **somente leitura** sobre `tickets`/`ticket_history`.
-- `get_metas_tecnicos`, triggers de `started_at`, MVP awards e penalidades **não são alterados**.
-- Top-ups, `compute_mvp_awards`, `get_mvp_metrics`, `get_mvp_evolution_v2` permanecem como estão.
-- A nova tabela e o cron só *observam*; toda correção continua sendo manual via modal pelo admin.
-
----
-
-## Arquivos previstos
-
-**Backend (migration única):**
-- `CREATE TABLE public.ticket_tma_anomalies` + GRANTs + RLS (admin/super_admin)
-- `CREATE FUNCTION public.detect_tma_anomalies()` SECURITY DEFINER
-- `SELECT cron.schedule('detect-tma-anomalies-daily', ...)`
-- Data fix do Victor (UPDATE/INSERT pontual em `tickets` + `ticket_history` dele)
-
-**Frontend:**
-- `src/hooks/useTmaAnomalies.ts`
-- `src/components/metas/TmaAnomaliesPanel.tsx`
-- Integração da sub-aba em `src/pages/metas/MetasLayout.tsx` (ou criação de `src/pages/metas/MetasRevisaoTMA.tsx`)
-- Badge de contagem no menu (`src/components/AppLayout.tsx`)
-
-Posso seguir com a implementação?
+- Operação 100% via migração SQL idempotente (filtra `WHERE assigned_to IN (...) AND closed_at em junho/26 AND NOT EXISTS (evento Em Andamento)`).
+- Nenhuma alteração em código frontend nem em definições de função/trigger.
+- Backfill marca o `ticket_history` inserido com um campo identificável (ex.: `field_name='backfill_started_at'`) para auditoria, mesmo padrão dos backfills anteriores.
