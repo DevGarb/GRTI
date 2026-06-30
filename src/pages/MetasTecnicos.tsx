@@ -166,7 +166,7 @@ export default function MetasTecnicos() {
      let current = 0;
       if (metric === "tickets_closed") current = tech.totalClosed;
       else if (metric === "avg_score") current = tech.avgScore;
-      else if (metric === "avg_resolution_hours") current = tech.avgResolutionHours;
+      else if (metric === "avg_resolution_hours") current = Math.floor(tech.avgResolutionHours);
       else if (metric === "points") current = tech.totalPoints;
      else if (metric === "preventivas_done") current = tech.preventivasDone;
       else if (metric === "project_tasks_done") current = tech.projectTasksDone;
@@ -187,10 +187,10 @@ export default function MetasTecnicos() {
   const totalPoints = stats.reduce((a, s) => a + s.totalPoints, 0);
 
   const formatHours = (h: number) => {
-    if (h < 1) return `${Math.round(h * 60)}min`;
-    if (h < BUSINESS_HOURS_PER_DAY) return `${h.toFixed(1)}h`;
+    if (h < 1) return `${Math.floor(h * 60)}min`;
+    if (h < BUSINESS_HOURS_PER_DAY) return `${Math.floor(h)}h`;
     const days = Math.floor(h / BUSINESS_HOURS_PER_DAY);
-    const rem = Math.round(h % BUSINESS_HOURS_PER_DAY);
+    const rem = Math.floor(h % BUSINESS_HOURS_PER_DAY);
     return rem > 0 ? `${days}d ${rem}h` : `${days}d`;
   };
 
