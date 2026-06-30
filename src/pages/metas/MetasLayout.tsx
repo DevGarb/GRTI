@@ -1,13 +1,15 @@
 import { NavLink, Outlet } from "react-router-dom";
-import { Target, User, Trophy, ShieldAlert } from "lucide-react";
+import { Target, User, Trophy, ShieldAlert, Activity } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
+import { useTmaAnomalies } from "@/hooks/useTmaAnomalies";
 
 const tabs = [
   { to: "/metas", label: "Desempenho", icon: Target, end: true },
   { to: "/metas/meu-mvp", label: "Meu MVP", icon: User },
   { to: "/metas/mvp", label: "MVP Equipe", icon: Trophy, adminOnly: true },
   { to: "/metas/penalidades", label: "Penalidades", icon: ShieldAlert, adminOnly: true },
+  { to: "/metas/revisao-tma", label: "Revisão TMA", icon: Activity, adminOnly: true, badge: true },
 ];
 
 export default function MetasLayout() {
