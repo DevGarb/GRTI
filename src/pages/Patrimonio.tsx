@@ -386,7 +386,7 @@ export default function Patrimonio() {
                     <p className="text-sm font-semibold text-foreground">{history.length} manutenções</p>
                     {history.length > 0 && (
                       <p className="text-xs text-muted-foreground">
-                        Última: {format(parseISO(history.sort((a, b) => b.execution_date.localeCompare(a.execution_date))[0].execution_date), "dd/MM/yyyy")}
+                        Última: {formatDateBR(history.sort((a, b) => b.execution_date.localeCompare(a.execution_date))[0].execution_date)}
                       </p>
                     )}
                   </div>
