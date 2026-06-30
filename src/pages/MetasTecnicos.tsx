@@ -187,10 +187,10 @@ export default function MetasTecnicos() {
   const totalPoints = stats.reduce((a, s) => a + s.totalPoints, 0);
 
   const formatHours = (h: number) => {
-    if (h < 1) return `${Math.round(h * 60)}min`;
-    if (h < BUSINESS_HOURS_PER_DAY) return `${h.toFixed(1)}h`;
+    if (h < 1) return `${Math.floor(h * 60)}min`;
+    if (h < BUSINESS_HOURS_PER_DAY) return `${Math.floor(h)}h`;
     const days = Math.floor(h / BUSINESS_HOURS_PER_DAY);
-    const rem = Math.round(h % BUSINESS_HOURS_PER_DAY);
+    const rem = Math.floor(h % BUSINESS_HOURS_PER_DAY);
     return rem > 0 ? `${days}d ${rem}h` : `${days}d`;
   };
 
