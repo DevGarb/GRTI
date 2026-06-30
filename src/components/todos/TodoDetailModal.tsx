@@ -6,7 +6,9 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { Trash2, Send } from "lucide-react";
+import { Trash2, Send, Pencil, Check, X } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -57,6 +59,39 @@ export default function TodoDetailModal({ todo, open, onOpenChange, onUpdate }: 
   const [history, setHistory] = useState<HistoryEntry[]>([]);
   const [text, setText] = useState("");
   const [sending, setSending] = useState(false);
+  const [editing, setEditing] = useState(false);
+  const [editTitle, setEditTitle] = useState("");
+  const [editDescription, setEditDescription] = useState("");
+  const [editDueDate, setEditDueDate] = useState<string>("");
+
+  useEffect(() => {
+    if (todo) {
+      setEditTitle(todo.title);
+      setEditDescription(todo.description || "");
+      setEditDueDate(todo.due_date ? todo.due_date.slice(0, 10) : "");
+      setEditing(false);
+    }
+  }, [todo?.id, open]);
+
+  const canEdit = !!todo && todo.user_id === user?.id;
+
+  const saveEdits = async () => {
+    if (!todo) return;
+    const patch: Partial<Todo> = {};
+    if (editTitle.trim() && editTitle !== todo.title) patch.title = editTitle.trim();
+    if ((editDescription || null) !== (todo.description || null))
+      patch.description = editDescription.trim() || null;
+    const newDue = editDueDate || null;
+    if (newDue !== (todo.due_date ? todo.due_date.slice(0, 10) : null)) patch.due_date = newDue;
+    if (Object.keys(patch).length === 0) {
+      setEditing(false);
+      return;
+    }
+    await updateTodo(todo.id, patch);
+    setEditing(false);
+    toast.success("TODO atualizado");
+    load();
+  };
 
   const load = async () => {
     if (!todo) return;
@@ -121,10 +156,57 @@ export default function TodoDetailModal({ todo, open, onOpenChange, onUpdate }: 
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl max-h-[85vh] overflow-hidden flex flex-col">
         <DialogHeader>
-          <DialogTitle className="pr-8">{todo.title}</DialogTitle>
+          <div className="flex items-start justify-between gap-2 pr-8">
+            {editing ? (
+              <Input
+                value={editTitle}
+                onChange={(e) => setEditTitle(e.target.value)}
+                className="text-lg font-semibold"
+                autoFocus
+              />
+            ) : (
+              <DialogTitle className="flex-1">{todo.title}</DialogTitle>
+            )}
+            {canEdit && !editing && (
+              <Button size="icon" variant="ghost" onClick={() => setEditing(true)} title="Editar">
+                <Pencil className="h-4 w-4" />
+              </Button>
+            )}
+            {editing && (
+              <div className="flex gap-1">
+                <Button size="icon" variant="ghost" onClick={saveEdits} title="Salvar">
+                  <Check className="h-4 w-4 text-emerald-600" />
+                </Button>
+                <Button size="icon" variant="ghost" onClick={() => setEditing(false)} title="Cancelar">
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
+            )}
+          </div>
         </DialogHeader>
-        {todo.description && (
-          <p className="text-sm text-muted-foreground whitespace-pre-wrap">{todo.description}</p>
+        {editing ? (
+          <div className="grid gap-2">
+            <Label className="text-xs">Descrição</Label>
+            <Textarea
+              value={editDescription}
+              onChange={(e) => setEditDescription(e.target.value)}
+              placeholder="Descrição"
+              rows={3}
+            />
+            <Label className="text-xs">Prazo</Label>
+            <Input type="date" value={editDueDate} onChange={(e) => setEditDueDate(e.target.value)} />
+          </div>
+        ) : (
+          <>
+            {todo.description && (
+              <p className="text-sm text-muted-foreground whitespace-pre-wrap">{todo.description}</p>
+            )}
+            {todo.due_date && (
+              <p className="text-xs text-muted-foreground">
+                Prazo: {format(new Date(todo.due_date), "dd/MM/yyyy", { locale: ptBR })}
+              </p>
+            )}
+          </>
         )}
         <div className="grid grid-cols-2 gap-3">
           <div>
