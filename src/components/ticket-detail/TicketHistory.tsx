@@ -1,6 +1,7 @@
 import { Clock } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
+import { formatDateBR, formatTimeBR } from "@/lib/dateFormat";
 
 interface Props {
   ticketId: string;
@@ -68,8 +69,8 @@ export default function TicketHistory({ ticketId, createdAt }: Props) {
                 <span className="text-muted-foreground"> — {h.user_name}</span>
               )}
               <p className="text-[11px] text-muted-foreground">
-                {new Date(h.created_at).toLocaleDateString("pt-BR")},{" "}
-                {new Date(h.created_at).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit", second: "2-digit" })}
+                {formatDateBR(h.created_at)},{" "}
+                {formatTimeBR(h.created_at)}
               </p>
             </div>
           </div>
@@ -81,8 +82,8 @@ export default function TicketHistory({ ticketId, createdAt }: Props) {
           <div>
             <span className="font-medium text-foreground">Criação</span>
             <p className="text-[11px] text-muted-foreground">
-              {new Date(createdAt).toLocaleDateString("pt-BR")},{" "}
-              {new Date(createdAt).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit", second: "2-digit" })}
+              {formatDateBR(createdAt)},{" "}
+              {formatTimeBR(createdAt)}
             </p>
           </div>
         </div>

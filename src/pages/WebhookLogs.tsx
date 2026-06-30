@@ -3,6 +3,7 @@ import { Webhook, CheckCircle, XCircle, Filter } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { WEBHOOK_EVENTS } from "@/hooks/useWebhooks";
+import { formatDateTimeFullBR } from "@/lib/dateFormat";
 
 const STATUS_OPTIONS = [
   { value: "all", label: "Todos" },
@@ -103,7 +104,7 @@ export default function WebhookLogs() {
                     <span className="text-sm font-semibold text-foreground">{log.event_type}</span>
                   </div>
                   <span className="text-[11px] text-muted-foreground">
-                    {new Date(log.created_at).toLocaleString("pt-BR")}
+                    {formatDateTimeFullBR(log.created_at)}
                   </span>
                 </div>
                 <div className="text-xs text-muted-foreground space-y-0.5">

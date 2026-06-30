@@ -4,6 +4,7 @@ import { useUpdateTicket, Ticket } from "@/hooks/useTickets";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { formatDateBR } from "@/lib/dateFormat";
 
 const COLUMNS = [
   { id: "Aberto", label: "Aberto", color: "bg-red-500" },
@@ -138,7 +139,7 @@ export default function KanbanBoard({ tickets, onSelect }: KanbanBoardProps) {
                             {ticket.creatorProfile?.full_name || "—"}
                           </p>
                           <p className="text-[10px] text-muted-foreground mt-0.5">
-                            {new Date(ticket.created_at).toLocaleDateString("pt-BR")}
+                            {formatDateBR(ticket.created_at)}
                           </p>
                         </div>
                       )}

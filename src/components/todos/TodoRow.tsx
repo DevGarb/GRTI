@@ -6,6 +6,7 @@ import type { TodoWithAuthor } from "@/hooks/useTodos";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { cn } from "@/lib/utils";
+import { formatDateShortBR } from "@/lib/dateFormat";
 
 interface Props {
   todo: TodoWithAuthor;
@@ -62,7 +63,7 @@ export default function TodoRow({ todo, isOwner, showAuthor, onToggleComplete, o
       {todo.due_date && (
         <span className="hidden sm:flex items-center gap-1 text-xs text-muted-foreground shrink-0">
           <Calendar className="h-3 w-3" />
-          {format(new Date(todo.due_date), "dd/MM", { locale: ptBR })}
+          {formatDateShortBR(todo.due_date)}
         </span>
       )}
 

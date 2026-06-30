@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Monitor, Laptop, Printer, Server, Search, Package, Calendar, User, MapPin } from "lucide-react";
 import { format, parseISO } from "date-fns";
 import type { Preventiva } from "@/hooks/usePreventivas";
+import { formatDateBR } from "@/lib/dateFormat";
 
 interface Props {
   preventivas: Preventiva[];
@@ -155,7 +156,7 @@ export default function PatrimonioTab({ preventivas }: Props) {
               <div className="text-right shrink-0">
                 <p className="text-sm font-semibold text-foreground">{item.totalMaintenances} manutenções</p>
                 <p className="text-xs text-muted-foreground">
-                  Última: {format(new Date(item.lastDate), "dd/MM/yyyy")}
+                  Última: {formatDateBR(item.lastDate)}
                 </p>
               </div>
               <div className="shrink-0 w-12">
@@ -186,7 +187,7 @@ export default function PatrimonioTab({ preventivas }: Props) {
                             <Calendar className="h-4 w-4 text-muted-foreground" />
                             <div>
                               <p className="text-sm font-medium text-foreground">
-                                {format(parseISO(h.execution_date), "dd/MM/yyyy")}
+                                {formatDateBR(h.execution_date)}
                               </p>
                               <p className="text-xs text-muted-foreground">
                                 Técnico: {h.creatorName || "—"}

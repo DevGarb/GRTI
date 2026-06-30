@@ -7,6 +7,7 @@ import { Search, LayoutGrid, List as ListIcon } from "lucide-react";
 import { useBacklog, useUpdateBacklogItem, TASK_STATUSES, TASK_PRIORITIES } from "@/hooks/useBacklog";
 import { format } from "date-fns";
 import BacklogKanban from "@/components/projetos/BacklogKanban";
+import { formatDateBR } from "@/lib/dateFormat";
 
 const STATUS_COLORS: Record<string, string> = {
   Pendente: "bg-slate-500/15 text-slate-700 dark:text-slate-300",
@@ -148,7 +149,7 @@ export default function ProjetosBacklog() {
                     <span>{item.project_name || "Projeto"}</span>
                     <span>· {item.assignee_name || "Não atribuído"}</span>
                     {item.planned_date && (
-                      <span>· Planejado: {format(new Date(item.planned_date), "dd/MM/yyyy")}</span>
+                      <span>· Planejado: {formatDateBR(item.planned_date)}</span>
                     )}
                     {item.rework_count > 0 && (
                       <Badge variant="outline" className="text-[10px] bg-red-500/10 text-red-700">

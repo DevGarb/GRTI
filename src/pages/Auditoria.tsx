@@ -7,6 +7,7 @@ import { Navigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import MonthSelector, { getCurrentMonthValue, getMonthDateRange } from "@/components/MonthSelector";
+import { formatDateBR, formatDateTimeFullBR } from "@/lib/dateFormat";
 
 // ─── Aba Chamados ────────────────────────────────────────────────────────────
 
@@ -116,7 +117,7 @@ function TabChamados() {
         t.openedBy,
         t.assignedTo,
         t.title,
-        new Date(t.createdAt).toLocaleDateString("pt-BR"),
+        formatDateBR(t.createdAt),
         t.status,
         t.score !== null ? String(t.score) : "—",
         t.categoryName,
@@ -225,7 +226,7 @@ function TabChamados() {
                     <td className="px-4 py-3 whitespace-nowrap text-xs text-muted-foreground">
                       <div className="flex items-center gap-1.5">
                         <Calendar className="h-3 w-3" />
-                        {new Date(t.createdAt).toLocaleDateString("pt-BR")}
+                        {formatDateBR(t.createdAt)}
                       </div>
                     </td>
                     <td className="px-4 py-3">
@@ -300,7 +301,7 @@ function TabExclusoes() {
   const exportCSV = () => {
     const headers = ["Data/Hora", "Usuário", "Email", "ID do Chamado", "Detalhes"];
     const rows = filtered.map((l: any) => [
-      new Date(l.created_at).toLocaleString("pt-BR"),
+      formatDateTimeFullBR(l.created_at),
       l.userName,
       l.userEmail,
       l.entity_id || "",
@@ -368,7 +369,7 @@ function TabExclusoes() {
                     <td className="px-4 py-3 whitespace-nowrap text-xs text-muted-foreground">
                       <div className="flex items-center gap-1.5">
                         <Calendar className="h-3 w-3" />
-                        {new Date(log.created_at).toLocaleString("pt-BR")}
+                        {formatDateTimeFullBR(log.created_at)}
                       </div>
                     </td>
                     <td className="px-4 py-3">

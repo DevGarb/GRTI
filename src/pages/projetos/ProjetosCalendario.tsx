@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import {
+import { formatDateBR } from "@/lib/dateFormat";
   startOfMonth,
   endOfMonth,
   eachDayOfInterval,
@@ -186,8 +187,8 @@ export default function ProjetosCalendario() {
             <DialogDescription>
               {reschedule && (
                 <>
-                  De {reschedule.oldDate ? format(parseISO(reschedule.oldDate), "dd/MM/yyyy") : "—"} para{" "}
-                  {format(parseISO(reschedule.newDate), "dd/MM/yyyy")}
+                  De {reschedule.oldDate ? formatDateBR(reschedule.oldDate) : "—"} para{" "}
+                  {formatDateBR(reschedule.newDate)}
                 </>
               )}
             </DialogDescription>

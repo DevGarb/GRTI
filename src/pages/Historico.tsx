@@ -2,6 +2,7 @@ import { History, Search } from "lucide-react";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { formatDateTimeFullBR } from "@/lib/dateFormat";
 
 interface AuditLog {
   id: string;
@@ -107,7 +108,7 @@ export default function Historico() {
                 )}
               </div>
               <span className="text-[11px] text-muted-foreground whitespace-nowrap">
-                {new Date(log.created_at).toLocaleString("pt-BR")}
+                {formatDateTimeFullBR(log.created_at)}
               </span>
             </div>
           ))}

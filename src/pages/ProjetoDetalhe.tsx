@@ -17,6 +17,7 @@ import AddTicketsToSprintModal from "@/components/projetos/AddTicketsToSprintMod
 import NewTaskModal from "@/components/projetos/NewTaskModal";
 import ProjectOverview from "@/components/projetos/ProjectOverview";
 import CompleteProjectModal, { SIZE_LABEL } from "@/components/projetos/CompleteProjectModal";
+import { formatDateBR } from "@/lib/dateFormat";
 
 const formatBRL = (v: number) =>
   new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(v);
@@ -109,7 +110,7 @@ export default function ProjetoDetalhe() {
             <div className="flex flex-wrap items-center gap-2 mt-1 text-[11px] text-muted-foreground">
               <span className="inline-flex items-center gap-1 text-emerald-600 dark:text-emerald-400 font-medium">
                 <CheckCircle2 className="h-3 w-3" />
-                Concluído{project.completed_at ? ` em ${new Date(project.completed_at).toLocaleDateString("pt-BR")}` : ""}
+                Concluído{project.completed_at ? ` em ${formatDateBR(project.completed_at)}` : ""}
               </span>
               {project.size && <Badge variant="outline" className="text-[10px]">{SIZE_LABEL[project.size] || project.size}</Badge>}
               {project.value_brl != null && <span className="font-mono">{formatBRL(Number(project.value_brl))}</span>}

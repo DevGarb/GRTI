@@ -14,6 +14,7 @@ import { toast } from "sonner";
 import TicketComments from "@/components/ticket-detail/TicketComments";
 import TicketHistory from "@/components/ticket-detail/TicketHistory";
 import {
+import { formatDateBR, formatDateTimeFullBR } from "@/lib/dateFormat";
   AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
@@ -574,7 +575,7 @@ export default function TicketDetailModal({ ticket, onClose }: Props) {
             <h2 className="text-lg font-bold text-foreground truncate">{ticket.title}</h2>
             <div className="flex items-center gap-2 mt-1.5 flex-wrap">
               <p className="text-xs text-muted-foreground">
-                {new Date(ticket.created_at).toLocaleDateString("pt-BR")}
+                {formatDateBR(ticket.created_at)}
               </p>
               {(isAdmin || isSuperAdmin) ? (
                 <select
@@ -731,7 +732,7 @@ export default function TicketDetailModal({ ticket, onClose }: Props) {
                   />
                 ) : (
                   <span className={`text-sm font-medium ${new Date(ticket.due_date!) < new Date(new Date().toDateString()) && status !== "Fechado" && status !== "Aprovado" ? "text-red-600 dark:text-red-400" : "text-foreground"}`}>
-                    {new Date(ticket.due_date + "T00:00:00").toLocaleDateString("pt-BR")}
+                    {formatDateBR(ticket.due_date + "T00:00:00")}
                   </span>
                 )}
               </div>
@@ -1343,7 +1344,7 @@ export default function TicketDetailModal({ ticket, onClose }: Props) {
               return (
                 <div key={e.id} className="border border-border rounded-md p-3 bg-muted/30">
                   <div className="flex items-center justify-between gap-2 text-xs text-muted-foreground">
-                    <span>{new Date(e.created_at).toLocaleString("pt-BR")}</span>
+                    <span>{formatDateTimeFullBR(e.created_at)}</span>
                     <span className="px-1.5 py-0.5 rounded bg-background border border-border">{origin}</span>
                   </div>
                   <div className="text-sm mt-1"><strong>Por:</strong> {e.author_name}</div>

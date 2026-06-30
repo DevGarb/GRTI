@@ -10,6 +10,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import { maskPhone, maskCPF, unmask, isValidCPF } from "@/lib/masks";
 import { usePermissionPresets } from "@/hooks/usePermissionPresets";
+import { formatDateBR } from "@/lib/dateFormat";
 
 interface ProfileWithRoles {
   user_id: string;
@@ -310,7 +311,7 @@ export default function Usuarios() {
     const header = "Nome,Login,Tipo,Criado em\n";
     const rows = users.map((u) => {
       const role = roleLabels[u.roles[0]] || u.roles[0] || "Colaborador";
-      const date = new Date(u.created_at).toLocaleDateString("pt-BR");
+      const date = formatDateBR(u.created_at);
       return `"${u.full_name}","${u.username || "—"}","${role}","${date}"`;
     });
     const csv = header + rows.join("\n");
@@ -476,7 +477,7 @@ export default function Usuarios() {
                           );
                         })()}
                         <span className="text-[11px] text-muted-foreground hidden sm:block">
-                          {new Date(user.created_at).toLocaleDateString("pt-BR")}
+                          {formatDateBR(user.created_at)}
                         </span>
                         {isAdmin && !isSuperAdminUser(user) && (
                           <>
