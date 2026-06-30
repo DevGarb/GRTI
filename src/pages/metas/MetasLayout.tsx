@@ -15,6 +15,8 @@ const tabs = [
 export default function MetasLayout() {
   const { hasRole } = useAuth();
   const isAdmin = hasRole("admin") || hasRole("super_admin") || hasRole("desenvolvedor" as any);
+  const { data: anomalies = [] } = useTmaAnomalies();
+  const highSeverityCount = anomalies.filter(a => a.severity === "critica" || a.severity === "alta").length;
   const visible = tabs.filter((t) => !t.adminOnly || isAdmin);
   return (
     <div className="space-y-4">
@@ -35,6 +37,11 @@ export default function MetasLayout() {
           >
             <t.icon className="h-4 w-4" />
             {t.label}
+            {t.badge && highSeverityCount > 0 && (
+              <span className="ml-1 inline-flex items-center justify-center rounded-full bg-orange-500 px-1.5 text-[10px] font-semibold text-white min-w-[18px] h-[18px]">
+                {highSeverityCount}
+              </span>
+            )}
           </NavLink>
         ))}
       </nav>
