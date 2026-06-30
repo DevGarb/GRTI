@@ -1,0 +1,1 @@
+UPDATE public.tickets SET started_at = '2026-06-26 12:00:00+00' WHERE id = 'ce43de23-3d43-4bbd-98b1-6695d9a4843a';
