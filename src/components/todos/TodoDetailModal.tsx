@@ -59,6 +59,39 @@ export default function TodoDetailModal({ todo, open, onOpenChange, onUpdate }: 
   const [history, setHistory] = useState<HistoryEntry[]>([]);
   const [text, setText] = useState("");
   const [sending, setSending] = useState(false);
+  const [editing, setEditing] = useState(false);
+  const [editTitle, setEditTitle] = useState("");
+  const [editDescription, setEditDescription] = useState("");
+  const [editDueDate, setEditDueDate] = useState<string>("");
+
+  useEffect(() => {
+    if (todo) {
+      setEditTitle(todo.title);
+      setEditDescription(todo.description || "");
+      setEditDueDate(todo.due_date ? todo.due_date.slice(0, 10) : "");
+      setEditing(false);
+    }
+  }, [todo?.id, open]);
+
+  const canEdit = !!todo && todo.user_id === user?.id;
+
+  const saveEdits = async () => {
+    if (!todo) return;
+    const patch: Partial<Todo> = {};
+    if (editTitle.trim() && editTitle !== todo.title) patch.title = editTitle.trim();
+    if ((editDescription || null) !== (todo.description || null))
+      patch.description = editDescription.trim() || null;
+    const newDue = editDueDate || null;
+    if (newDue !== (todo.due_date ? todo.due_date.slice(0, 10) : null)) patch.due_date = newDue;
+    if (Object.keys(patch).length === 0) {
+      setEditing(false);
+      return;
+    }
+    await updateTodo(todo.id, patch);
+    setEditing(false);
+    toast.success("TODO atualizado");
+    load();
+  };
 
   const load = async () => {
     if (!todo) return;
