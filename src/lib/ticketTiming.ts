@@ -95,6 +95,7 @@ export async function fetchTicketWorkMinutes(
     created_at: string;
     status: string;
     updated_at: string;
+    closed_at?: string | null;
   }>,
   nowOverride?: Date
 ): Promise<Map<string, number>> {
