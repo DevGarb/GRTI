@@ -14,7 +14,6 @@ import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import {
-import { formatDateTimeBR } from "@/lib/dateFormat";
   useManagementMetrics,
   useManagementReportConfig,
   type ManagementMetricRow,
@@ -35,6 +34,7 @@ import { ExecutiveSummary } from "@/components/metricas/ExecutiveSummary";
 import { InsightsCard } from "@/components/metricas/InsightsCard";
 import { TeamRanking } from "@/components/metricas/TeamRanking";
 import { WhatsappSummary } from "@/components/metricas/WhatsappSummary";
+import { formatDateTimeBR } from "@/lib/dateFormat";
 
 function computeTotals(rows: ManagementMetricRow[]) {
   const t = rows.reduce(

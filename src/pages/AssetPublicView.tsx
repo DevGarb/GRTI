@@ -2,12 +2,12 @@ import { useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { useState, useRef, useEffect, useMemo } from "react";
 import {
-import { formatDateBR, formatDateTimeBR } from "@/lib/dateFormat";
   Monitor, Laptop, Printer, Server, Wifi, Battery, Phone, MonitorSpeaker, HardDrive,
   User, Hash, Building2, Calendar, Package, CheckCircle2, AlertTriangle,
   XCircle, RefreshCw, Wrench, ChevronDown, Clock, Activity, Timer, ListChecks,
 } from "lucide-react";
 import { format, differenceInDays, addDays, differenceInMonths, parseISO } from "date-fns";
+import { formatDateBR, formatDateTimeBR } from "@/lib/dateFormat";
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string;
 const SUPABASE_ANON = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY as string;

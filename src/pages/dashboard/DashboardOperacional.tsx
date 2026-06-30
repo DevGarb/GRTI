@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import {
-import { formatDateBR } from "@/lib/dateFormat";
   Wrench, Truck, HardHat, AlertTriangle, CheckCircle2, Clock, Activity,
   DollarSign, Calendar, ClipboardCheck, MapPin, Package,
 } from "lucide-react";
@@ -17,6 +16,7 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   PieChart, Pie, Cell, Legend,
 } from "recharts";
+import { formatDateBR } from "@/lib/dateFormat";
 
 const anim = {
   hidden: { opacity: 0, y: 12 },

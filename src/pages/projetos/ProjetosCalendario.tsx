@@ -1,6 +1,5 @@
 import { useMemo, useState } from "react";
 import {
-import { formatDateBR } from "@/lib/dateFormat";
   startOfMonth,
   endOfMonth,
   eachDayOfInterval,
@@ -29,6 +28,7 @@ import { useBacklog, useRescheduleTask } from "@/hooks/useBacklog";
 import { useProjects } from "@/hooks/useProjects";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { formatDateBR } from "@/lib/dateFormat";
 
 function colorFor(status: string, planned: string | null) {
   if (status === "Concluído") return "bg-emerald-500/20 border-emerald-500/50 text-emerald-800 dark:text-emerald-200";

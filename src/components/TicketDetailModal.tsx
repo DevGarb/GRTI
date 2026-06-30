@@ -14,7 +14,6 @@ import { toast } from "sonner";
 import TicketComments from "@/components/ticket-detail/TicketComments";
 import TicketHistory from "@/components/ticket-detail/TicketHistory";
 import {
-import { formatDateBR, formatDateTimeFullBR } from "@/lib/dateFormat";
   AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
@@ -33,6 +32,7 @@ import {
   DialogDescription,
   DialogFooter,
 } from "@/components/ui/dialog";
+import { formatDateBR, formatDateTimeFullBR } from "@/lib/dateFormat";
 
 const allStatuses = ["Aberto", "Em Andamento", "Aguardando Aprovação", "Aprovado", "Fechado", "Disponível"];
 

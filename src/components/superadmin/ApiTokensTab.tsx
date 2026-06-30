@@ -2,7 +2,6 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import {
-import { formatDateBR } from "@/lib/dateFormat";
   Key,
   Plus,
   Copy,
@@ -15,6 +14,7 @@ import { formatDateBR } from "@/lib/dateFormat";
   Globe,
   Shield,
 } from "lucide-react";
+import { formatDateBR } from "@/lib/dateFormat";
 
 interface ApiToken {
   id: string;

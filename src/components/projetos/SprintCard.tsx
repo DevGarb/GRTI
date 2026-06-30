@@ -8,7 +8,6 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import {
-import { formatDateBR, formatDateTimeFullBR } from "@/lib/dateFormat";
   ChevronDown,
   ChevronRight,
   Play,
@@ -24,6 +23,7 @@ import { cn } from "@/lib/utils";
 import SprintItems from "./SprintItems";
 import NewSprintModal from "./NewSprintModal";
 import AddTicketsToSprintModal from "./AddTicketsToSprintModal";
+import { formatDateBR, formatDateTimeFullBR } from "@/lib/dateFormat";
 
 interface Props {
   sprint: SprintWithProgress;

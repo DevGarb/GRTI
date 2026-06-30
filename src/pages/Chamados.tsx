@@ -16,7 +16,6 @@ import { calcBusinessMinutes, formatBusinessTime, getSlaStatus } from "@/lib/bus
 import { fetchTicketWorkMinutes } from "@/lib/ticketTiming";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
-import { formatDateBR } from "@/lib/dateFormat";
   AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
@@ -26,6 +25,7 @@ import { formatDateBR } from "@/lib/dateFormat";
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { formatDateBR } from "@/lib/dateFormat";
 
 const allStatuses = ["Aberto", "Em Andamento", "Aguardando Aprovação", "Aprovado", "Fechado", "Disponível"];
 

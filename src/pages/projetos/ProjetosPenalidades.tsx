@@ -10,7 +10,6 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
-import { formatDateBR } from "@/lib/dateFormat";
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from "@/components/ui/dialog";
 import {
@@ -22,6 +21,7 @@ import {
   PENALTY_TYPES, Penalty,
 } from "@/hooks/useMvpExtra";
 import { toast } from "sonner";
+import { formatDateBR } from "@/lib/dateFormat";
 
 const months = Array.from({ length: 12 }, (_, i) => i + 1);
 const years = (() => { const y = new Date().getFullYear(); return [y - 1, y, y + 1]; })();

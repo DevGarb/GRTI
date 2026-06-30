@@ -1,6 +1,5 @@
 import { useState, useEffect } from "react";
 import {
-import { formatDateBR } from "@/lib/dateFormat";
   Shield,
   Building2,
   Users,
@@ -23,6 +22,7 @@ import ApiTokensTab from "@/components/superadmin/ApiTokensTab";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
+import { formatDateBR } from "@/lib/dateFormat";
 
 type Tab = "dashboard" | "organizacoes" | "usuarios" | "planos" | "api";
 

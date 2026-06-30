@@ -3,7 +3,6 @@ import { motion } from "framer-motion";
 import TicketDetailModal from "@/components/TicketDetailModal";
 import MonthSelector, { getCurrentMonthValue, getMonthDateRange } from "@/components/MonthSelector";
 import {
-import { formatDateBR } from "@/lib/dateFormat";
   Ticket,
   Clock,
   Trophy,
@@ -31,6 +30,7 @@ import {
   Pie,
   Cell,
 } from "recharts";
+import { formatDateBR } from "@/lib/dateFormat";
 
 
 const anim = {
