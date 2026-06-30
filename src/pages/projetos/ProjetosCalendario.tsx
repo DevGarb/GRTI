@@ -28,6 +28,7 @@ import { useBacklog, useRescheduleTask } from "@/hooks/useBacklog";
 import { useProjects } from "@/hooks/useProjects";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { formatDateBR } from "@/lib/dateFormat";
 
 function colorFor(status: string, planned: string | null) {
   if (status === "Concluído") return "bg-emerald-500/20 border-emerald-500/50 text-emerald-800 dark:text-emerald-200";
@@ -186,8 +187,8 @@ export default function ProjetosCalendario() {
             <DialogDescription>
               {reschedule && (
                 <>
-                  De {reschedule.oldDate ? format(parseISO(reschedule.oldDate), "dd/MM/yyyy") : "—"} para{" "}
-                  {format(parseISO(reschedule.newDate), "dd/MM/yyyy")}
+                  De {reschedule.oldDate ? formatDateBR(reschedule.oldDate) : "—"} para{" "}
+                  {formatDateBR(reschedule.newDate)}
                 </>
               )}
             </DialogDescription>

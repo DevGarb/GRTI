@@ -7,6 +7,7 @@ import {
   XCircle, RefreshCw, Wrench, ChevronDown, Clock, Activity, Timer, ListChecks,
 } from "lucide-react";
 import { format, differenceInDays, addDays, differenceInMonths, parseISO } from "date-fns";
+import { formatDateBR, formatDateTimeBR } from "@/lib/dateFormat";
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string;
 const SUPABASE_ANON = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY as string;
@@ -344,7 +345,7 @@ export default function AssetPublicView() {
             {asset.responsible && (
               <DetailRow accent={primary} icon={<User className="h-4 w-4" />} label="Responsável" value={asset.responsible} />
             )}
-            <DetailRow accent={primary} icon={<Calendar className="h-4 w-4" />} label="Cadastrado em" value={format(new Date(asset.created_at), "dd/MM/yyyy")} />
+            <DetailRow accent={primary} icon={<Calendar className="h-4 w-4" />} label="Cadastrado em" value={formatDateBR(asset.created_at)} />
             {asset.serial_number && (
               <DetailRow accent={primary} icon={<Hash className="h-4 w-4" />} label="Nº Série" value={asset.serial_number} mono />
             )}
@@ -477,7 +478,7 @@ function MaintenanceCountdown({
         <div className="flex items-center gap-2 text-xs text-gray-600 pt-2 border-t border-white/60">
           <Calendar className="h-3.5 w-3.5 text-gray-400" />
           <span>
-            Última: <span className="font-semibold text-gray-700">{format(parseISO(last.execution_date), "dd/MM/yyyy")}</span>
+            Última: <span className="font-semibold text-gray-700">{formatDateBR(last.execution_date)}</span>
             {last.responsible && <span className="text-gray-500"> por {last.responsible}</span>}
           </span>
         </div>
@@ -597,7 +598,7 @@ function UnifiedTimeline({
                 <p className="text-base font-bold text-gray-900 truncate">{currentResponsible}</p>
                 {lastResponsibleChange && (
                   <p className="text-[11px] text-gray-500 mt-0.5">
-                    Desde {format(new Date(lastResponsibleChange.changed_at), "dd/MM/yyyy")}
+                    Desde {formatDateBR(lastResponsibleChange.changed_at)}
                     {lastResponsibleChange.changed_by_name && <> · por {lastResponsibleChange.changed_by_name}</>}
                   </p>
                 )}
@@ -660,7 +661,7 @@ function UnifiedTimeline({
                     <span className="font-semibold text-gray-900">{h.new_value || "—"}</span>
                   </p>
                   <p className="text-[11px] text-gray-500 mt-0.5">
-                    {format(new Date(h.changed_at), "dd/MM/yyyy 'às' HH:mm")}
+                    {formatDateTimeBR(h.changed_at)}
                     {h.changed_by_name && <> · por <span className="font-medium">{h.changed_by_name}</span></>}
                   </p>
                   {h.reason && (

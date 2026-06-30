@@ -16,6 +16,7 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   PieChart, Pie, Cell, Legend,
 } from "recharts";
+import { formatDateBR } from "@/lib/dateFormat";
 
 const anim = {
   hidden: { opacity: 0, y: 12 },
@@ -560,7 +561,7 @@ function OverdueRows({ rows }: { rows: { tipo: string; numero: string; titulo: s
           <span className="font-mono text-muted-foreground w-12">#{r.numero}</span>
           <span className="flex-1 truncate">{r.titulo}</span>
           <span className="text-muted-foreground hidden sm:block">{r.status}</span>
-          <span className="text-rose-600 font-medium">{r.prazo ? new Date(r.prazo).toLocaleDateString("pt-BR") : "—"}</span>
+          <span className="text-rose-600 font-medium">{r.prazo ? formatDateBR(r.prazo) : "—"}</span>
         </div>
       ))}
     </div>

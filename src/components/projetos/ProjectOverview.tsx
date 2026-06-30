@@ -9,6 +9,7 @@ import { Project } from "@/hooks/useProjects";
 import { SprintWithProgress, isSprintEffectivelyDone } from "@/hooks/useSprints";
 import { useProjectTickets } from "@/hooks/useProjectTickets";
 import { useProjectTasks } from "@/hooks/useProjectTasks";
+import { formatDateBR } from "@/lib/dateFormat";
 
 interface Props {
   project: Project;
@@ -183,8 +184,8 @@ export default function ProjectOverview({ project, sprints, onAddToActive, onCre
                 <h3 className="font-semibold text-sm">{activeSprint.name}</h3>
                 {activeSprint.start_date && (
                   <span className="text-[11px] text-muted-foreground">
-                    {new Date(activeSprint.start_date).toLocaleDateString("pt-BR")}
-                    {activeSprint.end_date && ` → ${new Date(activeSprint.end_date).toLocaleDateString("pt-BR")}`}
+                    {formatDateBR(activeSprint.start_date)}
+                    {activeSprint.end_date && ` → ${formatDateBR(activeSprint.end_date)}`}
                   </span>
                 )}
               </div>
@@ -327,9 +328,9 @@ export default function ProjectOverview({ project, sprints, onAddToActive, onCre
           )}
           {(project.start_date || project.end_date) && (
             <p className="text-xs text-muted-foreground mt-3">
-              {project.start_date && new Date(project.start_date).toLocaleDateString("pt-BR")}
+              {project.start_date && formatDateBR(project.start_date)}
               {" → "}
-              {project.end_date && new Date(project.end_date).toLocaleDateString("pt-BR")}
+              {project.end_date && formatDateBR(project.end_date)}
             </p>
           )}
         </div>

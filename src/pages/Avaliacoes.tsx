@@ -4,6 +4,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
+import { formatDateBR } from "@/lib/dateFormat";
 
 export default function Avaliacoes() {
   const [search, setSearch] = useState("");
@@ -217,7 +218,7 @@ export default function Avaliacoes() {
                     )}
                   </div>
                   <span className="text-[11px] text-muted-foreground whitespace-nowrap">
-                    {new Date(ev.created_at).toLocaleDateString("pt-BR")}
+                    {formatDateBR(ev.created_at)}
                   </span>
                 </div>
               ))}

@@ -9,6 +9,7 @@ import PreventivasTable from "@/components/preventivas/PreventivasTable";
 import EquipmentTable from "@/components/preventivas/EquipmentTable";
 import IntervalConfig from "@/components/preventivas/IntervalConfig";
 import MonthlyReport from "@/components/preventivas/MonthlyReport";
+import { formatDateBR } from "@/lib/dateFormat";
 
 
 const months = ["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
@@ -86,7 +87,7 @@ export default function Preventivas() {
     const rows = preventivas.map((p) => {
       const checked = Object.values(p.checklist).filter(Boolean).length;
       const total = Object.keys(p.checklist).length;
-      return `${format(parseISO(p.execution_date), "dd/MM/yyyy")},${p.equipment_type},${p.asset_tag},${checked}/${total},${p.creatorName || ""},${(p.notes || "").replace(/,/g, ";")}`;
+      return `${formatDateBR(p.execution_date)},${p.equipment_type},${p.asset_tag},${checked}/${total},${p.creatorName || ""},${(p.notes || "").replace(/,/g, ";")}`;
     });
     const csv = [...headers, ...rows].join("\n");
     const blob = new Blob([csv], { type: "text/csv" });

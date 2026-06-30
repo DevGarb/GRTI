@@ -22,6 +22,7 @@ import ApiTokensTab from "@/components/superadmin/ApiTokensTab";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
+import { formatDateBR } from "@/lib/dateFormat";
 
 type Tab = "dashboard" | "organizacoes" | "usuarios" | "planos" | "api";
 
@@ -311,7 +312,7 @@ function DashboardTab() {
               <div key={t.id} className="flex items-center justify-between py-2 border-b border-border/50 last:border-0">
                 <div>
                   <p className="text-sm font-medium text-foreground">{t.title}</p>
-                  <p className="text-xs text-muted-foreground">{new Date(t.created_at).toLocaleDateString("pt-BR")}</p>
+                  <p className="text-xs text-muted-foreground">{formatDateBR(t.created_at)}</p>
                 </div>
                 <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${statusColors[t.status] || "bg-muted text-muted-foreground"}`}>
                   {t.status}
@@ -506,7 +507,7 @@ function OrganizacoesTab() {
                           <span className="text-xs text-muted-foreground italic">—</span>
                         )}
                       </td>
-                      <td className="py-3 px-4 text-muted-foreground text-xs">{new Date(org.created_at).toLocaleDateString("pt-BR")}</td>
+                      <td className="py-3 px-4 text-muted-foreground text-xs">{formatDateBR(org.created_at)}</td>
                       <td className="py-3 px-4">
                         <div className="flex justify-end gap-1">
                           <button onClick={() => openEdit(org)} className="p-1.5 rounded-md hover:bg-muted text-muted-foreground transition-colors"><Pencil className="h-3.5 w-3.5" /></button>
@@ -953,7 +954,7 @@ function UsuariosTab() {
                         )}
                       </td>
                       <td className="py-3 px-4 text-muted-foreground text-xs">{p.phone || "—"}</td>
-                      <td className="py-3 px-4 text-muted-foreground text-xs">{new Date(p.created_at).toLocaleDateString("pt-BR")}</td>
+                      <td className="py-3 px-4 text-muted-foreground text-xs">{formatDateBR(p.created_at)}</td>
                       <td className="py-3 px-4">
                         <div className="flex justify-end gap-1">
                           {!isEditingOrg && !isEditingRoleUser && !isEditingProf && (

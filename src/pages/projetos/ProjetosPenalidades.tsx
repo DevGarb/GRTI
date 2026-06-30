@@ -21,6 +21,7 @@ import {
   PENALTY_TYPES, Penalty,
 } from "@/hooks/useMvpExtra";
 import { toast } from "sonner";
+import { formatDateBR } from "@/lib/dateFormat";
 
 const months = Array.from({ length: 12 }, (_, i) => i + 1);
 const years = (() => { const y = new Date().getFullYear(); return [y - 1, y, y + 1]; })();
@@ -207,7 +208,7 @@ export default function ProjetosPenalidades() {
               <TableRow><TableCell colSpan={8} className="text-center py-6 text-sm text-muted-foreground">Sem penalidades.</TableCell></TableRow>
             ) : items.map((p: Penalty) => (
               <TableRow key={p.id}>
-                <TableCell className="text-xs">{new Date(p.reference_date).toLocaleDateString("pt-BR")}</TableCell>
+                <TableCell className="text-xs">{formatDateBR(p.reference_date)}</TableCell>
                 <TableCell className="font-medium">{p.user_name}</TableCell>
                 <TableCell><Badge variant="outline">{typeLabel(p.type)}</Badge></TableCell>
                 <TableCell className="text-xs text-red-600">

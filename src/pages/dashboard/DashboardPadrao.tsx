@@ -30,6 +30,7 @@ import {
   Pie,
   Cell,
 } from "recharts";
+import { formatDateBR } from "@/lib/dateFormat";
 
 
 const anim = {
@@ -214,7 +215,7 @@ export default function DashboardPadrao() {
                 <span className="font-medium text-foreground truncate flex-1">{t.title}</span>
                 <span className="text-muted-foreground hidden sm:block">{t.creatorProfile?.full_name}</span>
                 <span className="text-muted-foreground hidden md:block">{t.assignedProfile?.full_name || "—"}</span>
-                <span className="text-muted-foreground">{new Date(t.created_at).toLocaleDateString("pt-BR")}</span>
+                <span className="text-muted-foreground">{formatDateBR(t.created_at)}</span>
               </div>
             ))}
           </div>
@@ -465,7 +466,7 @@ export default function DashboardPadrao() {
                     <div className="flex items-center gap-2 mt-2 flex-wrap">
                       <PriorityBadge priority={ticket.priority} />
                       <span className="text-[11px] text-muted-foreground">• {ticket.type}</span>
-                      <span className="text-[11px] text-muted-foreground">• {new Date(ticket.created_at).toLocaleDateString("pt-BR")}</span>
+                      <span className="text-[11px] text-muted-foreground">• {formatDateBR(ticket.created_at)}</span>
                     </div>
                   </div>
                   <StatusBadge status={ticket.status} />

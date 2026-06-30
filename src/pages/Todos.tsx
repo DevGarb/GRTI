@@ -10,6 +10,7 @@ import NewTodoModal from "@/components/todos/NewTodoModal";
 import TodoRow from "@/components/todos/TodoRow";
 import TodoDetailModal from "@/components/todos/TodoDetailModal";
 import type { TodoWithAuthor } from "@/hooks/useTodos";
+import { formatDateBR } from "@/lib/dateFormat";
 
 type ViewTab = "hoje" | "matriz" | "historico";
 
@@ -101,7 +102,7 @@ export default function Todos() {
       } else {
         lines.push(`Concluídos (${concluidos.length}):`);
         concluidos.forEach((t) => {
-          const d = t.completed_at ? new Date(t.completed_at).toLocaleDateString("pt-BR") : "";
+          const d = t.completed_at ? formatDateBR(t.completed_at) : "";
           lines.push(`  [x] ${t.title}${d ? ` — ${d}` : ""}`);
         });
       }

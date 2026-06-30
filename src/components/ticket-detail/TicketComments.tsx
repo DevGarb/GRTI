@@ -5,6 +5,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import { buildStorageFileName, createPendingFile, getAttachmentDisplayName, getClipboardImageFiles, isImageFile, revokePendingFiles } from "@/lib/attachments";
+import { formatDateBR, formatTimeBR } from "@/lib/dateFormat";
 
 interface Props {
   ticketId: string;
@@ -239,8 +240,8 @@ export default function TicketComments({ ticketId }: Props) {
                       </span>
                     )}
                     <span className="text-[11px] text-muted-foreground">
-                      {new Date(c.created_at).toLocaleDateString("pt-BR")},{" "}
-                      {new Date(c.created_at).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}
+                      {formatDateBR(c.created_at)},{" "}
+                      {formatTimeBR(c.created_at)}
                       {wasEdited && <span className="ml-1 italic">(editado)</span>}
                     </span>
                     {canEdit && !isEditing && (

@@ -7,6 +7,7 @@ import { useCardNotes, type CardNoteModule } from "@/hooks/useCardNotes";
 import { useAuth } from "@/contexts/AuthContext";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { formatDateTimeBR } from "@/lib/dateFormat";
 
 interface Props {
   module: CardNoteModule;
@@ -109,7 +110,7 @@ export default function OpNotesPanel({ module, cardId }: Props) {
               </Avatar>
               <span className="text-xs font-medium">{n.author_name || "—"}</span>
               <span className="text-[10px] text-muted-foreground ml-auto">
-                {format(new Date(n.created_at), "dd/MM HH:mm", { locale: ptBR })}
+                {formatDateTimeBR(n.created_at)}
               </span>
               {n.author_id === user?.id && (
                 <Button size="icon" variant="ghost" className="h-6 w-6 opacity-0 group-hover:opacity-100" onClick={() => remove(n.id)}>

@@ -23,6 +23,7 @@ import { cn } from "@/lib/utils";
 import SprintItems from "./SprintItems";
 import NewSprintModal from "./NewSprintModal";
 import AddTicketsToSprintModal from "./AddTicketsToSprintModal";
+import { formatDateBR, formatDateTimeFullBR } from "@/lib/dateFormat";
 
 interface Props {
   sprint: SprintWithProgress;
@@ -91,8 +92,8 @@ export default function SprintCard({ sprint, projectId }: Props) {
             </Badge>
             {sprint.start_date && (
               <span className="text-[11px] text-muted-foreground">
-                {new Date(sprint.start_date).toLocaleDateString("pt-BR")}
-                {sprint.end_date && ` → ${new Date(sprint.end_date).toLocaleDateString("pt-BR")}`}
+                {formatDateBR(sprint.start_date)}
+                {sprint.end_date && ` → ${formatDateBR(sprint.end_date)}`}
               </span>
             )}
           </div>
@@ -192,7 +193,7 @@ export default function SprintCard({ sprint, projectId }: Props) {
                       {h.quality_score != null && ` · qualidade ${h.quality_score}%`}
                     </div>
                     <div className="text-muted-foreground">
-                      {new Date(h.created_at).toLocaleString("pt-BR")}
+                      {formatDateTimeFullBR(h.created_at)}
                     </div>
                   </div>
                 </div>

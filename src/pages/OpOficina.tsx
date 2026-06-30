@@ -16,6 +16,7 @@ import OpClosureDialog from "@/components/operacional/OpClosureDialog";
 import OpQuickActions from "@/components/operacional/OpQuickActions";
 import OpNotesPanel from "@/components/operacional/OpNotesPanel";
 import { cn } from "@/lib/utils";
+import { formatDateBR } from "@/lib/dateFormat";
 
 const STATUS_LIST = ["Pendente", "Aguardando peças", "Em andamento", "Finalizado", "Cancelada"];
 const TERMINAL = "Finalizado";
@@ -155,7 +156,7 @@ export default function OpOficina() {
         </div>
         {o.deadline && (
           <div className={cn("text-[11px] mt-1", overdue ? "text-rose-600 font-medium" : "text-muted-foreground")}>
-            Prazo: {new Date(o.deadline).toLocaleDateString("pt-BR")}
+            Prazo: {formatDateBR(o.deadline)}
           </div>
         )}
         <div className="flex items-center justify-between mt-2">
@@ -257,8 +258,8 @@ export default function OpOficina() {
                     {overdue && <Badge variant="destructive"><AlertTriangle className="h-3 w-3 mr-0.5" />Em atraso</Badge>}
                   </div>
                   <div className="text-xs text-muted-foreground mt-0.5">
-                    {o.vehicle_plate || "—"} · {companyName(o.company_id)} · Mec.: {mechName(o.mechanic_id)} · {new Date(o.opened_at).toLocaleDateString("pt-BR")}
-                    {o.deadline && <> · Prazo: {new Date(o.deadline).toLocaleDateString("pt-BR")}</>}
+                    {o.vehicle_plate || "—"} · {companyName(o.company_id)} · Mec.: {mechName(o.mechanic_id)} · {formatDateBR(o.opened_at)}
+                    {o.deadline && <> · Prazo: {formatDateBR(o.deadline)}</>}
                   </div>
                 </div>
                 <div className="text-right">
@@ -453,7 +454,7 @@ function OsDetailDialog({ os, onClose, onUpdate, onDelete, onRequestClose, compa
     w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>OS #${os.os_number}</title>
       <style>body{font-family:Arial,sans-serif;padding:24px;color:#222}h1{margin:0 0 4px}h2{font-size:14px;margin:16px 0 6px;border-bottom:1px solid #ddd;padding-bottom:4px}table{width:100%;border-collapse:collapse;font-size:12px}th,td{border:1px solid #ccc;padding:6px}th{background:#f2f2f2;text-align:left}.grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:12px}.f{padding:6px;background:#f7f7f7;border-radius:4px}</style></head><body>
       <h1>Ordem de Serviço #${os.os_number}</h1>
-      <div style="font-size:12px;color:#666">Aberta em ${new Date(openedAt || os.opened_at).toLocaleDateString("pt-BR")} · Status: <b>${status}</b></div>
+      <div style="font-size:12px;color:#666">Aberta em ${formatDateBR(openedAt || os.opened_at)} · Status: <b>${status}</b></div>
       <h2>Dados</h2>
       <div class="grid">
         <div class="f"><b>Cliente:</b> ${comp}</div>
@@ -488,7 +489,7 @@ function OsDetailDialog({ os, onClose, onUpdate, onDelete, onRequestClose, compa
           <div className="bg-emerald-500/10 border border-emerald-500/30 rounded-md p-3 text-sm">
             <div className="font-medium mb-1">Resumo de conclusão</div>
             <div className="whitespace-pre-wrap text-muted-foreground">{os.closure_summary}</div>
-            {os.finished_at && <div className="text-xs text-muted-foreground mt-1">Finalizada em {new Date(os.finished_at).toLocaleDateString("pt-BR")}</div>}
+            {os.finished_at && <div className="text-xs text-muted-foreground mt-1">Finalizada em {formatDateBR(os.finished_at)}</div>}
           </div>
         )}
 

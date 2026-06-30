@@ -1,6 +1,7 @@
 import { AlertTriangle, Clock, AlertCircle } from "lucide-react";
 import { format } from "date-fns";
 import type { OverdueEquipment } from "@/hooks/usePreventivas";
+import { formatDateBR } from "@/lib/dateFormat";
 
 interface Props {
   overdueEquipment: OverdueEquipment[];
@@ -33,7 +34,7 @@ export default function OverdueAlerts({ overdueEquipment, onNewPreventiva }: Pro
                 </div>
                 <div className="flex items-center gap-4">
                   <span className="text-muted-foreground text-xs">
-                    Última: {format(new Date(eq.last_date), "dd/MM/yyyy")}
+                    Última: {formatDateBR(eq.last_date)}
                   </span>
                   <span className="inline-flex items-center gap-1 text-xs font-medium text-red-600 dark:text-red-400">
                     <Clock className="h-3.5 w-3.5" />
@@ -67,7 +68,7 @@ export default function OverdueAlerts({ overdueEquipment, onNewPreventiva }: Pro
                 </div>
                 <div className="flex items-center gap-4">
                   <span className="text-muted-foreground text-xs">
-                    Última: {format(new Date(eq.last_date), "dd/MM/yyyy")}
+                    Última: {formatDateBR(eq.last_date)}
                   </span>
                   <span className="inline-flex items-center gap-1 text-xs font-medium text-amber-600 dark:text-amber-400">
                     <Clock className="h-3.5 w-3.5" />

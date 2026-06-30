@@ -34,6 +34,7 @@ import { ExecutiveSummary } from "@/components/metricas/ExecutiveSummary";
 import { InsightsCard } from "@/components/metricas/InsightsCard";
 import { TeamRanking } from "@/components/metricas/TeamRanking";
 import { WhatsappSummary } from "@/components/metricas/WhatsappSummary";
+import { formatDateTimeBR } from "@/lib/dateFormat";
 
 function computeTotals(rows: ManagementMetricRow[]) {
   const t = rows.reduce(
@@ -338,7 +339,7 @@ export default function MetricasGerenciais() {
           </div>
           {config?.last_sent_at && (
             <p className="text-xs text-muted-foreground">
-              Último envio: {format(new Date(config.last_sent_at), "dd/MM/yyyy HH:mm", { locale: ptBR })}
+              Último envio: {formatDateTimeBR(config.last_sent_at)}
             </p>
           )}
           <div className="flex flex-wrap gap-2">

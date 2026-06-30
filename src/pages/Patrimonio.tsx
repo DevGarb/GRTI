@@ -14,6 +14,7 @@ import EditPatrimonioModal from "@/components/EditPatrimonioModal";
 import ImportPatrimonioModal from "@/components/ImportPatrimonioModal";
 import PatrimonioQRCodeModal from "@/components/PatrimonioQRCodeModal";
 import QRScannerModal from "@/components/QRScannerModal";
+import { formatDateBR } from "@/lib/dateFormat";
 
 
 const typeIcons: Record<string, React.ReactNode> = {
@@ -385,7 +386,7 @@ export default function Patrimonio() {
                     <p className="text-sm font-semibold text-foreground">{history.length} manutenções</p>
                     {history.length > 0 && (
                       <p className="text-xs text-muted-foreground">
-                        Última: {format(parseISO(history.sort((a, b) => b.execution_date.localeCompare(a.execution_date))[0].execution_date), "dd/MM/yyyy")}
+                        Última: {formatDateBR(history.sort((a, b) => b.execution_date.localeCompare(a.execution_date))[0].execution_date)}
                       </p>
                     )}
                   </div>
@@ -403,7 +404,7 @@ export default function Patrimonio() {
                       )}
                       <div>
                         <p className="text-xs text-muted-foreground">Cadastrado em</p>
-                        <p className="text-foreground">{format(new Date(item.created_at), "dd/MM/yyyy")}</p>
+                        <p className="text-foreground">{formatDateBR(item.created_at)}</p>
                       </div>
                       {item.notes && (
                         <div className="col-span-2">
@@ -469,7 +470,7 @@ export default function Patrimonio() {
                                   <div className="flex items-center gap-3">
                                     <Calendar className="h-4 w-4 text-muted-foreground" />
                                     <div>
-                                      <p className="text-sm font-medium text-foreground">{format(parseISO(h.execution_date), "dd/MM/yyyy")}</p>
+                                      <p className="text-sm font-medium text-foreground">{formatDateBR(h.execution_date)}</p>
                                       <p className="text-xs text-muted-foreground">Técnico: {h.creatorName || "—"}</p>
                                     </div>
                                   </div>

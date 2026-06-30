@@ -4,6 +4,7 @@ import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { Calendar, ListTodo, Zap, DollarSign, CheckCircle2, User, Users, Layers } from "lucide-react";
+import { formatDateBR } from "@/lib/dateFormat";
 
 const SIZE_LABEL: Record<string, string> = {
   pequeno: "Pequeno porte",
@@ -84,8 +85,8 @@ export default function ProjectCard({ project }: { project: ProjectAggregate }) 
           {project.start_date && (
             <span className="flex items-center gap-1 ml-auto">
               <Calendar className="h-3 w-3" />
-              {new Date(project.start_date).toLocaleDateString("pt-BR")}
-              {project.end_date && ` → ${new Date(project.end_date).toLocaleDateString("pt-BR")}`}
+              {formatDateBR(project.start_date)}
+              {project.end_date && ` → ${formatDateBR(project.end_date)}`}
             </span>
           )}
         </div>
@@ -95,7 +96,7 @@ export default function ProjectCard({ project }: { project: ProjectAggregate }) 
           <div className="flex flex-wrap items-center gap-2 mt-3 pt-3 border-t border-border text-[11px]">
             <span className="inline-flex items-center gap-1 text-emerald-600 dark:text-emerald-400 font-medium">
               <CheckCircle2 className="h-3 w-3" />
-              {project.completed_at ? new Date(project.completed_at).toLocaleDateString("pt-BR") : "Concluído"}
+              {project.completed_at ? formatDateBR(project.completed_at) : "Concluído"}
             </span>
             {project.size && (
               <Badge variant="outline" className="text-[10px]">{SIZE_LABEL[project.size] || project.size}</Badge>

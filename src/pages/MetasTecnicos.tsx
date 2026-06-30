@@ -8,6 +8,7 @@ import GoalsManager from "@/components/metas/GoalsManager";
 import PreventivasMonthlyTarget from "@/components/metas/PreventivasMonthlyTarget";
 import GoalsSummaryCards from "@/components/metas/GoalsSummaryCards";
 import { BUSINESS_HOURS_PER_DAY } from "@/lib/businessHours";
+import { formatDateBR } from "@/lib/dateFormat";
 
 interface TechnicianStats {
   userId: string;
@@ -527,7 +528,7 @@ export default function MetasTecnicos() {
                                   </td>
                                   <td className="px-4 py-2.5 text-sm text-muted-foreground">{formatHours(t.resolutionHours)}</td>
                                   <td className="px-4 py-2.5 text-sm text-muted-foreground">
-                                    {new Date(t.closedAt).toLocaleDateString("pt-BR")}
+                                    {formatDateBR(t.closedAt)}
                                   </td>
                                 </tr>
                               ))}

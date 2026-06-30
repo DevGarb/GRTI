@@ -13,6 +13,7 @@ import { ptBR } from "date-fns/locale";
 import { toast } from "sonner";
 import type { Todo, TodoWithAuthor } from "@/hooks/useTodos";
 import { QUADRANT_LABEL } from "./NewTodoModal";
+import { formatDateTimeBR } from "@/lib/dateFormat";
 
 interface Props {
   todo: TodoWithAuthor | null;
@@ -179,7 +180,7 @@ export default function TodoDetailModal({ todo, open, onOpenChange, onUpdate }: 
                     <div className="flex items-center justify-between gap-2">
                       <span className="text-sm font-medium">{c.author_name}</span>
                       <span className="text-xs text-muted-foreground">
-                        {format(new Date(c.created_at), "dd/MM/yyyy HH:mm", { locale: ptBR })}
+                        {formatDateTimeBR(c.created_at)}
                       </span>
                     </div>
                     <p className="text-sm whitespace-pre-wrap mt-1">{c.content}</p>
@@ -200,7 +201,7 @@ export default function TodoDetailModal({ todo, open, onOpenChange, onUpdate }: 
               history.map((h) => (
                 <div key={h.id} className="text-sm border-l-2 border-primary/30 pl-3 py-1">
                   <div className="text-xs text-muted-foreground">
-                    {format(new Date(h.created_at), "dd/MM/yyyy HH:mm", { locale: ptBR })} · {h.author_name}
+                    {formatDateTimeBR(h.created_at)} · {h.author_name}
                   </div>
                   <div>
                     <span className="font-medium">{fieldLabel[h.field] || h.field}</span>:{" "}

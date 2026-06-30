@@ -25,6 +25,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { formatDateBR } from "@/lib/dateFormat";
 
 const allStatuses = ["Aberto", "Em Andamento", "Aguardando Aprovação", "Aprovado", "Fechado", "Disponível"];
 
@@ -184,7 +185,7 @@ function TicketTable({ tickets, onSelect, scoreMap, showScore, workMinutesMap, m
               </td>
               <td className="px-4 py-3 text-sm text-muted-foreground">{ticket.type}</td>
               <td className="px-4 py-3 text-sm text-muted-foreground">
-                {new Date(ticket.created_at).toLocaleDateString("pt-BR")}
+                {formatDateBR(ticket.created_at)}
               </td>
               <td className="px-4 py-3">
                 <SlaTimer ticket={ticket} workMinutes={workMinutesMap?.get(ticket.id)} />

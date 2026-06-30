@@ -14,6 +14,7 @@ import {
   Globe,
   Shield,
 } from "lucide-react";
+import { formatDateBR } from "@/lib/dateFormat";
 
 interface ApiToken {
   id: string;
@@ -383,12 +384,12 @@ const created = await fetch(\`\${API_URL}?resource=tickets\`, {
                   <p className="text-xs text-muted-foreground font-mono mt-0.5">{maskToken(t.token)}</p>
                   <div className="flex items-center gap-3 mt-1 text-[11px] text-muted-foreground">
                     {orgName && <span>Org: {orgName}</span>}
-                    <span>Criado: {new Date(t.created_at).toLocaleDateString("pt-BR")}</span>
+                    <span>Criado: {formatDateBR(t.created_at)}</span>
                     {t.last_used_at && (
-                      <span>Último uso: {new Date(t.last_used_at).toLocaleDateString("pt-BR")}</span>
+                      <span>Último uso: {formatDateBR(t.last_used_at)}</span>
                     )}
                     {t.expires_at && (
-                      <span>Expira: {new Date(t.expires_at).toLocaleDateString("pt-BR")}</span>
+                      <span>Expira: {formatDateBR(t.expires_at)}</span>
                     )}
                   </div>
                 </div>

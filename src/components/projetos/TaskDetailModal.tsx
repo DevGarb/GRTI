@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useUpdateProjectTask, useDeleteProjectTask, type ProjectTask } from "@/hooks/useProjectTasks";
 import { useSprints } from "@/hooks/useSprints";
 import { Trash2 } from "lucide-react";
+import { formatDateTimeFullBR } from "@/lib/dateFormat";
 
 interface Props {
   open: boolean;
@@ -106,7 +107,7 @@ export default function TaskDetailModal({ open, onOpenChange, task }: Props) {
             </div>
           </div>
           <div className="text-[11px] text-muted-foreground">
-            Criada em {new Date(task.created_at).toLocaleString("pt-BR")}
+            Criada em {formatDateTimeFullBR(task.created_at)}
           </div>
         </div>
         <DialogFooter className="flex justify-between sm:justify-between">
