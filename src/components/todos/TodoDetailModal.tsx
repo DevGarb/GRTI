@@ -156,10 +156,57 @@ export default function TodoDetailModal({ todo, open, onOpenChange, onUpdate }: 
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl max-h-[85vh] overflow-hidden flex flex-col">
         <DialogHeader>
-          <DialogTitle className="pr-8">{todo.title}</DialogTitle>
+          <div className="flex items-start justify-between gap-2 pr-8">
+            {editing ? (
+              <Input
+                value={editTitle}
+                onChange={(e) => setEditTitle(e.target.value)}
+                className="text-lg font-semibold"
+                autoFocus
+              />
+            ) : (
+              <DialogTitle className="flex-1">{todo.title}</DialogTitle>
+            )}
+            {canEdit && !editing && (
+              <Button size="icon" variant="ghost" onClick={() => setEditing(true)} title="Editar">
+                <Pencil className="h-4 w-4" />
+              </Button>
+            )}
+            {editing && (
+              <div className="flex gap-1">
+                <Button size="icon" variant="ghost" onClick={saveEdits} title="Salvar">
+                  <Check className="h-4 w-4 text-emerald-600" />
+                </Button>
+                <Button size="icon" variant="ghost" onClick={() => setEditing(false)} title="Cancelar">
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
+            )}
+          </div>
         </DialogHeader>
-        {todo.description && (
-          <p className="text-sm text-muted-foreground whitespace-pre-wrap">{todo.description}</p>
+        {editing ? (
+          <div className="grid gap-2">
+            <Label className="text-xs">Descrição</Label>
+            <Textarea
+              value={editDescription}
+              onChange={(e) => setEditDescription(e.target.value)}
+              placeholder="Descrição"
+              rows={3}
+            />
+            <Label className="text-xs">Prazo</Label>
+            <Input type="date" value={editDueDate} onChange={(e) => setEditDueDate(e.target.value)} />
+          </div>
+        ) : (
+          <>
+            {todo.description && (
+              <p className="text-sm text-muted-foreground whitespace-pre-wrap">{todo.description}</p>
+            )}
+            {todo.due_date && (
+              <p className="text-xs text-muted-foreground">
+                Prazo: {format(new Date(todo.due_date), "dd/MM/yyyy", { locale: ptBR })}
+              </p>
+            )}
+          </>
         )}
         <div className="grid grid-cols-2 gap-3">
           <div>
