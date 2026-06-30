@@ -175,7 +175,7 @@ export default function MyGoalCard({ year, month }: Props) {
     let actual = 0;
     if (g.metric === "tickets_closed") actual = stats.totalClosed;
     else if (g.metric === "avg_score") actual = stats.avgScore;
-    else if (g.metric === "avg_resolution_hours") actual = stats.avgResolutionHours;
+    else if (g.metric === "avg_resolution_hours") actual = Math.floor(stats.avgResolutionHours);
     else if (g.metric === "points") actual = stats.totalPoints;
     else if (g.metric === "preventivas_done") actual = stats.preventivasDone;
     else if (g.metric === "rework_percent") actual = stats.reworkPercent;

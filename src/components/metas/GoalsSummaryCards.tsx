@@ -91,7 +91,8 @@ export default function GoalsSummaryCards({ stats, goals, formatHours }: Props) 
 
           const radarData = techGoals.map((g) => {
             const isInverse = INVERSE_METRICS.has(g.metric);
-            const actual = getActualValue(tech, g.metric);
+            const rawActual = getActualValue(tech, g.metric);
+            const actual = g.metric === "avg_resolution_hours" ? Math.floor(rawActual) : rawActual;
             const pct = getPct(actual, g.target_value, isInverse);
             return {
               metric: METRIC_CONFIG[g.metric]?.shortLabel || g.metric,
