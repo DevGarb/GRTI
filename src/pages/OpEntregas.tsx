@@ -16,6 +16,7 @@ import OpKanbanBoard, { type KanbanColumn } from "@/components/operacional/OpKan
 import OpClosureDialog from "@/components/operacional/OpClosureDialog";
 import OpQuickActions from "@/components/operacional/OpQuickActions";
 import OpNotesPanel from "@/components/operacional/OpNotesPanel";
+import { formatDateBR, formatDateTimeFullBR } from "@/lib/dateFormat";
 
 const TYPES = ["Entrega", "Vistoria", "Retirada", "Outro"];
 const PERIODS = ["Manhã", "Tarde", "Noite"];
@@ -455,7 +456,7 @@ function DeliveryModal({ open, onOpenChange, editing, drivers, companies, vehicl
             <div className="whitespace-pre-wrap text-muted-foreground">{editing.closure_summary}</div>
             {editing.closed_at && (
               <div className="text-xs text-muted-foreground mt-1">
-                Fechada em {new Date(editing.closed_at).toLocaleString("pt-BR")}
+                Fechada em {formatDateTimeFullBR(editing.closed_at)}
               </div>
             )}
           </div>
