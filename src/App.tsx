@@ -35,6 +35,7 @@ import Auditoria from "@/pages/Auditoria";
 import Avaliacoes from "@/pages/Avaliacoes";
 import MetasLayout from "@/pages/metas/MetasLayout";
 import MetasTecnicos from "@/pages/MetasTecnicos";
+import MetasRevisaoTMA from "@/pages/metas/MetasRevisaoTMA";
 import WebhookLogs from "@/pages/WebhookLogs";
 import Planos from "@/pages/Planos";
 import Integracoes from "@/pages/Integracoes";
