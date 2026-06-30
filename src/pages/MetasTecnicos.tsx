@@ -166,7 +166,7 @@ export default function MetasTecnicos() {
      let current = 0;
       if (metric === "tickets_closed") current = tech.totalClosed;
       else if (metric === "avg_score") current = tech.avgScore;
-      else if (metric === "avg_resolution_hours") current = tech.avgResolutionHours;
+      else if (metric === "avg_resolution_hours") current = Math.floor(tech.avgResolutionHours);
       else if (metric === "points") current = tech.totalPoints;
      else if (metric === "preventivas_done") current = tech.preventivasDone;
       else if (metric === "project_tasks_done") current = tech.projectTasksDone;
