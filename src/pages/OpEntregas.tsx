@@ -35,10 +35,6 @@ const FINALIZED_COL = "Finalizado";
 
 type FilterMode = "tudo" | "hoje" | "semana" | "data";
 
-function formatDateBR(iso: string) {
-  const [y, m, d] = iso.split("-");
-  return `${d}/${m}/${y}`;
-}
 function weekday(iso: string) {
   const [y, m, d] = iso.split("-").map(Number);
   return new Date(y, m - 1, d).toLocaleDateString("pt-BR", { weekday: "long" });
