@@ -2658,9 +2658,9 @@ export type Database = {
       detect_tma_anomalies: {
         Args: { _lookback_days?: number }
         Returns: {
-          anomaly_type: string
-          inserted: number
-          updated: number
+          result_inserted: number
+          result_type: string
+          result_updated: number
         }[]
       }
       get_executive_overview: {
