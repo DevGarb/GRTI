@@ -14,6 +14,7 @@ import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import {
+import { formatDateTimeBR } from "@/lib/dateFormat";
   useManagementMetrics,
   useManagementReportConfig,
   type ManagementMetricRow,
@@ -338,7 +339,7 @@ export default function MetricasGerenciais() {
           </div>
           {config?.last_sent_at && (
             <p className="text-xs text-muted-foreground">
-              Último envio: {format(new Date(config.last_sent_at), "dd/MM/yyyy HH:mm", { locale: ptBR })}
+              Último envio: {formatDateTimeBR(config.last_sent_at)}
             </p>
           )}
           <div className="flex flex-wrap gap-2">
