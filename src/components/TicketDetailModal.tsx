@@ -145,6 +145,50 @@ function CategoryTreePicker({
   );
 }
 
+function StartedAtEditor({ ticket, userId, onSaved }: { ticket: Ticket; userId: string; onSaved: () => void }) {
+  const toLocalInput = (iso: string | null | undefined) =>
+    iso ? new Date(new Date(iso).getTime() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 16) : "";
+  const [value, setValue] = useState(toLocalInput(ticket.started_at));
+  const savedRef = useRef(toLocalInput(ticket.started_at));
+  useEffect(() => {
+    const v = toLocalInput(ticket.started_at);
+    setValue(v);
+    savedRef.current = v;
+  }, [ticket.started_at]);
+
+  const commit = async () => {
+    if (value === savedRef.current) return;
+    const newIso = value ? new Date(value).toISOString() : null;
+    const oldVal = ticket.started_at || "—";
+    const { error } = await supabase.from("tickets").update({ started_at: newIso }).eq("id", ticket.id);
+    if (error) { toast.error("Erro ao atualizar início: " + error.message); return; }
+    await supabase.from("ticket_history").insert({
+      ticket_id: ticket.id,
+      user_id: userId,
+      action: "started_at_change",
+      old_value: oldVal,
+      new_value: newIso || "—",
+    });
+    savedRef.current = value;
+    toast.success("Início do atendimento atualizado. TMA recalculado.");
+    onSaved();
+  };
+
+  return (
+    <div className="flex items-center gap-3">
+      <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider w-24">Início Atend.</span>
+      <input
+        type="datetime-local"
+        value={value}
+        onChange={(e) => setValue(e.target.value)}
+        onBlur={commit}
+        onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); (e.target as HTMLInputElement).blur(); } }}
+        className="text-sm px-2 py-1 rounded-md border border-input bg-background text-foreground"
+      />
+    </div>
+  );
+}
+
 export default function TicketDetailModal({ ticket, onClose }: Props) {
   const { hasRole, user } = useAuth();
   const isAdmin = hasRole("admin");
