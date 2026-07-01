@@ -82,13 +82,29 @@ export function useDashboardMetrics(dateFrom?: Date, dateTo?: Date) {
       // descontando pausas em Aguardando Aprovação e somando retrabalhos)
       const workMinutesMap = await fetchTicketWorkMinutes(closedTickets);
 
-      // Avg resolution time = média do tempo acumulado de trabalho
+      // Para o TMA, considera apenas chamados atribuídos a técnicos/desenvolvedores/admins
+      // (mesma regra do RPC get_metas_tecnicos, para os números baterem entre Dashboard e Metas).
+      const assignees = Array.from(
+        new Set(closedTickets.map((t: any) => t.assigned_to).filter(Boolean))
+      ) as string[];
+      let staffSet = new Set<string>();
+      if (assignees.length > 0) {
+        const { data: staffRoles } = await supabase
+          .from("user_organization_roles")
+          .select("user_id")
+          .in("user_id", assignees)
+          .in("role", ["tecnico", "desenvolvedor", "admin"] as any);
+        staffSet = new Set(((staffRoles || []) as any[]).map((r) => r.user_id));
+      }
+
+      // Avg resolution time = média do tempo acumulado de trabalho (apenas staff)
       let avgResolutionMinutes = 0;
-      if (closedTickets.length > 0) {
-        const totalMinutes = closedTickets.reduce((sum, t) => {
+      const staffClosed = closedTickets.filter((t: any) => t.assigned_to && staffSet.has(t.assigned_to));
+      if (staffClosed.length > 0) {
+        const totalMinutes = staffClosed.reduce((sum, t) => {
           return sum + (workMinutesMap.get(t.id) ?? 0);
         }, 0);
-        avgResolutionMinutes = totalMinutes / closedTickets.length;
+        avgResolutionMinutes = totalMinutes / staffClosed.length;
       }
 
       // Fetch rework counts for the period tickets
