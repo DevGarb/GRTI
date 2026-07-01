@@ -738,37 +738,17 @@ export default function TicketDetailModal({ ticket, onClose }: Props) {
               </div>
             )}
             {canEditPeople && (
-              <div className="flex items-center gap-3">
-                <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider w-24">Início Atend.</span>
-                <input
-                  type="datetime-local"
-                  value={ticket.started_at ? new Date(new Date(ticket.started_at).getTime() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 16) : ""}
-                  onChange={async (e) => {
-                    const v = e.target.value;
-                    const newIso = v ? new Date(v).toISOString() : null;
-                    const oldVal = ticket.started_at || "—";
-                    const { error } = await supabase
-                      .from("tickets")
-                      .update({ started_at: newIso })
-                      .eq("id", ticket.id);
-                    if (error) { toast.error("Erro ao atualizar início: " + error.message); return; }
-                    await supabase.from("ticket_history").insert({
-                      ticket_id: ticket.id,
-                      user_id: user!.id,
-                      action: "started_at_change",
-                      old_value: oldVal,
-                      new_value: newIso || "—",
-                    });
-                    toast.success("Início do atendimento atualizado. TMA recalculado.");
-                    queryClient.invalidateQueries({ queryKey: ["tickets"] });
-                    queryClient.invalidateQueries({ queryKey: ["metas-tecnicos"] });
-                    queryClient.invalidateQueries({ queryKey: ["mvp-metrics"] });
-                    queryClient.invalidateQueries({ queryKey: ["mvp-chamados-metrics"] });
-                    queryClient.invalidateQueries({ queryKey: ["ticket-history", ticket.id] });
-                  }}
-                  className="text-sm px-2 py-1 rounded-md border border-input bg-background text-foreground"
-                />
-              </div>
+              <StartedAtEditor
+                ticket={ticket}
+                userId={user!.id}
+                onSaved={() => {
+                  queryClient.invalidateQueries({ queryKey: ["tickets"] });
+                  queryClient.invalidateQueries({ queryKey: ["metas-tecnicos"] });
+                  queryClient.invalidateQueries({ queryKey: ["mvp-metrics"] });
+                  queryClient.invalidateQueries({ queryKey: ["mvp-chamados-metrics"] });
+                  queryClient.invalidateQueries({ queryKey: ["ticket-history", ticket.id] });
+                }}
+              />
             )}
           </div>
 
