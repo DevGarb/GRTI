@@ -295,7 +295,8 @@ export function useDashboardMetrics(dateFrom?: Date, dateTo?: Date) {
         monthlyCsat.push({ month: label, value: mCsat });
 
         // Agrupa pelo mês de RESOLUÇÃO (não pelo updated_at, que pode ser posterior)
-        const monthClosed = closedUnfiltered.filter((t) => {
+        const monthClosed = closedUnfiltered.filter((t: any) => {
+          if (!t.assigned_to || !staffSet.has(t.assigned_to)) return false;
           const cd = allResolutionEndMap.get(t.id) ?? new Date(t.updated_at);
           return cd >= d && cd < nextMonth;
         });
