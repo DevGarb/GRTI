@@ -95,12 +95,14 @@ export default function OpEntregas() {
   }, [items, activeMonth, filterMode, filterDate, activeDriver, statusFilter, typeFilter, search, companies, drivers, hideFinalized, view]);
 
   const monthItems = useMemo(() => items.filter(inMonthScope), [items, activeMonth]);
+  // KPIs refletem o conjunto atualmente visível (mesmos filtros do Kanban/Lista),
+  // incluindo itens atrasados arrastados de meses anteriores.
   const kpis = useMemo(() => ({
-    total: monthItems.length,
-    pendentes: monthItems.filter(d => d.status === "Pendente").length,
-    emRota: monthItems.filter(d => d.status === "Em rota").length,
-    finalizados: items.filter(d => d.scheduled_date.startsWith(activeMonth) && d.status === "Finalizado").length,
-  }), [monthItems, items, activeMonth]);
+    total: filtered.length,
+    pendentes: filtered.filter(d => d.status === "Pendente").length,
+    emRota: filtered.filter(d => d.status === "Em rota").length,
+    finalizados: filtered.filter(d => d.status === "Finalizado").length,
+  }), [filtered]);
 
 
   const grouped = useMemo(() => {
