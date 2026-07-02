@@ -175,13 +175,14 @@ export default function OpEntregas() {
   const renderKanbanCard = (d: Delivery) => {
     const company = companies.find(c => c.id === d.company_id);
     const driver = drivers.find(x => x.id === d.driver_id);
+    const carried = isCarriedOver(d);
     return (
       <div onClick={() => openEdit(d)}>
         <div className="flex items-start gap-2 mb-2">
           <div className="flex-1 min-w-0">
             <div className="font-semibold text-sm truncate">{company?.name || "Sem empresa"}</div>
-            <div className="text-[11px] text-muted-foreground truncate">
-              {formatDateBR(d.scheduled_date)} · {d.period}
+            <div className={cn("text-[11px] truncate", carried ? "text-rose-500 font-medium" : "text-muted-foreground")}>
+              {formatDateBR(d.scheduled_date)} · {d.period}{carried && " · atrasada"}
             </div>
           </div>
           <Badge variant="outline" className="text-[10px]">{d.type}</Badge>
@@ -201,6 +202,7 @@ export default function OpEntregas() {
       </div>
     );
   };
+
 
   return (
     <div className="p-4 md:p-6 max-w-7xl mx-auto">
