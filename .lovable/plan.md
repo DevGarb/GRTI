@@ -1,33 +1,41 @@
 ## Problema
 
-No painel Operacional (ex.: Entregas), o KPI "Finalizados" mostra 8, mas a coluna "Finalizado" do Kanban aparece zerada.
+Entregas pendentes (não-finalizadas) de meses anteriores não aparecem quando o usuário navega para o mês atual/seguinte. Elas ficam "presas" no mês em que foram agendadas.
 
-## Causa
+## Comportamento desejado
 
-Em `src/pages/OpEntregas.tsx`, o filtro `filtered` (linha 79) remove **todas** as entregas com status "Finalizado" quando `hideFinalized = true` e a view é Kanban. Como `hideFinalized` começa em `true`, os cards finalizados nunca chegam ao `itemsByCol`, então a própria coluna "Finalizado" fica vazia.
+Ao visualizar um mês no seletor, mostrar:
+- Todas as entregas agendadas **naquele mês**, mais
+- Todas as entregas **de meses anteriores** que ainda não foram finalizadas nem canceladas (status ≠ "Finalizado" e ≠ "Cancelado").
 
-O toggle "Ocultar finalizados" deveria esconder finalizados apenas das colunas de motoristas/pendentes — não da coluna "Finalizado" em si (ou então ocultar a coluna inteira).
+Assim, uma entrega pendente de maio aparece em junho, julho etc. até ser finalizada/cancelada.
 
-## Correção
+## Mudanças
 
-Aplicar a mesma lógica nas telas Kanban do painel Operacional que possuem coluna terminal:
+Arquivo único: `src/pages/OpEntregas.tsx`
 
-- `src/pages/OpEntregas.tsx` (Entregas — status "Finalizado")
-- Verificar também `src/pages/OpOficina.tsx` e `src/pages/OpManutencao.tsx` para o mesmo padrão (coluna terminal + toggle "ocultar finalizados") e ajustar se necessário.
+1. **Filtro `filtered` (linha 72)**: substituir
+   ```
+   if (!d.scheduled_date.startsWith(activeMonth)) return false;
+   ```
+   por uma regra que aceita:
+   - `d.scheduled_date` dentro de `activeMonth`, **ou**
+   - `d.scheduled_date` anterior ao 1º dia de `activeMonth` **e** status pendente (`!== "Finalizado"` e `!== "Cancelado"`).
 
-### Mudanças em `OpEntregas.tsx`
+2. **KPIs / `monthItems` (linha 91)**: aplicar a mesma regra, para que "Pendentes" e "Em Rota" do mês incluam os arrastados de meses passados. "Finalizados" continua estritamente do mês corrente (só finalizados naquele mês).
 
-1. **Remover** do `filtered` (linha 79) a condição `if (hideFinalized && view === "kanban" && d.status === "Finalizado") return false;`.
-2. **Aplicar `hideFinalized` no `itemsByCol`**: quando `hideFinalized === true`, não popular `map[FINALIZED_COL]` (coluna aparece com contador 0) — OU melhor: **ocultar a própria coluna** do array `kanbanColumns` quando `hideFinalized === true`. Optar por ocultar a coluna, que é mais limpo visualmente.
-3. Ao clicar no KPI "Finalizados" (linha 253), já é feito `setHideFinalized(false)` — manter, pois agora fará a coluna reaparecer com os cards.
-4. Ajustar rótulo do botão toggle para deixar claro que oculta a coluna inteira.
+3. **Card do Kanban (`renderKanbanCard`)**: destacar visualmente quando `d.scheduled_date` está fora do `activeMonth` (ex.: badge "Atrasada" ou cor da data em âmbar/vermelho) para o usuário perceber que é um arrasto de mês anterior.
 
-### Resultado esperado
+4. Filtros existentes (motorista, busca, status, tipo, hoje/semana/data) continuam se aplicando sobre esse conjunto expandido.
 
-- Toggle "Ocultar finalizados" ON → coluna "Finalizado" some do Kanban (comportamento atual esperado, sem cards órfãos).
-- Toggle OFF (ou clique no KPI Finalizados) → coluna "Finalizado" aparece com os 8 cards do mês.
-- Filtros de mês / motorista / busca continuam se aplicando aos finalizados.
+## Não muda
+
+- Aba Lista / agrupamento por data continuam funcionando (as datas antigas simplesmente aparecerão como grupos separados no topo).
+- Nenhuma alteração de banco de dados.
+- Oficina e Manutenção Predial ficam de fora deste ajuste (podem receber o mesmo tratamento depois se você quiser).
 
 ## Verificação
 
-Após a mudança: abrir `/op/entregas`, confirmar que com toggle desligado a coluna "Finalizado" exibe a mesma contagem do KPI, e que clicar no KPI "Finalizados" traz os cards à tona.
+- Criar/ter entrega "Pendente" em maio, navegar para junho → deve aparecer na coluna do motorista (ou em "Pendente" se sem motorista), com marcação de atraso.
+- KPI "Pendentes" de junho deve incluir a de maio.
+- Ao finalizar essa entrega em junho, ela some do mês seguinte.
