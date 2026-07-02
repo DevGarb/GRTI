@@ -1,38 +1,33 @@
 ## Problema
 
-Ao editar manualmente o campo **Início Atend.** de um chamado já fechado, o tempo exibido cai para `0min`. No exemplo da imagem, o `started_at` foi movido de 01/07 11:24 para 01/07 13:24 — como o chamado já tinha sido fechado antes, a janela `started_at → closed_at` fica negativa/zero e o cálculo devolve 0.
+No painel Operacional (ex.: Entregas), o KPI "Finalizados" mostra 8, mas a coluna "Finalizado" do Kanban aparece zerada.
 
 ## Causa
 
-Em `src/lib/ticketTiming.ts` (`fetchTicketWorkMinutes`):
+Em `src/pages/OpEntregas.tsx`, o filtro `filtered` (linha 79) remove **todas** as entregas com status "Finalizado" quando `hideFinalized = true` e a view é Kanban. Como `hideFinalized` começa em `true`, os cards finalizados nunca chegam ao `itemsByCol`, então a própria coluna "Finalizado" fica vazia.
 
-- Para tickets **legados sem histórico de status**, o total é `calcBusinessMinutes(started_at, closed_at ?? updated_at)`. Se `started_at > closed_at`, o `if (endRaw > start)` falha e retorna 0.
-- Para tickets **com histórico**, quando o admin edita `started_at`, o código só usa esse valor para "abrir janela inicial" se o primeiro evento do histórico for uma saída de "Em Andamento". Caso contrário, a janela é aberta pelo timestamp do evento `status_change → Em Andamento` (que não é atualizado ao editar o campo), e a edição de `started_at` acaba **ignorada** — ou, na combinação errada, produz 0.
+O toggle "Ocultar finalizados" deveria esconder finalizados apenas das colunas de motoristas/pendentes — não da coluna "Finalizado" em si (ou então ocultar a coluna inteira).
 
-Além disso, ao salvar a edição em `TicketDetailModal.tsx` (`StartedAtEditor`), gravamos apenas em `tickets.started_at` e registramos um `started_at_change` no histórico — **não** ajustamos o evento `status_change → Em Andamento` correspondente em `ticket_history`, então as duas fontes ficam dessincronizadas.
+## Correção
 
-## Plano de correção
+Aplicar a mesma lógica nas telas Kanban do painel Operacional que possuem coluna terminal:
 
-### 1. `src/lib/ticketTiming.ts`
-- No ramo "legado sem histórico": se `endRaw <= start`, tratar como janela mínima (retornar 0 mas com log) **ou** usar `max(started_at, ...)` invertido — na verdade, o correto é: se `started_at` foi editado para depois do fechamento, considerar que houve apenas um "toque" e devolver o mínimo relevante. Vamos assumir 0 é aceitável apenas se realmente for; para evitar sumiço, quando `start > endRaw` mas o chamado está fechado, usar `calcBusinessMinutes(endRaw, start)` invertido não faz sentido — o certo é **validar na UI antes de salvar**.
-- No ramo com histórico: quando existir um `started_at` editado depois do último evento, tratar a janela mais recente de "Em Andamento" como iniciando em `started_at` em vez do timestamp do evento.
+- `src/pages/OpEntregas.tsx` (Entregas — status "Finalizado")
+- Verificar também `src/pages/OpOficina.tsx` e `src/pages/OpManutencao.tsx` para o mesmo padrão (coluna terminal + toggle "ocultar finalizados") e ajustar se necessário.
 
-### 2. `src/components/TicketDetailModal.tsx` (`StartedAtEditor`)
-- Validar antes de salvar: se o chamado já está fechado (`closed_at` existe) e o novo `started_at` for **posterior** a `closed_at`, bloquear com toast de erro explicando o motivo, sem gravar nem criar entrada no histórico.
-- Ao salvar com sucesso, também atualizar o timestamp do primeiro (ou último) evento `status_change → Em Andamento` em `ticket_history` para manter as fontes sincronizadas — via RPC nova `sync_started_at(ticket_id, new_started_at)` que faz o UPDATE em `ticket_history` com privilégio adequado.
+### Mudanças em `OpEntregas.tsx`
 
-### 3. Migração (RPC)
-Criar `public.sync_started_at(_ticket_id uuid, _new_started_at timestamptz)`:
-- Atualiza `tickets.started_at`.
-- Atualiza o evento `status_change → Em Andamento` mais recente (ou insere se não existir) para o novo timestamp.
-- Registra uma linha `started_at_change` em `ticket_history` com autor = `auth.uid()`.
-- `SECURITY DEFINER`, restrita a admins via `has_role`.
+1. **Remover** do `filtered` (linha 79) a condição `if (hideFinalized && view === "kanban" && d.status === "Finalizado") return false;`.
+2. **Aplicar `hideFinalized` no `itemsByCol`**: quando `hideFinalized === true`, não popular `map[FINALIZED_COL]` (coluna aparece com contador 0) — OU melhor: **ocultar a própria coluna** do array `kanbanColumns` quando `hideFinalized === true`. Optar por ocultar a coluna, que é mais limpo visualmente.
+3. Ao clicar no KPI "Finalizados" (linha 253), já é feito `setHideFinalized(false)` — manter, pois agora fará a coluna reaparecer com os cards.
+4. Ajustar rótulo do botão toggle para deixar claro que oculta a coluna inteira.
 
-### 4. Invalidar caches de métricas
-Após salvar, invalidar `daily_insights_cache` do técnico/período afetado, para o Dashboard e Metas reprocessarem sem exibir o `0min`.
+### Resultado esperado
 
-## Resultado esperado
+- Toggle "Ocultar finalizados" ON → coluna "Finalizado" some do Kanban (comportamento atual esperado, sem cards órfãos).
+- Toggle OFF (ou clique no KPI Finalizados) → coluna "Finalizado" aparece com os 8 cards do mês.
+- Filtros de mês / motorista / busca continuam se aplicando aos finalizados.
 
-- Admin não consegue mais definir um `started_at` posterior ao fechamento (mensagem clara em vez de zerar o tempo).
-- Quando a edição é válida, `ticket_history` e `tickets.started_at` ficam sincronizados, e o tempo listado reflete o novo início imediatamente.
-- Métricas de TMA no Dashboard e em Metas atualizam sem exigir refresh manual.
+## Verificação
+
+Após a mudança: abrir `/op/entregas`, confirmar que com toggle desligado a coluna "Finalizado" exibe a mesma contagem do KPI, e que clicar no KPI "Finalizados" traz os cards à tona.
