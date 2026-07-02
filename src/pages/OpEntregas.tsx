@@ -76,7 +76,7 @@ export default function OpEntregas() {
       if (activeDriver !== "all" && d.driver_id !== activeDriver) return false;
       if (statusFilter !== "all" && d.status !== statusFilter) return false;
       if (typeFilter !== "all" && d.type !== typeFilter) return false;
-      if (hideFinalized && view === "kanban" && d.status === "Finalizado") return false;
+      
       if (search) {
         const s = search.toLowerCase();
         const company = companies.find(c => c.id === d.company_id)?.name?.toLowerCase() || "";
@@ -111,9 +111,11 @@ export default function OpEntregas() {
     drivers.filter(d => d.is_active).forEach(d => {
       cols.push({ id: `driver:${d.id}`, label: d.name, color: "bg-blue-500" });
     });
-    cols.push({ id: FINALIZED_COL, label: "Finalizado", color: "bg-emerald-600" });
+    if (!hideFinalized) {
+      cols.push({ id: FINALIZED_COL, label: "Finalizado", color: "bg-emerald-600" });
+    }
     return cols;
-  }, [drivers]);
+  }, [drivers, hideFinalized]);
 
   const itemsByCol = useMemo(() => {
     const map: Record<string, Delivery[]> = {};
@@ -232,7 +234,7 @@ export default function OpEntregas() {
         )}
         {view === "kanban" && (
           <Button size="sm" variant="outline" onClick={() => setHideFinalized(v => !v)}>
-            {hideFinalized ? <><EyeOff className="h-3 w-3 mr-1" />Ocultos finalizados</> : <><Eye className="h-3 w-3 mr-1" />Mostrando todos</>}
+            {hideFinalized ? <><Eye className="h-3 w-3 mr-1" />Mostrar finalizados</> : <><EyeOff className="h-3 w-3 mr-1" />Ocultar finalizados</>}
           </Button>
         )}
       </div>

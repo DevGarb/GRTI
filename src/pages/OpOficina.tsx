@@ -85,10 +85,9 @@ export default function OpOficina() {
       if (statusFilter === "exec" && !(o.status === "Em andamento" || o.status === "Aguardando peças")) return false;
       if (statusFilter === "atraso" && !isOverdue(o)) return false;
       if (statusFilter === "Finalizado" && o.status !== "Finalizado") return false;
-      if (statusFilter === "all" && hideFinalized && view === "kanban" && o.status === "Finalizado") return false;
       return true;
     });
-  }, [baseFiltered, statusFilter, hideFinalized, view]);
+  }, [baseFiltered, statusFilter]);
 
   const kpis = useMemo(() => {
     const pendentes = baseFiltered.filter(o => o.status === "Pendente").length;
@@ -229,7 +228,7 @@ export default function OpOficina() {
 
       {view === "kanban" ? (
         <OpKanbanBoard<ServiceOrder>
-          columns={KANBAN_COLUMNS}
+          columns={hideFinalized ? KANBAN_COLUMNS.filter(c => c.id !== "Finalizado") : KANBAN_COLUMNS}
           itemsByColumn={itemsByCol}
           renderCard={renderCard}
           resolveItem={(id) => filtered.find(o => o.id === id)}
