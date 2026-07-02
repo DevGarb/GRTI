@@ -2873,6 +2873,10 @@ export type Database = {
         }
         Returns: string
       }
+      sync_started_at: {
+        Args: { _new_started_at: string; _ticket_id: string }
+        Returns: undefined
+      }
       transfer_patrimonio_responsible: {
         Args: {
           _new_responsible: string
