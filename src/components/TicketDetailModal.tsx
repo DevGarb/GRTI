@@ -159,16 +159,21 @@ function StartedAtEditor({ ticket, userId, onSaved }: { ticket: Ticket; userId: 
   const commit = async () => {
     if (value === savedRef.current) return;
     const newIso = value ? new Date(value).toISOString() : null;
-    const oldVal = ticket.started_at || "—";
-    const { error } = await supabase.from("tickets").update({ started_at: newIso }).eq("id", ticket.id);
-    if (error) { toast.error("Erro ao atualizar início: " + error.message); return; }
-    await supabase.from("ticket_history").insert({
-      ticket_id: ticket.id,
-      user_id: userId,
-      action: "started_at_change",
-      old_value: oldVal,
-      new_value: newIso || "—",
+    // Validação: não permitir início posterior ao fechamento
+    if (newIso && ticket.closed_at && new Date(newIso) > new Date(ticket.closed_at)) {
+      toast.error("O início do atendimento não pode ser posterior ao fechamento do chamado.");
+      setValue(savedRef.current);
+      return;
+    }
+    const { error } = await supabase.rpc("sync_started_at", {
+      _ticket_id: ticket.id,
+      _new_started_at: newIso,
     });
+    if (error) {
+      toast.error("Erro ao atualizar início: " + error.message);
+      setValue(savedRef.current);
+      return;
+    }
     savedRef.current = value;
     toast.success("Início do atendimento atualizado. TMA recalculado.");
     onSaved();
