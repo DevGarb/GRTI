@@ -63,20 +63,26 @@ export default function OpEntregas() {
   // Closure flow
   const [closing, setClosing] = useState<Delivery | null>(null);
 
+  const monthStart = `${activeMonth}-01`;
+  const isCarriedOver = (d: Delivery) =>
+    d.scheduled_date < monthStart && d.status !== "Finalizado" && d.status !== "Cancelado";
+  const inMonthScope = (d: Delivery) =>
+    d.scheduled_date.startsWith(activeMonth) || isCarriedOver(d);
+
   const filtered = useMemo(() => {
     const today = todayISO();
     const start = new Date(); start.setDate(start.getDate() - 7);
     const startISO = start.toISOString().slice(0, 10);
 
     return items.filter(d => {
-      if (!d.scheduled_date.startsWith(activeMonth)) return false;
+      if (!inMonthScope(d)) return false;
       if (filterMode === "hoje" && d.scheduled_date !== today) return false;
       if (filterMode === "semana" && d.scheduled_date < startISO) return false;
       if (filterMode === "data" && d.scheduled_date !== filterDate) return false;
       if (activeDriver !== "all" && d.driver_id !== activeDriver) return false;
       if (statusFilter !== "all" && d.status !== statusFilter) return false;
       if (typeFilter !== "all" && d.type !== typeFilter) return false;
-      
+
       if (search) {
         const s = search.toLowerCase();
         const company = companies.find(c => c.id === d.company_id)?.name?.toLowerCase() || "";
@@ -88,13 +94,14 @@ export default function OpEntregas() {
     });
   }, [items, activeMonth, filterMode, filterDate, activeDriver, statusFilter, typeFilter, search, companies, drivers, hideFinalized, view]);
 
-  const monthItems = useMemo(() => items.filter(d => d.scheduled_date.startsWith(activeMonth)), [items, activeMonth]);
+  const monthItems = useMemo(() => items.filter(inMonthScope), [items, activeMonth]);
   const kpis = useMemo(() => ({
     total: monthItems.length,
     pendentes: monthItems.filter(d => d.status === "Pendente").length,
     emRota: monthItems.filter(d => d.status === "Em rota").length,
-    finalizados: monthItems.filter(d => d.status === "Finalizado").length,
-  }), [monthItems]);
+    finalizados: items.filter(d => d.scheduled_date.startsWith(activeMonth) && d.status === "Finalizado").length,
+  }), [monthItems, items, activeMonth]);
+
 
   const grouped = useMemo(() => {
     const map = new Map<string, Delivery[]>();
