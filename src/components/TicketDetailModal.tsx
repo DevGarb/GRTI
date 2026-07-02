@@ -160,7 +160,8 @@ function StartedAtEditor({ ticket, userId, onSaved }: { ticket: Ticket; userId: 
     if (value === savedRef.current) return;
     const newIso = value ? new Date(value).toISOString() : null;
     // Validação: não permitir início posterior ao fechamento
-    if (newIso && ticket.closed_at && new Date(newIso) > new Date(ticket.closed_at)) {
+    const closedAt = (ticket as any).closed_at as string | null | undefined;
+    if (newIso && closedAt && new Date(newIso) > new Date(closedAt)) {
       toast.error("O início do atendimento não pode ser posterior ao fechamento do chamado.");
       setValue(savedRef.current);
       return;
