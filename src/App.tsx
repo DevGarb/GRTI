@@ -51,6 +51,7 @@ import OpEntregas from "@/pages/OpEntregas";
 import OpOficina from "@/pages/OpOficina";
 import OpManutencao from "@/pages/OpManutencao";
 import NotFound from "./pages/NotFound";
+import OAuthConsent from "@/pages/OAuthConsent";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -114,6 +115,7 @@ const App = () => (
         <AuthProvider>
           <Routes>
             <Route path="/login" element={<AuthRoute><Login /></AuthRoute>} />
+            <Route path="/.lovable/oauth/consent" element={<OAuthConsent />} />
             <Route path="/escolher-organizacao" element={<ProtectedRoute><EscolherOrganizacao /></ProtectedRoute>} />
             <Route path="/asset/:id" element={<AssetPublicView />} />
             <Route
