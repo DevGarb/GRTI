@@ -52,6 +52,7 @@ import OpOficina from "@/pages/OpOficina";
 import OpManutencao from "@/pages/OpManutencao";
 import NotFound from "./pages/NotFound";
 import OAuthConsent from "@/pages/OAuthConsent";
+import Connect from "@/pages/Connect";
 
 const queryClient = new QueryClient({
   defaultOptions: {
