@@ -352,6 +352,8 @@ export default function TicketDetailModal({ ticket, onClose }: Props) {
       queryClient.invalidateQueries({ queryKey: ["ticket-rework-count", ticket.id] });
       queryClient.invalidateQueries({ queryKey: ["ticket-rework-entries", ticket.id] });
       queryClient.invalidateQueries({ queryKey: ["ticket-history", ticket.id] });
+      queryClient.invalidateQueries({ queryKey: ["ticket-comments", ticket.id] });
+      queryClient.invalidateQueries({ queryKey: ["notifications"] });
       queryClient.invalidateQueries({ queryKey: ["metas-tecnicos"] });
       queryClient.invalidateQueries({ queryKey: ["management-metrics"] });
       queryClient.invalidateQueries({ queryKey: ["dashboard-metrics"] });

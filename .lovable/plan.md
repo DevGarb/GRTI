@@ -1,41 +1,52 @@
-## Problema
+# Notificar invalidação de retrabalho
 
-Entregas pendentes (não-finalizadas) de meses anteriores não aparecem quando o usuário navega para o mês atual/seguinte. Elas ficam "presas" no mês em que foram agendadas.
+A auditoria de retrabalho já existe: dentro do chamado, o admin clica no badge laranja **Retrabalho (Nx)**, abre o diálogo **Validar marcações de retrabalho**, informa o motivo e a marcação é removida do técnico e do contador do chamado (via RPC `invalidate_ticket_rework`).
 
-## Comportamento desejado
+O que falta é **avisar solicitante e técnico** quando isso acontece, com a mensagem do admin visível dentro do próprio chamado.
 
-Ao visualizar um mês no seletor, mostrar:
-- Todas as entregas agendadas **naquele mês**, mais
-- Todas as entregas **de meses anteriores** que ainda não foram finalizadas nem canceladas (status ≠ "Finalizado" e ≠ "Cancelado").
+## Comportamento novo
 
-Assim, uma entrega pendente de maio aparece em junho, julho etc. até ser finalizada/cancelada.
+Quando o admin confirmar "Não retrabalho":
 
-## Mudanças
+1. **Comentário no chamado** (visível na aba de comentários):
+   > "A marcação de retrabalho de DD/MM/AAAA HH:mm foi invalidada pela administração. Motivo: <texto informado pelo admin>."
 
-Arquivo único: `src/pages/OpEntregas.tsx`
+   Criado como `ticket_comments` público, autor = admin que invalidou. Assim solicitante e técnico veem no histórico da conversa.
 
-1. **Filtro `filtered` (linha 72)**: substituir
-   ```
-   if (!d.scheduled_date.startsWith(activeMonth)) return false;
-   ```
-   por uma regra que aceita:
-   - `d.scheduled_date` dentro de `activeMonth`, **ou**
-   - `d.scheduled_date` anterior ao 1º dia de `activeMonth` **e** status pendente (`!== "Finalizado"` e `!== "Cancelado"`).
+2. **Notificações in-app** (sino) para:
+   - `tickets.created_by` (solicitante que registrou o retrabalho)
+   - `tickets.assigned_to` (técnico do chamado), quando existir e for diferente do admin
+   - Título: "Retrabalho invalidado — #<id curto>"
+   - Corpo: motivo informado (truncado se muito longo)
+   - `ticket_id` preenchido → clique abre o chamado
 
-2. **KPIs / `monthItems` (linha 91)**: aplicar a mesma regra, para que "Pendentes" e "Em Rota" do mês incluam os arrastados de meses passados. "Finalizados" continua estritamente do mês corrente (só finalizados naquele mês).
+3. O comportamento atual continua igual:
+   - `ticket_history`: linha vira `rework_invalidated` + linha `rework_removed` registrada
+   - Contador de retrabalho do chamado e do técnico cai imediatamente
+   - Métricas de admin / MVP recalculam
 
-3. **Card do Kanban (`renderKanbanCard`)**: destacar visualmente quando `d.scheduled_date` está fora do `activeMonth` (ex.: badge "Atrasada" ou cor da data em âmbar/vermelho) para o usuário perceber que é um arrasto de mês anterior.
+## Onde muda
 
-4. Filtros existentes (motorista, busca, status, tipo, hoje/semana/data) continuam se aplicando sobre esse conjunto expandido.
+### Backend (migration — SQL)
+Atualizar `public.invalidate_ticket_rework(_history_id, _reason)` para, ao final da transação, inserir:
 
-## Não muda
+- 1 linha em `ticket_comments` (`ticket_id`, `user_id = auth.uid()`, `content = <mensagem acima>`, `is_public = true`)
+- 1 linha em `notifications` para o `created_by` do ticket
+- 1 linha em `notifications` para o `assigned_to`, se existir e ≠ admin e ≠ created_by
+- `type = 'rework_invalidated'`, `ticket_id` preenchido, `organization_id` = org do ticket
 
-- Aba Lista / agrupamento por data continuam funcionando (as datas antigas simplesmente aparecerão como grupos separados no topo).
-- Nenhuma alteração de banco de dados.
-- Oficina e Manutenção Predial ficam de fora deste ajuste (podem receber o mesmo tratamento depois se você quiser).
+Sem mudança de schema, sem novas policies (a função é SECURITY DEFINER).
 
-## Verificação
+### Frontend (`src/components/TicketDetailModal.tsx`)
+No `handleRemoveRework`, após o RPC ter sucesso, invalidar também:
+- `["ticket-comments", ticket.id]`
+- `["notifications"]` (para o próprio admin ver contadores atualizados)
 
-- Criar/ter entrega "Pendente" em maio, navegar para junho → deve aparecer na coluna do motorista (ou em "Pendente" se sem motorista), com marcação de atraso.
-- KPI "Pendentes" de junho deve incluir a de maio.
-- Ao finalizar essa entrega em junho, ela some do mês seguinte.
+Nada muda no diálogo em si, nem nas telas de métricas.
+
+## Fora do escopo
+
+- Envio de e-mail (fica só no sino e no comentário do chamado).
+- Nova aba de auditoria de retrabalhos.
+- Categorização estruturada do motivo (continua texto livre).
+- Auditoria de retrabalho de tarefas de Projetos.
