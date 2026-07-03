@@ -102,7 +102,14 @@ function MenuGuard({ menuKey, children }: { menuKey: string; children: React.Rea
 function AuthRoute({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
   if (loading) return null;
-  if (user) return <Navigate to="/" replace />;
+  if (user) {
+    // Honor ?next=/path (used by MCP OAuth consent flow) so sign-in returns
+    // the user to the pending consent screen instead of the app root.
+    const params = new URLSearchParams(window.location.search);
+    const next = params.get("next");
+    const safeNext = next && next.startsWith("/") && !next.startsWith("//") ? next : "/";
+    return <Navigate to={safeNext} replace />;
+  }
   return <>{children}</>;
 }
 
