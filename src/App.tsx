@@ -52,6 +52,7 @@ import OpOficina from "@/pages/OpOficina";
 import OpManutencao from "@/pages/OpManutencao";
 import NotFound from "./pages/NotFound";
 import OAuthConsent from "@/pages/OAuthConsent";
+import Connect from "@/pages/Connect";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -174,6 +175,7 @@ const App = () => (
                       <Route path="/op/entregas" element={<MenuGuard menuKey="op-entregas"><OpEntregas /></MenuGuard>} />
                       <Route path="/op/oficina" element={<MenuGuard menuKey="op-oficina"><OpOficina /></MenuGuard>} />
                       <Route path="/op/manutencao" element={<MenuGuard menuKey="op-manutencao"><OpManutencao /></MenuGuard>} />
+                      <Route path="/connect" element={<Connect />} />
                       <Route path="*" element={<NotFound />} />
                     </Routes>
                   </AppLayout>
