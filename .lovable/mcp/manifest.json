@@ -1,0 +1,122 @@
+{
+  "version": 1,
+  "sdk_version": "0.20.0",
+  "path": "/functions/v1/mcp",
+  "auth": {
+    "type": "oauth",
+    "issuer": "https://gtimcognsszzsfpavups.supabase.co/auth/v1",
+    "accepted_audiences": [
+      "authenticated"
+    ]
+  },
+  "mcp": {
+    "server": {
+      "name": "grti-helpdesk-mcp",
+      "version": "0.1.0",
+      "title": "GRTI Helpdesk"
+    },
+    "tools": [
+      {
+        "name": "list_my_tickets",
+        "title": "List my tickets",
+        "description": "List helpdesk tickets visible to the signed-in user (respects RLS). Filter by status and limit results.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {
+            "status": {
+              "description": "Optional exact status filter, e.g. 'Aberto', 'Em Andamento', 'Resolvido'.",
+              "type": "string"
+            },
+            "limit": {
+              "default": 20,
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100
+            }
+          }
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "get_ticket",
+        "title": "Get ticket",
+        "description": "Fetch a single helpdesk ticket by ID, including its public comments. RLS applies.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {
+            "ticket_id": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+              "description": "Ticket UUID."
+            }
+          },
+          "required": [
+            "ticket_id"
+          ]
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "create_ticket",
+        "title": "Create ticket",
+        "description": "Create a new helpdesk ticket on behalf of the signed-in user. The user's organization is auto-assigned by the database.",
+        "annotations": {
+          "readOnlyHint": false,
+          "destructiveHint": false,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {
+            "title": {
+              "type": "string",
+              "minLength": 3,
+              "description": "Short ticket title."
+            },
+            "description": {
+              "description": "Full description of the issue.",
+              "type": "string"
+            },
+            "priority": {
+              "default": "Média",
+              "description": "Ticket priority.",
+              "type": "string",
+              "enum": [
+                "Baixa",
+                "Média",
+                "Alta",
+                "Urgente"
+              ]
+            },
+            "type": {
+              "description": "Ticket type/category label, e.g. 'Hardware'.",
+              "type": "string"
+            },
+            "sector": {
+              "description": "Sector/department the ticket belongs to.",
+              "type": "string"
+            }
+          },
+          "required": [
+            "title"
+          ]
+        },
+        "outputSchema": null
+      }
+    ]
+  }
+}

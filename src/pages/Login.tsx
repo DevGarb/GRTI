@@ -28,6 +28,14 @@ export default function Login() {
       toast.error("Login ou senha inválidos.");
     } else {
       const { data: { session } } = await supabase.auth.getSession();
+      // Honor ?next=/path (used by MCP OAuth consent flow).
+      const nextParam = new URLSearchParams(window.location.search).get("next");
+      const safeNext =
+        nextParam && nextParam.startsWith("/") && !nextParam.startsWith("//") ? nextParam : null;
+      if (safeNext) {
+        window.location.href = safeNext;
+        return;
+      }
       if (session?.user) {
         const { data: memberships } = await supabase
           .from("user_organizations")
