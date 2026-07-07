@@ -365,7 +365,6 @@ export default function Chamados() {
         }))
       ),
     enabled: filtered.length > 0,
-    refetchInterval: 60_000,
   });
 
   // Comentários públicos de outros usuários ainda não visualizados pelo solicitante
