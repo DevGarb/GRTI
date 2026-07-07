@@ -47,12 +47,14 @@ export function useProjects() {
   const queryClient = useQueryClient();
 
   useEffect(() => {
+    const projectsFilter = orgId ? { event: "*" as const, schema: "public", table: "projects", filter: `organization_id=eq.${orgId}` } : { event: "*" as const, schema: "public", table: "projects" };
+    const sprintsFilter = orgId ? { event: "*" as const, schema: "public", table: "sprints", filter: `organization_id=eq.${orgId}` } : { event: "*" as const, schema: "public", table: "sprints" };
     const ch = supabase
-      .channel(`projects-realtime`)
-      .on("postgres_changes", { event: "*", schema: "public", table: "projects" }, () => {
+      .channel(`projects-realtime-${orgId ?? "all"}`)
+      .on("postgres_changes", projectsFilter, () => {
         queryClient.invalidateQueries({ queryKey: ["projects"] });
       })
-      .on("postgres_changes", { event: "*", schema: "public", table: "sprints" }, () => {
+      .on("postgres_changes", sprintsFilter, () => {
         queryClient.invalidateQueries({ queryKey: ["projects"] });
         queryClient.invalidateQueries({ queryKey: ["sprints"] });
       })
@@ -60,7 +62,7 @@ export function useProjects() {
     return () => {
       supabase.removeChannel(ch);
     };
-  }, [queryClient]);
+  }, [queryClient, orgId]);
 
   return useQuery({
     queryKey: ["projects", orgId],
