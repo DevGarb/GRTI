@@ -1,52 +1,47 @@
-# Notificar invalidação de retrabalho
+## Objetivo
+Aliviar processamento removendo polling redundante, restringindo escopo de subscriptions realtime e reduzindo frequência de cron não crítico.
 
-A auditoria de retrabalho já existe: dentro do chamado, o admin clica no badge laranja **Retrabalho (Nx)**, abre o diálogo **Validar marcações de retrabalho**, informa o motivo e a marcação é removida do técnico e do contador do chamado (via RPC `invalidate_ticket_rework`).
+## Mudanças
 
-O que falta é **avisar solicitante e técnico** quando isso acontece, com a mensagem do admin visível dentro do próprio chamado.
+### 1. `src/pages/Chamados.tsx` (linha 368)
+Remover `refetchInterval: 60_000` do `useQuery` da lista de chamados. O realtime já atualiza a lista.
 
-## Comportamento novo
+Manter o `setInterval` de 60s da linha 51 (`SlaTimer`), que é apenas o ticker visual do cronômetro de SLA quando o chamado está "Em Andamento" — não é polling de rede.
 
-Quando o admin confirmar "Não retrabalho":
+### 2. `src/hooks/useSprints.ts`
+O canal escuta `tickets` e `project_tasks` sem filtro (dispara invalidação em qualquer mudança do sistema). Adicionar filtros no `postgres_changes`:
 
-1. **Comentário no chamado** (visível na aba de comentários):
-   > "A marcação de retrabalho de DD/MM/AAAA HH:mm foi invalidada pela administração. Motivo: <texto informado pelo admin>."
+```ts
+{ event: "*", schema: "public", table: "tickets", filter: `project_id=eq.${projectId}` }
+{ event: "*", schema: "public", table: "project_tasks", filter: `project_id=eq.${projectId}` }
+```
 
-   Criado como `ticket_comments` público, autor = admin que invalidou. Assim solicitante e técnico veem no histórico da conversa.
+Assim só reagem a mudanças de tickets/tasks daquele projeto.
 
-2. **Notificações in-app** (sino) para:
-   - `tickets.created_by` (solicitante que registrou o retrabalho)
-   - `tickets.assigned_to` (técnico do chamado), quando existir e for diferente do admin
-   - Título: "Retrabalho invalidado — #<id curto>"
-   - Corpo: motivo informado (truncado se muito longo)
-   - `ticket_id` preenchido → clique abre o chamado
+### 3. `src/hooks/useProjects.ts`
+Canal global `projects-realtime` escuta `projects` e `sprints` sem filtro. Como a lista é escopada por organização, adicionar filtro por `organization_id` quando `profile?.organization_id` existir:
 
-3. O comportamento atual continua igual:
-   - `ticket_history`: linha vira `rework_invalidated` + linha `rework_removed` registrada
-   - Contador de retrabalho do chamado e do técnico cai imediatamente
-   - Métricas de admin / MVP recalculam
+```ts
+{ event: "*", schema: "public", table: "projects", filter: `organization_id=eq.${orgId}` }
+{ event: "*", schema: "public", table: "sprints", filter: `organization_id=eq.${orgId}` }
+```
 
-## Onde muda
+Incluir `orgId` nas deps do `useEffect` e no nome do canal (`projects-realtime-${orgId}`) para recriar quando o usuário troca de org.
 
-### Backend (migration — SQL)
-Atualizar `public.invalidate_ticket_rework(_history_id, _reason)` para, ao final da transação, inserir:
+### 4. Cron `send-management-report-daily`
+Atualmente `*/5 * * * *` (a cada 5 min). Alterar para `*/15 * * * *` via `supabase--insert` executando:
 
-- 1 linha em `ticket_comments` (`ticket_id`, `user_id = auth.uid()`, `content = <mensagem acima>`, `is_public = true`)
-- 1 linha em `notifications` para o `created_by` do ticket
-- 1 linha em `notifications` para o `assigned_to`, se existir e ≠ admin e ≠ created_by
-- `type = 'rework_invalidated'`, `ticket_id` preenchido, `organization_id` = org do ticket
+```sql
+SELECT cron.alter_job(job_id := 6, schedule := '*/15 * * * *');
+```
 
-Sem mudança de schema, sem novas policies (a função é SECURITY DEFINER).
+## Verificações após aplicar
+1. `tsgo` (typecheck) — garantir que os edits em hooks compilam.
+2. Confirmar cron atualizado: `SELECT jobid, jobname, schedule FROM cron.job WHERE jobid = 6;`
+3. Playwright rápido em `/chamados` autenticado: abrir a página, checar console sem erros de subscription, confirmar que a lista carrega. (Se `LOVABLE_BROWSER_AUTH_STATUS` não estiver `injected`, pular e apenas validar build/typecheck.)
+4. Abrir `/projetos` e um `/projetos/:id` para confirmar que sprints e projects continuam sendo invalidados corretamente ao mexer em um ticket do projeto (via replay do session logs / console).
 
-### Frontend (`src/components/TicketDetailModal.tsx`)
-No `handleRemoveRework`, após o RPC ter sucesso, invalidar também:
-- `["ticket-comments", ticket.id]`
-- `["notifications"]` (para o próprio admin ver contadores atualizados)
-
-Nada muda no diálogo em si, nem nas telas de métricas.
-
-## Fora do escopo
-
-- Envio de e-mail (fica só no sino e no comentário do chamado).
-- Nova aba de auditoria de retrabalhos.
-- Categorização estruturada do motivo (continua texto livre).
-- Auditoria de retrabalho de tarefas de Projetos.
+## Riscos e mitigação
+- **Filtro realtime só aceita uma condição de igualdade** — os filtros propostos usam `eq`, suportados nativamente.
+- **`organization_id` pode ser `null`** em projetos legados — nesse caso o filtro exclui esses registros do realtime. Mitigação: só aplicar o filtro quando `orgId` existir; se `orgId` for `undefined`, manter comportamento atual (sem filtro) para não quebrar contas sem organização.
+- **Cron a cada 15 min**: relatório continua diário, apenas com janela de disparo maior. Sem impacto funcional.

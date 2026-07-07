@@ -54,10 +54,10 @@ export function useSprints(projectId: string | undefined) {
       .on("postgres_changes", { event: "*", schema: "public", table: "sprints", filter: `project_id=eq.${projectId}` }, () => {
         queryClient.invalidateQueries({ queryKey: ["sprints", projectId] });
       })
-      .on("postgres_changes", { event: "*", schema: "public", table: "tickets" }, () => {
+      .on("postgres_changes", { event: "*", schema: "public", table: "tickets", filter: `project_id=eq.${projectId}` }, () => {
         queryClient.invalidateQueries({ queryKey: ["sprints", projectId] });
       })
-      .on("postgres_changes", { event: "*", schema: "public", table: "project_tasks" }, () => {
+      .on("postgres_changes", { event: "*", schema: "public", table: "project_tasks", filter: `project_id=eq.${projectId}` }, () => {
         queryClient.invalidateQueries({ queryKey: ["sprints", projectId] });
       })
       .subscribe();
