@@ -69,15 +69,15 @@ export default function ChamadosAbertos() {
     // Fallback: ticket pode já não estar mais na lista (foi atribuído). Buscar direto.
     (async () => {
       const { data } = await supabase.from("tickets").select("*").eq("id", openId).maybeSingle();
-      if (data) {
+      if (data && !data.assigned_to) {
         const { data: prof } = await supabase
           .from("profiles")
           .select("user_id, full_name")
-          .in("user_id", [data.created_by, data.assigned_to].filter(Boolean) as string[]);
+          .in("user_id", [data.created_by].filter(Boolean) as string[]);
         const map = new Map((prof || []).map((p) => [p.user_id, p.full_name]));
         setSelectedTicket({
           ...data,
-          assignedProfile: data.assigned_to ? { full_name: map.get(data.assigned_to) || "" } : null,
+          assignedProfile: null,
           creatorProfile: { full_name: map.get(data.created_by) || "" },
           reworkCount: 0,
         } as Ticket);
@@ -87,6 +87,7 @@ export default function ChamadosAbertos() {
   }, [openId, isLoading, tickets, selectedTicket, setSearchParams]);
 
   const filtered = tickets
+    .filter(t => !t.assigned_to)
     .filter(t =>
       t.title.toLowerCase().includes(searchText.toLowerCase()) ||
       (t.description || "").toLowerCase().includes(searchText.toLowerCase()) ||
