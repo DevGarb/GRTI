@@ -1,108 +1,42 @@
+# Criar organização GRCHECK para o módulo de Checklists
 
-# Nova Organização: Checklists Operacionais
+Entendi o erro: o módulo de checklists foi acoplado a uma organização com slug `checklists`, mas a intenção era criar uma **nova organização chamada GRCHECK** (paralela ao GRTI e ao CGPS Operacional) que hospedaria esse módulo. Este plano corrige isso.
 
-Cria uma terceira organização (slug `checklists`) com um painel dedicado — separado do GRTI e do Operacional — para gestores criarem modelos de checklist por setor, atribuírem a empresas/colaboradores e acompanharem execuções com score ponderado.
+## 1. Backend (1 migration)
 
-## 1. Modelo de dados (novas tabelas, prefixo `chk_`)
+- **Criar** a organização `GRCHECK` com slug `grcheck` na tabela `organizations` (via migration com `INSERT ... ON CONFLICT DO NOTHING` para ser idempotente).
+- **Remover** a organização antiga com slug `checklists` (após mover qualquer vínculo existente para `grcheck`, se houver — hoje não há dados de produção nela).
+- Nenhuma tabela `chk_*` muda de schema: elas continuam multi-tenant via `organization_id`, apenas passam a apontar para a nova org.
+- Vincular o usuário atual (super admin) à `grcheck` como `admin` via `user_organizations` + `user_organization_roles`.
 
-```text
-chk_sectors           setores da org (ex.: Limpeza, Segurança, Manutenção)
-chk_companies         empresas parceiras vinculadas a 1 setor
-chk_templates         modelo de checklist (título, setor, frequência, ativo)
-chk_template_items    itens do modelo (título, observação padrão, peso 1/2/3, ordem, exige_foto)
-chk_assignments       atribuição do modelo → empresa + colaborador + recorrência
-chk_executions        instância a ser preenchida (assignment, data alvo, status, score)
-chk_execution_items   resposta por item (feito/não feito, observação, foto_url)
-```
+## 2. Frontend
 
-Campos-chave:
-- `chk_templates.frequency`: `unica | diaria | semanal | mensal`
-- `chk_template_items.weight`: `smallint check (1..3)`
-- `chk_executions.status`: `pendente | em_andamento | concluida | atrasada`
-- `chk_execution_items.photo_path`: bucket `checklist-photos` (privado, RLS por org)
-- Todas com `organization_id` + `created_at/updated_at`
+Trocar todas as referências de slug `checklists` para `grcheck`:
 
-Recorrência: um job cron diário gera novas `chk_executions` a partir dos `chk_assignments` recorrentes e marca as vencidas como `atrasada`.
+- `src/config/menuItems.ts` → `orgSlugs: ["checklists"]` vira `orgSlugs: ["grcheck"]` em todos os itens `chk-*`.
+- `src/pages/EscolherOrganizacao.tsx` → no mapa `ORG_DESCRIPTIONS`, renomear a chave `"checklists"` para `"grcheck"` com título/subtítulo apropriados ("GRCHECK — Checklists e Auditoria").
+- Grep no restante do código (`AppLayout`, hooks, etc.) por `"checklists"` como slug e ajustar onde for identificador de organização (rotas `/checklists/*` **permanecem** — são o path do módulo, não o slug da org).
 
-## 2. Papéis e permissões
+## 3. Manter as rotas `/checklists/*`
 
-Reaproveita roles existentes na org `checklists`:
-- **admin** → Gestor: CRUD de setores, empresas, modelos, atribuições; vê relatórios de todos.
-- **solicitante** → Colaborador: vê apenas `chk_executions` onde `assigned_user_id = auth.uid()`; pode preencher itens e enviar fotos; sem acesso a relatórios.
+As URLs das páginas (`/checklists`, `/checklists/modelos`, etc.) **não mudam** — são o caminho do módulo dentro do app. O que muda é apenas o slug da organização que dá acesso a essas rotas (`grcheck`).
 
-RLS:
-- Leitura: `is_same_organization(organization_id)` + filtro por `assigned_user_id` para colaborador.
-- Escrita em modelos/atribuições: apenas `has_role_in_org(auth.uid(),'admin',org)`.
-- Escrita em respostas: apenas o próprio colaborador atribuído, enquanto execução não estiver `concluida`.
+## 4. Reverter o LinkOrgModal (opcional)
 
-Trigger `handle_new_user` **não** vincula automaticamente à org de checklists (diferente de GRTI/Operacional) — vínculo é manual pelo gestor.
+O `LinkOrgModal.tsx` criado na última rodada continua útil como ferramenta genérica de vínculo user↔org e pode ser mantido. Se você preferir removê-lo agora que a org será GRCHECK e o vínculo será feito via migration, avise que eu removo.
 
-## 3. Painel dedicado (frontend)
+## 5. Verificação
 
-Detectar a org ativa por slug `checklists` e trocar o layout:
+- `tsgo --noEmit` limpo.
+- Login com o usuário vinculado → tela "Escolher organização" mostra card **GRCHECK** ao lado de GRTI e CGPS Operacional.
+- Ao selecionar GRCHECK, o menu lateral mostra apenas os itens `chk-*` e as rotas `/checklists/*` funcionam.
+- Nenhum resquício da org antiga `checklists` no banco.
 
-Rotas novas sob `/checklists/*`:
-- `/checklists` → Dashboard do gestor (KPIs + últimas execuções)
-- `/checklists/setores` → CRUD de setores
-- `/checklists/empresas` → CRUD de empresas (vinculadas a setor)
-- `/checklists/modelos` → CRUD de modelos + itens (com peso e exige_foto)
-- `/checklists/atribuicoes` → Atribuir modelo → empresa + colaborador + recorrência
-- `/checklists/execucoes` → Fila de execuções (filtros por status/empresa/colaborador)
-- `/checklists/relatorios` → Relatório do gestor (ver seção 4)
-- `/checklists/minhas` → Visão do colaborador (só suas execuções pendentes/em andamento)
-- `/checklists/executar/:id` → Tela de preenchimento (itens com foto, observação, marcar feito)
+## Detalhes técnicos
 
-Menu lateral (via `menuItems.ts` + `orgSlugs: ['checklists']`) esconde tudo do GRTI/Operacional e mostra só os itens acima. `EscolherOrganizacao.tsx` ganha o card da nova org com descrição "Checklists e Auditoria".
+- Migration em uma única transação: `INSERT` da org `grcheck` → `UPDATE` de eventuais linhas `chk_*.organization_id` da org antiga para a nova → `DELETE FROM user_organizations WHERE organization_id = <old>` → `DELETE FROM organizations WHERE slug = 'checklists'`.
+- O vínculo do seu usuário à `grcheck` como `admin` entra na mesma migration (preciso do seu e-mail de login para o `WHERE email = ...`, ou posso vincular **todos** os super admins automaticamente).
 
-## 4. Relatório do gestor (MVP)
+## Pergunta antes de executar
 
-Uma página `/checklists/relatorios` com filtros (período, setor, empresa, colaborador) exibindo:
-
-- **% de conclusão** por checklist, colaborador e empresa (barras + tabela)
-- **Score ponderado** por execução: `Σ(peso dos itens feitos) / Σ(peso total) * 100`
-- **Itens pendentes/atrasados** com destaque visual (badge vermelho, ordenados por peso desc)
-- **Galeria de fotos** anexadas (grid clicável para lightbox)
-- **Exportação CSV** (UTF-8 BOM, `;`) com colunas: data, empresa, colaborador, checklist, itens_feitos, itens_total, score_ponderado, status
-
-Dados via função SQL `get_checklists_report(_org, _from, _to, _filters jsonb)` retornando jsonb agregado — evita queries N+1 no client.
-
-## 5. Storage
-
-Bucket privado `checklist-photos`, path `<org_id>/<execution_id>/<item_id>-<uuid>.jpg`. Signed URLs via helper existente em `src/lib/attachments.ts`.
-
-## 6. Cron
-
-Novo job (via `supabase--insert`, não migration):
-- `checklist-generate-recurring` — a cada 6h, roda função `generate_recurring_executions()` que cria as próximas execuções e marca as vencidas como `atrasada`.
-
-## 7. Entregáveis por fase
-
-**Fase 1 — Backend (1 migration):**
-- Cria as 7 tabelas com GRANTs + RLS + triggers `updated_at`
-- Funções: `generate_recurring_executions()`, `get_checklists_report(...)`
-- Bucket `checklist-photos` + policies
-- Insere organização `checklists` (via insert tool)
-
-**Fase 2 — Frontend estrutural:**
-- Cria hooks `useChkTemplates`, `useChkAssignments`, `useChkExecutions`, `useChkReport`
-- Registra rotas em `App.tsx` e itens em `menuItems.ts` com `orgSlugs`
-- Adiciona card no `EscolherOrganizacao.tsx`
-
-**Fase 3 — Telas do gestor:** CRUDs de setores, empresas, modelos, atribuições
-
-**Fase 4 — Telas do colaborador:** `Minhas execuções` + `Executar checklist` (foto, observação, marcar)
-
-**Fase 5 — Relatório + Dashboard + Cron de recorrência**
-
-## 8. O que NÃO entra no MVP
-
-- App mobile nativo (usa PWA responsivo existente)
-- Assinatura digital / geolocalização no preenchimento
-- Notificações push (só in-app via `notifications` existente)
-- Aprovação/workflow multi-etapa de execuções
-
-## Verificação final
-
-- `tsgo --noEmit`, testes unitários existentes
-- Playwright: login como gestor cria modelo → atribui a colaborador → login como colaborador preenche → gestor vê no relatório
-- RLS: colaborador não consegue ler execuções de outros; usuários de outras orgs não veem nada
+Quer que eu vincule automaticamente **todos os super admins** à nova org `grcheck` como `admin` (evita precisar do seu e-mail), ou prefere informar um e-mail específico?
