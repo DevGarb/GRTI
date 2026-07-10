@@ -499,6 +499,15 @@ export default function Usuarios() {
                             </button>
                             {isSuperAdmin && (
                               <button
+                                onClick={() => setLinkOrgUser(user)}
+                                className="p-1.5 rounded-md hover:bg-muted text-muted-foreground transition-colors"
+                                title="Vincular a organizações"
+                              >
+                                <Building2 className="h-3.5 w-3.5" />
+                              </button>
+                            )}
+                            {isSuperAdmin && (
+                              <button
                                 onClick={() => handleDelete(user)}
                                 disabled={deleteUser.isPending}
                                 className="p-1.5 rounded-md hover:bg-destructive/10 text-destructive transition-colors disabled:opacity-50"
