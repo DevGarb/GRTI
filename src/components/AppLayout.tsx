@@ -132,8 +132,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
       if (!item.key.startsWith("op-") && !universal.includes(item.key)) return false;
     }
     if (orgSlug === "grcheck") {
-      const universal = ["configuracoes", "usuarios", "white-label", "integracoes", "documentacao", "super-admin", "planos", "migracao"];
-      if (!item.key.startsWith("chk-") && !universal.includes(item.key)) return false;
+      if (!item.key.startsWith("chk-")) return false;
     }
     return canAccess(item.key);
   });
