@@ -184,6 +184,15 @@ const App = () => (
                       <Route path="/op/entregas" element={<MenuGuard menuKey="op-entregas"><OpEntregas /></MenuGuard>} />
                       <Route path="/op/oficina" element={<MenuGuard menuKey="op-oficina"><OpOficina /></MenuGuard>} />
                       <Route path="/op/manutencao" element={<MenuGuard menuKey="op-manutencao"><OpManutencao /></MenuGuard>} />
+                      <Route path="/checklists" element={<MenuGuard menuKey="chk-dashboard"><ChkDashboard /></MenuGuard>} />
+                      <Route path="/checklists/setores" element={<MenuGuard menuKey="chk-setores"><AdminRoute><ChkSetores /></AdminRoute></MenuGuard>} />
+                      <Route path="/checklists/empresas" element={<MenuGuard menuKey="chk-empresas"><AdminRoute><ChkEmpresas /></AdminRoute></MenuGuard>} />
+                      <Route path="/checklists/modelos" element={<MenuGuard menuKey="chk-modelos"><AdminRoute><ChkModelos /></AdminRoute></MenuGuard>} />
+                      <Route path="/checklists/atribuicoes" element={<MenuGuard menuKey="chk-atribuicoes"><AdminRoute><ChkAtribuicoes /></AdminRoute></MenuGuard>} />
+                      <Route path="/checklists/execucoes" element={<MenuGuard menuKey="chk-execucoes"><AdminRoute><ChkExecucoes /></AdminRoute></MenuGuard>} />
+                      <Route path="/checklists/minhas" element={<MenuGuard menuKey="chk-minhas"><ChkMinhas /></MenuGuard>} />
+                      <Route path="/checklists/executar/:id" element={<MenuGuard menuKey="chk-dashboard"><ChkExecutar /></MenuGuard>} />
+                      <Route path="/checklists/relatorios" element={<MenuGuard menuKey="chk-relatorios"><AdminRoute><ChkRelatorios /></AdminRoute></MenuGuard>} />
                       <Route path="/connect" element={<Connect />} />
                       <Route path="*" element={<NotFound />} />
                     </Routes>
