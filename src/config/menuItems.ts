@@ -71,14 +71,14 @@ export const menuItems: MenuItem[] = [
   { key: "op-entregas", label: "Entregas", icon: Truck, path: "/op/entregas", orgSlugs: ["cgps-operacional"], tooltip: "Controle de entregas externas" },
   { key: "op-oficina", label: "Oficina", icon: Wrench, path: "/op/oficina", orgSlugs: ["cgps-operacional"], tooltip: "Ordens de serviço da oficina" },
   { key: "op-manutencao", label: "Manutenção Predial", icon: HardHat, path: "/op/manutencao", orgSlugs: ["cgps-operacional"], tooltip: "Ordens de manutenção, sedes e checklists" },
-  { key: "chk-dashboard", label: "Painel", icon: ClipboardCheck, path: "/checklists", orgSlugs: ["checklists"], techAllowed: true, tooltip: "Painel de checklists" },
-  { key: "chk-minhas", label: "Meus Checklists", icon: ClipboardCheck, path: "/checklists/minhas", orgSlugs: ["checklists"], techAllowed: true, tooltip: "Checklists atribuídos a você" },
-  { key: "chk-execucoes", label: "Execuções", icon: ListChecks, path: "/checklists/execucoes", orgSlugs: ["checklists"], adminOnly: true, tooltip: "Todas as execuções de checklists" },
-  { key: "chk-modelos", label: "Modelos", icon: FileText, path: "/checklists/modelos", orgSlugs: ["checklists"], adminOnly: true, tooltip: "Modelos de checklist" },
-  { key: "chk-atribuicoes", label: "Atribuições", icon: UserCheck, path: "/checklists/atribuicoes", orgSlugs: ["checklists"], adminOnly: true, tooltip: "Atribuir checklists a colaboradores" },
-  { key: "chk-empresas", label: "Empresas", icon: Building2, path: "/checklists/empresas", orgSlugs: ["checklists"], adminOnly: true, tooltip: "Empresas parceiras" },
-  { key: "chk-setores", label: "Setores", icon: Building2, path: "/checklists/setores", orgSlugs: ["checklists"], adminOnly: true, tooltip: "Setores da organização de checklists" },
-  { key: "chk-relatorios", label: "Relatórios", icon: BarChart3, path: "/checklists/relatorios", orgSlugs: ["checklists"], adminOnly: true, tooltip: "Relatório de acompanhamento" },
+  { key: "chk-dashboard", label: "Painel", icon: ClipboardCheck, path: "/checklists", orgSlugs: ["grcheck"], techAllowed: true, tooltip: "Painel de checklists" },
+  { key: "chk-minhas", label: "Meus Checklists", icon: ClipboardCheck, path: "/checklists/minhas", orgSlugs: ["grcheck"], techAllowed: true, tooltip: "Checklists atribuídos a você" },
+  { key: "chk-execucoes", label: "Execuções", icon: ListChecks, path: "/checklists/execucoes", orgSlugs: ["grcheck"], adminOnly: true, tooltip: "Todas as execuções de checklists" },
+  { key: "chk-modelos", label: "Modelos", icon: FileText, path: "/checklists/modelos", orgSlugs: ["grcheck"], adminOnly: true, tooltip: "Modelos de checklist" },
+  { key: "chk-atribuicoes", label: "Atribuições", icon: UserCheck, path: "/checklists/atribuicoes", orgSlugs: ["grcheck"], adminOnly: true, tooltip: "Atribuir checklists a colaboradores" },
+  { key: "chk-empresas", label: "Empresas", icon: Building2, path: "/checklists/empresas", orgSlugs: ["grcheck"], adminOnly: true, tooltip: "Empresas parceiras" },
+  { key: "chk-setores", label: "Setores", icon: Building2, path: "/checklists/setores", orgSlugs: ["grcheck"], adminOnly: true, tooltip: "Setores da organização de checklists" },
+  { key: "chk-relatorios", label: "Relatórios", icon: BarChart3, path: "/checklists/relatorios", orgSlugs: ["grcheck"], adminOnly: true, tooltip: "Relatório de acompanhamento" },
 ];
 
 export type Roles = {
