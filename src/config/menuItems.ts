@@ -21,6 +21,11 @@ import {
   CheckSquare,
   Truck,
   HardHat,
+  ClipboardCheck,
+  FileText,
+  UserCheck,
+  ListChecks,
+  BarChart3,
 } from "lucide-react";
 
 export interface MenuItem {
