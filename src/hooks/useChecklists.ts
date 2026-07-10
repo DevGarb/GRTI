@@ -214,11 +214,16 @@ export function useChkAssignments() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("chk_assignments" as any)
-        .select("*, chk_templates(id,title), chk_companies(id,name), profiles!chk_assignments_assigned_user_id_fkey(user_id,full_name)")
+        .select("*, chk_templates(id,title), chk_companies(id,name)")
         .eq("organization_id", org!)
         .order("created_at", { ascending: false });
       if (error) throw error;
-      return data as any[];
+      const rows = (data || []) as any[];
+      const userIds = Array.from(new Set(rows.map((r) => r.assigned_user_id).filter(Boolean)));
+      if (userIds.length === 0) return rows;
+      const { data: profiles } = await supabase.from("profiles").select("user_id, full_name").in("user_id", userIds);
+      const map = new Map((profiles || []).map((p: any) => [p.user_id, p]));
+      return rows.map((r) => ({ ...r, profiles: map.get(r.assigned_user_id) || null }));
     },
   });
 }
