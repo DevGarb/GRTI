@@ -9,7 +9,7 @@ import { toast } from "sonner";
 const ORG_DESCRIPTIONS: Record<string, { subtitle: string; sector: string }> = {
   "grupo-ramos": { subtitle: "Suporte e Help Desk", sector: "Setor de T.I" },
   "cgps-operacional": { subtitle: "Entregas, Oficina e Manutenção", sector: "Setor de Operações" },
-  "checklists": { subtitle: "Checklists e Auditoria de Setores", sector: "Gestão de Qualidade" },
+  "grcheck": { subtitle: "Checklists e Auditoria de Setores", sector: "Gestão de Qualidade" },
 };
 
 export default function EscolherOrganizacao() {

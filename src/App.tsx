@@ -120,7 +120,7 @@ function HomeRedirect({ children }: { children: React.ReactNode }) {
       .then(({ data }) => setSlug((data as any)?.slug ?? null));
   }, [profile?.organization_id]);
   if (slug === undefined) return null;
-  if (slug === "checklists") return <Navigate to="/checklists" replace />;
+  if (slug === "grcheck") return <Navigate to="/checklists" replace />;
   if (slug === "cgps-operacional") return <Navigate to="/op/entregas" replace />;
   return <>{children}</>;
 }
