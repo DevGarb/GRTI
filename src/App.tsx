@@ -97,6 +97,21 @@ function AdminRoute({ children }: { children: React.ReactNode }) {
   }
   if (!hasRole("admin")) return <Navigate to="/chamados" replace />;
   return <>{children}</>;
+function MenuGuard({ menuKey, children }: { menuKey: string; children: React.ReactNode }) {
+  const { canAccess, loading } = useMenuAccess();
+  if (loading) return null;
+  if (!canAccess(menuKey)) {
+    console.warn(`[MenuGuard] acesso negado a "${menuKey}" → redirecionando para /chamados`);
+    return <Navigate to="/chamados" replace />;
+  }
+  return <>{children}</>;
+}
+
+function HomeRedirect() {
+  const { profile } = useAuth();
+  // Placeholder: rely on org slug fetched via profile.organization_id, but here we just render Dashboard
+  // and let MenuGuard handle it. If user is in checklists org, redirect there.
+  return null;
 }
 
 function MenuGuard({ menuKey, children }: { menuKey: string; children: React.ReactNode }) {
