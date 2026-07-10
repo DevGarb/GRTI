@@ -763,6 +763,14 @@ export default function Usuarios() {
           }}
         />
       )}
+
+      {linkOrgUser && (
+        <LinkOrgModal
+          userId={linkOrgUser.user_id}
+          userName={linkOrgUser.full_name}
+          onClose={() => setLinkOrgUser(null)}
+        />
+      )}
     </div>
   );
 }
