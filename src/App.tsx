@@ -158,7 +158,7 @@ const App = () => (
                   <TicketModalProvider>
                   <AppLayout>
                     <Routes>
-                      <Route path="/" element={<MenuGuard menuKey="dashboard"><AdminRoute><Dashboard /></AdminRoute></MenuGuard>} />
+                      <Route path="/" element={<HomeRedirect><MenuGuard menuKey="dashboard"><AdminRoute><Dashboard /></AdminRoute></MenuGuard></HomeRedirect>} />
                       <Route path="/metricas-gerenciais" element={<MenuGuard menuKey="metricas-gerenciais"><AdminRoute><MetricasGerenciais /></AdminRoute></MenuGuard>} />
                       <Route path="/chamados" element={<MenuGuard menuKey="chamados"><Chamados /></MenuGuard>} />
                       <Route path="/chamados/calendario" element={<MenuGuard menuKey="chamados"><ChamadosCalendario /></MenuGuard>} />
