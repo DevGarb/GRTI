@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { Users, Shield, Search, UserPlus, ChevronDown, ChevronRight, Pencil, X, User, Crown, FileUp, Download, Code, KeyRound, Trash2 } from "lucide-react";
+import { Users, Shield, Search, UserPlus, ChevronDown, ChevronRight, Pencil, X, User, Crown, FileUp, Download, Code, KeyRound, Trash2, Building2 } from "lucide-react";
+import LinkOrgModal from "@/components/usuarios/LinkOrgModal";
 import ImportUsersModal from "@/components/usuarios/ImportUsersModal";
 import UserPermissionsModal from "@/components/usuarios/UserPermissionsModal";
 import PermissionPresetsTab from "@/components/usuarios/PermissionPresetsTab";
@@ -69,6 +70,7 @@ export default function Usuarios() {
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set(roleGroupOrder));
   const [editingUser, setEditingUser] = useState<ProfileWithRoles | null>(null);
   const [permissionsUser, setPermissionsUser] = useState<ProfileWithRoles | null>(null);
+  const [linkOrgUser, setLinkOrgUser] = useState<ProfileWithRoles | null>(null);
   const [editForm, setEditForm] = useState({ full_name: "", role: "solicitante", password: "", phone: "", cpf: "" });
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showImportModal, setShowImportModal] = useState(false);
@@ -497,6 +499,15 @@ export default function Usuarios() {
                             </button>
                             {isSuperAdmin && (
                               <button
+                                onClick={() => setLinkOrgUser(user)}
+                                className="p-1.5 rounded-md hover:bg-muted text-muted-foreground transition-colors"
+                                title="Vincular a organizações"
+                              >
+                                <Building2 className="h-3.5 w-3.5" />
+                              </button>
+                            )}
+                            {isSuperAdmin && (
+                              <button
                                 onClick={() => handleDelete(user)}
                                 disabled={deleteUser.isPending}
                                 className="p-1.5 rounded-md hover:bg-destructive/10 text-destructive transition-colors disabled:opacity-50"
@@ -750,6 +761,14 @@ export default function Usuarios() {
             queryClient.invalidateQueries({ queryKey: ["user-applied-presets", adminOrgId] });
             queryClient.invalidateQueries({ queryKey: ["all-user-overrides", adminOrgId] });
           }}
+        />
+      )}
+
+      {linkOrgUser && (
+        <LinkOrgModal
+          userId={linkOrgUser.user_id}
+          userName={linkOrgUser.full_name}
+          onClose={() => setLinkOrgUser(null)}
         />
       )}
     </div>
