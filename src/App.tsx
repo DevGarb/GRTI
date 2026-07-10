@@ -1,3 +1,5 @@
+import { useState, useEffect } from "react";
+import { supabase } from "@/integrations/supabase/client";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -53,6 +55,15 @@ import OpManutencao from "@/pages/OpManutencao";
 import NotFound from "./pages/NotFound";
 import OAuthConsent from "@/pages/OAuthConsent";
 import Connect from "@/pages/Connect";
+import ChkDashboard from "@/pages/checklists/ChkDashboard";
+import ChkSetores from "@/pages/checklists/ChkSetores";
+import ChkEmpresas from "@/pages/checklists/ChkEmpresas";
+import ChkModelos from "@/pages/checklists/ChkModelos";
+import ChkAtribuicoes from "@/pages/checklists/ChkAtribuicoes";
+import ChkExecucoes from "@/pages/checklists/ChkExecucoes";
+import ChkMinhas from "@/pages/checklists/ChkMinhas";
+import ChkExecutar from "@/pages/checklists/ChkExecutar";
+import ChkRelatorios from "@/pages/checklists/ChkRelatorios";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -100,6 +111,20 @@ function MenuGuard({ menuKey, children }: { menuKey: string; children: React.Rea
   return <>{children}</>;
 }
 
+function HomeRedirect({ children }: { children: React.ReactNode }) {
+  const { profile } = useAuth();
+  const [slug, setSlug] = useState<string | null | undefined>(undefined);
+  useEffect(() => {
+    if (!profile?.organization_id) { setSlug(null); return; }
+    supabase.from("organizations").select("slug").eq("id", profile.organization_id).maybeSingle()
+      .then(({ data }) => setSlug((data as any)?.slug ?? null));
+  }, [profile?.organization_id]);
+  if (slug === undefined) return null;
+  if (slug === "checklists") return <Navigate to="/checklists" replace />;
+  if (slug === "cgps-operacional") return <Navigate to="/op/entregas" replace />;
+  return <>{children}</>;
+}
+
 function AuthRoute({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
   if (loading) return null;
@@ -133,7 +158,7 @@ const App = () => (
                   <TicketModalProvider>
                   <AppLayout>
                     <Routes>
-                      <Route path="/" element={<MenuGuard menuKey="dashboard"><AdminRoute><Dashboard /></AdminRoute></MenuGuard>} />
+                      <Route path="/" element={<HomeRedirect><MenuGuard menuKey="dashboard"><AdminRoute><Dashboard /></AdminRoute></MenuGuard></HomeRedirect>} />
                       <Route path="/metricas-gerenciais" element={<MenuGuard menuKey="metricas-gerenciais"><AdminRoute><MetricasGerenciais /></AdminRoute></MenuGuard>} />
                       <Route path="/chamados" element={<MenuGuard menuKey="chamados"><Chamados /></MenuGuard>} />
                       <Route path="/chamados/calendario" element={<MenuGuard menuKey="chamados"><ChamadosCalendario /></MenuGuard>} />
@@ -175,6 +200,15 @@ const App = () => (
                       <Route path="/op/entregas" element={<MenuGuard menuKey="op-entregas"><OpEntregas /></MenuGuard>} />
                       <Route path="/op/oficina" element={<MenuGuard menuKey="op-oficina"><OpOficina /></MenuGuard>} />
                       <Route path="/op/manutencao" element={<MenuGuard menuKey="op-manutencao"><OpManutencao /></MenuGuard>} />
+                      <Route path="/checklists" element={<MenuGuard menuKey="chk-dashboard"><ChkDashboard /></MenuGuard>} />
+                      <Route path="/checklists/setores" element={<MenuGuard menuKey="chk-setores"><AdminRoute><ChkSetores /></AdminRoute></MenuGuard>} />
+                      <Route path="/checklists/empresas" element={<MenuGuard menuKey="chk-empresas"><AdminRoute><ChkEmpresas /></AdminRoute></MenuGuard>} />
+                      <Route path="/checklists/modelos" element={<MenuGuard menuKey="chk-modelos"><AdminRoute><ChkModelos /></AdminRoute></MenuGuard>} />
+                      <Route path="/checklists/atribuicoes" element={<MenuGuard menuKey="chk-atribuicoes"><AdminRoute><ChkAtribuicoes /></AdminRoute></MenuGuard>} />
+                      <Route path="/checklists/execucoes" element={<MenuGuard menuKey="chk-execucoes"><AdminRoute><ChkExecucoes /></AdminRoute></MenuGuard>} />
+                      <Route path="/checklists/minhas" element={<MenuGuard menuKey="chk-minhas"><ChkMinhas /></MenuGuard>} />
+                      <Route path="/checklists/executar/:id" element={<MenuGuard menuKey="chk-dashboard"><ChkExecutar /></MenuGuard>} />
+                      <Route path="/checklists/relatorios" element={<MenuGuard menuKey="chk-relatorios"><AdminRoute><ChkRelatorios /></AdminRoute></MenuGuard>} />
                       <Route path="/connect" element={<Connect />} />
                       <Route path="*" element={<NotFound />} />
                     </Routes>

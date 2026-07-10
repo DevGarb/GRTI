@@ -142,6 +142,423 @@ export type Database = {
           },
         ]
       }
+      chk_assignments: {
+        Row: {
+          assigned_user_id: string
+          company_id: string
+          created_at: string
+          created_by: string | null
+          end_date: string | null
+          frequency: Database["public"]["Enums"]["chk_frequency"]
+          id: string
+          is_active: boolean
+          notes: string | null
+          organization_id: string
+          start_date: string
+          template_id: string
+          updated_at: string
+        }
+        Insert: {
+          assigned_user_id: string
+          company_id: string
+          created_at?: string
+          created_by?: string | null
+          end_date?: string | null
+          frequency?: Database["public"]["Enums"]["chk_frequency"]
+          id?: string
+          is_active?: boolean
+          notes?: string | null
+          organization_id: string
+          start_date?: string
+          template_id: string
+          updated_at?: string
+        }
+        Update: {
+          assigned_user_id?: string
+          company_id?: string
+          created_at?: string
+          created_by?: string | null
+          end_date?: string | null
+          frequency?: Database["public"]["Enums"]["chk_frequency"]
+          id?: string
+          is_active?: boolean
+          notes?: string | null
+          organization_id?: string
+          start_date?: string
+          template_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chk_assignments_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "chk_companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "chk_assignments_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "chk_assignments_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "chk_templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      chk_companies: {
+        Row: {
+          contact: string | null
+          created_at: string
+          created_by: string | null
+          document: string | null
+          id: string
+          is_active: boolean
+          name: string
+          organization_id: string
+          sector_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          contact?: string | null
+          created_at?: string
+          created_by?: string | null
+          document?: string | null
+          id?: string
+          is_active?: boolean
+          name: string
+          organization_id: string
+          sector_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          contact?: string | null
+          created_at?: string
+          created_by?: string | null
+          document?: string | null
+          id?: string
+          is_active?: boolean
+          name?: string
+          organization_id?: string
+          sector_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chk_companies_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "chk_companies_sector_id_fkey"
+            columns: ["sector_id"]
+            isOneToOne: false
+            referencedRelation: "chk_sectors"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      chk_execution_items: {
+        Row: {
+          answered_at: string | null
+          answered_by: string | null
+          created_at: string
+          done: boolean
+          execution_id: string
+          id: string
+          observation: string | null
+          organization_id: string
+          photo_path: string | null
+          template_item_id: string
+          updated_at: string
+        }
+        Insert: {
+          answered_at?: string | null
+          answered_by?: string | null
+          created_at?: string
+          done?: boolean
+          execution_id: string
+          id?: string
+          observation?: string | null
+          organization_id: string
+          photo_path?: string | null
+          template_item_id: string
+          updated_at?: string
+        }
+        Update: {
+          answered_at?: string | null
+          answered_by?: string | null
+          created_at?: string
+          done?: boolean
+          execution_id?: string
+          id?: string
+          observation?: string | null
+          organization_id?: string
+          photo_path?: string | null
+          template_item_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chk_execution_items_execution_id_fkey"
+            columns: ["execution_id"]
+            isOneToOne: false
+            referencedRelation: "chk_executions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "chk_execution_items_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "chk_execution_items_template_item_id_fkey"
+            columns: ["template_item_id"]
+            isOneToOne: false
+            referencedRelation: "chk_template_items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      chk_executions: {
+        Row: {
+          assigned_user_id: string
+          assignment_id: string
+          company_id: string
+          completed_at: string | null
+          created_at: string
+          id: string
+          notes: string | null
+          organization_id: string
+          score: number | null
+          started_at: string | null
+          status: Database["public"]["Enums"]["chk_execution_status"]
+          target_date: string
+          template_id: string
+          updated_at: string
+        }
+        Insert: {
+          assigned_user_id: string
+          assignment_id: string
+          company_id: string
+          completed_at?: string | null
+          created_at?: string
+          id?: string
+          notes?: string | null
+          organization_id: string
+          score?: number | null
+          started_at?: string | null
+          status?: Database["public"]["Enums"]["chk_execution_status"]
+          target_date: string
+          template_id: string
+          updated_at?: string
+        }
+        Update: {
+          assigned_user_id?: string
+          assignment_id?: string
+          company_id?: string
+          completed_at?: string | null
+          created_at?: string
+          id?: string
+          notes?: string | null
+          organization_id?: string
+          score?: number | null
+          started_at?: string | null
+          status?: Database["public"]["Enums"]["chk_execution_status"]
+          target_date?: string
+          template_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chk_executions_assignment_id_fkey"
+            columns: ["assignment_id"]
+            isOneToOne: false
+            referencedRelation: "chk_assignments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "chk_executions_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "chk_companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "chk_executions_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "chk_executions_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "chk_templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      chk_sectors: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          description: string | null
+          id: string
+          is_active: boolean
+          name: string
+          organization_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          name: string
+          organization_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          name?: string
+          organization_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chk_sectors_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      chk_template_items: {
+        Row: {
+          created_at: string
+          id: string
+          observation: string | null
+          organization_id: string
+          requires_photo: boolean
+          sort_order: number
+          template_id: string
+          title: string
+          updated_at: string
+          weight: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          observation?: string | null
+          organization_id: string
+          requires_photo?: boolean
+          sort_order?: number
+          template_id: string
+          title: string
+          updated_at?: string
+          weight?: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          observation?: string | null
+          organization_id?: string
+          requires_photo?: boolean
+          sort_order?: number
+          template_id?: string
+          title?: string
+          updated_at?: string
+          weight?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chk_template_items_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "chk_template_items_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "chk_templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      chk_templates: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          description: string | null
+          frequency: Database["public"]["Enums"]["chk_frequency"]
+          id: string
+          is_active: boolean
+          organization_id: string
+          sector_id: string | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          frequency?: Database["public"]["Enums"]["chk_frequency"]
+          id?: string
+          is_active?: boolean
+          organization_id: string
+          sector_id?: string | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          frequency?: Database["public"]["Enums"]["chk_frequency"]
+          id?: string
+          is_active?: boolean
+          organization_id?: string
+          sector_id?: string | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chk_templates_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "chk_templates_sector_id_fkey"
+            columns: ["sector_id"]
+            isOneToOne: false
+            referencedRelation: "chk_sectors"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       daily_insights_cache: {
         Row: {
           created_at: string
@@ -2663,6 +3080,17 @@ export type Database = {
           result_updated: number
         }[]
       }
+      generate_recurring_executions: {
+        Args: never
+        Returns: {
+          created: number
+          overdue: number
+        }[]
+      }
+      get_checklists_report: {
+        Args: { _from?: string; _organization_id: string; _to?: string }
+        Returns: Json
+      }
       get_executive_overview: {
         Args: { _organization_id: string }
         Returns: {
@@ -2894,6 +3322,12 @@ export type Database = {
         | "super_admin"
         | "auditor"
         | "desenvolvedor"
+      chk_execution_status:
+        | "pendente"
+        | "em_andamento"
+        | "concluida"
+        | "atrasada"
+      chk_frequency: "unica" | "diaria" | "semanal" | "mensal"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -3029,6 +3463,13 @@ export const Constants = {
         "auditor",
         "desenvolvedor",
       ],
+      chk_execution_status: [
+        "pendente",
+        "em_andamento",
+        "concluida",
+        "atrasada",
+      ],
+      chk_frequency: ["unica", "diaria", "semanal", "mensal"],
     },
   },
 } as const
