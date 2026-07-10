@@ -53,6 +53,15 @@ import OpManutencao from "@/pages/OpManutencao";
 import NotFound from "./pages/NotFound";
 import OAuthConsent from "@/pages/OAuthConsent";
 import Connect from "@/pages/Connect";
+import ChkDashboard from "@/pages/checklists/ChkDashboard";
+import ChkSetores from "@/pages/checklists/ChkSetores";
+import ChkEmpresas from "@/pages/checklists/ChkEmpresas";
+import ChkModelos from "@/pages/checklists/ChkModelos";
+import ChkAtribuicoes from "@/pages/checklists/ChkAtribuicoes";
+import ChkExecucoes from "@/pages/checklists/ChkExecucoes";
+import ChkMinhas from "@/pages/checklists/ChkMinhas";
+import ChkExecutar from "@/pages/checklists/ChkExecutar";
+import ChkRelatorios from "@/pages/checklists/ChkRelatorios";
 
 const queryClient = new QueryClient({
   defaultOptions: {
