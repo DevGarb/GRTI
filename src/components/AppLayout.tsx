@@ -131,6 +131,10 @@ export default function AppLayout({ children }: AppLayoutProps) {
       const universal = ["configuracoes", "todos", "usuarios", "white-label", "integracoes", "documentacao", "super-admin", "planos", "migracao"];
       if (!item.key.startsWith("op-") && !universal.includes(item.key)) return false;
     }
+    if (orgSlug === "checklists") {
+      const universal = ["configuracoes", "usuarios", "white-label", "integracoes", "documentacao", "super-admin", "planos", "migracao"];
+      if (!item.key.startsWith("chk-") && !universal.includes(item.key)) return false;
+    }
     return canAccess(item.key);
   });
 
