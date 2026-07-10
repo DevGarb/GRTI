@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { Users, Shield, Search, UserPlus, ChevronDown, ChevronRight, Pencil, X, User, Crown, FileUp, Download, Code, KeyRound, Trash2 } from "lucide-react";
+import { Users, Shield, Search, UserPlus, ChevronDown, ChevronRight, Pencil, X, User, Crown, FileUp, Download, Code, KeyRound, Trash2, Building2 } from "lucide-react";
+import LinkOrgModal from "@/components/usuarios/LinkOrgModal";
 import ImportUsersModal from "@/components/usuarios/ImportUsersModal";
 import UserPermissionsModal from "@/components/usuarios/UserPermissionsModal";
 import PermissionPresetsTab from "@/components/usuarios/PermissionPresetsTab";
