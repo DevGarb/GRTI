@@ -97,6 +97,8 @@ function AdminRoute({ children }: { children: React.ReactNode }) {
   }
   if (!hasRole("admin")) return <Navigate to="/chamados" replace />;
   return <>{children}</>;
+}
+
 function MenuGuard({ menuKey, children }: { menuKey: string; children: React.ReactNode }) {
   const { canAccess, loading } = useMenuAccess();
   if (loading) return null;
@@ -107,20 +109,17 @@ function MenuGuard({ menuKey, children }: { menuKey: string; children: React.Rea
   return <>{children}</>;
 }
 
-function HomeRedirect() {
+function HomeRedirect({ children }: { children: React.ReactNode }) {
   const { profile } = useAuth();
-  // Placeholder: rely on org slug fetched via profile.organization_id, but here we just render Dashboard
-  // and let MenuGuard handle it. If user is in checklists org, redirect there.
-  return null;
-}
-
-function MenuGuard({ menuKey, children }: { menuKey: string; children: React.ReactNode }) {
-  const { canAccess, loading } = useMenuAccess();
-  if (loading) return null;
-  if (!canAccess(menuKey)) {
-    console.warn(`[MenuGuard] acesso negado a "${menuKey}" → redirecionando para /chamados`);
-    return <Navigate to="/chamados" replace />;
-  }
+  const [slug, setSlug] = useState<string | null | undefined>(undefined);
+  useEffect(() => {
+    if (!profile?.organization_id) { setSlug(null); return; }
+    supabase.from("organizations").select("slug").eq("id", profile.organization_id).maybeSingle()
+      .then(({ data }) => setSlug((data as any)?.slug ?? null));
+  }, [profile?.organization_id]);
+  if (slug === undefined) return null;
+  if (slug === "checklists") return <Navigate to="/checklists" replace />;
+  if (slug === "cgps-operacional") return <Navigate to="/op/entregas" replace />;
   return <>{children}</>;
 }
 
