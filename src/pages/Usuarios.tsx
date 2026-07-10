@@ -70,6 +70,7 @@ export default function Usuarios() {
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set(roleGroupOrder));
   const [editingUser, setEditingUser] = useState<ProfileWithRoles | null>(null);
   const [permissionsUser, setPermissionsUser] = useState<ProfileWithRoles | null>(null);
+  const [linkOrgUser, setLinkOrgUser] = useState<ProfileWithRoles | null>(null);
   const [editForm, setEditForm] = useState({ full_name: "", role: "solicitante", password: "", phone: "", cpf: "" });
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showImportModal, setShowImportModal] = useState(false);
