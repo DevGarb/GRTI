@@ -3273,6 +3273,10 @@ export type Database = {
         Args: { _from: string; _organization_id: string; _to: string }
         Returns: Json
       }
+      get_tv_goals_summary: {
+        Args: { _month: number; _organization_id: string; _year: number }
+        Returns: Json
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
