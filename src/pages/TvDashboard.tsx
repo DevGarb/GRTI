@@ -100,11 +100,13 @@ export default function TvDashboard() {
   });
 
 
-  // Detect new tickets between refetches and trigger sound + banner
-  const knownIdsRef = useRef<Set<string> | null>(null);
+  // Realtime: banner + som instantâneos ao inserir chamado (via broadcast do trigger)
   const [alert, setAlert] = useState<{ count: number; titles: string[] } | null>(null);
   const [soundEnabled, setSoundEnabled] = useState(false);
+  const soundEnabledRef = useRef(false);
   const audioCtxRef = useRef<AudioContext | null>(null);
+  const alertTimeoutRef = useRef<number | null>(null);
+  useEffect(() => { soundEnabledRef.current = soundEnabled; }, [soundEnabled]);
 
   function playBeep() {
     try {
@@ -116,7 +118,6 @@ export default function TvDashboard() {
       const ctx = audioCtxRef.current!;
       if (ctx.state === "suspended") ctx.resume();
       const now = ctx.currentTime;
-      // 3-note attention chime
       [880, 1175, 1568].forEach((freq, i) => {
         const osc = ctx.createOscillator();
         const gain = ctx.createGain();
@@ -136,22 +137,30 @@ export default function TvDashboard() {
   }
 
   useEffect(() => {
-    const data = query.data;
-    if (!data) return;
-    const currentIds = new Set(data.open_queue.map(t => t.id));
-    if (knownIdsRef.current === null) {
-      // First load — seed baseline, no alert
-      knownIdsRef.current = currentIds;
-      return;
-    }
-    const newOnes = data.open_queue.filter(t => !knownIdsRef.current!.has(t.id));
-    if (newOnes.length > 0) {
-      setAlert({ count: newOnes.length, titles: newOnes.map(t => t.title).slice(0, 3) });
-      if (soundEnabled) playBeep();
-      setTimeout(() => setAlert(null), 15_000);
-    }
-    knownIdsRef.current = currentIds;
-  }, [query.data, soundEnabled]);
+    if (!orgSlug || !token) return;
+    const channel = supabase
+      .channel(`tv:${orgSlug}`, { config: { private: false } })
+      .on("broadcast", { event: "new_ticket" }, (msg) => {
+        const payload = (msg as any).payload ?? {};
+        const title = payload.title ?? "Novo chamado";
+        setAlert((prev) => {
+          const titles = prev ? [title, ...prev.titles].slice(0, 3) : [title];
+          const count = (prev?.count ?? 0) + 1;
+          return { count, titles };
+        });
+        if (soundEnabledRef.current) playBeep();
+        if (alertTimeoutRef.current) window.clearTimeout(alertTimeoutRef.current);
+        alertTimeoutRef.current = window.setTimeout(() => setAlert(null), 15_000);
+        // Atualiza KPIs/listas em segundo plano
+        query.refetch();
+      })
+      .subscribe();
+    return () => {
+      supabase.removeChannel(channel);
+      if (alertTimeoutRef.current) window.clearTimeout(alertTimeoutRef.current);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [orgSlug, token]);
 
   function enableSound() {
     try {
@@ -162,6 +171,7 @@ export default function TvDashboard() {
       playBeep();
     } catch {}
   }
+
 
 
   const secondsSinceUpdate = useMemo(() => {
