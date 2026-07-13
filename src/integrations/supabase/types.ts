@@ -1704,6 +1704,38 @@ export type Database = {
           },
         ]
       }
+      organization_menu_config: {
+        Row: {
+          created_at: string
+          enabled: boolean
+          menu_key: string
+          organization_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          enabled?: boolean
+          menu_key: string
+          organization_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          enabled?: boolean
+          menu_key?: string
+          organization_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "organization_menu_config_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       organization_webhooks: {
         Row: {
           created_at: string
