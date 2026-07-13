@@ -33,7 +33,7 @@ export default function OrgMenusCard() {
       .then(({ data, error }) => {
         if (error) { toast.error("Erro ao carregar configuração de menus"); setLoading(false); return; }
         const map: Record<string, boolean> = {};
-        (data as ConfigRow[] | null)?.forEach((r) => { map[r.menu_key] = r.enabled; });
+        (data as unknown as ConfigRow[] | null)?.forEach((r) => { map[r.menu_key] = r.enabled; });
         setRows(map);
         setHasConfig((data?.length ?? 0) > 0);
         setLoading(false);
