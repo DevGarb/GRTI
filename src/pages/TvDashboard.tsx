@@ -87,7 +87,7 @@ export default function TvDashboard() {
   const query = useQuery<TvData>({
     queryKey: ["tv-dashboard", orgSlug, token],
     enabled: !!orgSlug && !!token,
-    refetchInterval: 20_000,
+    refetchInterval: 300_000, // 5 min safety refresh; realtime handles instant updates
     refetchOnWindowFocus: false,
     retry: 1,
     queryFn: async () => {
@@ -98,6 +98,7 @@ export default function TvDashboard() {
       return r.json();
     },
   });
+
 
   // Detect new tickets between refetches and trigger sound + banner
   const knownIdsRef = useRef<Set<string> | null>(null);
