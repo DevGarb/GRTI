@@ -126,6 +126,8 @@ export default function Configuracoes() {
             <span className="text-muted-foreground">{user?.id || "—"}</span>
           </p>
         </div>
+      </div>
+
       <OrgMenusCard />
     </div>
   );
