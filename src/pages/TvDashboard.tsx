@@ -9,31 +9,50 @@ import { QuadrantCard } from "@/components/tv/QuadrantCard";
 import { GaugeRing } from "@/components/tv/GaugeRing";
 import { OkrCard } from "@/components/tv/OkrCard";
 import { FunnelBar } from "@/components/tv/FunnelBar";
-import { CriticalAlertsPanel } from "@/components/tv/CriticalAlertsPanel";
+import { GoalsPanel } from "@/components/tv/GoalsPanel";
 
 const FUNCTIONS_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/tv-dashboard`;
+
+interface GoalsSummary {
+  preventivas_target_total: number;
+  csat_target_avg: number;
+  points_target_total: number;
+  tickets_target_total: number;
+  rework_target_avg: number;
+  tma_target_avg_hours: number;
+  projects_target_total: number;
+  points_actual_total: number;
+  csat_actual_avg: number;
+  csat_actual_count: number;
+  rework_actual_percent: number;
+  rework_month: number;
+  tma_actual_hours: number;
+  projects_actual_total: number;
+  closed_month: number;
+  active_sprints_backlog: number;
+}
 
 interface TvData {
   org: { name: string; slug: string };
   generated_at: string;
   kpis: {
-    closed_today: number; in_progress: number; open: number; awaiting: number; backlog: number;
-    csat: number; csat_count: number; tma_minutes: number; active_techs: number;
+    closed_today: number; closed_month: number;
+    in_progress: number; open: number; awaiting: number; backlog: number;
+    csat: number; csat_count: number;
+    tma_minutes: number; tma_month_minutes: number;
+    active_techs: number; active_techs_today: number;
+    first_response_min: number; aging_min: number;
   };
   open_queue: Array<{ id: string; title: string; priority: string; category: string; requester: string; waiting_min: number; sla: "ok" | "warn" | "crit" }>;
   in_progress_list: Array<{ id: string; title: string; priority: string; category: string; technician: string; elapsed_min: number; sla: "ok" | "warn" | "crit" }>;
   ranking_today: Array<{ id: string; name: string; fechados: number }>;
   sla_alerts: Array<{ id: string; title: string; priority: string; sla: string; minutes: number }>;
   preventivas_month: { total: number; feitas: number; pendentes: number; atrasadas: number };
+  goals_summary: GoalsSummary | null;
 }
 
-// TODO: buscar metas reais de `goals` por org
-const DEFAULT_TARGETS = {
-  dailyClosed: 15,
-  monthlyClosed: 200,
-  csatTarget: 4.5,
-  backlogCeiling: 20,
-};
+const DEFAULT_BACKLOG_CEILING = 20;
+const WORKING_DAYS_PER_MONTH = 22;
 
 function fmtMin(m: number) {
   if (!m || m <= 0) return "—";
@@ -168,28 +187,31 @@ export default function TvDashboard() {
     const outOfSla = critCount + warnCount;
     const slaOkPct = active > 0 ? Math.max(0, ((active - outOfSla) / active) * 100) : 100;
 
-    // Top categorias em alerta
-    const catMap = new Map<string, number>();
-    for (const t of [...d.open_queue, ...d.in_progress_list]) {
-      if (t.sla !== "ok") catMap.set(t.category, (catMap.get(t.category) ?? 0) + 1);
-    }
-    const topCategories = Array.from(catMap.entries())
-      .map(([name, count]) => ({ name, count }))
-      .sort((a, b) => b.count - a.count)
-      .slice(0, 3);
-
     const csatPct = d.kpis.csat > 0 ? (d.kpis.csat / 5) * 100 : 0;
-    const loadPerTech = d.kpis.active_techs > 0 ? d.kpis.in_progress / d.kpis.active_techs : 0;
+    const techsBase = d.kpis.active_techs_today || d.kpis.active_techs;
+    const loadPerTech = techsBase > 0 ? d.kpis.in_progress / techsBase : 0;
 
     const opStatus = computeOpStatus({
       backlogTotal: d.kpis.backlog,
       awaitingApproval: d.kpis.awaiting,
-      reworkPercent: 0,
+      reworkPercent: d.goals_summary?.rework_actual_percent ?? 0,
       avgCsat: d.kpis.csat,
       csatCount: d.kpis.csat_count,
     });
 
-    return { active, critCount, warnCount, slaOkPct, topCategories, csatPct, loadPerTech, opStatus };
+    // Metas dinâmicas
+    const gs = d.goals_summary;
+    const monthlyClosedTarget = gs && gs.tickets_target_total > 0 ? gs.tickets_target_total : 200;
+    const dailyClosedTarget = Math.max(1, Math.ceil(monthlyClosedTarget / WORKING_DAYS_PER_MONTH));
+    const csatTarget = gs && gs.csat_target_avg > 0 ? gs.csat_target_avg : 4.5;
+    const preventivasTarget = gs && gs.preventivas_target_total > 0
+      ? gs.preventivas_target_total
+      : Math.max(1, d.preventivas_month.total);
+
+    return {
+      active, critCount, warnCount, slaOkPct, csatPct, loadPerTech, opStatus,
+      monthlyClosedTarget, dailyClosedTarget, csatTarget, preventivasTarget,
+    };
   }, [query.data]);
 
   if (!token) {
@@ -219,14 +241,16 @@ export default function TvDashboard() {
   const timeStr = clock.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit", second: "2-digit" });
 
   // Tones dos quadrantes
-  const q1Progress = d ? Math.min(100, (d.kpis.closed_today / DEFAULT_TARGETS.dailyClosed) * 100) : 0;
+  const q1Target = derived?.dailyClosedTarget ?? 15;
+  const q1Progress = d ? Math.min(100, (d.kpis.closed_today / q1Target) * 100) : 0;
   const q1Tone = q1Progress >= 100 ? "ok" : q1Progress >= 60 ? "primary" : "warn";
   const q2Tone = derived ? (derived.slaOkPct >= 90 ? "ok" : derived.slaOkPct >= 70 ? "warn" : "crit") : "neutral";
+  const csatTargetVal = derived?.csatTarget ?? 4.5;
   const q3Tone = d && d.kpis.csat > 0
-    ? (d.kpis.csat >= 4.5 ? "ok" : d.kpis.csat >= 3.5 ? "warn" : "crit")
+    ? (d.kpis.csat >= csatTargetVal ? "ok" : d.kpis.csat >= csatTargetVal - 1 ? "warn" : "crit")
     : "neutral";
   const q4Tone = derived
-    ? (derived.loadPerTech > 8 ? "warn" : derived.loadPerTech > 12 ? "crit" : "primary")
+    ? (derived.loadPerTech > 12 ? "crit" : derived.loadPerTech > 8 ? "warn" : "primary")
     : "neutral";
 
   return (
@@ -295,12 +319,12 @@ export default function TvDashboard() {
               title="Produção do Dia"
               eyebrow="Q1"
               tone={q1Tone as any}
-              footer={<span>Meta diária: <b>{DEFAULT_TARGETS.dailyClosed}</b> · Fechados: <b>{d.kpis.closed_today}</b></span>}
+              footer={<span>Meta diária: <b>{q1Target}</b> · Fechados: <b>{d.kpis.closed_today}</b></span>}
             >
               <div className="w-full flex flex-col items-center gap-3">
                 <div className="flex items-baseline gap-2">
                   <span className="text-6xl font-bold tabular-nums text-[hsl(var(--status-closed))]">{d.kpis.closed_today}</span>
-                  <span className="text-lg text-muted-foreground">/ {DEFAULT_TARGETS.dailyClosed}</span>
+                  <span className="text-lg text-muted-foreground">/ {q1Target}</span>
                 </div>
                 <div className="w-full h-3 rounded-full bg-muted overflow-hidden">
                   <div
@@ -317,17 +341,17 @@ export default function TvDashboard() {
               title="SLA no Prazo"
               eyebrow="Q2"
               tone={q2Tone as any}
-              footer={<span>Ativos: <b>{derived.active}</b> · Fora do SLA: <b className="text-[hsl(var(--status-open))]">{derived.critCount + derived.warnCount}</b></span>}
+              footer={<span title="(Ativos − Fora do SLA) / Ativos, por prioridade">Ativos: <b>{derived.active}</b> · Fora do SLA: <b className="text-[hsl(var(--status-open))]">{derived.critCount + derived.warnCount}</b></span>}
             >
               <GaugeRing value={derived.slaOkPct} tone={q2Tone as any} sub="no prazo" size={170} />
             </QuadrantCard>
 
-            {/* Q3 CSAT */}
+            {/* Q3 CSAT do mês */}
             <QuadrantCard
-              title="Qualidade (CSAT)"
+              title="CSAT do Mês"
               eyebrow="Q3"
               tone={q3Tone as any}
-              footer={<span>{d.kpis.csat_count} avaliações (30d) · Meta: <b>{DEFAULT_TARGETS.csatTarget}</b></span>}
+              footer={<span>{d.kpis.csat_count} avaliações · Meta: <b>{csatTargetVal.toFixed(2)}</b></span>}
             >
               <div className="flex flex-col items-center gap-2">
                 <div className="flex items-baseline gap-1">
@@ -367,18 +391,25 @@ export default function TvDashboard() {
               title="Capacidade"
               eyebrow="Q4"
               tone={q4Tone as any}
-              footer={<span>Carga por técnico: <b>{derived.loadPerTech.toFixed(1)}</b> chamados</span>}
+              footer={
+                <span>
+                  Carga por técnico: <b>{derived.loadPerTech.toFixed(1)}</b>
+                  {d.goals_summary && d.goals_summary.tma_target_avg_hours > 0 && (
+                    <> · Meta TMA: <b>{d.goals_summary.tma_target_avg_hours.toFixed(1)}h</b></>
+                  )}
+                </span>
+              }
             >
               <div className="w-full grid grid-cols-2 gap-3">
                 <div className="text-center">
                   <Users className="h-6 w-6 mx-auto text-primary mb-1" />
-                  <div className="text-4xl font-bold tabular-nums">{d.kpis.active_techs}</div>
-                  <div className="text-[10px] uppercase tracking-widest text-muted-foreground">Técnicos ativos</div>
+                  <div className="text-4xl font-bold tabular-nums">{d.kpis.active_techs_today}</div>
+                  <div className="text-[10px] uppercase tracking-widest text-muted-foreground">Técnicos ativos hoje</div>
                 </div>
                 <div className="text-center">
                   <Timer className="h-6 w-6 mx-auto text-primary mb-1" />
-                  <div className="text-4xl font-bold tabular-nums">{fmtMin(d.kpis.tma_minutes)}</div>
-                  <div className="text-[10px] uppercase tracking-widest text-muted-foreground">TMA médio</div>
+                  <div className="text-4xl font-bold tabular-nums">{fmtMin(d.kpis.tma_month_minutes || d.kpis.tma_minutes)}</div>
+                  <div className="text-[10px] uppercase tracking-widest text-muted-foreground">TMA mês</div>
                 </div>
               </div>
             </QuadrantCard>
@@ -393,32 +424,32 @@ export default function TvDashboard() {
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-3">
               <OkrCard
                 title="Fechamentos do mês"
-                current={d.kpis.closed_today /* proxy: sem métrica mensal no payload atual */}
-                target={DEFAULT_TARGETS.monthlyClosed}
+                current={d.kpis.closed_month}
+                target={derived.monthlyClosedTarget}
               />
               <OkrCard
-                title="CSAT ≥ 4.5"
+                title={`CSAT ≥ ${csatTargetVal.toFixed(2)}`}
                 current={d.kpis.csat}
-                target={DEFAULT_TARGETS.csatTarget}
+                target={csatTargetVal}
                 format={(v) => v.toFixed(2)}
               />
               <OkrCard
                 title="Preventivas do mês"
                 current={d.preventivas_month.feitas}
-                target={Math.max(1, d.preventivas_month.total)}
+                target={derived.preventivasTarget}
               />
               <OkrCard
-                title={`Backlog < ${DEFAULT_TARGETS.backlogCeiling}`}
-                current={d.kpis.backlog}
-                target={DEFAULT_TARGETS.backlogCeiling}
+                title={`Backlog sprints ativas < ${DEFAULT_BACKLOG_CEILING}`}
+                current={d.goals_summary?.active_sprints_backlog ?? 0}
+                target={DEFAULT_BACKLOG_CEILING}
                 higherIsBetter={false}
               />
             </div>
           </section>
 
-          {/* Funil + Alertas Críticos */}
+          {/* Fluxo Operacional + Metas do Mês */}
           <section className="grid grid-cols-1 xl:grid-cols-3 gap-4 flex-1 min-h-0">
-            <div className="xl:col-span-2 rounded-2xl border bg-card p-5 shadow-sm">
+            <div className="xl:col-span-2 rounded-2xl border bg-card p-5 shadow-sm flex flex-col">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-sm font-semibold uppercase tracking-wider">Fluxo Operacional</h3>
                 <span className="text-xs text-muted-foreground">Distribuição do funil</span>
@@ -430,18 +461,42 @@ export default function TvDashboard() {
                 { label: "Fechados hoje", value: d.kpis.closed_today, color: "hsl(var(--status-closed))" },
               ]} />
 
-              {/* Ranking compacto */}
+              {/* Micro KPIs do fluxo */}
+              <div className="mt-5 grid grid-cols-2 md:grid-cols-4 gap-2">
+                <div className="rounded-lg border bg-background/50 p-2 text-center">
+                  <div className="text-[10px] uppercase tracking-widest text-muted-foreground">Retrabalho mês</div>
+                  <div className="text-xl font-bold tabular-nums">
+                    {d.goals_summary?.rework_month ?? 0}
+                    <span className="text-xs text-muted-foreground"> ({(d.goals_summary?.rework_actual_percent ?? 0).toFixed(1)}%)</span>
+                  </div>
+                </div>
+                <div className="rounded-lg border bg-background/50 p-2 text-center">
+                  <div className="text-[10px] uppercase tracking-widest text-muted-foreground">TMA mês</div>
+                  <div className="text-xl font-bold tabular-nums">{fmtMin(d.kpis.tma_month_minutes)}</div>
+                </div>
+                <div className="rounded-lg border bg-background/50 p-2 text-center">
+                  <div className="text-[10px] uppercase tracking-widest text-muted-foreground">1ª resposta</div>
+                  <div className="text-xl font-bold tabular-nums">{fmtMin(d.kpis.first_response_min)}</div>
+                </div>
+                <div className="rounded-lg border bg-background/50 p-2 text-center">
+                  <div className="text-[10px] uppercase tracking-widest text-muted-foreground">Aging backlog</div>
+                  <div className="text-xl font-bold tabular-nums">{fmtMin(d.kpis.aging_min)}</div>
+                </div>
+              </div>
+
+              {/* Ranking compacto — top 5 */}
               {d.ranking_today.length > 0 && (
-                <div className="mt-6 pt-4 border-t">
-                  <div className="text-[10px] uppercase tracking-widest text-muted-foreground mb-2">Top 3 técnicos hoje</div>
-                  <div className="grid grid-cols-3 gap-2">
-                    {d.ranking_today.slice(0, 3).map((r, i) => (
+                <div className="mt-5 pt-4 border-t">
+                  <div className="text-[10px] uppercase tracking-widest text-muted-foreground mb-2">Top 5 técnicos hoje</div>
+                  <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
+                    {d.ranking_today.slice(0, 5).map((r, i) => (
                       <div key={r.id} className="flex items-center gap-2 rounded-lg border bg-background/50 p-2">
                         <span className={cn(
                           "h-8 w-8 rounded-full flex items-center justify-center font-bold text-sm shrink-0",
                           i === 0 ? "bg-yellow-500/20 text-yellow-500" :
                           i === 1 ? "bg-gray-400/20 text-gray-300" :
-                          "bg-orange-500/20 text-orange-500"
+                          i === 2 ? "bg-orange-500/20 text-orange-500" :
+                          "bg-muted text-muted-foreground"
                         )}>{i + 1}</span>
                         <div className="min-w-0 flex-1">
                           <div className="text-sm font-medium truncate">{r.name}</div>
@@ -454,10 +509,42 @@ export default function TvDashboard() {
               )}
             </div>
 
-            <CriticalAlertsPanel
-              crit={derived.critCount}
-              warn={derived.warnCount}
-              topCategories={derived.topCategories}
+            <GoalsPanel
+              rows={[
+                {
+                  label: "Pontuação",
+                  actual: d.goals_summary?.points_actual_total ?? 0,
+                  target: d.goals_summary?.points_target_total ?? 0,
+                  suffix: " pts",
+                },
+                {
+                  label: "CSAT",
+                  actual: d.goals_summary?.csat_actual_avg ?? d.kpis.csat,
+                  target: d.goals_summary?.csat_target_avg ?? 0,
+                  format: (v) => v.toFixed(2),
+                },
+                {
+                  label: "TMA (h)",
+                  actual: d.goals_summary?.tma_actual_hours ?? 0,
+                  target: d.goals_summary?.tma_target_avg_hours ?? 0,
+                  format: (v) => v.toFixed(1),
+                  higherIsBetter: false,
+                  suffix: "h",
+                },
+                {
+                  label: "Projetos entregues",
+                  actual: d.goals_summary?.projects_actual_total ?? 0,
+                  target: d.goals_summary?.projects_target_total ?? 0,
+                },
+                {
+                  label: "% Retrabalho",
+                  actual: d.goals_summary?.rework_actual_percent ?? 0,
+                  target: d.goals_summary?.rework_target_avg ?? 0,
+                  format: (v) => v.toFixed(1),
+                  higherIsBetter: false,
+                  suffix: "%",
+                },
+              ]}
             />
           </section>
         </>

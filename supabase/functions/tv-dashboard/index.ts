@@ -112,32 +112,57 @@ Deno.serve(async (req) => {
     const catOf = new Map((cats ?? []).map((c: any) => [c.id, c.name]));
 
     // KPIs
-    let closed_today = 0, in_progress = 0, open_count = 0, awaiting = 0, backlog = 0;
+    let closed_today = 0, closed_month = 0;
+    let in_progress = 0, open_count = 0, awaiting = 0, backlog = 0;
     let tmaSum = 0, tmaN = 0;
+    let tmaMonthSum = 0, tmaMonthN = 0;
+    let frSum = 0, frN = 0;
+    let agingSum = 0, agingN = 0;
+    const activeTechsToday = new Set<string>();
 
     for (const t of list) {
       if (t.status === "Fechado" || t.status === "Aprovado") {
-        if (t.closed_at && new Date(t.closed_at) >= startToday) closed_today++;
-        if (t.started_at && t.closed_at) {
-          const m = calcBusinessMinutes(new Date(t.started_at), new Date(t.closed_at));
-          if (m > 0) { tmaSum += m; tmaN++; }
+        if (t.closed_at) {
+          const cd = new Date(t.closed_at);
+          if (cd >= startToday) {
+            closed_today++;
+            if (t.assigned_to) activeTechsToday.add(t.assigned_to);
+          }
+          if (cd >= startMonth && cd < endMonth) closed_month++;
+          if (t.started_at) {
+            const m = calcBusinessMinutes(new Date(t.started_at), cd);
+            if (m > 0) {
+              tmaSum += m; tmaN++;
+              if (cd >= startMonth && cd < endMonth) { tmaMonthSum += m; tmaMonthN++; }
+            }
+          }
         }
       } else {
         backlog++;
-        if (t.status === "Em Andamento") in_progress++;
+        if (t.status === "Em Andamento") { in_progress++; if (t.assigned_to) activeTechsToday.add(t.assigned_to); }
         else if (t.status === "Aberto") open_count++;
         else if (t.status === "Aguardando Aprovação") awaiting++;
+        const am = calcBusinessMinutes(new Date(t.created_at), now);
+        if (am > 0) { agingSum += am; agingN++; }
+      }
+      if (t.started_at) {
+        const sd = new Date(t.started_at);
+        if (sd >= startMonth && sd < endMonth) {
+          const fm = calcBusinessMinutes(new Date(t.created_at), sd);
+          if (fm >= 0) { frSum += fm; frN++; }
+        }
       }
     }
 
-    // CSAT last 30d
-    const cutoff30 = new Date(now.getTime() - 30 * 24 * 3600 * 1000).toISOString();
-    const { data: evals } = await supabase
-      .from("evaluations").select("score, ticket_id, created_at, tickets!inner(organization_id)")
-      .gte("created_at", cutoff30)
+    // CSAT do mês vigente (apenas satisfaction)
+    const { data: evalsMonth } = await supabase
+      .from("evaluations").select("score, ticket_id, created_at, type, tickets!inner(organization_id)")
+      .gte("created_at", startMonth.toISOString())
+      .lt("created_at", endMonth.toISOString())
+      .eq("type", "satisfaction")
       .eq("tickets.organization_id", orgId);
     let csatSum = 0, csatN = 0;
-    for (const e of evals ?? []) { csatSum += (e as any).score ?? 0; csatN++; }
+    for (const e of evalsMonth ?? []) { csatSum += (e as any).score ?? 0; csatN++; }
     const csat = csatN ? csatSum / csatN : 0;
 
     // Open queue
@@ -192,7 +217,7 @@ Deno.serve(async (req) => {
       if (t.status === "Em Andamento" && t.assigned_to) active_techs.add(t.assigned_to);
     }
 
-    // SLA alerts (open + in progress, warn/crit)
+    // SLA alerts
     const slaAlerts = [...openList, ...progList]
       .filter(x => x.sla !== "ok")
       .map(x => ({ id: x.id, title: x.title, priority: x.priority, sla: x.sla, minutes: (x as any).waiting_min ?? (x as any).elapsed_min }))
@@ -206,10 +231,8 @@ Deno.serve(async (req) => {
       .eq("organization_id", orgId)
       .gte("execution_date", startMonth.toISOString().slice(0, 10))
       .lt("execution_date", endMonth.toISOString().slice(0, 10));
-    const prevList = prev ?? [];
-    const prevDone = prevList.length;
+    const prevDone = (prev ?? []).length;
 
-    // Interval-based expected count (uses last preventive per asset_tag)
     const { data: intervals } = await supabase
       .from("maintenance_intervals").select("equipment_type, interval_days");
     const { data: patrimonio } = await supabase
@@ -240,20 +263,33 @@ Deno.serve(async (req) => {
     }
     const prevPendente = Math.max(0, prevTotal - prevDone);
 
+    // Goals summary (metas dos técnicos + reais do mês)
+    const y = now.getFullYear();
+    const m = now.getMonth() + 1;
+    const { data: goalsSummary } = await supabase.rpc("get_tv_goals_summary", {
+      _organization_id: orgId, _year: y, _month: m,
+    });
+
     const body = {
       org: { id: orgId, name: org.name, slug: org.slug },
       generated_at: now.toISOString(),
       kpis: {
-        closed_today, in_progress, open: open_count, awaiting, backlog,
+        closed_today, closed_month,
+        in_progress, open: open_count, awaiting, backlog,
         csat: Number(csat.toFixed(2)), csat_count: csatN,
         tma_minutes: tmaN ? Math.round(tmaSum / tmaN) : 0,
+        tma_month_minutes: tmaMonthN ? Math.round(tmaMonthSum / tmaMonthN) : 0,
         active_techs: active_techs.size,
+        active_techs_today: activeTechsToday.size,
+        first_response_min: frN ? Math.round(frSum / frN) : 0,
+        aging_min: agingN ? Math.round(agingSum / agingN) : 0,
       },
       open_queue: openList,
       in_progress_list: progList,
       ranking_today: ranking,
       sla_alerts: slaAlerts,
       preventivas_month: { total: prevTotal, feitas: prevDone, pendentes: prevPendente, atrasadas: prevOverdue },
+      goals_summary: goalsSummary ?? null,
     };
 
     return new Response(JSON.stringify(body), {
