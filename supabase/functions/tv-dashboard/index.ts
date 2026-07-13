@@ -1,0 +1,255 @@
+import { createClient } from "npm:@supabase/supabase-js@2";
+
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+};
+
+const BUSINESS_START = 8;
+const BUSINESS_END = 18;
+
+function isWeekday(d: Date) {
+  const dw = d.getDay();
+  return dw >= 1 && dw <= 5;
+}
+
+function calcBusinessMinutes(start: Date, end: Date): number {
+  if (end <= start) return 0;
+  let total = 0;
+  const cur = new Date(start);
+  cur.setHours(0, 0, 0, 0);
+  const endDay = new Date(end);
+  endDay.setHours(0, 0, 0, 0);
+  while (cur <= endDay) {
+    if (isWeekday(cur)) {
+      const ds = new Date(cur); ds.setHours(BUSINESS_START, 0, 0, 0);
+      const de = new Date(cur); de.setHours(BUSINESS_END, 0, 0, 0);
+      const os = start > ds ? start : ds;
+      const oe = end < de ? end : de;
+      if (os < oe) total += (oe.getTime() - os.getTime()) / 60000;
+    }
+    cur.setDate(cur.getDate() + 1);
+  }
+  return total;
+}
+
+const SLA_THRESHOLDS: Record<string, { warn: number; crit: number }> = {
+  Urgente: { warn: 4, crit: 8 },
+  Alta: { warn: 8, crit: 16 },
+  Média: { warn: 16, crit: 32 },
+  Baixa: { warn: 32, crit: 80 },
+};
+
+function slaStatus(mins: number, priority: string): "ok" | "warn" | "crit" {
+  const t = SLA_THRESHOLDS[priority] ?? SLA_THRESHOLDS["Média"];
+  if (mins >= t.crit * 60) return "crit";
+  if (mins >= t.warn * 60) return "warn";
+  return "ok";
+}
+
+Deno.serve(async (req) => {
+  if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
+
+  try {
+    const url = new URL(req.url);
+    const slug = url.searchParams.get("org");
+    const token = url.searchParams.get("token");
+    if (!slug || !token) {
+      return new Response(JSON.stringify({ error: "Missing org or token" }), {
+        status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const expected = Deno.env.get("TV_DASHBOARD_TOKEN");
+    if (!expected || token !== expected) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const supabase = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
+    );
+
+    const { data: org } = await supabase
+      .from("organizations").select("id, name, slug").eq("slug", slug).maybeSingle();
+    if (!org) {
+      return new Response(JSON.stringify({ error: "Organization not found" }), {
+        status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    const orgId = org.id;
+
+    const now = new Date();
+    const startToday = new Date(now); startToday.setHours(0, 0, 0, 0);
+    const startMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    const endMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+
+    // Fetch tickets with joins
+    const { data: tickets } = await supabase
+      .from("tickets")
+      .select("id, title, status, priority, created_at, started_at, closed_at, assigned_to, created_by, category_id")
+      .eq("organization_id", orgId);
+
+    const list = tickets ?? [];
+
+    // Collect IDs for lookups
+    const userIds = new Set<string>();
+    const catIds = new Set<string>();
+    for (const t of list) {
+      if (t.assigned_to) userIds.add(t.assigned_to);
+      if (t.created_by) userIds.add(t.created_by);
+      if (t.category_id) catIds.add(t.category_id);
+    }
+
+    const [{ data: profiles }, { data: cats }] = await Promise.all([
+      supabase.from("profiles").select("id, full_name").in("id", Array.from(userIds).length ? Array.from(userIds) : ["00000000-0000-0000-0000-000000000000"]),
+      supabase.from("categories").select("id, name").in("id", Array.from(catIds).length ? Array.from(catIds) : ["00000000-0000-0000-0000-000000000000"]),
+    ]);
+    const nameOf = new Map((profiles ?? []).map((p: any) => [p.id, p.full_name]));
+    const catOf = new Map((cats ?? []).map((c: any) => [c.id, c.name]));
+
+    // KPIs
+    let closed_today = 0, in_progress = 0, open_count = 0, awaiting = 0, backlog = 0;
+    let tmaSum = 0, tmaN = 0;
+
+    for (const t of list) {
+      if (t.status === "Fechado" || t.status === "Aprovado") {
+        if (t.closed_at && new Date(t.closed_at) >= startToday) closed_today++;
+        if (t.started_at && t.closed_at) {
+          const m = calcBusinessMinutes(new Date(t.started_at), new Date(t.closed_at));
+          if (m > 0) { tmaSum += m; tmaN++; }
+        }
+      } else {
+        backlog++;
+        if (t.status === "Em Andamento") in_progress++;
+        else if (t.status === "Aberto") open_count++;
+        else if (t.status === "Aguardando Aprovação") awaiting++;
+      }
+    }
+
+    // CSAT last 30d
+    const cutoff30 = new Date(now.getTime() - 30 * 24 * 3600 * 1000).toISOString();
+    const { data: evals } = await supabase
+      .from("evaluations").select("score, ticket_id, created_at, tickets!inner(organization_id)")
+      .gte("created_at", cutoff30)
+      .eq("tickets.organization_id", orgId);
+    let csatSum = 0, csatN = 0;
+    for (const e of evals ?? []) { csatSum += (e as any).score ?? 0; csatN++; }
+    const csat = csatN ? csatSum / csatN : 0;
+
+    // Open queue
+    const openList = list.filter(t => t.status === "Aberto")
+      .map(t => {
+        const created = new Date(t.created_at);
+        const waitingMin = calcBusinessMinutes(created, now);
+        return {
+          id: t.id, title: t.title, priority: t.priority,
+          category: catOf.get(t.category_id) ?? "—",
+          requester: nameOf.get(t.created_by) ?? "—",
+          waiting_min: Math.round(waitingMin),
+          sla: slaStatus(waitingMin, t.priority),
+          created_at: t.created_at,
+        };
+      })
+      .sort((a, b) => b.waiting_min - a.waiting_min)
+      .slice(0, 20);
+
+    // In progress
+    const progList = list.filter(t => t.status === "Em Andamento")
+      .map(t => {
+        const start = t.started_at ? new Date(t.started_at) : new Date(t.created_at);
+        const elapsed = calcBusinessMinutes(start, now);
+        return {
+          id: t.id, title: t.title, priority: t.priority,
+          category: catOf.get(t.category_id) ?? "—",
+          technician: nameOf.get(t.assigned_to) ?? "—",
+          elapsed_min: Math.round(elapsed),
+          sla: slaStatus(elapsed, t.priority),
+        };
+      })
+      .sort((a, b) => b.elapsed_min - a.elapsed_min)
+      .slice(0, 20);
+
+    // Ranking today
+    const rankMap = new Map<string, { fechados: number }>();
+    for (const t of list) {
+      if ((t.status === "Fechado" || t.status === "Aprovado") && t.closed_at && new Date(t.closed_at) >= startToday && t.assigned_to) {
+        const r = rankMap.get(t.assigned_to) ?? { fechados: 0 };
+        r.fechados++;
+        rankMap.set(t.assigned_to, r);
+      }
+    }
+    const ranking = Array.from(rankMap.entries())
+      .map(([id, r]) => ({ id, name: nameOf.get(id) ?? "—", fechados: r.fechados }))
+      .sort((a, b) => b.fechados - a.fechados)
+      .slice(0, 5);
+
+    const active_techs = new Set<string>();
+    for (const t of list) {
+      if (t.status === "Em Andamento" && t.assigned_to) active_techs.add(t.assigned_to);
+    }
+
+    // SLA alerts (open + in progress, warn/crit)
+    const slaAlerts = [...openList, ...progList]
+      .filter(x => x.sla !== "ok")
+      .map(x => ({ id: x.id, title: x.title, priority: x.priority, sla: x.sla, minutes: (x as any).waiting_min ?? (x as any).elapsed_min }))
+      .sort((a, b) => b.minutes - a.minutes)
+      .slice(0, 10);
+
+    // Preventivas do mês
+    const { data: prev } = await supabase
+      .from("preventive_maintenance")
+      .select("id, execution_date")
+      .eq("organization_id", orgId)
+      .gte("execution_date", startMonth.toISOString().slice(0, 10))
+      .lt("execution_date", endMonth.toISOString().slice(0, 10));
+    const prevList = prev ?? [];
+    const prevDone = prevList.length;
+
+    // Interval-based expected count
+    const { data: intervals } = await supabase
+      .from("maintenance_intervals").select("equipment_type, interval_days");
+    const { data: patrimonio } = await supabase
+      .from("patrimonio").select("id, tipo, ultima_manutencao")
+      .eq("organization_id", orgId);
+    const intervalMap = new Map((intervals ?? []).map((i: any) => [i.equipment_type, i.interval_days]));
+    let prevTotal = 0, prevOverdue = 0;
+    for (const p of patrimonio ?? []) {
+      const days = intervalMap.get((p as any).tipo);
+      if (!days) continue;
+      prevTotal++;
+      const last = (p as any).ultima_manutencao ? new Date((p as any).ultima_manutencao) : null;
+      const nextDue = last ? new Date(last.getTime() + days * 86400000) : null;
+      if (!nextDue || nextDue < now) prevOverdue++;
+    }
+    const prevPendente = Math.max(0, prevTotal - prevDone);
+
+    const body = {
+      org: { id: orgId, name: org.name, slug: org.slug },
+      generated_at: now.toISOString(),
+      kpis: {
+        closed_today, in_progress, open: open_count, awaiting, backlog,
+        csat: Number(csat.toFixed(2)), csat_count: csatN,
+        tma_minutes: tmaN ? Math.round(tmaSum / tmaN) : 0,
+        active_techs: active_techs.size,
+      },
+      open_queue: openList,
+      in_progress_list: progList,
+      ranking_today: ranking,
+      sla_alerts: slaAlerts,
+      preventivas_month: { total: prevTotal, feitas: prevDone, pendentes: prevPendente, atrasadas: prevOverdue },
+    };
+
+    return new Response(JSON.stringify(body), {
+      headers: { ...corsHeaders, "Content-Type": "application/json", "Cache-Control": "no-store" },
+    });
+  } catch (e) {
+    console.error("tv-dashboard error", e);
+    return new Response(JSON.stringify({ error: String(e?.message ?? e) }), {
+      status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
+});
