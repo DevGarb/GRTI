@@ -1,42 +1,73 @@
-# Criar organização GRCHECK para o módulo de Checklists
+## Objetivo
 
-Entendi o erro: o módulo de checklists foi acoplado a uma organização com slug `checklists`, mas a intenção era criar uma **nova organização chamada GRCHECK** (paralela ao GRTI e ao CGPS Operacional) que hospedaria esse módulo. Este plano corrige isso.
+1. Garantir que na organização **GRCHECK** todos os usuários (admin ou colaborador) vejam apenas os menus de checklist (`chk-*`) e não consigam acessar outras rotas nem por URL direta.
+2. Tornar configurável, por organização, quais menus/módulos aparecem — para poder controlar GRCHECK e futuras organizações sem editar código.
 
-## 1. Backend (1 migration)
+---
 
-- **Criar** a organização `GRCHECK` com slug `grcheck` na tabela `organizations` (via migration com `INSERT ... ON CONFLICT DO NOTHING` para ser idempotente).
-- **Remover** a organização antiga com slug `checklists` (após mover qualquer vínculo existente para `grcheck`, se houver — hoje não há dados de produção nela).
-- Nenhuma tabela `chk_*` muda de schema: elas continuam multi-tenant via `organization_id`, apenas passam a apontar para a nova org.
-- Vincular o usuário atual (super admin) à `grcheck` como `admin` via `user_organizations` + `user_organization_roles`.
+## Parte 1 — Validar isolamento do GRCHECK
 
-## 2. Frontend
+**Frontend (menu):** `AppLayout.tsx` já filtra: se `orgSlug === "grcheck"` só mostra itens com key `chk-*`. OK visualmente.
 
-Trocar todas as referências de slug `checklists` para `grcheck`:
+**Gap atual:** não há bloqueio de rota. Um usuário pode digitar `/chamados` na URL e a página carrega mesmo estando em GRCHECK.
 
-- `src/config/menuItems.ts` → `orgSlugs: ["checklists"]` vira `orgSlugs: ["grcheck"]` em todos os itens `chk-*`.
-- `src/pages/EscolherOrganizacao.tsx` → no mapa `ORG_DESCRIPTIONS`, renomear a chave `"checklists"` para `"grcheck"` com título/subtítulo apropriados ("GRCHECK — Checklists e Auditoria").
-- Grep no restante do código (`AppLayout`, hooks, etc.) por `"checklists"` como slug e ajustar onde for identificador de organização (rotas `/checklists/*` **permanecem** — são o path do módulo, não o slug da org).
+**Correção:**
+- Criar um guard `<OrgMenuGuard>` em `src/App.tsx` que, para cada rota, consulta `useMenuAccess().canAccessPath(path)`. Se o path atual não está permitido pela org corrente, redireciona para o primeiro menu visível (ex.: `/checklists` no GRCHECK).
+- Integrar a mesma lógica de restrição por org (hoje só em `AppLayout`) dentro de `useMenuAccess.canAccess`, para que o guard e o menu compartilhem a mesma verdade.
 
-## 3. Manter as rotas `/checklists/*`
+---
 
-As URLs das páginas (`/checklists`, `/checklists/modelos`, etc.) **não mudam** — são o caminho do módulo dentro do app. O que muda é apenas o slug da organização que dá acesso a essas rotas (`grcheck`).
+## Parte 2 — Menus permitidos por organização (configurável)
 
-## 4. Reverter o LinkOrgModal (opcional)
+**Novo modelo de dados:** tabela `organization_menu_config`
 
-O `LinkOrgModal.tsx` criado na última rodada continua útil como ferramenta genérica de vínculo user↔org e pode ser mantido. Se você preferir removê-lo agora que a org será GRCHECK e o vínculo será feito via migration, avise que eu removo.
+| Campo | Descrição |
+|---|---|
+| organization_id | FK organizations |
+| menu_key | key do item em `menuItems` (ex.: `chk-dashboard`, `chamados`) |
+| enabled | boolean |
 
-## 5. Verificação
+Regra de resolução (nova, em `useMenuAccess`):
+1. Se a org tem qualquer linha em `organization_menu_config`, ela está em "modo whitelist": só menus com `enabled=true` aparecem.
+2. Se não tem nenhuma linha, comportamento atual (todos os menus conforme role/overrides).
+3. `user_menu_overrides` continua funcionando, mas só pode restringir dentro do que a org permite (nunca abrir menu que a org bloqueou).
 
-- `tsgo --noEmit` limpo.
-- Login com o usuário vinculado → tela "Escolher organização" mostra card **GRCHECK** ao lado de GRTI e CGPS Operacional.
-- Ao selecionar GRCHECK, o menu lateral mostra apenas os itens `chk-*` e as rotas `/checklists/*` funcionam.
-- Nenhum resquício da org antiga `checklists` no banco.
+**Seeds:** popular `organization_menu_config` para GRCHECK apenas com os `chk-*` — substitui o hard-code atual do `AppLayout` (`orgSlug === "grcheck"` / `"cgps-operacional"`).
+
+**UI de administração:** nova aba **"Menus da Organização"** em `Configurações` (visível para admin/super_admin):
+- Lista todos os itens de `menuItems` agrupados (Geral, Operacional, Checklists, Super Admin).
+- Toggle on/off por item, salva em `organization_menu_config`.
+- Botão "Restaurar padrão" (apaga linhas da org → volta a mostrar tudo pelo role).
+- Preset rápido: "Somente Checklists", "Somente Operacional", "Tudo".
+
+**Guard de rota:** o `OrgMenuGuard` da Parte 1 passa a usar essa mesma tabela, então rotas bloqueadas pela config da org também redirecionam.
+
+---
 
 ## Detalhes técnicos
 
-- Migration em uma única transação: `INSERT` da org `grcheck` → `UPDATE` de eventuais linhas `chk_*.organization_id` da org antiga para a nova → `DELETE FROM user_organizations WHERE organization_id = <old>` → `DELETE FROM organizations WHERE slug = 'checklists'`.
-- O vínculo do seu usuário à `grcheck` como `admin` entra na mesma migration (preciso do seu e-mail de login para o `WHERE email = ...`, ou posso vincular **todos** os super admins automaticamente).
+- Migração cria `public.organization_menu_config` com PK composta (org_id, menu_key), GRANTs para `authenticated` e `service_role`, RLS: SELECT por membros da org; INSERT/UPDATE/DELETE só para admin ou super_admin da org (via `has_role`).
+- Seed: `INSERT` para GRCHECK habilitando as 8 keys `chk-*`; para `cgps-operacional` habilitando `op-*` + universais atuais (`configuracoes`, `todos`, `usuarios`, `white-label`, `integracoes`, `documentacao`, `super-admin`, `planos`, `migracao`).
+- Remover o hard-code `orgSlug === "grcheck"` / `"cgps-operacional"` de `AppLayout.tsx` — passa a vir do banco.
+- `useMenuAccess`: buscar config da org junto com os overrides do usuário. Cache por `organization_id`.
+- Novo componente `src/components/configuracoes/OrgMenusTab.tsx` e nova rota/aba em `Configuracoes.tsx`.
+- Guard: componente em `src/components/OrgMenuGuard.tsx`, envolvendo `<Routes>` autenticadas em `App.tsx`.
 
-## Pergunta antes de executar
+---
 
-Quer que eu vincule automaticamente **todos os super admins** à nova org `grcheck` como `admin` (evita precisar do seu e-mail), ou prefere informar um e-mail específico?
+## Arquivos afetados
+
+- **novo** `supabase/migrations/<timestamp>_organization_menu_config.sql`
+- **novo** `src/components/OrgMenuGuard.tsx`
+- **novo** `src/components/configuracoes/OrgMenusTab.tsx`
+- **editar** `src/hooks/useMenuAccess.ts` (ler config da org, aplicar whitelist)
+- **editar** `src/components/AppLayout.tsx` (remover hard-code de slug)
+- **editar** `src/pages/Configuracoes.tsx` (nova aba)
+- **editar** `src/App.tsx` (envolver rotas com guard)
+
+---
+
+## Fora de escopo
+
+- Reorganizar rotas ou renomear menus existentes.
+- Alterar RLS das tabelas de negócio (o guard é UX; a segurança dos dados continua nas RLS existentes por org).

@@ -102,11 +102,12 @@ function AdminRoute({ children }: { children: React.ReactNode }) {
 }
 
 function MenuGuard({ menuKey, children }: { menuKey: string; children: React.ReactNode }) {
-  const { canAccess, loading } = useMenuAccess();
+  const { canAccess, firstAccessiblePath, loading } = useMenuAccess();
   if (loading) return null;
   if (!canAccess(menuKey)) {
-    console.warn(`[MenuGuard] acesso negado a "${menuKey}" → redirecionando para /chamados`);
-    return <Navigate to="/chamados" replace />;
+    const fallback = firstAccessiblePath();
+    console.warn(`[MenuGuard] acesso negado a "${menuKey}" → redirecionando para ${fallback}`);
+    return <Navigate to={fallback} replace />;
   }
   return <>{children}</>;
 }
