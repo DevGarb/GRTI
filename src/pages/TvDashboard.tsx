@@ -194,22 +194,50 @@ export default function TvDashboard() {
   const timeStr = clock.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit", second: "2-digit" });
 
   return (
-    <div className="min-h-screen bg-background text-foreground p-4 md:p-6 flex flex-col gap-4">
+    <div className="min-h-screen bg-background text-foreground p-4 md:p-6 flex flex-col gap-4 relative">
+      {/* New ticket alert overlay */}
+      {alert && (
+        <div className="fixed top-6 left-1/2 -translate-x-1/2 z-50 animate-in slide-in-from-top-8">
+          <div className="rounded-xl border-2 border-[hsl(var(--status-open))] bg-[hsl(var(--status-open-bg))] shadow-2xl px-6 py-4 flex items-center gap-4 max-w-2xl">
+            <Bell className="h-8 w-8 text-[hsl(var(--status-open))] animate-bounce shrink-0" />
+            <div>
+              <div className="font-bold text-lg text-[hsl(var(--status-open))]">
+                {alert.count === 1 ? "Novo chamado!" : `${alert.count} novos chamados!`}
+              </div>
+              <ul className="text-sm text-foreground/80 mt-1 space-y-0.5">
+                {alert.titles.map((t, i) => <li key={i} className="truncate max-w-lg">• {t}</li>)}
+              </ul>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Header */}
       <header className="flex flex-wrap items-center justify-between gap-3 border-b pb-3">
         <div>
           <div className="text-xs uppercase tracking-widest text-muted-foreground">Painel de Monitoramento</div>
           <h1 className="text-2xl md:text-3xl font-bold">{d?.org.name ?? "Carregando…"}</h1>
         </div>
-        <div className="text-right">
-          <div className="text-3xl md:text-4xl font-bold tabular-nums">{timeStr}</div>
-          <div className="text-sm text-muted-foreground capitalize">{dateStr}</div>
-          <div className="text-[11px] text-muted-foreground mt-1">
-            Atualizado há {secondsSinceUpdate}s
-            <span className={cn("inline-block ml-2 h-2 w-2 rounded-full", query.isFetching ? "bg-[hsl(var(--status-waiting))] animate-pulse" : "bg-[hsl(var(--status-closed))]")} />
+        <div className="flex items-center gap-4">
+          {!soundEnabled && (
+            <button
+              onClick={enableSound}
+              className="rounded-lg border border-[hsl(var(--status-waiting))] bg-[hsl(var(--status-waiting-bg))] text-[hsl(var(--status-waiting))] px-4 py-2 text-sm font-medium hover:opacity-80 transition"
+            >
+              🔔 Ativar som de alerta
+            </button>
+          )}
+          <div className="text-right">
+            <div className="text-3xl md:text-4xl font-bold tabular-nums">{timeStr}</div>
+            <div className="text-sm text-muted-foreground capitalize">{dateStr}</div>
+            <div className="text-[11px] text-muted-foreground mt-1">
+              Atualizado há {secondsSinceUpdate}s
+              <span className={cn("inline-block ml-2 h-2 w-2 rounded-full", query.isFetching ? "bg-[hsl(var(--status-waiting))] animate-pulse" : "bg-[hsl(var(--status-closed))]")} />
+            </div>
           </div>
         </div>
       </header>
+
 
       {!d ? (
         <div className="flex-1 flex items-center justify-center text-muted-foreground">Carregando dados…</div>
