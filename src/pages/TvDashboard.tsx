@@ -1,6 +1,7 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useParams, useSearchParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
+import { Bell } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const FUNCTIONS_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/tv-dashboard`;
@@ -84,7 +85,7 @@ export default function TvDashboard() {
   const query = useQuery<TvData>({
     queryKey: ["tv-dashboard", orgSlug, token],
     enabled: !!orgSlug && !!token,
-    refetchInterval: 60_000,
+    refetchInterval: 20_000,
     refetchOnWindowFocus: false,
     retry: 1,
     queryFn: async () => {
@@ -95,6 +96,70 @@ export default function TvDashboard() {
       return r.json();
     },
   });
+
+  // Detect new tickets between refetches and trigger sound + banner
+  const knownIdsRef = useRef<Set<string> | null>(null);
+  const [alert, setAlert] = useState<{ count: number; titles: string[] } | null>(null);
+  const [soundEnabled, setSoundEnabled] = useState(false);
+  const audioCtxRef = useRef<AudioContext | null>(null);
+
+  function playBeep() {
+    try {
+      if (!audioCtxRef.current) {
+        const Ctx = (window.AudioContext || (window as any).webkitAudioContext);
+        if (!Ctx) return;
+        audioCtxRef.current = new Ctx();
+      }
+      const ctx = audioCtxRef.current!;
+      if (ctx.state === "suspended") ctx.resume();
+      const now = ctx.currentTime;
+      // 3-note attention chime
+      [880, 1175, 1568].forEach((freq, i) => {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = "sine";
+        osc.frequency.value = freq;
+        const start = now + i * 0.18;
+        gain.gain.setValueAtTime(0, start);
+        gain.gain.linearRampToValueAtTime(0.35, start + 0.02);
+        gain.gain.exponentialRampToValueAtTime(0.001, start + 0.35);
+        osc.connect(gain).connect(ctx.destination);
+        osc.start(start);
+        osc.stop(start + 0.4);
+      });
+    } catch (e) {
+      console.warn("beep failed", e);
+    }
+  }
+
+  useEffect(() => {
+    const data = query.data;
+    if (!data) return;
+    const currentIds = new Set(data.open_queue.map(t => t.id));
+    if (knownIdsRef.current === null) {
+      // First load — seed baseline, no alert
+      knownIdsRef.current = currentIds;
+      return;
+    }
+    const newOnes = data.open_queue.filter(t => !knownIdsRef.current!.has(t.id));
+    if (newOnes.length > 0) {
+      setAlert({ count: newOnes.length, titles: newOnes.map(t => t.title).slice(0, 3) });
+      if (soundEnabled) playBeep();
+      setTimeout(() => setAlert(null), 15_000);
+    }
+    knownIdsRef.current = currentIds;
+  }, [query.data, soundEnabled]);
+
+  function enableSound() {
+    try {
+      const Ctx = (window.AudioContext || (window as any).webkitAudioContext);
+      if (Ctx && !audioCtxRef.current) audioCtxRef.current = new Ctx();
+      audioCtxRef.current?.resume();
+      setSoundEnabled(true);
+      playBeep();
+    } catch {}
+  }
+
 
   const secondsSinceUpdate = useMemo(() => {
     if (!query.dataUpdatedAt) return 0;
@@ -129,22 +194,50 @@ export default function TvDashboard() {
   const timeStr = clock.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit", second: "2-digit" });
 
   return (
-    <div className="min-h-screen bg-background text-foreground p-4 md:p-6 flex flex-col gap-4">
+    <div className="min-h-screen bg-background text-foreground p-4 md:p-6 flex flex-col gap-4 relative">
+      {/* New ticket alert overlay */}
+      {alert && (
+        <div className="fixed top-6 left-1/2 -translate-x-1/2 z-50 animate-in slide-in-from-top-8">
+          <div className="rounded-xl border-2 border-[hsl(var(--status-open))] bg-[hsl(var(--status-open-bg))] shadow-2xl px-6 py-4 flex items-center gap-4 max-w-2xl">
+            <Bell className="h-8 w-8 text-[hsl(var(--status-open))] animate-bounce shrink-0" />
+            <div>
+              <div className="font-bold text-lg text-[hsl(var(--status-open))]">
+                {alert.count === 1 ? "Novo chamado!" : `${alert.count} novos chamados!`}
+              </div>
+              <ul className="text-sm text-foreground/80 mt-1 space-y-0.5">
+                {alert.titles.map((t, i) => <li key={i} className="truncate max-w-lg">• {t}</li>)}
+              </ul>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Header */}
       <header className="flex flex-wrap items-center justify-between gap-3 border-b pb-3">
         <div>
           <div className="text-xs uppercase tracking-widest text-muted-foreground">Painel de Monitoramento</div>
           <h1 className="text-2xl md:text-3xl font-bold">{d?.org.name ?? "Carregando…"}</h1>
         </div>
-        <div className="text-right">
-          <div className="text-3xl md:text-4xl font-bold tabular-nums">{timeStr}</div>
-          <div className="text-sm text-muted-foreground capitalize">{dateStr}</div>
-          <div className="text-[11px] text-muted-foreground mt-1">
-            Atualizado há {secondsSinceUpdate}s
-            <span className={cn("inline-block ml-2 h-2 w-2 rounded-full", query.isFetching ? "bg-[hsl(var(--status-waiting))] animate-pulse" : "bg-[hsl(var(--status-closed))]")} />
+        <div className="flex items-center gap-4">
+          {!soundEnabled && (
+            <button
+              onClick={enableSound}
+              className="rounded-lg border border-[hsl(var(--status-waiting))] bg-[hsl(var(--status-waiting-bg))] text-[hsl(var(--status-waiting))] px-4 py-2 text-sm font-medium hover:opacity-80 transition"
+            >
+              🔔 Ativar som de alerta
+            </button>
+          )}
+          <div className="text-right">
+            <div className="text-3xl md:text-4xl font-bold tabular-nums">{timeStr}</div>
+            <div className="text-sm text-muted-foreground capitalize">{dateStr}</div>
+            <div className="text-[11px] text-muted-foreground mt-1">
+              Atualizado há {secondsSinceUpdate}s
+              <span className={cn("inline-block ml-2 h-2 w-2 rounded-full", query.isFetching ? "bg-[hsl(var(--status-waiting))] animate-pulse" : "bg-[hsl(var(--status-closed))]")} />
+            </div>
           </div>
         </div>
       </header>
+
 
       {!d ? (
         <div className="flex-1 flex items-center justify-center text-muted-foreground">Carregando dados…</div>
