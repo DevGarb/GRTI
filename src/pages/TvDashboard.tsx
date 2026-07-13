@@ -9,31 +9,50 @@ import { QuadrantCard } from "@/components/tv/QuadrantCard";
 import { GaugeRing } from "@/components/tv/GaugeRing";
 import { OkrCard } from "@/components/tv/OkrCard";
 import { FunnelBar } from "@/components/tv/FunnelBar";
-import { CriticalAlertsPanel } from "@/components/tv/CriticalAlertsPanel";
+import { GoalsPanel } from "@/components/tv/GoalsPanel";
 
 const FUNCTIONS_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/tv-dashboard`;
+
+interface GoalsSummary {
+  preventivas_target_total: number;
+  csat_target_avg: number;
+  points_target_total: number;
+  tickets_target_total: number;
+  rework_target_avg: number;
+  tma_target_avg_hours: number;
+  projects_target_total: number;
+  points_actual_total: number;
+  csat_actual_avg: number;
+  csat_actual_count: number;
+  rework_actual_percent: number;
+  rework_month: number;
+  tma_actual_hours: number;
+  projects_actual_total: number;
+  closed_month: number;
+  active_sprints_backlog: number;
+}
 
 interface TvData {
   org: { name: string; slug: string };
   generated_at: string;
   kpis: {
-    closed_today: number; in_progress: number; open: number; awaiting: number; backlog: number;
-    csat: number; csat_count: number; tma_minutes: number; active_techs: number;
+    closed_today: number; closed_month: number;
+    in_progress: number; open: number; awaiting: number; backlog: number;
+    csat: number; csat_count: number;
+    tma_minutes: number; tma_month_minutes: number;
+    active_techs: number; active_techs_today: number;
+    first_response_min: number; aging_min: number;
   };
   open_queue: Array<{ id: string; title: string; priority: string; category: string; requester: string; waiting_min: number; sla: "ok" | "warn" | "crit" }>;
   in_progress_list: Array<{ id: string; title: string; priority: string; category: string; technician: string; elapsed_min: number; sla: "ok" | "warn" | "crit" }>;
   ranking_today: Array<{ id: string; name: string; fechados: number }>;
   sla_alerts: Array<{ id: string; title: string; priority: string; sla: string; minutes: number }>;
   preventivas_month: { total: number; feitas: number; pendentes: number; atrasadas: number };
+  goals_summary: GoalsSummary | null;
 }
 
-// TODO: buscar metas reais de `goals` por org
-const DEFAULT_TARGETS = {
-  dailyClosed: 15,
-  monthlyClosed: 200,
-  csatTarget: 4.5,
-  backlogCeiling: 20,
-};
+const DEFAULT_BACKLOG_CEILING = 20;
+const WORKING_DAYS_PER_MONTH = 22;
 
 function fmtMin(m: number) {
   if (!m || m <= 0) return "—";
