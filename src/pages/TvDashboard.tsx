@@ -1,12 +1,17 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useParams, useSearchParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { Bell } from "lucide-react";
+import { Bell, Users, Timer, Star, TrendingUp } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
+import { computeOpStatus, opStatusLabel, opStatusEmoji } from "@/lib/opStatus";
+import { QuadrantCard } from "@/components/tv/QuadrantCard";
+import { GaugeRing } from "@/components/tv/GaugeRing";
+import { OkrCard } from "@/components/tv/OkrCard";
+import { FunnelBar } from "@/components/tv/FunnelBar";
+import { CriticalAlertsPanel } from "@/components/tv/CriticalAlertsPanel";
 
 const FUNCTIONS_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/tv-dashboard`;
-
 
 interface TvData {
   org: { name: string; slug: string };
@@ -22,6 +27,14 @@ interface TvData {
   preventivas_month: { total: number; feitas: number; pendentes: number; atrasadas: number };
 }
 
+// TODO: buscar metas reais de `goals` por org
+const DEFAULT_TARGETS = {
+  dailyClosed: 15,
+  monthlyClosed: 200,
+  csatTarget: 4.5,
+  backlogCeiling: 20,
+};
+
 function fmtMin(m: number) {
   if (!m || m <= 0) return "—";
   const h = Math.floor(m / 60);
@@ -30,41 +43,12 @@ function fmtMin(m: number) {
   return h > 0 ? `${h}h ${min}m` : `${min}m`;
 }
 
-function slaColor(sla: string) {
-  if (sla === "crit") return "text-[hsl(var(--status-open))]";
-  if (sla === "warn") return "text-[hsl(var(--status-waiting))]";
-  return "text-muted-foreground";
-}
-
-function KpiCard({ label, value, tone }: { label: string; value: React.ReactNode; tone?: "danger" | "warn" | "ok" | "primary" }) {
-  return (
-    <div className={cn(
-      "rounded-xl border p-5 bg-card shadow-sm",
-      tone === "danger" && "border-[hsl(var(--status-open))]/40 bg-[hsl(var(--status-open-bg))]",
-      tone === "warn" && "border-[hsl(var(--status-waiting))]/40 bg-[hsl(var(--status-waiting-bg))]",
-      tone === "ok" && "border-[hsl(var(--status-closed))]/40 bg-[hsl(var(--status-closed-bg))]",
-    )}>
-      <div className="text-xs uppercase tracking-wider text-muted-foreground font-medium">{label}</div>
-      <div className={cn(
-        "text-4xl md:text-5xl font-bold mt-2 tabular-nums",
-        tone === "danger" && "text-[hsl(var(--status-open))]",
-        tone === "warn" && "text-[hsl(var(--status-waiting))]",
-        tone === "ok" && "text-[hsl(var(--status-closed))]",
-      )}>{value}</div>
-    </div>
-  );
-}
-
-function Panel({ title, badge, children, className }: { title: string; badge?: React.ReactNode; children: React.ReactNode; className?: string }) {
-  return (
-    <div className={cn("rounded-xl border bg-card shadow-sm flex flex-col overflow-hidden", className)}>
-      <div className="px-4 py-3 border-b flex items-center justify-between shrink-0">
-        <h2 className="font-semibold text-lg">{title}</h2>
-        {badge}
-      </div>
-      <div className="flex-1 overflow-hidden">{children}</div>
-    </div>
-  );
+function statusBadgeClasses(status: "normal" | "attention" | "critical") {
+  return status === "normal"
+    ? "border-[hsl(var(--status-closed))] bg-[hsl(var(--status-closed-bg))] text-[hsl(var(--status-closed))]"
+    : status === "attention"
+    ? "border-[hsl(var(--status-waiting))] bg-[hsl(var(--status-waiting-bg))] text-[hsl(var(--status-waiting))]"
+    : "border-[hsl(var(--status-open))] bg-[hsl(var(--status-open-bg))] text-[hsl(var(--status-open))]";
 }
 
 export default function TvDashboard() {
@@ -87,7 +71,7 @@ export default function TvDashboard() {
   const query = useQuery<TvData>({
     queryKey: ["tv-dashboard", orgSlug, token],
     enabled: !!orgSlug && !!token,
-    refetchInterval: 300_000, // 5 min safety refresh; realtime handles instant updates
+    refetchInterval: 300_000,
     refetchOnWindowFocus: false,
     retry: 1,
     queryFn: async () => {
@@ -99,8 +83,7 @@ export default function TvDashboard() {
     },
   });
 
-
-  // Realtime: banner + som instantâneos ao inserir chamado (via broadcast do trigger)
+  // Realtime: banner + som ao inserir chamado
   const [alert, setAlert] = useState<{ count: number; titles: string[] } | null>(null);
   const [soundEnabled, setSoundEnabled] = useState(false);
   const soundEnabledRef = useRef(false);
@@ -131,9 +114,7 @@ export default function TvDashboard() {
         osc.start(start);
         osc.stop(start + 0.4);
       });
-    } catch (e) {
-      console.warn("beep failed", e);
-    }
+    } catch (e) { console.warn("beep failed", e); }
   }
 
   useEffect(() => {
@@ -151,7 +132,6 @@ export default function TvDashboard() {
         if (soundEnabledRef.current) playBeep();
         if (alertTimeoutRef.current) window.clearTimeout(alertTimeoutRef.current);
         alertTimeoutRef.current = window.setTimeout(() => setAlert(null), 15_000);
-        // Atualiza KPIs/listas em segundo plano
         query.refetch();
       })
       .subscribe();
@@ -172,13 +152,45 @@ export default function TvDashboard() {
     } catch {}
   }
 
-
-
   const secondsSinceUpdate = useMemo(() => {
     if (!query.dataUpdatedAt) return 0;
     return Math.floor((Date.now() - query.dataUpdatedAt) / 1000);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [query.dataUpdatedAt, tick]);
+
+  // Derivações para os quadrantes
+  const derived = useMemo(() => {
+    const d = query.data;
+    if (!d) return null;
+    const active = d.kpis.open + d.kpis.in_progress + d.kpis.awaiting;
+    const critCount = d.sla_alerts.filter(a => a.sla === "crit").length;
+    const warnCount = d.sla_alerts.filter(a => a.sla === "warn").length;
+    const outOfSla = critCount + warnCount;
+    const slaOkPct = active > 0 ? Math.max(0, ((active - outOfSla) / active) * 100) : 100;
+
+    // Top categorias em alerta
+    const catMap = new Map<string, number>();
+    for (const t of [...d.open_queue, ...d.in_progress_list]) {
+      if (t.sla !== "ok") catMap.set(t.category, (catMap.get(t.category) ?? 0) + 1);
+    }
+    const topCategories = Array.from(catMap.entries())
+      .map(([name, count]) => ({ name, count }))
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 3);
+
+    const csatPct = d.kpis.csat > 0 ? (d.kpis.csat / 5) * 100 : 0;
+    const loadPerTech = d.kpis.active_techs > 0 ? d.kpis.in_progress / d.kpis.active_techs : 0;
+
+    const opStatus = computeOpStatus({
+      backlogTotal: d.kpis.backlog,
+      awaitingApproval: d.kpis.awaiting,
+      reworkPercent: 0,
+      avgCsat: d.kpis.csat,
+      csatCount: d.kpis.csat_count,
+    });
+
+    return { active, critCount, warnCount, slaOkPct, topCategories, csatPct, loadPerTech, opStatus };
+  }, [query.data]);
 
   if (!token) {
     return (
@@ -206,9 +218,19 @@ export default function TvDashboard() {
   const dateStr = clock.toLocaleDateString("pt-BR", { weekday: "long", day: "2-digit", month: "long", year: "numeric" });
   const timeStr = clock.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit", second: "2-digit" });
 
+  // Tones dos quadrantes
+  const q1Progress = d ? Math.min(100, (d.kpis.closed_today / DEFAULT_TARGETS.dailyClosed) * 100) : 0;
+  const q1Tone = q1Progress >= 100 ? "ok" : q1Progress >= 60 ? "primary" : "warn";
+  const q2Tone = derived ? (derived.slaOkPct >= 90 ? "ok" : derived.slaOkPct >= 70 ? "warn" : "crit") : "neutral";
+  const q3Tone = d && d.kpis.csat > 0
+    ? (d.kpis.csat >= 4.5 ? "ok" : d.kpis.csat >= 3.5 ? "warn" : "crit")
+    : "neutral";
+  const q4Tone = derived
+    ? (derived.loadPerTech > 8 ? "warn" : derived.loadPerTech > 12 ? "crit" : "primary")
+    : "neutral";
+
   return (
     <div className="min-h-screen bg-background text-foreground p-4 md:p-6 flex flex-col gap-4 relative">
-      {/* New ticket alert overlay */}
       {alert && (
         <div className="fixed top-6 left-1/2 -translate-x-1/2 z-50 animate-in slide-in-from-top-8">
           <div className="rounded-xl border-2 border-[hsl(var(--status-open))] bg-[hsl(var(--status-open-bg))] shadow-2xl px-6 py-4 flex items-center gap-4 max-w-2xl">
@@ -227,9 +249,20 @@ export default function TvDashboard() {
 
       {/* Header */}
       <header className="flex flex-wrap items-center justify-between gap-3 border-b pb-3">
-        <div>
-          <div className="text-xs uppercase tracking-widest text-muted-foreground">Painel de Monitoramento</div>
-          <h1 className="text-2xl md:text-3xl font-bold">{d?.org.name ?? "Carregando…"}</h1>
+        <div className="flex items-center gap-4">
+          <div>
+            <div className="text-xs uppercase tracking-widest text-muted-foreground">War Room · Monitoramento</div>
+            <h1 className="text-2xl md:text-3xl font-bold">{d?.org.name ?? "Carregando…"}</h1>
+          </div>
+          {derived && (
+            <div className={cn(
+              "rounded-full border-2 px-4 py-1.5 text-sm font-bold flex items-center gap-2",
+              statusBadgeClasses(derived.opStatus)
+            )}>
+              <span>{opStatusEmoji(derived.opStatus)}</span>
+              <span>{opStatusLabel(derived.opStatus)}</span>
+            </div>
+          )}
         </div>
         <div className="flex items-center gap-4">
           {!soundEnabled && (
@@ -251,178 +284,181 @@ export default function TvDashboard() {
         </div>
       </header>
 
-
-      {!d ? (
-        <div className="flex-1 flex items-center justify-center text-muted-foreground">Carregando dados…</div>
+      {!d || !derived ? (
+        <div className="flex-1 flex items-center justify-center text-muted-foreground">Carregando indicadores…</div>
       ) : (
         <>
-          {/* KPIs */}
-          <section className="grid grid-cols-2 md:grid-cols-4 xl:grid-cols-8 gap-3">
-            <KpiCard label="Finalizados hoje" value={d.kpis.closed_today} tone="ok" />
-            <KpiCard label="Em andamento" value={d.kpis.in_progress} tone="primary" />
-            <KpiCard label="Em aberto" value={d.kpis.open} tone={d.kpis.open >= 10 ? "warn" : undefined} />
-            <KpiCard label="Aguardando aprov." value={d.kpis.awaiting} />
-            <KpiCard label="Backlog total" value={d.kpis.backlog} tone={d.kpis.backlog >= 20 ? "warn" : undefined} />
-            <KpiCard label="TMA médio" value={fmtMin(d.kpis.tma_minutes)} />
-            <KpiCard label={`CSAT (${d.kpis.csat_count})`} value={d.kpis.csat > 0 ? d.kpis.csat.toFixed(2) : "—"} />
-            <KpiCard label="Técnicos ativos" value={d.kpis.active_techs} />
+          {/* 4 Quadrantes principais */}
+          <section className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
+            {/* Q1 Produção */}
+            <QuadrantCard
+              title="Produção do Dia"
+              eyebrow="Q1"
+              tone={q1Tone as any}
+              footer={<span>Meta diária: <b>{DEFAULT_TARGETS.dailyClosed}</b> · Fechados: <b>{d.kpis.closed_today}</b></span>}
+            >
+              <div className="w-full flex flex-col items-center gap-3">
+                <div className="flex items-baseline gap-2">
+                  <span className="text-6xl font-bold tabular-nums text-[hsl(var(--status-closed))]">{d.kpis.closed_today}</span>
+                  <span className="text-lg text-muted-foreground">/ {DEFAULT_TARGETS.dailyClosed}</span>
+                </div>
+                <div className="w-full h-3 rounded-full bg-muted overflow-hidden">
+                  <div
+                    className="h-full bg-[hsl(var(--status-closed))] transition-all duration-700"
+                    style={{ width: `${q1Progress}%` }}
+                  />
+                </div>
+                <div className="text-xs text-muted-foreground">{Math.round(q1Progress)}% da meta</div>
+              </div>
+            </QuadrantCard>
+
+            {/* Q2 SLA */}
+            <QuadrantCard
+              title="SLA no Prazo"
+              eyebrow="Q2"
+              tone={q2Tone as any}
+              footer={<span>Ativos: <b>{derived.active}</b> · Fora do SLA: <b className="text-[hsl(var(--status-open))]">{derived.critCount + derived.warnCount}</b></span>}
+            >
+              <GaugeRing value={derived.slaOkPct} tone={q2Tone as any} sub="no prazo" size={170} />
+            </QuadrantCard>
+
+            {/* Q3 CSAT */}
+            <QuadrantCard
+              title="Qualidade (CSAT)"
+              eyebrow="Q3"
+              tone={q3Tone as any}
+              footer={<span>{d.kpis.csat_count} avaliações (30d) · Meta: <b>{DEFAULT_TARGETS.csatTarget}</b></span>}
+            >
+              <div className="flex flex-col items-center gap-2">
+                <div className="flex items-baseline gap-1">
+                  <Star className={cn(
+                    "h-8 w-8",
+                    q3Tone === "ok" && "fill-[hsl(var(--status-closed))] text-[hsl(var(--status-closed))]",
+                    q3Tone === "warn" && "fill-[hsl(var(--status-waiting))] text-[hsl(var(--status-waiting))]",
+                    q3Tone === "crit" && "fill-[hsl(var(--status-open))] text-[hsl(var(--status-open))]",
+                    q3Tone === "neutral" && "text-muted-foreground",
+                  )} />
+                  <span className={cn(
+                    "text-6xl font-bold tabular-nums",
+                    q3Tone === "ok" && "text-[hsl(var(--status-closed))]",
+                    q3Tone === "warn" && "text-[hsl(var(--status-waiting))]",
+                    q3Tone === "crit" && "text-[hsl(var(--status-open))]",
+                  )}>{d.kpis.csat > 0 ? d.kpis.csat.toFixed(2) : "—"}</span>
+                  <span className="text-lg text-muted-foreground">/ 5</span>
+                </div>
+                <div className="flex gap-1">
+                  {[1, 2, 3, 4, 5].map(i => (
+                    <Star
+                      key={i}
+                      className={cn(
+                        "h-5 w-5",
+                        i <= Math.round(d.kpis.csat)
+                          ? "fill-[hsl(var(--status-waiting))] text-[hsl(var(--status-waiting))]"
+                          : "text-muted-foreground/40"
+                      )}
+                    />
+                  ))}
+                </div>
+              </div>
+            </QuadrantCard>
+
+            {/* Q4 Capacidade */}
+            <QuadrantCard
+              title="Capacidade"
+              eyebrow="Q4"
+              tone={q4Tone as any}
+              footer={<span>Carga por técnico: <b>{derived.loadPerTech.toFixed(1)}</b> chamados</span>}
+            >
+              <div className="w-full grid grid-cols-2 gap-3">
+                <div className="text-center">
+                  <Users className="h-6 w-6 mx-auto text-primary mb-1" />
+                  <div className="text-4xl font-bold tabular-nums">{d.kpis.active_techs}</div>
+                  <div className="text-[10px] uppercase tracking-widest text-muted-foreground">Técnicos ativos</div>
+                </div>
+                <div className="text-center">
+                  <Timer className="h-6 w-6 mx-auto text-primary mb-1" />
+                  <div className="text-4xl font-bold tabular-nums">{fmtMin(d.kpis.tma_minutes)}</div>
+                  <div className="text-[10px] uppercase tracking-widest text-muted-foreground">TMA médio</div>
+                </div>
+              </div>
+            </QuadrantCard>
           </section>
 
-          {/* Main grid */}
-          <section className="grid grid-cols-1 xl:grid-cols-3 gap-4 flex-1 min-h-0">
-            {/* Open queue */}
-            <Panel
-              title="Fila em Aberto"
-              className="xl:col-span-2"
-              badge={<span className="text-sm text-muted-foreground">{d.open_queue.length} aguardando</span>}
-            >
-              <div className="overflow-auto h-full">
-                <table className="w-full text-sm">
-                  <thead className="bg-muted/50 text-xs uppercase text-muted-foreground sticky top-0">
-                    <tr>
-                      <th className="text-left px-3 py-2">Chamado</th>
-                      <th className="text-left px-3 py-2">Solicitante</th>
-                      <th className="text-left px-3 py-2">Categoria</th>
-                      <th className="text-left px-3 py-2">Prioridade</th>
-                      <th className="text-right px-3 py-2">Aguardando</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {d.open_queue.map(t => (
-                      <tr key={t.id} className="border-b last:border-0 hover:bg-muted/30">
-                        <td className="px-3 py-2 max-w-xs truncate">{t.title}</td>
-                        <td className="px-3 py-2">{t.requester}</td>
-                        <td className="px-3 py-2 text-muted-foreground">{t.category}</td>
-                        <td className="px-3 py-2">{t.priority}</td>
-                        <td className={cn("px-3 py-2 text-right tabular-nums font-medium", slaColor(t.sla))}>{fmtMin(t.waiting_min)}</td>
-                      </tr>
-                    ))}
-                    {d.open_queue.length === 0 && (
-                      <tr><td colSpan={5} className="text-center py-8 text-muted-foreground">Sem chamados em aberto 🎉</td></tr>
-                    )}
-                  </tbody>
-                </table>
-              </div>
-            </Panel>
+          {/* OKRs do mês */}
+          <section>
+            <div className="flex items-center gap-2 mb-3">
+              <TrendingUp className="h-4 w-4 text-primary" />
+              <h2 className="text-sm font-semibold uppercase tracking-widest text-muted-foreground">OKRs do Mês</h2>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-3">
+              <OkrCard
+                title="Fechamentos do mês"
+                current={d.kpis.closed_today /* proxy: sem métrica mensal no payload atual */}
+                target={DEFAULT_TARGETS.monthlyClosed}
+              />
+              <OkrCard
+                title="CSAT ≥ 4.5"
+                current={d.kpis.csat}
+                target={DEFAULT_TARGETS.csatTarget}
+                format={(v) => v.toFixed(2)}
+              />
+              <OkrCard
+                title="Preventivas do mês"
+                current={d.preventivas_month.feitas}
+                target={Math.max(1, d.preventivas_month.total)}
+              />
+              <OkrCard
+                title={`Backlog < ${DEFAULT_TARGETS.backlogCeiling}`}
+                current={d.kpis.backlog}
+                target={DEFAULT_TARGETS.backlogCeiling}
+                higherIsBetter={false}
+              />
+            </div>
+          </section>
 
-            {/* Ranking + Preventivas stacked */}
-            <div className="flex flex-col gap-4 min-h-0">
-              <Panel title="Ranking do dia">
-                <ul className="divide-y">
-                  {d.ranking_today.map((r, i) => (
-                    <li key={r.id} className="flex items-center justify-between px-3 py-2">
-                      <div className="flex items-center gap-3">
+          {/* Funil + Alertas Críticos */}
+          <section className="grid grid-cols-1 xl:grid-cols-3 gap-4 flex-1 min-h-0">
+            <div className="xl:col-span-2 rounded-2xl border bg-card p-5 shadow-sm">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-sm font-semibold uppercase tracking-wider">Fluxo Operacional</h3>
+                <span className="text-xs text-muted-foreground">Distribuição do funil</span>
+              </div>
+              <FunnelBar segments={[
+                { label: "Aberto", value: d.kpis.open, color: "hsl(var(--status-open))" },
+                { label: "Em andamento", value: d.kpis.in_progress, color: "hsl(var(--primary))" },
+                { label: "Aguard. aprov.", value: d.kpis.awaiting, color: "hsl(var(--status-waiting))" },
+                { label: "Fechados hoje", value: d.kpis.closed_today, color: "hsl(var(--status-closed))" },
+              ]} />
+
+              {/* Ranking compacto */}
+              {d.ranking_today.length > 0 && (
+                <div className="mt-6 pt-4 border-t">
+                  <div className="text-[10px] uppercase tracking-widest text-muted-foreground mb-2">Top 3 técnicos hoje</div>
+                  <div className="grid grid-cols-3 gap-2">
+                    {d.ranking_today.slice(0, 3).map((r, i) => (
+                      <div key={r.id} className="flex items-center gap-2 rounded-lg border bg-background/50 p-2">
                         <span className={cn(
-                          "h-7 w-7 rounded-full flex items-center justify-center font-bold text-sm",
+                          "h-8 w-8 rounded-full flex items-center justify-center font-bold text-sm shrink-0",
                           i === 0 ? "bg-yellow-500/20 text-yellow-500" :
                           i === 1 ? "bg-gray-400/20 text-gray-300" :
-                          i === 2 ? "bg-orange-500/20 text-orange-500" :
-                          "bg-muted text-muted-foreground"
+                          "bg-orange-500/20 text-orange-500"
                         )}>{i + 1}</span>
-                        <span className="font-medium truncate">{r.name}</span>
+                        <div className="min-w-0 flex-1">
+                          <div className="text-sm font-medium truncate">{r.name}</div>
+                          <div className="text-xs text-muted-foreground">{r.fechados} fechados</div>
+                        </div>
                       </div>
-                      <span className="tabular-nums font-semibold">{r.fechados}</span>
-                    </li>
-                  ))}
-                  {d.ranking_today.length === 0 && (
-                    <li className="text-center py-6 text-muted-foreground text-sm">Nenhum atendimento fechado hoje</li>
-                  )}
-                </ul>
-              </Panel>
-
-              <Panel title="Preventivas do mês">
-                <div className="p-4 space-y-3">
-                  <div className="grid grid-cols-2 gap-2">
-                    <div className="rounded-lg bg-muted/50 p-3">
-                      <div className="text-xs text-muted-foreground">Total</div>
-                      <div className="text-2xl font-bold tabular-nums">{d.preventivas_month.total}</div>
-                    </div>
-                    <div className="rounded-lg bg-[hsl(var(--status-closed-bg))] p-3">
-                      <div className="text-xs text-muted-foreground">Feitas</div>
-                      <div className="text-2xl font-bold tabular-nums text-[hsl(var(--status-closed))]">{d.preventivas_month.feitas}</div>
-                    </div>
-                    <div className="rounded-lg bg-[hsl(var(--status-waiting-bg))] p-3">
-                      <div className="text-xs text-muted-foreground">Pendentes</div>
-                      <div className="text-2xl font-bold tabular-nums text-[hsl(var(--status-waiting))]">{d.preventivas_month.pendentes}</div>
-                    </div>
-                    <div className="rounded-lg bg-[hsl(var(--status-open-bg))] p-3">
-                      <div className="text-xs text-muted-foreground">Atrasadas</div>
-                      <div className="text-2xl font-bold tabular-nums text-[hsl(var(--status-open))]">{d.preventivas_month.atrasadas}</div>
-                    </div>
-                  </div>
-                  <div>
-                    <div className="h-2 bg-muted rounded-full overflow-hidden">
-                      <div
-                        className="h-full bg-[hsl(var(--status-closed))] transition-all"
-                        style={{ width: `${d.preventivas_month.total ? Math.min(100, (d.preventivas_month.feitas / d.preventivas_month.total) * 100) : 0}%` }}
-                      />
-                    </div>
-                    <div className="text-xs text-muted-foreground mt-1">
-                      {d.preventivas_month.total
-                        ? `${Math.round((d.preventivas_month.feitas / d.preventivas_month.total) * 100)}% concluído`
-                        : "Sem preventivas cadastradas"}
-                    </div>
+                    ))}
                   </div>
                 </div>
-              </Panel>
+              )}
             </div>
 
-            {/* In progress */}
-            <Panel
-              title="Chamados em Andamento"
-              className="xl:col-span-2"
-              badge={<span className="text-sm text-muted-foreground">{d.in_progress_list.length} ativos</span>}
-            >
-              <div className="overflow-auto h-full">
-                <table className="w-full text-sm">
-                  <thead className="bg-muted/50 text-xs uppercase text-muted-foreground sticky top-0">
-                    <tr>
-                      <th className="text-left px-3 py-2">Chamado</th>
-                      <th className="text-left px-3 py-2">Técnico</th>
-                      <th className="text-left px-3 py-2">Categoria</th>
-                      <th className="text-right px-3 py-2">Decorrido</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {d.in_progress_list.map(t => (
-                      <tr key={t.id} className="border-b last:border-0 hover:bg-muted/30">
-                        <td className="px-3 py-2 max-w-xs truncate">{t.title}</td>
-                        <td className="px-3 py-2">{t.technician}</td>
-                        <td className="px-3 py-2 text-muted-foreground">{t.category}</td>
-                        <td className={cn("px-3 py-2 text-right tabular-nums font-medium", slaColor(t.sla))}>{fmtMin(t.elapsed_min)}</td>
-                      </tr>
-                    ))}
-                    {d.in_progress_list.length === 0 && (
-                      <tr><td colSpan={4} className="text-center py-8 text-muted-foreground">Nenhum atendimento em andamento</td></tr>
-                    )}
-                  </tbody>
-                </table>
-              </div>
-            </Panel>
-
-            {/* SLA alerts */}
-            <Panel
-              title="Alertas de SLA"
-              badge={<span className="text-sm text-[hsl(var(--status-open))] font-semibold">{d.sla_alerts.length}</span>}
-            >
-              <ul className="divide-y overflow-auto h-full">
-                {d.sla_alerts.map(a => (
-                  <li key={a.id} className="px-3 py-2 flex items-center gap-2">
-                    <span className={cn(
-                      "h-2 w-2 rounded-full shrink-0",
-                      a.sla === "crit" ? "bg-[hsl(var(--status-open))] animate-pulse" : "bg-[hsl(var(--status-waiting))]"
-                    )} />
-                    <div className="flex-1 min-w-0">
-                      <div className="text-sm truncate">{a.title}</div>
-                      <div className="text-[11px] text-muted-foreground">{a.priority} · {fmtMin(a.minutes)}</div>
-                    </div>
-                  </li>
-                ))}
-                {d.sla_alerts.length === 0 && (
-                  <li className="text-center py-6 text-muted-foreground text-sm">Tudo dentro do prazo ✅</li>
-                )}
-              </ul>
-            </Panel>
+            <CriticalAlertsPanel
+              crit={derived.critCount}
+              warn={derived.warnCount}
+              topCategories={derived.topCategories}
+            />
           </section>
         </>
       )}
