@@ -187,28 +187,31 @@ export default function TvDashboard() {
     const outOfSla = critCount + warnCount;
     const slaOkPct = active > 0 ? Math.max(0, ((active - outOfSla) / active) * 100) : 100;
 
-    // Top categorias em alerta
-    const catMap = new Map<string, number>();
-    for (const t of [...d.open_queue, ...d.in_progress_list]) {
-      if (t.sla !== "ok") catMap.set(t.category, (catMap.get(t.category) ?? 0) + 1);
-    }
-    const topCategories = Array.from(catMap.entries())
-      .map(([name, count]) => ({ name, count }))
-      .sort((a, b) => b.count - a.count)
-      .slice(0, 3);
-
     const csatPct = d.kpis.csat > 0 ? (d.kpis.csat / 5) * 100 : 0;
-    const loadPerTech = d.kpis.active_techs > 0 ? d.kpis.in_progress / d.kpis.active_techs : 0;
+    const techsBase = d.kpis.active_techs_today || d.kpis.active_techs;
+    const loadPerTech = techsBase > 0 ? d.kpis.in_progress / techsBase : 0;
 
     const opStatus = computeOpStatus({
       backlogTotal: d.kpis.backlog,
       awaitingApproval: d.kpis.awaiting,
-      reworkPercent: 0,
+      reworkPercent: d.goals_summary?.rework_actual_percent ?? 0,
       avgCsat: d.kpis.csat,
       csatCount: d.kpis.csat_count,
     });
 
-    return { active, critCount, warnCount, slaOkPct, topCategories, csatPct, loadPerTech, opStatus };
+    // Metas dinâmicas
+    const gs = d.goals_summary;
+    const monthlyClosedTarget = gs && gs.tickets_target_total > 0 ? gs.tickets_target_total : 200;
+    const dailyClosedTarget = Math.max(1, Math.ceil(monthlyClosedTarget / WORKING_DAYS_PER_MONTH));
+    const csatTarget = gs && gs.csat_target_avg > 0 ? gs.csat_target_avg : 4.5;
+    const preventivasTarget = gs && gs.preventivas_target_total > 0
+      ? gs.preventivas_target_total
+      : Math.max(1, d.preventivas_month.total);
+
+    return {
+      active, critCount, warnCount, slaOkPct, csatPct, loadPerTech, opStatus,
+      monthlyClosedTarget, dailyClosedTarget, csatTarget, preventivasTarget,
+    };
   }, [query.data]);
 
   if (!token) {
@@ -238,14 +241,16 @@ export default function TvDashboard() {
   const timeStr = clock.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit", second: "2-digit" });
 
   // Tones dos quadrantes
-  const q1Progress = d ? Math.min(100, (d.kpis.closed_today / DEFAULT_TARGETS.dailyClosed) * 100) : 0;
+  const q1Target = derived?.dailyClosedTarget ?? 15;
+  const q1Progress = d ? Math.min(100, (d.kpis.closed_today / q1Target) * 100) : 0;
   const q1Tone = q1Progress >= 100 ? "ok" : q1Progress >= 60 ? "primary" : "warn";
   const q2Tone = derived ? (derived.slaOkPct >= 90 ? "ok" : derived.slaOkPct >= 70 ? "warn" : "crit") : "neutral";
+  const csatTargetVal = derived?.csatTarget ?? 4.5;
   const q3Tone = d && d.kpis.csat > 0
-    ? (d.kpis.csat >= 4.5 ? "ok" : d.kpis.csat >= 3.5 ? "warn" : "crit")
+    ? (d.kpis.csat >= csatTargetVal ? "ok" : d.kpis.csat >= csatTargetVal - 1 ? "warn" : "crit")
     : "neutral";
   const q4Tone = derived
-    ? (derived.loadPerTech > 8 ? "warn" : derived.loadPerTech > 12 ? "crit" : "primary")
+    ? (derived.loadPerTech > 12 ? "crit" : derived.loadPerTech > 8 ? "warn" : "primary")
     : "neutral";
 
   return (
