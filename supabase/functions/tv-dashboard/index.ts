@@ -209,20 +209,33 @@ Deno.serve(async (req) => {
     const prevList = prev ?? [];
     const prevDone = prevList.length;
 
-    // Interval-based expected count
+    // Interval-based expected count (uses last preventive per asset_tag)
     const { data: intervals } = await supabase
       .from("maintenance_intervals").select("equipment_type, interval_days");
     const { data: patrimonio } = await supabase
-      .from("patrimonio").select("id, tipo, ultima_manutencao")
+      .from("patrimonio").select("id, asset_tag, equipment_type")
+      .eq("organization_id", orgId)
+      .eq("status", "Ativo");
+    const { data: allPrev } = await supabase
+      .from("preventive_maintenance")
+      .select("asset_tag, execution_date")
       .eq("organization_id", orgId);
+    const lastByTag = new Map<string, string>();
+    for (const p of allPrev ?? []) {
+      const tag = (p as any).asset_tag;
+      const d = (p as any).execution_date;
+      if (!tag || !d) continue;
+      const prev = lastByTag.get(tag);
+      if (!prev || d > prev) lastByTag.set(tag, d);
+    }
     const intervalMap = new Map((intervals ?? []).map((i: any) => [i.equipment_type, i.interval_days]));
     let prevTotal = 0, prevOverdue = 0;
     for (const p of patrimonio ?? []) {
-      const days = intervalMap.get((p as any).tipo);
+      const days = intervalMap.get((p as any).equipment_type);
       if (!days) continue;
       prevTotal++;
-      const last = (p as any).ultima_manutencao ? new Date((p as any).ultima_manutencao) : null;
-      const nextDue = last ? new Date(last.getTime() + days * 86400000) : null;
+      const lastStr = lastByTag.get((p as any).asset_tag);
+      const nextDue = lastStr ? new Date(new Date(lastStr).getTime() + days * 86400000) : null;
       if (!nextDue || nextDue < now) prevOverdue++;
     }
     const prevPendente = Math.max(0, prevTotal - prevDone);
