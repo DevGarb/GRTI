@@ -1,70 +1,85 @@
 
-# Painel de TV / Monitoramento — GRTI
+# Redesign do Painel de Monitoramento (TV Dashboard)
 
-Rota pública responsiva, protegida por token, que fica aberta 24/7 numa TV mostrando o status operacional da GRTI em tempo quase real.
+Trocar o layout atual (KPIs pequenos + tabelas lineares de chamados) por uma grade estilo **war room**: quadrantes grandes com indicadores, gauges e status semafóricos. Foco em leitura à distância (TV) e visão executiva por OKR, não em listas de itens.
 
-## Rota e acesso
+## Estrutura visual (grid 12 colunas, tela cheia)
 
-- Nova rota pública: `/tv/:orgSlug` (fora do `ProtectedRoute`), aceitando `?token=XYZ` na URL.
-- Token estático por organização, guardado como secret no backend (`TV_DASHBOARD_TOKEN_GRTI`). Sem token válido → tela "Acesso negado".
-- Sem sessão de usuário: os dados vêm de uma edge function pública (`tv-dashboard`) que valida o token e devolve tudo pronto (KPIs, listas, ranking). Nenhuma escrita, só leitura.
-- Auto-refresh a cada 60s (react-query `refetchInterval`), com indicador discreto de "última atualização há Xs".
+```text
+┌──────────────────────── HEADER (org • relógio • status semáforo global) ────────────────────────┐
+│                                                                                                  │
+│  ┌───────────────┬───────────────┬───────────────┬───────────────┐                              │
+│  │ Q1 PRODUÇÃO   │ Q2 SLA        │ Q3 QUALIDADE  │ Q4 CAPACIDADE │  ← 4 quadrantes principais    │
+│  │ Finalizados   │ Gauge % SLA   │ CSAT gauge    │ Técnicos on   │                              │
+│  │ vs meta dia   │ no prazo      │ 0-5 estrelas  │ Carga/técnico │                              │
+│  │ (barra prog.) │ Crít/Aten/OK  │ Nº avaliações │ TMA médio     │                              │
+│  └───────────────┴───────────────┴───────────────┴───────────────┘                              │
+│                                                                                                  │
+│  ┌─────────────────────── OKRs / Metas do Mês (3-4 cards grandes) ──────────────────────────┐  │
+│  │  ⬤ Fechar 200 chamados   ⬤ CSAT ≥ 4.5   ⬤ Preventivas 100%   ⬤ Backlog < 20            │  │
+│  │     [progress ring]        [progress ring] [progress ring]      [progress ring]           │  │
+│  └───────────────────────────────────────────────────────────────────────────────────────────┘  │
+│                                                                                                  │
+│  ┌─────────── FLUXO (funil) ──────────┬──────────── ALERTAS CRÍTICOS ─────────────┐            │
+│  │ Aberto → Andamento → Aprov → Fech  │ Nº de chamados estourando SLA (contador   │            │
+│  │ (barras horizontais proporcionais) │ grande + top 3 categorias impactadas)     │            │
+│  └────────────────────────────────────┴───────────────────────────────────────────┘            │
+└──────────────────────────────────────────────────────────────────────────────────────────────────┘
+```
 
-## Layout
+## Quadrantes principais (Q1-Q4)
 
-- Página full-screen sem sidebar/topbar (não usa `AppLayout`).
-- Responsivo: em **retrato** (TV rotacionada / tablet em pé) vira coluna única empilhada; em **paisagem 16:9** vira grid 12 colunas.
-- Tema escuro fixo para leitura à distância, tipografia grande, cores dos status já existentes (`--status-open`, `--status-waiting`, `--status-closed`).
-- Cabeçalho fixo: logo da org + relógio + data + badge de status operacional (reaproveita `computeOpStatus`).
+Cada quadrante = card grande com **título**, **valor gigante**, **indicador de status (🟢🟡🔴)** e **micro-contexto** (meta, delta vs. ontem, ou barra):
 
-## Blocos exibidos
+- **Q1 Produção do dia** — Finalizados hoje / meta diária, barra de progresso, delta vs. média 7d.
+- **Q2 SLA no prazo** — Gauge circular % de chamados ativos dentro do SLA (usa `sla_alerts` + total ativos). Cores: verde ≥ 90%, amarelo 70-90%, vermelho < 70%.
+- **Q3 Qualidade (CSAT)** — Nota média com estrelas + nº de avaliações do período.
+- **Q4 Capacidade** — Técnicos ativos, chamados/técnico, TMA médio como sub-métricas.
 
-1. **KPIs do dia** — cards grandes: Finalizados hoje, Em andamento, Em aberto, CSAT, TMA, Backlog total. Reaproveita `ExecutiveSummary` visualmente (versão XL).
-2. **Fila de chamados em aberto** — tabela rolando: nº, categoria, solicitante, tempo aguardando, prioridade. Destaque vermelho para os que estouraram SLA (horário comercial). Máx. 10 linhas visíveis com auto-scroll suave se houver mais.
-3. **Chamados em andamento** — tabela: nº, técnico (avatar+nome), categoria, tempo decorrido, status. Ordena por tempo decorrido desc.
-4. **Preventivas do mês** — 4 mini-cards: Total previstas, Concluídas, Pendentes, Atrasadas + barra de progresso do mês.
-5. **Ranking do dia + Alertas SLA** — coluna dupla:
-   - Top 5 técnicos por chamados fechados / pontuação de hoje.
-   - Lista curta de alertas: chamados/preventivas com SLA estourado ou prestes a estourar.
+## OKRs (faixa central)
 
-## Backend
+Cards de OKR com **progress ring** (SVG). Metas puxadas de valores calculados no edge (não requer nova tabela nesta fase — usar constantes por org ou já-existentes de `useGoals`/preventivas):
+- Fechamentos do mês vs. meta
+- CSAT médio do mês vs. 4.5
+- Preventivas feitas/total
+- Backlog atual vs. teto (20)
 
-Nova edge function `supabase/functions/tv-dashboard/index.ts` (public, `verify_jwt=false`):
+Cada card mostra: nome do OKR, valor atual/meta, % de atingimento, cor semafórica.
 
-- Recebe `?org=<slug>&token=<token>`.
-- Valida token contra secret `TV_DASHBOARD_TOKEN_<SLUG_UPPER>`. Falha → 401.
-- Resolve `organization_id` pelo slug.
-- Retorna JSON único com:
-  - `kpis`: closed_today, in_progress, open, csat, csat_count, tma_minutes, backlog_total
-  - `open_queue`: até 20 chamados em aberto (id, número, categoria, solicitante, aguardando_min, sla_estourado)
-  - `in_progress_list`: até 20 (id, número, técnico, categoria, decorrido_min)
-  - `preventivas_month`: {total, feitas, pendentes, atrasadas}
-  - `ranking_today`: top 5 técnicos (nome, fechados, pontos, csat)
-  - `sla_alerts`: até 10 itens (tipo, número, título, estourado_por_min)
-- Reaproveita a lógica de horário comercial (`src/lib/businessHours`) portada para Deno dentro da função.
+## Funil operacional
 
-Nenhuma migration nova é necessária — todos os dados já existem em `tickets`, `preventive_maintenance`, `profiles`, `categories`, `evaluations`.
+Barras horizontais empilhadas proporcionais (Aberto/Em andamento/Aguardando aprov/Fechados hoje) — substitui a tabela "Fila em Aberto". Mostra o balanço do funil, não itens.
 
-## Frontend — arquivos
+## Alertas críticos
 
-- `src/pages/TvDashboard.tsx` (novo) — página, controla token, chama a function via `fetch` (sem auth), react-query com `refetchInterval: 60_000`.
-- `src/components/tv/TvHeader.tsx`, `TvKpiCard.tsx`, `TvOpenQueue.tsx`, `TvInProgressList.tsx`, `TvPreventivas.tsx`, `TvRanking.tsx`, `TvSlaAlerts.tsx` — blocos.
-- `src/App.tsx` — registrar `<Route path="/tv/:orgSlug" element={<TvDashboard />} />` **fora** do `ProtectedRoute` (igual `/asset/:id`).
+Card grande com:
+- Contador enorme de chamados fora do SLA (crit + warn separados)
+- Top 3 categorias/prioridades mais impactadas (agregação, não lista de tickets)
+- Semáforo global
 
-## Segurança
+## Header
 
-- Token só circula no querystring — assumido aceitável porque a TV fica em rede local; dá para trocar via `update_secret` a qualquer momento.
-- Function não expõe dados de outras organizações (filtra por `organization_id` resolvido do slug).
-- Nada de sessão, nada de escrita, nada de PII sensível além do que já aparece nas telas normais.
+Adicionar **badge de status operacional global** (🟢 Normal / 🟡 Atenção / 🔴 Crítico) reutilizando `computeOpStatus` de `src/lib/opStatus.ts` — já existe a lógica.
 
-## Como usar depois de pronto
+## Detalhes técnicos
 
-1. Gerar/rotacionar `TV_DASHBOARD_TOKEN_GRTI` via secret manager.
-2. Abrir na TV: `https://<seu-domínio>/tv/grti?token=<token>`.
-3. Ativar modo full-screen do navegador (F11). Refresh acontece sozinho a cada 1 min.
+- **Frontend only nesta fase**: reaproveita o payload atual de `tv-dashboard` (kpis, sla_alerts, preventivas_month, ranking_today, in_progress_list, open_queue). Faz as agregações no cliente:
+  - % SLA no prazo = 1 − (sla_alerts.length / (open + in_progress))
+  - Distribuição do funil = kpis.open / in_progress / awaiting / closed_today
+  - Top categorias em alerta = agrupar `open_queue` + `in_progress_list` filtrando `sla !== "ok"` por `category`
+- **Metas OKR**: hardcoded no client por enquanto (constantes por org via mapa `orgSlug → metas`) — para não mexer no edge/backend nesta iteração. Deixa `TODO` para depois puxar de `goals` real.
+- **Realtime, som e alerta de novo chamado**: mantidos exatamente como estão (canal `tv:{slug}`, beep, banner).
+- **Componentes novos** (todos em `src/components/tv/`):
+  - `QuadrantCard.tsx` — card grande com valor + status + micro-contexto
+  - `GaugeRing.tsx` — SVG circular progress (usado em Q2, Q3 e OKRs)
+  - `OkrCard.tsx` — card de OKR com ring
+  - `FunnelBar.tsx` — barra empilhada horizontal
+  - `CriticalAlertsPanel.tsx` — contador + top categorias
+- **Arquivo alterado**: `src/pages/TvDashboard.tsx` — remove seção de tabelas (Fila em Aberto, Em Andamento, Ranking) e monta o novo grid. Ranking do dia vira um card compacto opcional no rodapé (top 3 apenas, sem tabela).
+- **Sem mudanças em**: edge function `tv-dashboard`, migrations, realtime, autenticação por token.
 
-## Fora de escopo
+## Fora do escopo
 
-- Configuração de blocos por org via UI (por enquanto blocos são fixos para GRTI; extensível depois).
-- Notificações sonoras / TTS.
-- Modo edição direto da TV (é read-only).
+- Não alterar o edge function nesta fase (payload já cobre tudo).
+- Não criar tabela de metas OKR (usar constantes por enquanto).
+- Não mexer nos outros dashboards (`DashboardOperacional`, `ProjetosDashboard`).
