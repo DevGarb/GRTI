@@ -112,32 +112,57 @@ Deno.serve(async (req) => {
     const catOf = new Map((cats ?? []).map((c: any) => [c.id, c.name]));
 
     // KPIs
-    let closed_today = 0, in_progress = 0, open_count = 0, awaiting = 0, backlog = 0;
+    let closed_today = 0, closed_month = 0;
+    let in_progress = 0, open_count = 0, awaiting = 0, backlog = 0;
     let tmaSum = 0, tmaN = 0;
+    let tmaMonthSum = 0, tmaMonthN = 0;
+    let frSum = 0, frN = 0;
+    let agingSum = 0, agingN = 0;
+    const activeTechsToday = new Set<string>();
 
     for (const t of list) {
       if (t.status === "Fechado" || t.status === "Aprovado") {
-        if (t.closed_at && new Date(t.closed_at) >= startToday) closed_today++;
-        if (t.started_at && t.closed_at) {
-          const m = calcBusinessMinutes(new Date(t.started_at), new Date(t.closed_at));
-          if (m > 0) { tmaSum += m; tmaN++; }
+        if (t.closed_at) {
+          const cd = new Date(t.closed_at);
+          if (cd >= startToday) {
+            closed_today++;
+            if (t.assigned_to) activeTechsToday.add(t.assigned_to);
+          }
+          if (cd >= startMonth && cd < endMonth) closed_month++;
+          if (t.started_at) {
+            const m = calcBusinessMinutes(new Date(t.started_at), cd);
+            if (m > 0) {
+              tmaSum += m; tmaN++;
+              if (cd >= startMonth && cd < endMonth) { tmaMonthSum += m; tmaMonthN++; }
+            }
+          }
         }
       } else {
         backlog++;
-        if (t.status === "Em Andamento") in_progress++;
+        if (t.status === "Em Andamento") { in_progress++; if (t.assigned_to) activeTechsToday.add(t.assigned_to); }
         else if (t.status === "Aberto") open_count++;
         else if (t.status === "Aguardando Aprovação") awaiting++;
+        const am = calcBusinessMinutes(new Date(t.created_at), now);
+        if (am > 0) { agingSum += am; agingN++; }
+      }
+      if (t.started_at) {
+        const sd = new Date(t.started_at);
+        if (sd >= startMonth && sd < endMonth) {
+          const fm = calcBusinessMinutes(new Date(t.created_at), sd);
+          if (fm >= 0) { frSum += fm; frN++; }
+        }
       }
     }
 
-    // CSAT last 30d
-    const cutoff30 = new Date(now.getTime() - 30 * 24 * 3600 * 1000).toISOString();
-    const { data: evals } = await supabase
-      .from("evaluations").select("score, ticket_id, created_at, tickets!inner(organization_id)")
-      .gte("created_at", cutoff30)
+    // CSAT do mês vigente (apenas satisfaction)
+    const { data: evalsMonth } = await supabase
+      .from("evaluations").select("score, ticket_id, created_at, type, tickets!inner(organization_id)")
+      .gte("created_at", startMonth.toISOString())
+      .lt("created_at", endMonth.toISOString())
+      .eq("type", "satisfaction")
       .eq("tickets.organization_id", orgId);
     let csatSum = 0, csatN = 0;
-    for (const e of evals ?? []) { csatSum += (e as any).score ?? 0; csatN++; }
+    for (const e of evalsMonth ?? []) { csatSum += (e as any).score ?? 0; csatN++; }
     const csat = csatN ? csatSum / csatN : 0;
 
     // Open queue
