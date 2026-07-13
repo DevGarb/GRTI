@@ -3,6 +3,7 @@ import { Sun, Lock, User } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import OrgMenusCard from "@/components/configuracoes/OrgMenusCard";
 
 export default function Configuracoes() {
   const [darkMode, setDarkMode] = useState(() => {
