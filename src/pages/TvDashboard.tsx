@@ -1,6 +1,7 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useParams, useSearchParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
+import { Bell } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const FUNCTIONS_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/tv-dashboard`;
@@ -84,7 +85,7 @@ export default function TvDashboard() {
   const query = useQuery<TvData>({
     queryKey: ["tv-dashboard", orgSlug, token],
     enabled: !!orgSlug && !!token,
-    refetchInterval: 60_000,
+    refetchInterval: 20_000,
     refetchOnWindowFocus: false,
     retry: 1,
     queryFn: async () => {
@@ -95,6 +96,70 @@ export default function TvDashboard() {
       return r.json();
     },
   });
+
+  // Detect new tickets between refetches and trigger sound + banner
+  const knownIdsRef = useRef<Set<string> | null>(null);
+  const [alert, setAlert] = useState<{ count: number; titles: string[] } | null>(null);
+  const [soundEnabled, setSoundEnabled] = useState(false);
+  const audioCtxRef = useRef<AudioContext | null>(null);
+
+  function playBeep() {
+    try {
+      if (!audioCtxRef.current) {
+        const Ctx = (window.AudioContext || (window as any).webkitAudioContext);
+        if (!Ctx) return;
+        audioCtxRef.current = new Ctx();
+      }
+      const ctx = audioCtxRef.current!;
+      if (ctx.state === "suspended") ctx.resume();
+      const now = ctx.currentTime;
+      // 3-note attention chime
+      [880, 1175, 1568].forEach((freq, i) => {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = "sine";
+        osc.frequency.value = freq;
+        const start = now + i * 0.18;
+        gain.gain.setValueAtTime(0, start);
+        gain.gain.linearRampToValueAtTime(0.35, start + 0.02);
+        gain.gain.exponentialRampToValueAtTime(0.001, start + 0.35);
+        osc.connect(gain).connect(ctx.destination);
+        osc.start(start);
+        osc.stop(start + 0.4);
+      });
+    } catch (e) {
+      console.warn("beep failed", e);
+    }
+  }
+
+  useEffect(() => {
+    const data = query.data;
+    if (!data) return;
+    const currentIds = new Set(data.open_queue.map(t => t.id));
+    if (knownIdsRef.current === null) {
+      // First load — seed baseline, no alert
+      knownIdsRef.current = currentIds;
+      return;
+    }
+    const newOnes = data.open_queue.filter(t => !knownIdsRef.current!.has(t.id));
+    if (newOnes.length > 0) {
+      setAlert({ count: newOnes.length, titles: newOnes.map(t => t.title).slice(0, 3) });
+      if (soundEnabled) playBeep();
+      setTimeout(() => setAlert(null), 15_000);
+    }
+    knownIdsRef.current = currentIds;
+  }, [query.data, soundEnabled]);
+
+  function enableSound() {
+    try {
+      const Ctx = (window.AudioContext || (window as any).webkitAudioContext);
+      if (Ctx && !audioCtxRef.current) audioCtxRef.current = new Ctx();
+      audioCtxRef.current?.resume();
+      setSoundEnabled(true);
+      playBeep();
+    } catch {}
+  }
+
 
   const secondsSinceUpdate = useMemo(() => {
     if (!query.dataUpdatedAt) return 0;
