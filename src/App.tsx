@@ -46,6 +46,7 @@ import Migracao from "@/pages/Migracao";
 import Documentacao from "@/pages/Documentacao";
 import Setores from "@/pages/Setores";
 import AssetPublicView from "@/pages/AssetPublicView";
+import TvDashboard from "@/pages/TvDashboard";
 import Todos from "@/pages/Todos";
 import EscolherOrganizacao from "@/pages/EscolherOrganizacao";
 import OpCadastros from "@/pages/OpCadastros";
@@ -152,6 +153,7 @@ const App = () => (
             <Route path="/.lovable/oauth/consent" element={<OAuthConsent />} />
             <Route path="/escolher-organizacao" element={<ProtectedRoute><EscolherOrganizacao /></ProtectedRoute>} />
             <Route path="/asset/:id" element={<AssetPublicView />} />
+            <Route path="/tv/:orgSlug" element={<TvDashboard />} />
             <Route
               path="/*"
               element={
