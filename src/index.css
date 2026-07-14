@@ -176,6 +176,32 @@
     );
     pointer-events: none;
   }
+  .tv-shimmer { position: relative; overflow: hidden; }
+  .tv-shimmer::after {
+    content: "";
+    position: absolute;
+    top: 0; bottom: 0;
+    left: 0;
+    width: 40%;
+    background: linear-gradient(110deg, transparent 0%, hsl(0 0% 100% / 0.5) 50%, transparent 100%);
+    animation: tv-shimmer-slide 2.6s ease-in-out infinite;
+    pointer-events: none;
+    mix-blend-mode: overlay;
+  }
+  @keyframes tv-shimmer-slide {
+    0%   { transform: translateX(-100%); }
+    100% { transform: translateX(350%); }
+  }
+  @keyframes tv-flash-glow {
+    0%   { box-shadow: 0 0 0 0 hsl(var(--tv-accent-magenta) / 0); }
+    30%  { box-shadow: 0 0 34px 4px hsl(var(--tv-accent-magenta) / 0.55); }
+    100% { box-shadow: 0 0 0 0 hsl(var(--tv-accent-magenta) / 0); }
+  }
+  .tv-flash { animation: tv-flash-glow 1.5s ease-out 1; }
+  @media (prefers-reduced-motion: reduce) {
+    .tv-shimmer::after { animation: none; display: none; }
+    .tv-flash { animation: none; }
+  }
 }
 
 @layer base {
