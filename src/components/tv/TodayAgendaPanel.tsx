@@ -82,12 +82,14 @@ function hourOf(hhmm: string) {
 
 function TicketChip({ t }: { t: TodayTicket & { date?: string } }) {
   const color = priorityAccent[t.priority] ?? "hsl(var(--tv-accent-cyan))";
+  const gradient = statusGradient[t.status];
   const { openTicket } = useTicketModal();
   return (
     <button
       type="button"
       onClick={() => openTicket(t.id)}
       className="relative w-full text-left rounded-md border border-[hsl(var(--tv-border))] bg-[hsl(var(--tv-surface-2))] px-1.5 py-1 overflow-hidden min-w-0 cursor-pointer transition hover:border-[hsl(var(--tv-border-strong))] hover:bg-[hsl(var(--tv-surface))] focus:outline-none focus-visible:ring-1 focus-visible:ring-[hsl(var(--tv-accent-cyan))]"
+      style={{ backgroundImage: gradient }}
       title={`${t.code} · ${t.title} · ${t.hour}`}
     >
       <div className="absolute left-0 top-0 h-full w-[2px]" style={{ background: color }} />
