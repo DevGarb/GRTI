@@ -3,16 +3,15 @@ import { useParams, useSearchParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import {
   Bell, CheckCircle2, Star, Trophy, Timer,
-  MessageCircle, Smile, Clock, PhoneIncoming, RefreshCw, ShieldCheck, GraduationCap,
   Sun, Moon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { computeOpStatus, opStatusLabel } from "@/lib/opStatus";
 import { DailyKpiTile } from "@/components/tv/DailyKpiTile";
-import { TodayTimelinePanel, TodayTicket } from "@/components/tv/TodayTimelinePanel";
-import { OperationalFunnel } from "@/components/tv/OperationalFunnel";
-import { MonthGoalsStrip, GoalPill } from "@/components/tv/MonthGoalsStrip";
+import { TodayTicket } from "@/components/tv/TodayTimelinePanel";
+import { TodayAgendaPanel } from "@/components/tv/TodayAgendaPanel";
+import { FunnelStrip } from "@/components/tv/FunnelStrip";
 
 const FUNCTIONS_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/tv-dashboard`;
 
@@ -218,67 +217,6 @@ export default function TvDashboard() {
     opStatus === "attention" ? "hsl(var(--tv-accent-amber))" :
     "hsl(var(--tv-accent-lime))";
 
-  const gs = d?.goals_summary;
-
-  const goals: GoalPill[] = d ? [
-    {
-      label: "Tickets Finalizados",
-      actual: d.kpis.closed_month,
-      target: gs?.tickets_target_total ?? 0,
-      accent: "blue",
-      icon: MessageCircle,
-    },
-    {
-      label: "CSAT Médio",
-      actual: gs?.csat_actual_avg ?? d.kpis.csat,
-      target: gs?.csat_target_avg ?? 0,
-      accent: "lime",
-      icon: Smile,
-      format: (v) => v.toFixed(2),
-    },
-    {
-      label: "TMA (h)",
-      actual: gs?.tma_actual_hours ?? 0,
-      target: gs?.tma_target_avg_hours ?? 0,
-      accent: "violet",
-      icon: Clock,
-      format: (v) => v.toFixed(2),
-      higherIsBetter: false,
-    },
-    {
-      label: "Pontuação",
-      actual: gs?.points_actual_total ?? 0,
-      target: gs?.points_target_total ?? 0,
-      accent: "amber",
-      icon: PhoneIncoming,
-      suffix: " pts",
-    },
-    {
-      label: "% Retrabalho",
-      actual: gs?.rework_actual_percent ?? 0,
-      target: gs?.rework_target_avg ?? 0,
-      accent: "magenta",
-      icon: RefreshCw,
-      format: (v) => v.toFixed(1),
-      suffix: "%",
-      higherIsBetter: false,
-    },
-    {
-      label: "Projetos Entregues",
-      actual: gs?.projects_actual_total ?? 0,
-      target: gs?.projects_target_total ?? 0,
-      accent: "cyan",
-      icon: ShieldCheck,
-    },
-    {
-      label: "Preventivas do Mês",
-      actual: d.preventivas_month.feitas,
-      target: gs?.preventivas_target_total ?? Math.max(1, d.preventivas_month.total),
-      accent: "lime",
-      icon: GraduationCap,
-    },
-  ] : [];
-
   const topTechPct = topTech && d && d.kpis.closed_today > 0
     ? Math.round((topTech.fechados / d.kpis.closed_today) * 100)
     : 0;
@@ -394,64 +332,59 @@ export default function TvDashboard() {
         </div>
       ) : (
         <>
-          {/* Metas do mês — tira compacta no topo */}
-          <section>
-            <MonthGoalsStrip goals={goals} variant="compact" />
+          {/* Row 1: 4 KPIs do dia — full width */}
+          <section className="grid grid-cols-2 xl:grid-cols-4 gap-3">
+            <DailyKpiTile
+              label="Fechados Hoje"
+              value={d.kpis.closed_today}
+              icon={CheckCircle2}
+              accent="cyan"
+              code="01"
+              sub="Produtividade do dia"
+            />
+            <DailyKpiTile
+              label="CSAT Hoje"
+              value={d.kpis.csat_today > 0 ? d.kpis.csat_today.toFixed(1) : "—"}
+              suffix={d.kpis.csat_today > 0 ? "/5" : undefined}
+              icon={Star}
+              accent="lime"
+              code="02"
+              sub={`${d.kpis.csat_today_count} avaliações`}
+            />
+            <DailyKpiTile
+              label="Top Técnico"
+              icon={Trophy}
+              accent="amber"
+              code="03"
+              sub={topTech ? `${topTech.fechados} tickets · ${topTechPct}% da produção` : "Sem fechamentos hoje"}
+            >
+              <div className="flex flex-col gap-1">
+                <span
+                  className="font-display font-semibold leading-tight text-[hsl(var(--tv-text))] break-words"
+                  style={{ fontSize: topTech && topTech.name.length > 14 ? "1.5rem" : "1.9rem", lineHeight: 1.05 }}
+                >
+                  {topTech?.name ?? "—"}
+                </span>
+              </div>
+            </DailyKpiTile>
+            <DailyKpiTile
+              label="TMA Hoje"
+              value={fmtHoursMin(d.kpis.tma_today_minutes)}
+              icon={Timer}
+              accent="violet"
+              code="04"
+              sub="Início → Finalização"
+            />
           </section>
 
-          {/* Row 1: 4 KPIs (2x2) + Today Timeline (spans right) */}
-          <section className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-6 gap-3">
-            <div className="xl:col-span-2 grid grid-cols-2 gap-3">
-              <DailyKpiTile
-                label="Fechados Hoje"
-                value={d.kpis.closed_today}
-                icon={CheckCircle2}
-                accent="cyan"
-                code="01"
-                sub="Produtividade do dia"
-              />
-              <DailyKpiTile
-                label="CSAT Hoje"
-                value={d.kpis.csat_today > 0 ? d.kpis.csat_today.toFixed(1) : "—"}
-                suffix={d.kpis.csat_today > 0 ? "/5" : undefined}
-                icon={Star}
-                accent="lime"
-                code="02"
-                sub={`${d.kpis.csat_today_count} avaliações`}
-              />
-              <DailyKpiTile
-                label="Top Técnico"
-                icon={Trophy}
-                accent="amber"
-                code="03"
-                sub={topTech ? `${topTech.fechados} tickets · ${topTechPct}% da produção` : "Sem fechamentos hoje"}
-              >
-                <div className="flex flex-col gap-1">
-                  <span
-                    className="font-display font-semibold leading-tight text-[hsl(var(--tv-text))] break-words"
-                    style={{ fontSize: topTech && topTech.name.length > 14 ? "1.5rem" : "1.9rem", lineHeight: 1.05 }}
-                  >
-                    {topTech?.name ?? "—"}
-                  </span>
-                </div>
-              </DailyKpiTile>
-              <DailyKpiTile
-                label="TMA Hoje"
-                value={fmtHoursMin(d.kpis.tma_today_minutes)}
-                icon={Timer}
-                accent="violet"
-                code="04"
-                sub="Início → Finalização"
-              />
-            </div>
-            <div className="xl:col-span-4">
-              <TodayTimelinePanel tickets={d.today_tickets ?? []} />
-            </div>
-          </section>
-
-          {/* Row 2: Operational Funnel — full width, destaque */}
+          {/* Row 2: Agenda do dia — destaque, full width */}
           <section className="flex-1 min-h-0">
-            <OperationalFunnel
+            <TodayAgendaPanel tickets={d.today_tickets ?? []} />
+          </section>
+
+          {/* Rodapé: funil compacto */}
+          <section>
+            <FunnelStrip
               received={d.kpis.open + d.kpis.in_progress + d.kpis.awaiting + d.kpis.closed_today}
               inProgress={d.kpis.in_progress}
               awaiting={d.kpis.awaiting}
