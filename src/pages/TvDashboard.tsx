@@ -204,7 +204,7 @@ export default function TvDashboard() {
       <div className="min-h-screen flex items-center justify-center text-center p-8"
         style={{ background: "hsl(var(--tv-bg))", color: "hsl(var(--tv-text))" }}>
         <div>
-          <h1 className="font-display text-2xl font-bold mb-2">Token obrigatório</h1>
+          <h1 className="font-tv-display text-2xl font-bold mb-2">Token obrigatório</h1>
           <p className="text-[hsl(var(--tv-text-dim))]">Adicione <code className="font-mono-tech">?token=...</code> à URL.</p>
         </div>
       </div>
@@ -216,7 +216,7 @@ export default function TvDashboard() {
       <div className="min-h-screen flex items-center justify-center text-center p-8"
         style={{ background: "hsl(var(--tv-bg))", color: "hsl(var(--tv-text))" }}>
         <div>
-          <h1 className="font-display text-2xl font-bold mb-2 text-[hsl(var(--tv-accent-magenta))]">Acesso negado</h1>
+          <h1 className="font-tv-display text-2xl font-bold mb-2 text-[hsl(var(--tv-accent-magenta))]">Acesso negado</h1>
           <p className="text-[hsl(var(--tv-text-dim))]">Token inválido ou organização inexistente.</p>
         </div>
       </div>
@@ -271,7 +271,7 @@ export default function TvDashboard() {
             }}>
             <Bell className="h-8 w-8 animate-bounce shrink-0" style={{ color: "hsl(var(--tv-accent-magenta))" }} />
             <div>
-              <div className="font-display font-bold text-lg" style={{ color: "hsl(var(--tv-accent-magenta))" }}>
+              <div className="font-tv-display font-bold text-lg" style={{ color: "hsl(var(--tv-accent-magenta))" }}>
                 {alert.count === 1 ? "Novo chamado!" : `${alert.count} novos chamados!`}
               </div>
               <ul className="text-sm text-[hsl(var(--tv-text-dim))] mt-1 space-y-0.5">
@@ -295,7 +295,7 @@ export default function TvDashboard() {
                 v3.2
               </span>
             </div>
-            <h1 className="font-display text-2xl md:text-3xl font-semibold text-[hsl(var(--tv-text))] mt-0.5">
+            <h1 className="font-tv-display text-2xl md:text-3xl font-semibold text-[hsl(var(--tv-text))] mt-0.5">
               {d?.org.name ?? "Carregando…"}
             </h1>
           </div>
@@ -336,7 +336,7 @@ export default function TvDashboard() {
             </button>
           )}
           <div className="text-right">
-            <div className="font-display text-3xl md:text-4xl font-semibold tabular-nums text-[hsl(var(--tv-text))]">
+            <div className="font-tv-display text-3xl md:text-4xl font-semibold tabular-nums text-[hsl(var(--tv-text))]">
               {timeStr}
             </div>
             <div className="text-xs text-[hsl(var(--tv-text-dim))] capitalize">{dateStr}</div>
@@ -388,7 +388,7 @@ export default function TvDashboard() {
             >
               <div className="flex flex-col gap-1">
                 <span
-                  className="font-display font-semibold leading-tight text-[hsl(var(--tv-text))] break-words"
+                  className="font-tv-display font-semibold leading-tight text-[hsl(var(--tv-text))] break-words"
                   style={{ fontSize: topTech && topTech.name.length > 14 ? "1.5rem" : "1.9rem", lineHeight: 1.05 }}
                 >
                   {topTech?.name ?? "—"}

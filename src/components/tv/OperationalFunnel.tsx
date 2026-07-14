@@ -58,7 +58,7 @@ export function OperationalFunnel({ received, inProgress, awaiting, closed }: Pr
                     {s.label}
                   </span>
                 </div>
-                <div className="font-display font-semibold text-4xl tabular-nums leading-none text-[hsl(var(--tv-text))]">
+                <div className="font-tv-display font-semibold text-4xl tabular-nums leading-none text-[hsl(var(--tv-text))]">
                   {s.value}
                 </div>
                 <div className="mt-2 flex items-baseline justify-between">

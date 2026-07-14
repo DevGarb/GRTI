@@ -40,10 +40,10 @@ const priorityAccent: Record<string, string> = {
 };
 
 const statusGradient: Record<string, string> = {
-  Fechado: "linear-gradient(135deg, hsl(var(--tv-accent-lime) / 0.16) 0%, hsl(var(--tv-accent-lime) / 0.03) 100%)",
-  Aprovado: "linear-gradient(135deg, hsl(var(--tv-accent-lime) / 0.16) 0%, hsl(var(--tv-accent-lime) / 0.03) 100%)",
-  "Em Andamento": "linear-gradient(135deg, hsl(var(--tv-accent-amber) / 0.16) 0%, hsl(var(--tv-accent-amber) / 0.03) 100%)",
-  Aberto: "linear-gradient(135deg, hsl(var(--tv-accent-blue) / 0.16) 0%, hsl(var(--tv-accent-blue) / 0.03) 100%)",
+  Fechado: "linear-gradient(135deg, hsl(var(--tv-accent-lime) / 0.38) 0%, hsl(var(--tv-accent-lime) / 0.05) 100%)",
+  Aprovado: "linear-gradient(135deg, hsl(var(--tv-accent-lime) / 0.38) 0%, hsl(var(--tv-accent-lime) / 0.05) 100%)",
+  "Em Andamento": "linear-gradient(135deg, hsl(var(--tv-accent-amber) / 0.36) 0%, hsl(var(--tv-accent-amber) / 0.05) 100%)",
+  Aberto: "linear-gradient(135deg, hsl(var(--tv-accent-blue) / 0.34) 0%, hsl(var(--tv-accent-blue) / 0.05) 100%)",
 };
 
 function ymd(d: Date) {

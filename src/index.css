@@ -2,7 +2,7 @@
 @tailwind components;
 @tailwind utilities;
 
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&family=Poppins:wght@500;600;700&display=swap');
 
 @layer base {
   :root {
@@ -156,6 +156,7 @@
 
 @layer utilities {
   .font-display { font-family: 'Space Grotesk', system-ui, sans-serif; letter-spacing: -0.02em; }
+  .font-tv-display { font-family: 'Poppins', system-ui, sans-serif; letter-spacing: -0.015em; }
   .font-mono-tech { font-family: 'JetBrains Mono', ui-monospace, monospace; }
   .tv-grid-bg {
     background-image:
