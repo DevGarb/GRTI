@@ -114,6 +114,8 @@ export default function TvDashboard() {
 
   // Realtime: banner + som
   const [alert, setAlert] = useState<{ count: number; titles: string[] } | null>(null);
+  const [flashKey, setFlashKey] = useState(0);
+  const [flashTicketId, setFlashTicketId] = useState<string | null>(null);
   const [soundEnabled, setSoundEnabled] = useState(false);
   const soundEnabledRef = useRef(false);
   const audioCtxRef = useRef<AudioContext | null>(null);
