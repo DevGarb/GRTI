@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { FileText, Plus, Pencil, Trash2, Camera, GripVertical, X } from "lucide-react";
+import { FileText, Plus, Pencil, Trash2, Camera, ArrowUp, ArrowDown, X } from "lucide-react";
 import { useChkTemplates, useChkTemplate, useSaveChkTemplate, useDeleteChkTemplate, useChkSectors, type ChkFrequency } from "@/hooks/useChecklists";
 
 type Item = { id?: string; title: string; observation?: string; weight: 1 | 2 | 3; requires_photo: boolean; sort_order: number };
