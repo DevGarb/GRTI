@@ -109,17 +109,16 @@ export default function MyGoalCard({ year, month }: Props) {
         avgScore = scores.length > 0 ? scores.reduce((a, b) => a + b, 0) / scores.length : 0;
       }
 
-      // Tempo médio de resolução em horas úteis = soma das janelas em "Em Andamento"
-      // (descontando pausas em Aguardando Aprovação e somando retrabalhos)
+      // TMA (regra única): wall clock started_at → 1ª "Aguardando Aprovação"
       let avgResolutionHours = 0;
       if ((closedTickets || []).length > 0) {
-        const workMinutesMap = await fetchTicketWorkMinutes(
-          (closedTickets || []).map((t) => ({ ...t, status: "Fechado" }))
-        );
-        const totalHours = (closedTickets || []).reduce((sum, t) => {
-          return sum + Math.max(0, (workMinutesMap.get(t.id) ?? 0) / 60);
-        }, 0);
-        avgResolutionHours = totalHours / (closedTickets || []).length;
+        const tmaMap = await fetchTicketTmaMinutes(closedTickets || []);
+        const values = (closedTickets || [])
+          .map((t) => tmaMap.get(t.id) ?? 0)
+          .filter((m) => m > 0);
+        if (values.length > 0) {
+          avgResolutionHours = values.reduce((a, b) => a + b, 0) / values.length / 60;
+        }
       }
 
       // Preventivas do mês
