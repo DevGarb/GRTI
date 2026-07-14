@@ -216,11 +216,11 @@ const App = () => (
                       <Route path="*" element={<NotFound />} />
                     </Routes>
                   </AppLayout>
-                  </TicketModalProvider>
                 </ProtectedRoute>
               }
             />
           </Routes>
+          </TicketModalProvider>
         </AuthProvider>
       </BrowserRouter>
     </TooltipProvider>
