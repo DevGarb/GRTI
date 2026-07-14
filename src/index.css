@@ -156,6 +156,7 @@
 
 @layer utilities {
   .font-display { font-family: 'Space Grotesk', system-ui, sans-serif; letter-spacing: -0.02em; }
+  .font-tv-display { font-family: 'Poppins', system-ui, sans-serif; letter-spacing: -0.015em; }
   .font-mono-tech { font-family: 'JetBrains Mono', ui-monospace, monospace; }
   .tv-grid-bg {
     background-image:
