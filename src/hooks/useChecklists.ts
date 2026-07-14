@@ -233,11 +233,19 @@ export function useSaveChkAssignment() {
   const { profile, user } = useAuth();
   return useMutation({
     mutationFn: async (input: {
+      id?: string;
       template_id: string; company_id: string; assigned_user_id: string;
       frequency: ChkFrequency; start_date: string; end_date?: string | null; notes?: string;
     }) => {
+      if (input.id) {
+        const { id, ...patch } = input;
+        const { error } = await supabase.from("chk_assignments" as any).update(patch).eq("id", id);
+        if (error) throw error;
+        return { id };
+      }
       const { data, error } = await supabase.from("chk_assignments" as any).insert({
-        ...input,
+        template_id: input.template_id, company_id: input.company_id, assigned_user_id: input.assigned_user_id,
+        frequency: input.frequency, start_date: input.start_date, end_date: input.end_date, notes: input.notes,
         organization_id: profile!.organization_id, created_by: user!.id,
       }).select("id").single();
       if (error) throw error;
@@ -245,10 +253,10 @@ export function useSaveChkAssignment() {
       await supabase.rpc("generate_recurring_executions" as any);
       return data;
     },
-    onSuccess: () => {
+    onSuccess: (_d, vars) => {
       qc.invalidateQueries({ queryKey: ["chk_assignments"] });
       qc.invalidateQueries({ queryKey: ["chk_executions"] });
-      toast.success("Atribuição criada");
+      toast.success(vars.id ? "Atribuição atualizada" : "Atribuição criada");
     },
     onError: (e: Error) => toast.error(e.message),
   });
@@ -262,6 +270,22 @@ export function useToggleChkAssignment() {
       if (error) throw error;
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ["chk_assignments"] }),
+  });
+}
+
+export function useDeleteChkAssignment() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from("chk_assignments" as any).delete().eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["chk_assignments"] });
+      qc.invalidateQueries({ queryKey: ["chk_executions"] });
+      toast.success("Atribuição excluída");
+    },
+    onError: (e: Error) => toast.error(e.message),
   });
 }
 
