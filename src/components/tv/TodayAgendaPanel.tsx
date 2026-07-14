@@ -25,26 +25,26 @@ function TicketChip({ t }: { t: TodayTicket }) {
   const color = priorityAccent[t.priority] ?? "hsl(var(--tv-accent-cyan))";
   return (
     <div
-      className="relative rounded-md border border-[hsl(var(--tv-border))] bg-[hsl(var(--tv-surface-2))] px-2 py-1.5 overflow-hidden min-w-0"
+      className="relative rounded-md border border-[hsl(var(--tv-border))] bg-[hsl(var(--tv-surface-2))] px-1.5 py-1 overflow-hidden min-w-0"
       title={`${t.code} · ${t.title} · ${t.hour}`}
     >
       <div className="absolute left-0 top-0 h-full w-[2px]" style={{ background: color }} />
-      <div className="flex items-center justify-between gap-1 mb-0.5">
-        <span className="font-mono-tech text-[9px] text-[hsl(var(--tv-text-mute))]">
-          #{t.code} · {t.hour}
+      <div className="flex items-center gap-1.5 leading-none">
+        <span className="font-mono-tech text-[9px] text-[hsl(var(--tv-text-mute))] shrink-0">
+          {t.hour}
+        </span>
+        <span className="text-[9px] text-[hsl(var(--tv-text-dim))] font-mono-tech shrink-0">
+          #{t.code}
         </span>
         <span
-          className="text-[8px] uppercase tracking-wider font-semibold px-1 py-0.5 rounded shrink-0"
+          className="text-[8px] uppercase tracking-wider font-semibold px-1 py-0 rounded shrink-0"
           style={{ color, background: `${color}18` }}
         >
           {t.priority}
         </span>
       </div>
-      <div className="text-[11px] text-[hsl(var(--tv-text))] leading-tight truncate">
+      <div className="text-[11px] text-[hsl(var(--tv-text))] leading-tight truncate mt-0.5">
         {t.title}
-      </div>
-      <div className="text-[9px] text-[hsl(var(--tv-text-dim))] font-mono-tech truncate mt-0.5">
-        {t.technician ?? "—"}
       </div>
     </div>
   );
@@ -52,13 +52,13 @@ function TicketChip({ t }: { t: TodayTicket }) {
 
 function HourRow({ hour, tickets }: { hour: number; tickets: TodayTicket[] }) {
   return (
-    <div className="flex items-start gap-2 py-1.5 border-b border-[hsl(var(--tv-border))] last:border-b-0 min-h-[42px]">
-      <div className="font-mono-tech text-[10px] text-[hsl(var(--tv-text-mute))] w-8 shrink-0 pt-1">
+    <div className="flex items-start gap-2 py-1 border-b border-[hsl(var(--tv-border))] last:border-b-0 min-h-[28px]">
+      <div className="font-mono-tech text-[10px] text-[hsl(var(--tv-text-mute))] w-8 shrink-0 pt-0.5">
         {hour.toString().padStart(2, "0")}h
       </div>
-      <div className="flex-1 min-w-0 grid grid-cols-1 xl:grid-cols-2 gap-1.5">
+      <div className="flex-1 min-w-0 grid grid-cols-1 xl:grid-cols-2 gap-1">
         {tickets.length === 0 ? (
-          <div className="text-[10px] text-[hsl(var(--tv-text-mute))]/60 italic pt-1">—</div>
+          <div className="text-[10px] text-[hsl(var(--tv-text-mute))]/60 italic pt-0.5">—</div>
         ) : (
           tickets.map(t => <TicketChip key={t.id} t={t} />)
         )}
