@@ -69,10 +69,12 @@ export default function TvDashboard() {
   const [clock, setClock] = useState(new Date());
   const [tick, setTick] = useState(0);
 
+  const [theme, setTheme] = useState<"dark" | "light">(() => {
+    return (typeof window !== "undefined" && (localStorage.getItem("tv-theme") as "dark" | "light")) || "dark";
+  });
   useEffect(() => {
-    document.documentElement.classList.add("dark");
-    return () => { document.documentElement.classList.remove("dark"); };
-  }, []);
+    localStorage.setItem("tv-theme", theme);
+  }, [theme]);
 
   useEffect(() => {
     const i = setInterval(() => { setClock(new Date()); setTick(t => t + 1); }, 1000);
