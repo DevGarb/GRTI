@@ -394,6 +394,11 @@ export default function TvDashboard() {
         </div>
       ) : (
         <>
+          {/* Metas do mês — tira compacta no topo */}
+          <section>
+            <MonthGoalsStrip goals={goals} variant="compact" />
+          </section>
+
           {/* Row 1: 4 KPIs (2x2) + Today Timeline (spans right) */}
           <section className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-6 gap-3">
             <div className="xl:col-span-2 grid grid-cols-2 gap-3">
@@ -416,19 +421,27 @@ export default function TvDashboard() {
               />
               <DailyKpiTile
                 label="Top Técnico"
-                value={topTech?.name.split(" ")[0] ?? "—"}
                 icon={Trophy}
                 accent="amber"
                 code="03"
-                sub={topTech ? `${topTech.fechados} tickets fechados` : "Sem fechamentos hoje"}
-              />
+                sub={topTech ? `${topTech.fechados} tickets · ${topTechPct}% da produção` : "Sem fechamentos hoje"}
+              >
+                <div className="flex flex-col gap-1">
+                  <span
+                    className="font-display font-semibold leading-tight text-[hsl(var(--tv-text))] break-words"
+                    style={{ fontSize: topTech && topTech.name.length > 14 ? "1.5rem" : "1.9rem", lineHeight: 1.05 }}
+                  >
+                    {topTech?.name ?? "—"}
+                  </span>
+                </div>
+              </DailyKpiTile>
               <DailyKpiTile
                 label="TMA Hoje"
                 value={fmtHoursMin(d.kpis.tma_today_minutes)}
                 icon={Timer}
                 accent="violet"
                 code="04"
-                sub="Média de atendimento"
+                sub="Início → Finalização"
               />
             </div>
             <div className="xl:col-span-4">
@@ -437,18 +450,13 @@ export default function TvDashboard() {
           </section>
 
           {/* Row 2: Operational Funnel — full width, destaque */}
-          <section>
+          <section className="flex-1 min-h-0">
             <OperationalFunnel
               received={d.kpis.open + d.kpis.in_progress + d.kpis.awaiting + d.kpis.closed_today}
               inProgress={d.kpis.in_progress}
               awaiting={d.kpis.awaiting}
               closed={d.kpis.closed_today}
             />
-          </section>
-
-          {/* Row 3: Metas do Mês */}
-          <section className="flex-1 min-h-0">
-            <MonthGoalsStrip goals={goals} />
           </section>
         </>
       )}
