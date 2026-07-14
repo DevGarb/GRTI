@@ -116,11 +116,16 @@ Deno.serve(async (req) => {
     let in_progress = 0, open_count = 0, awaiting = 0, backlog = 0;
     let tmaSum = 0, tmaN = 0;
     let tmaMonthSum = 0, tmaMonthN = 0;
+    let tmaTodaySum = 0, tmaTodayN = 0;
     let frSum = 0, frN = 0;
     let agingSum = 0, agingN = 0;
     const activeTechsToday = new Set<string>();
+    const todayTickets: any[] = [];
 
     for (const t of list) {
+      const createdAt = new Date(t.created_at);
+      const isCreatedToday = createdAt >= startToday;
+
       if (t.status === "Fechado" || t.status === "Aprovado") {
         if (t.closed_at) {
           const cd = new Date(t.closed_at);
@@ -134,6 +139,7 @@ Deno.serve(async (req) => {
             if (m > 0) {
               tmaSum += m; tmaN++;
               if (cd >= startMonth && cd < endMonth) { tmaMonthSum += m; tmaMonthN++; }
+              if (cd >= startToday) { tmaTodaySum += m; tmaTodayN++; }
             }
           }
         }
@@ -142,7 +148,7 @@ Deno.serve(async (req) => {
         if (t.status === "Em Andamento") { in_progress++; if (t.assigned_to) activeTechsToday.add(t.assigned_to); }
         else if (t.status === "Aberto") open_count++;
         else if (t.status === "Aguardando Aprovação") awaiting++;
-        const am = calcBusinessMinutes(new Date(t.created_at), now);
+        const am = calcBusinessMinutes(createdAt, now);
         if (am > 0) { agingSum += am; agingN++; }
       }
       if (t.started_at) {
@@ -152,7 +158,23 @@ Deno.serve(async (req) => {
           if (fm >= 0) { frSum += fm; frN++; }
         }
       }
+
+      // Today tickets: created today OR closed today
+      const closedToday = t.closed_at && new Date(t.closed_at) >= startToday;
+      if (isCreatedToday || closedToday) {
+        const refDate = closedToday ? new Date(t.closed_at!) : createdAt;
+        todayTickets.push({
+          id: t.id,
+          code: String(t.id).slice(0, 4).toUpperCase(),
+          title: t.title,
+          priority: t.priority,
+          status: t.status,
+          hour: `${String(refDate.getHours()).padStart(2, "0")}:${String(refDate.getMinutes()).padStart(2, "0")}`,
+          technician: t.assigned_to ? (nameOf.get(t.assigned_to) ?? null) : null,
+        });
+      }
     }
+    todayTickets.sort((a, b) => a.hour.localeCompare(b.hour));
 
     // CSAT do mês vigente (apenas satisfaction)
     const { data: evalsMonth } = await supabase
@@ -162,8 +184,14 @@ Deno.serve(async (req) => {
       .eq("type", "satisfaction")
       .eq("tickets.organization_id", orgId);
     let csatSum = 0, csatN = 0;
-    for (const e of evalsMonth ?? []) { csatSum += (e as any).score ?? 0; csatN++; }
+    let csatTodaySum = 0, csatTodayN = 0;
+    for (const e of evalsMonth ?? []) {
+      const s = (e as any).score ?? 0;
+      csatSum += s; csatN++;
+      if (new Date((e as any).created_at) >= startToday) { csatTodaySum += s; csatTodayN++; }
+    }
     const csat = csatN ? csatSum / csatN : 0;
+    const csatToday = csatTodayN ? csatTodaySum / csatTodayN : 0;
 
     // Open queue
     const openList = list.filter(t => t.status === "Aberto")
@@ -277,8 +305,10 @@ Deno.serve(async (req) => {
         closed_today, closed_month,
         in_progress, open: open_count, awaiting, backlog,
         csat: Number(csat.toFixed(2)), csat_count: csatN,
+        csat_today: Number(csatToday.toFixed(2)), csat_today_count: csatTodayN,
         tma_minutes: tmaN ? Math.round(tmaSum / tmaN) : 0,
         tma_month_minutes: tmaMonthN ? Math.round(tmaMonthSum / tmaMonthN) : 0,
+        tma_today_minutes: tmaTodayN ? Math.round(tmaTodaySum / tmaTodayN) : 0,
         active_techs: active_techs.size,
         active_techs_today: activeTechsToday.size,
         first_response_min: frN ? Math.round(frSum / frN) : 0,
@@ -287,6 +317,7 @@ Deno.serve(async (req) => {
       open_queue: openList,
       in_progress_list: progList,
       ranking_today: ranking,
+      today_tickets: todayTickets,
       sla_alerts: slaAlerts,
       preventivas_month: { total: prevTotal, feitas: prevDone, pendentes: prevPendente, atrasadas: prevOverdue },
       goals_summary: goalsSummary ?? null,
