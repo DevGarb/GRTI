@@ -87,6 +87,20 @@ Deno.serve(async (req) => {
     const startMonth = new Date(now.getFullYear(), now.getMonth(), 1);
     const endMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1);
 
+    // Optional agenda range (defaults to today when omitted)
+    const fromParam = url.searchParams.get("from");
+    const toParam = url.searchParams.get("to");
+    let agendaStart = startToday;
+    let agendaEnd = new Date(startToday.getTime() + 86400000);
+    if (fromParam && toParam) {
+      const f = new Date(fromParam + "T00:00:00");
+      const t = new Date(toParam + "T00:00:00");
+      if (!isNaN(f.getTime()) && !isNaN(t.getTime())) {
+        agendaStart = f;
+        agendaEnd = new Date(t.getTime() + 86400000);
+      }
+    }
+
     // Fetch tickets with joins
     const { data: tickets } = await supabase
       .from("tickets")
