@@ -114,7 +114,48 @@
     --status-closed: 142 60% 40%;
     --status-closed-bg: 142 60% 15%;
   }
+
+  /* TV Dashboard — Bento Tech tokens (always on, independent of light/dark) */
+  :root {
+    --tv-bg: 222 32% 6%;
+    --tv-bg-2: 222 30% 8%;
+    --tv-surface: 220 25% 10%;
+    --tv-surface-2: 220 24% 13%;
+    --tv-border: 220 20% 20%;
+    --tv-border-strong: 220 20% 28%;
+    --tv-text: 210 25% 92%;
+    --tv-text-dim: 218 15% 62%;
+    --tv-text-mute: 218 12% 45%;
+    --tv-accent-cyan: 188 95% 58%;
+    --tv-accent-amber: 35 95% 60%;
+    --tv-accent-violet: 258 88% 70%;
+    --tv-accent-lime: 82 78% 58%;
+    --tv-accent-magenta: 322 85% 64%;
+    --tv-accent-blue: 214 95% 62%;
+  }
 }
+
+@layer utilities {
+  .font-display { font-family: 'Space Grotesk', system-ui, sans-serif; letter-spacing: -0.02em; }
+  .font-mono-tech { font-family: 'JetBrains Mono', ui-monospace, monospace; }
+  .tv-grid-bg {
+    background-image:
+      linear-gradient(hsl(var(--tv-border) / 0.35) 1px, transparent 1px),
+      linear-gradient(90deg, hsl(var(--tv-border) / 0.35) 1px, transparent 1px);
+    background-size: 32px 32px;
+  }
+  .tv-scanline::after {
+    content: "";
+    position: absolute; inset: 0;
+    background: repeating-linear-gradient(
+      to bottom,
+      transparent 0,
+      transparent 3px,
+      hsl(0 0% 100% / 0.015) 3px,
+      hsl(0 0% 100% / 0.015) 4px
+    );
+    pointer-events: none;
+  }
 
 @layer base {
   * {
