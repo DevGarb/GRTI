@@ -65,13 +65,12 @@ export async function fetchTicketResolutionEnds(
 /**
  * REGRA ÚNICA DE TMA (wall clock):
  * TMA = 1ª transição para "Aguardando Aprovação" − started_at
- * Fallback: closed_at − started_at (para tickets legados sem essa transição)
  *
- * Retorna Map<ticket_id, minutos>. Tickets sem started_at ou sem fim válido
- * são omitidos do mapa (chame `map.get(id) ?? 0` no consumidor).
+ * Tickets sem started_at OU sem transição para "Aguardando Aprovação"
+ * são omitidos do mapa (não entram na média).
  */
 export async function fetchTicketTmaMinutes(
-  tickets: Array<{ id: string; started_at?: string | null; closed_at?: string | null }>
+  tickets: Array<{ id: string; started_at?: string | null }>
 ): Promise<Map<string, number>> {
   const result = new Map<string, number>();
   if (tickets.length === 0) return result;
@@ -92,13 +91,15 @@ export async function fetchTicketTmaMinutes(
 
   for (const t of tickets) {
     if (!t.started_at) continue;
+    const end = firstFinish.get(t.id);
+    if (!end) continue;
     const start = new Date(t.started_at);
-    const end = firstFinish.get(t.id) ?? (t.closed_at ? new Date(t.closed_at) : null);
-    if (!end || end <= start) continue;
+    if (end <= start) continue;
     result.set(t.id, (end.getTime() - start.getTime()) / 60000);
   }
   return result;
 }
+
 
 
 /**
