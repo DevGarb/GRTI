@@ -98,18 +98,31 @@ Deno.serve(async (req) => {
     // Collect IDs for lookups
     const userIds = new Set<string>();
     const catIds = new Set<string>();
+    const ticketIds: string[] = [];
     for (const t of list) {
       if (t.assigned_to) userIds.add(t.assigned_to);
       if (t.created_by) userIds.add(t.created_by);
       if (t.category_id) catIds.add(t.category_id);
+      ticketIds.push(t.id);
     }
 
-    const [{ data: profiles }, { data: cats }] = await Promise.all([
+    const [{ data: profiles }, { data: cats }, { data: history }] = await Promise.all([
       supabase.from("profiles").select("id, full_name").in("id", Array.from(userIds).length ? Array.from(userIds) : ["00000000-0000-0000-0000-000000000000"]),
       supabase.from("categories").select("id, name").in("id", Array.from(catIds).length ? Array.from(catIds) : ["00000000-0000-0000-0000-000000000000"]),
+      supabase.from("ticket_history")
+        .select("ticket_id, new_value, created_at")
+        .in("ticket_id", ticketIds.length ? ticketIds : ["00000000-0000-0000-0000-000000000000"])
+        .eq("action", "status_change")
+        .eq("new_value", "Aguardando Aprovação")
+        .order("created_at", { ascending: true }),
     ]);
     const nameOf = new Map((profiles ?? []).map((p: any) => [p.id, p.full_name]));
     const catOf = new Map((cats ?? []).map((c: any) => [c.id, c.name]));
+    // Primeiro momento em que o técnico finalizou o atendimento (foi para "Aguardando Aprovação")
+    const finishedAt = new Map<string, Date>();
+    for (const h of (history ?? []) as any[]) {
+      if (!finishedAt.has(h.ticket_id)) finishedAt.set(h.ticket_id, new Date(h.created_at));
+    }
 
     // KPIs
     let closed_today = 0, closed_month = 0;
@@ -134,17 +147,23 @@ Deno.serve(async (req) => {
             if (t.assigned_to) activeTechsToday.add(t.assigned_to);
           }
           if (cd >= startMonth && cd < endMonth) closed_month++;
-          if (t.started_at) {
-            // TMA = tempo real entre início e finalização do atendimento (wall clock)
-            const m = (cd.getTime() - new Date(t.started_at).getTime()) / 60000;
-            if (m > 0) {
-              tmaSum += m; tmaN++;
-              if (cd >= startMonth && cd < endMonth) { tmaMonthSum += m; tmaMonthN++; }
-              if (cd >= startToday) { tmaTodaySum += m; tmaTodayN++; }
-            }
-          }
         }
-      } else {
+      }
+
+      // TMA = tempo real entre started_at e a finalização do atendimento pelo técnico
+      // (primeira transição para "Aguardando Aprovação"). Fallback: closed_at.
+      const finished = finishedAt.get(t.id) ?? (t.closed_at ? new Date(t.closed_at) : null);
+      if (t.started_at && finished) {
+        const m = (finished.getTime() - new Date(t.started_at).getTime()) / 60000;
+        if (m > 0) {
+          tmaSum += m; tmaN++;
+          if (finished >= startMonth && finished < endMonth) { tmaMonthSum += m; tmaMonthN++; }
+          if (finished >= startToday) { tmaTodaySum += m; tmaTodayN++; }
+        }
+      }
+
+      if (t.status !== "Fechado" && t.status !== "Aprovado") {
+
         backlog++;
         if (t.status === "Em Andamento") { in_progress++; if (t.assigned_to) activeTechsToday.add(t.assigned_to); }
         else if (t.status === "Aberto") open_count++;
