@@ -148,6 +148,7 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <AuthProvider>
+          <TicketModalProvider>
           <Routes>
             <Route path="/login" element={<AuthRoute><Login /></AuthRoute>} />
             <Route path="/.lovable/oauth/consent" element={<OAuthConsent />} />
@@ -158,7 +159,6 @@ const App = () => (
               path="/*"
               element={
                 <ProtectedRoute>
-                  <TicketModalProvider>
                   <AppLayout>
                     <Routes>
                       <Route path="/" element={<HomeRedirect><MenuGuard menuKey="dashboard"><AdminRoute><Dashboard /></AdminRoute></MenuGuard></HomeRedirect>} />
