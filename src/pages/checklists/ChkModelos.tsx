@@ -34,7 +34,14 @@ export default function ChkModelos() {
 
   const addItem = () => setForm({ ...form, items: [...form.items, { title: "", observation: "", weight: 1, requires_photo: false, sort_order: form.items.length }] });
   const updateItem = (idx: number, patch: Partial<Item>) => setForm({ ...form, items: form.items.map((it, i) => (i === idx ? { ...it, ...patch } : it)) });
-  const removeItem = (idx: number) => setForm({ ...form, items: form.items.filter((_, i) => i !== idx) });
+  const removeItem = (idx: number) => setForm({ ...form, items: form.items.filter((_, i) => i !== idx).map((it, i) => ({ ...it, sort_order: i })) });
+  const moveItem = (idx: number, dir: -1 | 1) => {
+    const next = idx + dir;
+    if (next < 0 || next >= form.items.length) return;
+    const items = [...form.items];
+    [items[idx], items[next]] = [items[next], items[idx]];
+    setForm({ ...form, items: items.map((it, i) => ({ ...it, sort_order: i })) });
+  };
 
   const submit = () => {
     if (!form.title.trim()) return;
