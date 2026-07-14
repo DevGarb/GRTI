@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
 import { ClipboardCheck, Building2, FileText, UserCheck, ListChecks, BarChart3 } from "lucide-react";
-import { useChkExecutions, useChkTemplates, useChkCompanies } from "@/hooks/useChecklists";
+import { useChkExecutions, useChkTemplates, useChkCompanies, useChkAssignments } from "@/hooks/useChecklists";
 import { useAuth } from "@/contexts/AuthContext";
 
 export default function ChkDashboard() {
@@ -9,6 +9,7 @@ export default function ChkDashboard() {
   const { data: execs = [] } = useChkExecutions();
   const { data: templates = [] } = useChkTemplates();
   const { data: companies = [] } = useChkCompanies();
+  const { data: assigns = [] } = useChkAssignments();
 
   const totals = {
     total: execs.length,
@@ -26,7 +27,7 @@ export default function ChkDashboard() {
     ? [
         { to: "/checklists/modelos", icon: FileText, label: "Modelos", count: templates.length },
         { to: "/checklists/empresas", icon: Building2, label: "Empresas", count: companies.length },
-        { to: "/checklists/atribuicoes", icon: UserCheck, label: "Atribuições", count: 0 },
+        { to: "/checklists/atribuicoes", icon: UserCheck, label: "Atribuições", count: assigns.length },
         { to: "/checklists/execucoes", icon: ListChecks, label: "Execuções", count: execs.length },
         { to: "/checklists/relatorios", icon: BarChart3, label: "Relatórios", count: null },
       ]

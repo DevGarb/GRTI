@@ -14,16 +14,27 @@ const STATUS_COLORS: Record<ChkExecStatus, string> = {
 };
 
 export default function ChkExecucoes() {
+  const today = new Date().toISOString().slice(0, 10);
+  const monthAgo = new Date(Date.now() - 30 * 86400000).toISOString().slice(0, 10);
   const [status, setStatus] = useState<ChkExecStatus | "all">("all");
-  const { data: execs = [], isLoading } = useChkExecutions({ status });
+  const [from, setFrom] = useState(monthAgo);
+  const [to, setTo] = useState(today);
+  const { data: execs = [], isLoading } = useChkExecutions({ status, from, to });
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center gap-3">
-        <ListChecks className="h-6 w-6 text-primary" />
-        <div>
-          <h1 className="text-2xl font-bold">Execuções</h1>
-          <p className="text-sm text-muted-foreground">Fila completa de checklists gerados a partir das atribuições</p>
+      <div className="flex items-center justify-between gap-3 flex-wrap">
+        <div className="flex items-center gap-3">
+          <ListChecks className="h-6 w-6 text-primary" />
+          <div>
+            <h1 className="text-2xl font-bold">Execuções</h1>
+            <p className="text-sm text-muted-foreground">Fila de checklists gerados a partir das atribuições</p>
+          </div>
+        </div>
+        <div className="flex items-center gap-2">
+          <input type="date" value={from} onChange={(e) => setFrom(e.target.value)} className="px-3 py-2 rounded-lg border border-input bg-background text-sm" />
+          <span className="text-sm text-muted-foreground">até</span>
+          <input type="date" value={to} onChange={(e) => setTo(e.target.value)} className="px-3 py-2 rounded-lg border border-input bg-background text-sm" />
         </div>
       </div>
 
@@ -38,7 +49,7 @@ export default function ChkExecucoes() {
       {isLoading ? (
         <div className="card-elevated p-12 flex justify-center"><div className="h-6 w-6 border-2 border-primary border-t-transparent rounded-full animate-spin" /></div>
       ) : execs.length === 0 ? (
-        <div className="card-elevated p-12 text-center text-sm text-muted-foreground">Nenhuma execução encontrada.</div>
+        <div className="card-elevated p-12 text-center text-sm text-muted-foreground">Nenhuma execução encontrada no período.</div>
       ) : (
         <div className="card-elevated divide-y divide-border">
           {execs.map((e: any) => (

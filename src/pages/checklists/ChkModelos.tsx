@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { FileText, Plus, Pencil, Trash2, Camera, GripVertical, X } from "lucide-react";
+import { FileText, Plus, Pencil, Trash2, Camera, ArrowUp, ArrowDown, X } from "lucide-react";
 import { useChkTemplates, useChkTemplate, useSaveChkTemplate, useDeleteChkTemplate, useChkSectors, type ChkFrequency } from "@/hooks/useChecklists";
 
 type Item = { id?: string; title: string; observation?: string; weight: 1 | 2 | 3; requires_photo: boolean; sort_order: number };
@@ -34,7 +34,14 @@ export default function ChkModelos() {
 
   const addItem = () => setForm({ ...form, items: [...form.items, { title: "", observation: "", weight: 1, requires_photo: false, sort_order: form.items.length }] });
   const updateItem = (idx: number, patch: Partial<Item>) => setForm({ ...form, items: form.items.map((it, i) => (i === idx ? { ...it, ...patch } : it)) });
-  const removeItem = (idx: number) => setForm({ ...form, items: form.items.filter((_, i) => i !== idx) });
+  const removeItem = (idx: number) => setForm({ ...form, items: form.items.filter((_, i) => i !== idx).map((it, i) => ({ ...it, sort_order: i })) });
+  const moveItem = (idx: number, dir: -1 | 1) => {
+    const next = idx + dir;
+    if (next < 0 || next >= form.items.length) return;
+    const items = [...form.items];
+    [items[idx], items[next]] = [items[next], items[idx]];
+    setForm({ ...form, items: items.map((it, i) => ({ ...it, sort_order: i })) });
+  };
 
   const submit = () => {
     if (!form.title.trim()) return;
@@ -85,7 +92,14 @@ export default function ChkModelos() {
               {form.items.map((it, idx) => (
                 <div key={idx} className="border border-border rounded-lg p-3 space-y-2">
                   <div className="flex items-start gap-2">
-                    <GripVertical className="h-4 w-4 text-muted-foreground mt-2 shrink-0" />
+                    <div className="flex flex-col shrink-0">
+                      <button onClick={() => moveItem(idx, -1)} disabled={idx === 0} title="Mover para cima" className="p-0.5 rounded hover:bg-muted text-muted-foreground disabled:opacity-30 disabled:hover:bg-transparent">
+                        <ArrowUp className="h-3.5 w-3.5" />
+                      </button>
+                      <button onClick={() => moveItem(idx, 1)} disabled={idx === form.items.length - 1} title="Mover para baixo" className="p-0.5 rounded hover:bg-muted text-muted-foreground disabled:opacity-30 disabled:hover:bg-transparent">
+                        <ArrowDown className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
                     <input placeholder="Pergunta do item" value={it.title} onChange={(e) => updateItem(idx, { title: e.target.value })} className="flex-1 px-3 py-2 rounded-lg border border-input bg-background text-sm" />
                     <button onClick={() => removeItem(idx)} className="p-2 rounded-md hover:bg-muted text-destructive"><Trash2 className="h-4 w-4" /></button>
                   </div>
