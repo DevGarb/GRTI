@@ -25,7 +25,8 @@ type Bucket = { overdue: number; dueInMonth: number };
 
 export default function PreventivasMonthlyTarget({ year, month }: Props) {
   const { data: equipment = [], isLoading } = useOverdueEquipment();
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
+  const orgId = profile?.organization_id;
   const qc = useQueryClient();
 
   const [divideBy, setDivideBy] = useState(2);
