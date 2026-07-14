@@ -81,11 +81,13 @@ export default function GoalsManager({ year, month }: Props) {
   const [form, setForm] = useState<TargetForm>(emptyForm());
 
   const { data: technicians = [] } = useQuery({
-    queryKey: ["technicians-for-goals"],
+    queryKey: ["technicians-for-goals", orgId],
+    enabled: !!orgId,
     queryFn: async () => {
       const { data: roles } = await supabase
         .from("user_organization_roles")
         .select("user_id, role")
+        .eq("organization_id", orgId!)
         .in("role", ["tecnico", "desenvolvedor"]);
       if (!roles || roles.length === 0) return [] as Array<{ user_id: string; full_name: string; role: string }>;
       // priority: desenvolvedor > tecnico se o usuário tem ambos
@@ -101,10 +103,12 @@ export default function GoalsManager({ year, month }: Props) {
         .from("profiles")
         .select("user_id, full_name")
         .in("user_id", ids)
+        .eq("organization_id", orgId!)
         .order("full_name");
       return (profiles || []).map((p) => ({ ...p, role: roleByUser.get(p.user_id) || "tecnico" }));
     },
   });
+
 
   const selectedTech = technicians.find((t) => t.user_id === form.target_id);
   const recommendedPreset: PresetKey | null =
