@@ -114,6 +114,8 @@ export default function TvDashboard() {
 
   // Realtime: banner + som
   const [alert, setAlert] = useState<{ count: number; titles: string[] } | null>(null);
+  const [flashKey, setFlashKey] = useState(0);
+  const [flashTicketId, setFlashTicketId] = useState<string | null>(null);
   const [soundEnabled, setSoundEnabled] = useState(false);
   const soundEnabledRef = useRef(false);
   const audioCtxRef = useRef<AudioContext | null>(null);
@@ -153,11 +155,14 @@ export default function TvDashboard() {
       .on("broadcast", { event: "new_ticket" }, (msg) => {
         const payload = (msg as any).payload ?? {};
         const title = payload.title ?? "Novo chamado";
+        const ticketId = payload.id ?? payload.ticket_id ?? null;
         setAlert((prev) => {
           const titles = prev ? [title, ...prev.titles].slice(0, 3) : [title];
           const count = (prev?.count ?? 0) + 1;
           return { count, titles };
         });
+        setFlashTicketId(ticketId);
+        setFlashKey((k) => k + 1);
         if (soundEnabledRef.current) playBeep();
         if (alertTimeoutRef.current) window.clearTimeout(alertTimeoutRef.current);
         alertTimeoutRef.current = window.setTimeout(() => setAlert(null), 15_000);
@@ -372,7 +377,8 @@ export default function TvDashboard() {
             />
             <DailyKpiTile
               label="CSAT Hoje"
-              value={d.kpis.csat_today > 0 ? d.kpis.csat_today.toFixed(1) : "—"}
+              value={d.kpis.csat_today > 0 ? d.kpis.csat_today : "—"}
+              decimals={1}
               suffix={d.kpis.csat_today > 0 ? "/5" : undefined}
               icon={Star}
               accent="lime"
@@ -411,6 +417,8 @@ export default function TvDashboard() {
               tickets={(agendaFilter.type === "today" ? d.today_tickets : agendaQuery.data?.today_tickets) ?? []}
               filter={agendaFilter}
               onFilterChange={setAgendaFilter}
+              flashKey={flashKey}
+              flashTicketId={flashTicketId}
             />
           </section>
 

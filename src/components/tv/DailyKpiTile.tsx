@@ -1,6 +1,7 @@
 import { LucideIcon } from "lucide-react";
 import { BentoTile, Accent, accentVar } from "./BentoTile";
 import { ReactNode } from "react";
+import { useAnimatedNumber } from "@/hooks/useAnimatedNumber";
 
 interface Props {
   label: string;
@@ -11,10 +12,18 @@ interface Props {
   accent: Accent;
   code?: string;
   children?: ReactNode;
+  /** If value is a number, how many decimals to render while animating. */
+  decimals?: number;
 }
 
-export function DailyKpiTile({ label, value, suffix, sub, icon: Icon, accent, code, children }: Props) {
+function AnimatedNumberDisplay({ value, decimals = 0 }: { value: number; decimals?: number }) {
+  const current = useAnimatedNumber(value);
+  return <>{current.toFixed(decimals)}</>;
+}
+
+export function DailyKpiTile({ label, value, suffix, sub, icon: Icon, accent, code, children, decimals }: Props) {
   const color = `hsl(${accentVar[accent]})`;
+  const isNumeric = typeof value === "number" && Number.isFinite(value);
   return (
     <BentoTile accent={accent} grid>
       <div className="flex items-start justify-between mb-4">
@@ -43,7 +52,11 @@ export function DailyKpiTile({ label, value, suffix, sub, icon: Icon, accent, co
             className="font-tv-display font-semibold tabular-nums leading-none text-[hsl(var(--tv-text))]"
             style={{ fontSize: "3.25rem" }}
           >
-            {value}
+            {isNumeric ? (
+              <AnimatedNumberDisplay value={value as number} decimals={decimals ?? 0} />
+            ) : (
+              value
+            )}
           </span>
           {suffix && (
             <span className="text-lg font-mono-tech text-[hsl(var(--tv-text-dim))]">{suffix}</span>
@@ -55,7 +68,7 @@ export function DailyKpiTile({ label, value, suffix, sub, icon: Icon, accent, co
       )}
       <div className="mt-4 h-[2px] w-full rounded-full bg-[hsl(var(--tv-border))] overflow-hidden">
         <div
-          className="h-full w-1/3 animate-pulse"
+          className="h-full w-1/3 tv-shimmer"
           style={{ background: color, boxShadow: `0 0 10px ${color}` }}
         />
       </div>

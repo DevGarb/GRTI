@@ -1,8 +1,11 @@
-import { useMemo, useState } from "react";
+import { createContext, useContext, useEffect, useMemo, useState } from "react";
 import { CalendarDays, Sunrise, Sunset, ChevronDown } from "lucide-react";
 import { BentoTile } from "./BentoTile";
 import { TodayTicket } from "./TodayTimelinePanel";
 import { useTicketModal } from "@/contexts/TicketModalContext";
+
+interface FlashCtx { flashKey: number; targetId: string | null }
+const FlashContext = createContext<FlashCtx>({ flashKey: 0, targetId: null });
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -27,6 +30,10 @@ interface Props {
   tickets: (TodayTicket & { date?: string })[];
   filter: AgendaFilter;
   onFilterChange: (f: AgendaFilter) => void;
+  /** Increments to trigger a one-shot flash animation. */
+  flashKey?: number;
+  /** If provided AND visible in current tickets, flash only that chip; else flash whole panel. */
+  flashTicketId?: string | null;
 }
 
 const MORNING_HOURS = [8, 9, 10, 11, 12];
@@ -84,11 +91,23 @@ function TicketChip({ t }: { t: TodayTicket & { date?: string } }) {
   const color = priorityAccent[t.priority] ?? "hsl(var(--tv-accent-cyan))";
   const gradient = statusGradient[t.status];
   const { openTicket } = useTicketModal();
+  const { flashKey, targetId } = useContext(FlashContext);
+  const [flashing, setFlashing] = useState(false);
+  useEffect(() => {
+    if (!flashKey || targetId !== t.id) return;
+    setFlashing(false);
+    const raf = requestAnimationFrame(() => setFlashing(true));
+    const to = window.setTimeout(() => setFlashing(false), 1600);
+    return () => { cancelAnimationFrame(raf); window.clearTimeout(to); };
+  }, [flashKey, targetId, t.id]);
   return (
     <button
       type="button"
       onClick={() => openTicket(t.id)}
-      className="relative w-full text-left rounded-md border border-[hsl(var(--tv-border))] bg-[hsl(var(--tv-surface-2))] px-1.5 py-1 overflow-hidden min-w-0 cursor-pointer transition hover:border-[hsl(var(--tv-border-strong))] hover:bg-[hsl(var(--tv-surface))] focus:outline-none focus-visible:ring-1 focus-visible:ring-[hsl(var(--tv-accent-cyan))]"
+      className={cn(
+        "relative w-full text-left rounded-md border border-[hsl(var(--tv-border))] bg-[hsl(var(--tv-surface-2))] px-1.5 py-1 overflow-hidden min-w-0 cursor-pointer transition hover:border-[hsl(var(--tv-border-strong))] hover:bg-[hsl(var(--tv-surface))] focus:outline-none focus-visible:ring-1 focus-visible:ring-[hsl(var(--tv-accent-cyan))]",
+        flashing && "tv-flash",
+      )}
       style={{ backgroundImage: gradient }}
       title={`${t.code} · ${t.title} · ${t.hour}`}
     >
@@ -207,7 +226,20 @@ const FILTER_LABELS: Record<AgendaFilterType, string> = {
   custom: "Personalizado",
 };
 
-export function TodayAgendaPanel({ tickets, filter, onFilterChange }: Props) {
+export function TodayAgendaPanel({ tickets, filter, onFilterChange, flashKey = 0, flashTicketId = null }: Props) {
+  // Panel-wide flash when target isn't in the visible list
+  const chipTargetVisible = !!flashTicketId && tickets.some(t => t.id === flashTicketId);
+  const [panelFlashing, setPanelFlashing] = useState(false);
+  useEffect(() => {
+    if (!flashKey) return;
+    if (chipTargetVisible) return;
+    setPanelFlashing(false);
+    const raf = requestAnimationFrame(() => setPanelFlashing(true));
+    const to = window.setTimeout(() => setPanelFlashing(false), 1600);
+    return () => { cancelAnimationFrame(raf); window.clearTimeout(to); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [flashKey]);
+
   const [customOpen, setCustomOpen] = useState(false);
   const [customRange, setCustomRange] = useState<DateRange | undefined>(() => {
     if (filter.type === "custom") {
@@ -247,6 +279,8 @@ export function TodayAgendaPanel({ tickets, filter, onFilterChange }: Props) {
   }
 
   return (
+    <FlashContext.Provider value={{ flashKey, targetId: flashTicketId }}>
+    <div className={cn("rounded-xl", panelFlashing && "tv-flash")}>
     <BentoTile accent="cyan" grid>
       <div className="flex items-center justify-between mb-4 gap-3 flex-wrap">
         <div className="flex items-center gap-2">
@@ -326,5 +360,7 @@ export function TodayAgendaPanel({ tickets, filter, onFilterChange }: Props) {
         <MultiDayView tickets={tickets} />
       )}
     </BentoTile>
+    </div>
+    </FlashContext.Provider>
   );
 }
