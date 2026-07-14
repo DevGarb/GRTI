@@ -58,7 +58,7 @@ export function FunnelStrip({ received, inProgress, awaiting, closed }: Props) {
             </div>
             <div className="mt-1.5 h-1 rounded-full bg-[hsl(var(--tv-border))] overflow-hidden">
               <div
-                className="h-full transition-all duration-700"
+                className="h-full transition-all duration-700 tv-shimmer"
                 style={{ width: `${pct}%`, background: color, boxShadow: `0 0 6px ${color}` }}
               />
             </div>
