@@ -226,7 +226,20 @@ const FILTER_LABELS: Record<AgendaFilterType, string> = {
   custom: "Personalizado",
 };
 
-export function TodayAgendaPanel({ tickets, filter, onFilterChange }: Props) {
+export function TodayAgendaPanel({ tickets, filter, onFilterChange, flashKey = 0, flashTicketId = null }: Props) {
+  // Panel-wide flash when target isn't in the visible list
+  const chipTargetVisible = !!flashTicketId && tickets.some(t => t.id === flashTicketId);
+  const [panelFlashing, setPanelFlashing] = useState(false);
+  useEffect(() => {
+    if (!flashKey) return;
+    if (chipTargetVisible) return;
+    setPanelFlashing(false);
+    const raf = requestAnimationFrame(() => setPanelFlashing(true));
+    const to = window.setTimeout(() => setPanelFlashing(false), 1600);
+    return () => { cancelAnimationFrame(raf); window.clearTimeout(to); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [flashKey]);
+
   const [customOpen, setCustomOpen] = useState(false);
   const [customRange, setCustomRange] = useState<DateRange | undefined>(() => {
     if (filter.type === "custom") {
