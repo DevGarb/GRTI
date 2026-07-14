@@ -49,8 +49,19 @@ export default function ChkExecutar() {
       await saveItem.mutateAsync({ id: item.id, photo_path: path });
       const url = await getChkPhotoUrl(path);
       setPhotoUrls((prev) => ({ ...prev, [item.id]: url }));
+      setFailedIds((prev) => {
+        if (!prev.has(item.id)) return prev;
+        const next = new Set(prev);
+        next.delete(item.id);
+        return next;
+      });
     } catch (e: any) {
       toast.error("Erro ao enviar foto: " + e.message);
+      setFailedIds((prev) => {
+        const next = new Set(prev);
+        next.add(item.id);
+        return next;
+      });
     } finally {
       setUploadingId(null);
     }
