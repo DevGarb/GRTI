@@ -87,10 +87,19 @@ function hourOf(hhmm: string) {
   return h;
 }
 
-function TicketChip({ t, flash }: { t: TodayTicket & { date?: string }; flash?: boolean }) {
+function TicketChip({ t }: { t: TodayTicket & { date?: string } }) {
   const color = priorityAccent[t.priority] ?? "hsl(var(--tv-accent-cyan))";
   const gradient = statusGradient[t.status];
   const { openTicket } = useTicketModal();
+  const { flashKey, targetId } = useContext(FlashContext);
+  const [flashing, setFlashing] = useState(false);
+  useEffect(() => {
+    if (!flashKey || targetId !== t.id) return;
+    setFlashing(false);
+    const raf = requestAnimationFrame(() => setFlashing(true));
+    const to = window.setTimeout(() => setFlashing(false), 1600);
+    return () => { cancelAnimationFrame(raf); window.clearTimeout(to); };
+  }, [flashKey, targetId, t.id]);
   return (
     <button
       type="button"
