@@ -343,7 +343,19 @@ export default function TvDashboard() {
             </div>
           )}
         </div>
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => setTheme(t => t === "dark" ? "light" : "dark")}
+            className="rounded-lg border px-2.5 py-1.5 hover:opacity-80 transition"
+            style={{
+              borderColor: "hsl(var(--tv-border-strong))",
+              background: "hsl(var(--tv-surface))",
+              color: "hsl(var(--tv-text))",
+            }}
+            title={theme === "dark" ? "Tema claro" : "Tema escuro"}
+          >
+            {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+          </button>
           {!soundEnabled && (
             <button
               onClick={enableSound}
