@@ -150,9 +150,9 @@ Deno.serve(async (req) => {
         }
       }
 
-      // TMA = tempo real entre started_at e a finalização do atendimento pelo técnico
-      // (primeira transição para "Aguardando Aprovação"). Fallback: closed_at.
-      const finished = finishedAt.get(t.id) ?? (t.closed_at ? new Date(t.closed_at) : null);
+      // TMA = tempo corrido entre started_at e 1ª "Aguardando Aprovação".
+      // Sem fallback: tickets fechados sem essa transição não entram na média.
+      const finished = finishedAt.get(t.id);
       if (t.started_at && finished) {
         const m = (finished.getTime() - new Date(t.started_at).getTime()) / 60000;
         if (m > 0) {
