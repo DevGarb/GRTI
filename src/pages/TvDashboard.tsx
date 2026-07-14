@@ -377,7 +377,8 @@ export default function TvDashboard() {
             />
             <DailyKpiTile
               label="CSAT Hoje"
-              value={d.kpis.csat_today > 0 ? d.kpis.csat_today.toFixed(1) : "—"}
+              value={d.kpis.csat_today > 0 ? d.kpis.csat_today : "—"}
+              decimals={1}
               suffix={d.kpis.csat_today > 0 ? "/5" : undefined}
               icon={Star}
               accent="lime"
