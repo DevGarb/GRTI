@@ -87,6 +87,20 @@ Deno.serve(async (req) => {
     const startMonth = new Date(now.getFullYear(), now.getMonth(), 1);
     const endMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1);
 
+    // Optional agenda range (defaults to today when omitted)
+    const fromParam = url.searchParams.get("from");
+    const toParam = url.searchParams.get("to");
+    let agendaStart = startToday;
+    let agendaEnd = new Date(startToday.getTime() + 86400000);
+    if (fromParam && toParam) {
+      const f = new Date(fromParam + "T00:00:00");
+      const t = new Date(toParam + "T00:00:00");
+      if (!isNaN(f.getTime()) && !isNaN(t.getTime())) {
+        agendaStart = f;
+        agendaEnd = new Date(t.getTime() + 86400000);
+      }
+    }
+
     // Fetch tickets with joins
     const { data: tickets } = await supabase
       .from("tickets")
@@ -179,22 +193,27 @@ Deno.serve(async (req) => {
         }
       }
 
-      // Today tickets: created today OR closed today
-      const closedToday = t.closed_at && new Date(t.closed_at) >= startToday;
-      if (isCreatedToday || closedToday) {
-        const refDate = closedToday ? new Date(t.closed_at!) : createdAt;
+      // Agenda tickets: created in range OR closed in range
+      const createdInRange = createdAt >= agendaStart && createdAt < agendaEnd;
+      const closedInRange = t.closed_at && new Date(t.closed_at) >= agendaStart && new Date(t.closed_at) < agendaEnd;
+      if (createdInRange || closedInRange) {
+        const refDate = closedInRange ? new Date(t.closed_at!) : createdAt;
+        const y = refDate.getFullYear();
+        const mo = String(refDate.getMonth() + 1).padStart(2, "0");
+        const da = String(refDate.getDate()).padStart(2, "0");
         todayTickets.push({
           id: t.id,
           code: String(t.id).slice(0, 4).toUpperCase(),
           title: t.title,
           priority: t.priority,
           status: t.status,
+          date: `${y}-${mo}-${da}`,
           hour: `${String(refDate.getHours()).padStart(2, "0")}:${String(refDate.getMinutes()).padStart(2, "0")}`,
           technician: t.assigned_to ? (nameOf.get(t.assigned_to) ?? null) : null,
         });
       }
     }
-    todayTickets.sort((a, b) => a.hour.localeCompare(b.hour));
+    todayTickets.sort((a, b) => (a.date + a.hour).localeCompare(b.date + b.hour));
 
     // CSAT do mês vigente (apenas satisfaction)
     const { data: evalsMonth } = await supabase

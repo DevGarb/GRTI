@@ -10,7 +10,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { computeOpStatus, opStatusLabel } from "@/lib/opStatus";
 import { DailyKpiTile } from "@/components/tv/DailyKpiTile";
 import { TodayTicket } from "@/components/tv/TodayTimelinePanel";
-import { TodayAgendaPanel } from "@/components/tv/TodayAgendaPanel";
+import { TodayAgendaPanel, computeAgendaRange, type AgendaFilter } from "@/components/tv/TodayAgendaPanel";
 import { FunnelStrip } from "@/components/tv/FunnelStrip";
 
 const FUNCTIONS_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/tv-dashboard`;
@@ -90,6 +90,23 @@ export default function TvDashboard() {
       const r = await fetch(`${FUNCTIONS_URL}?org=${encodeURIComponent(orgSlug!)}&token=${encodeURIComponent(token)}`, {
         headers: { apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY as string },
       });
+      if (!r.ok) throw new Error(`HTTP ${r.status}`);
+      return r.json();
+    },
+  });
+
+  const [agendaFilter, setAgendaFilter] = useState<AgendaFilter>(() => computeAgendaRange("today"));
+  const agendaQuery = useQuery<TvData>({
+    queryKey: ["tv-dashboard-agenda", orgSlug, token, agendaFilter.from, agendaFilter.to],
+    enabled: !!orgSlug && !!token && agendaFilter.type !== "today",
+    refetchInterval: 300_000,
+    refetchOnWindowFocus: false,
+    retry: 1,
+    queryFn: async () => {
+      const r = await fetch(
+        `${FUNCTIONS_URL}?org=${encodeURIComponent(orgSlug!)}&token=${encodeURIComponent(token)}&from=${agendaFilter.from}&to=${agendaFilter.to}`,
+        { headers: { apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY as string } },
+      );
       if (!r.ok) throw new Error(`HTTP ${r.status}`);
       return r.json();
     },
@@ -377,9 +394,13 @@ export default function TvDashboard() {
             />
           </section>
 
-          {/* Row 2: Agenda do dia — destaque, full width */}
+          {/* Row 2: Agenda — filtro por período */}
           <section>
-            <TodayAgendaPanel tickets={d.today_tickets ?? []} />
+            <TodayAgendaPanel
+              tickets={(agendaFilter.type === "today" ? d.today_tickets : agendaQuery.data?.today_tickets) ?? []}
+              filter={agendaFilter}
+              onFilterChange={setAgendaFilter}
+            />
           </section>
 
           {/* Rodapé: funil compacto */}
