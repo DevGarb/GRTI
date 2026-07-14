@@ -27,6 +27,10 @@ interface Props {
   tickets: (TodayTicket & { date?: string })[];
   filter: AgendaFilter;
   onFilterChange: (f: AgendaFilter) => void;
+  /** Increments to trigger a one-shot flash animation. */
+  flashKey?: number;
+  /** If provided AND visible in current tickets, flash only that chip; else flash whole panel. */
+  flashTicketId?: string | null;
 }
 
 const MORNING_HOURS = [8, 9, 10, 11, 12];
