@@ -279,6 +279,8 @@ export function TodayAgendaPanel({ tickets, filter, onFilterChange, flashKey = 0
   }
 
   return (
+    <FlashContext.Provider value={{ flashKey, targetId: flashTicketId }}>
+    <div className={cn("rounded-xl", panelFlashing && "tv-flash")}>
     <BentoTile accent="cyan" grid>
       <div className="flex items-center justify-between mb-4 gap-3 flex-wrap">
         <div className="flex items-center gap-2">
