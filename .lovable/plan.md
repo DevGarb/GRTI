@@ -1,43 +1,48 @@
-## Objetivo
-Refinar o Painel da TV com 4 mudanças pontuais, sem alterar demais dados.
+# Padronizar TMA em todo o sistema
 
-## 1) Toggle claro/escuro
-- Adicionar botão `Sun/Moon` no header (ao lado do "Ativar Som").
-- Persistir em `localStorage` (`tv-theme`).
-- Trocar valores hardcoded `hsl(var(--tv-bg))` etc. por tokens que respondem à classe `.dark` no root do dashboard.
-- Definir em `src/index.css` um bloco `.tv-light` com paleta clara equivalente (fundo off-white, superfícies brancas, texto near-black, mantendo mesmos acentos cyan/lime/amber/violet/magenta).
-- Remover o `document.documentElement.classList.add("dark")` fixo; aplicar classe no wrapper do dashboard.
+**Regra única do TMA (wall clock):**
+`TMA = 1ª transição para "Aguardando Aprovação" − started_at`
+Fallback: se não houver "Aguardando Aprovação" no histórico, usa `closed_at` (tickets legados).
+Sem descontar pausas, sem horário comercial, sem somar retrabalhos separadamente — é tempo corrido do relógio.
 
-## 2) Top Técnico (KPI 03)
-Novo layout do tile:
-- Linha 1: nome completo (truncado a 2 linhas se preciso, font Space Grotesk).
-- Linha 2: `<qtd> tickets` + badge `<pct>%` da produção do dia (fechados hoje do técnico ÷ total closed_today).
-- Se sem fechamentos: manter placeholder "—".
-- Edge function já retorna `ranking_today` com `fechados` — só calcular `pct = top.fechados / kpis.closed_today * 100`.
+## Onde aplicar
 
-## 3) TMA Hoje — wall-clock
-Na edge function `tv-dashboard/index.ts`, substituir o cálculo de TMA por diferença bruta em minutos entre `started_at` e `closed_at`:
+### 1. Frontend (`src/lib/ticketTiming.ts`)
+- Criar `fetchTicketTmaMinutes(tickets)`: retorna `Map<ticket_id, minutos>` usando a regra única.
+- Manter `fetchTicketWorkMinutes` (ainda usado para métricas de "horas trabalhadas em horário comercial" — que é conceito diferente de TMA). Marcar no comentário que **não é TMA**.
+
+### 2. Consumidores no frontend — trocar para `fetchTicketTmaMinutes`
+- `src/hooks/useDashboardMetrics.ts` — `avgResolutionMinutes` (dashboard e comparativo mês anterior).
+- `src/components/metas/MyGoalCard.tsx` — TMA do card "Minha Meta".
+
+### 3. Backend — RPC `get_metas_tecnicos` (SQL)
+Substituir o cálculo atual de `avg_handle_minutes` (que usa `business_minutes_between` com janelas em "Em Andamento") por:
+```sql
+avg_handle_minutes = AVG( EXTRACT(EPOCH FROM (finished_at − started_at)) / 60 )
 ```
-const m = (cd.getTime() - new Date(t.started_at).getTime()) / 60000;
-```
-Aplicar aos três agregados (`tma_minutes`, `tma_month_minutes`, `tma_today_minutes`).
-Tile "TMA Hoje" continua exibindo só chamados fechados hoje pelo técnico (já é o escopo atual).
-Nota: `first_response_min` e SLA seguem usando `calcBusinessMinutes` (não são TMA).
+onde `finished_at` = `MIN(ticket_history.created_at)` do 1º `status_change` para `"Aguardando Aprovação"`; fallback `closed_at`. Apenas tickets com `started_at NOT NULL`.
 
-## 4) Metas do Mês no header
-- Remover a `<section>` inferior `<MonthGoalsStrip>`.
-- Reposicionar como tira horizontal fina logo abaixo do título/nome da org, ocupando toda a largura do header.
-- Criar variante `compact` em `MonthGoalsStrip.tsx`: altura menor (~44px), cada pill com ícone + label micro (10px) + valor + barra de progresso 2px. Sem título "METAS DO MÊS".
-- Layout do dashboard passa a ser: Header (com metas embaixo) → Row KPIs+Timeline → Row Funil.
+Isso corrige automaticamente:
+- `TeamRanking.tsx` (usa `avg_handle_minutes` da RPC)
+- `ExecutiveSummary` (idem)
+- `supabase/functions/send-management-report/index.ts` (idem)
+- `supabase/functions/generate-executive-summary/index.ts` (idem)
 
-## Fora de escopo
-- Não muda backend de metas/goals_summary.
-- Não redesenha timeline, funil, ou KPIs 01/02/04.
-- Não altera CSAT, backlog, preventivas.
+### 4. Edge function `tv-dashboard/index.ts`
+Já está na regra correta (feita no turno anterior). Nada a fazer.
 
-## Arquivos afetados
-- `src/pages/TvDashboard.tsx` — toggle tema, mover metas, passar pct do top tech.
-- `src/components/tv/DailyKpiTile.tsx` — variante "topTech" com nome+qtd+pct (ou renderizar via `children`).
-- `src/components/tv/MonthGoalsStrip.tsx` — prop `variant: "full" | "compact"`.
-- `src/index.css` — tokens `.tv-light` equivalentes aos `--tv-*` atuais.
-- `supabase/functions/tv-dashboard/index.ts` — TMA wall-clock.
+### 5. Anomalias de TMA (`detect_tma_anomalies`)
+Fora do escopo — é detecção estatística de outliers, não medição de TMA médio. Não mexer.
+
+## Fora do escopo
+- Cálculos de "tempo trabalhado" em horário comercial (`fetchTicketWorkMinutes`, `MetasRevisaoTMA`) — são conceito diferente (produtividade em horas úteis), continuam iguais.
+- SLA de primeira resposta (`first_response_min`) — continua em horário comercial.
+- Detecção de anomalias de TMA.
+
+## Arquivos alterados
+- `src/lib/ticketTiming.ts` (novo helper)
+- `src/hooks/useDashboardMetrics.ts`
+- `src/components/metas/MyGoalCard.tsx`
+- 1 nova migration SQL alterando `public.get_metas_tecnicos`
+
+Após aprovação, deploy da RPC via migration e redeploy das edge functions consumidoras não é necessário (elas apenas leem o resultado da RPC).

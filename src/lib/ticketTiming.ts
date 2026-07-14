@@ -63,6 +63,45 @@ export async function fetchTicketResolutionEnds(
 }
 
 /**
+ * REGRA ÚNICA DE TMA (wall clock):
+ * TMA = 1ª transição para "Aguardando Aprovação" − started_at
+ * Fallback: closed_at − started_at (para tickets legados sem essa transição)
+ *
+ * Retorna Map<ticket_id, minutos>. Tickets sem started_at ou sem fim válido
+ * são omitidos do mapa (chame `map.get(id) ?? 0` no consumidor).
+ */
+export async function fetchTicketTmaMinutes(
+  tickets: Array<{ id: string; started_at?: string | null; closed_at?: string | null }>
+): Promise<Map<string, number>> {
+  const result = new Map<string, number>();
+  if (tickets.length === 0) return result;
+
+  const ids = tickets.map((t) => t.id);
+  const { data } = await supabase
+    .from("ticket_history")
+    .select("ticket_id, created_at")
+    .in("ticket_id", ids)
+    .eq("action", "status_change")
+    .eq("new_value", "Aguardando Aprovação")
+    .order("created_at", { ascending: true });
+
+  const firstFinish = new Map<string, Date>();
+  (data || []).forEach((h: any) => {
+    if (!firstFinish.has(h.ticket_id)) firstFinish.set(h.ticket_id, new Date(h.created_at));
+  });
+
+  for (const t of tickets) {
+    if (!t.started_at) continue;
+    const start = new Date(t.started_at);
+    const end = firstFinish.get(t.id) ?? (t.closed_at ? new Date(t.closed_at) : null);
+    if (!end || end <= start) continue;
+    result.set(t.id, (end.getTime() - start.getTime()) / 60000);
+  }
+  return result;
+}
+
+
+/**
  * Resolves the start of the technician's work on a ticket.
  * Prefers started_at; falls back to created_at for legacy tickets.
  */

@@ -2,7 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 
-import { fetchTicketResolutionEnds, fetchTicketWorkMinutes } from "@/lib/ticketTiming";
+import { fetchTicketResolutionEnds, fetchTicketTmaMinutes } from "@/lib/ticketTiming";
 
 export interface TechCsatData {
   name: string;
@@ -78,9 +78,9 @@ export function useDashboardMetrics(dateFrom?: Date, dateTo?: Date) {
         closedTickets.map((t) => t.id)
       );
 
-      // Tempo de trabalho acumulado (soma das janelas em "Em Andamento",
-      // descontando pausas em Aguardando Aprovação e somando retrabalhos)
-      const workMinutesMap = await fetchTicketWorkMinutes(closedTickets);
+      // TMA (regra única): wall clock started_at → 1ª "Aguardando Aprovação"
+      // (fallback: closed_at)
+      const workMinutesMap = await fetchTicketTmaMinutes(closedTickets);
 
       // Para o TMA, considera apenas chamados atribuídos a técnicos/desenvolvedores/admins
       // (mesma regra do RPC get_metas_tecnicos, para os números baterem entre Dashboard e Metas).
@@ -265,8 +265,8 @@ export function useDashboardMetrics(dateFrom?: Date, dateTo?: Date) {
       const allResolutionEndMap = await fetchTicketResolutionEnds(
         closedUnfiltered.map((t) => t.id)
       );
-      // Tempo de trabalho acumulado por ticket (para o gráfico mensal)
-      const allWorkMinutesMap = await fetchTicketWorkMinutes(closedUnfiltered);
+      // TMA por ticket (para gráfico mensal) — mesma regra única
+      const allWorkMinutesMap = await fetchTicketTmaMinutes(closedUnfiltered);
 
       // Fetch ALL evaluations for monthly chart
       const { data: allEvalsForChart } = await (supabase
