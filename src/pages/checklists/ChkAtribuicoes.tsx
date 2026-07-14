@@ -1,6 +1,23 @@
 import { useState } from "react";
-import { UserCheck, Plus, ToggleLeft, ToggleRight } from "lucide-react";
-import { useChkAssignments, useSaveChkAssignment, useToggleChkAssignment, useChkTemplates, useChkCompanies, useChkOrgUsers, type ChkFrequency } from "@/hooks/useChecklists";
+import { UserCheck, Plus, ToggleLeft, ToggleRight, Pencil, Trash2 } from "lucide-react";
+import { useChkAssignments, useSaveChkAssignment, useToggleChkAssignment, useDeleteChkAssignment, useChkTemplates, useChkCompanies, useChkOrgUsers, type ChkFrequency } from "@/hooks/useChecklists";
+import { toast } from "sonner";
+
+type FormState = {
+  id?: string;
+  template_id: string;
+  company_id: string;
+  assigned_user_id: string;
+  frequency: ChkFrequency;
+  start_date: string;
+  end_date: string;
+  notes: string;
+};
+
+const emptyForm = (): FormState => ({
+  template_id: "", company_id: "", assigned_user_id: "", frequency: "unica",
+  start_date: new Date().toISOString().slice(0, 10), end_date: "", notes: "",
+});
 
 export default function ChkAtribuicoes() {
   const { data: assigns = [], isLoading } = useChkAssignments();
@@ -9,18 +26,58 @@ export default function ChkAtribuicoes() {
   const { data: users = [] } = useChkOrgUsers();
   const save = useSaveChkAssignment();
   const toggle = useToggleChkAssignment();
+  const del = useDeleteChkAssignment();
 
   const [showForm, setShowForm] = useState(false);
-  const [form, setForm] = useState<{ template_id: string; company_id: string; assigned_user_id: string; frequency: ChkFrequency; start_date: string; end_date: string; notes: string }>({
-    template_id: "", company_id: "", assigned_user_id: "", frequency: "unica", start_date: new Date().toISOString().slice(0, 10), end_date: "", notes: "",
-  });
+  const [form, setForm] = useState<FormState>(emptyForm());
+
+  const openNew = () => { setForm(emptyForm()); setShowForm(true); };
+  const openEdit = (a: any) => {
+    setForm({
+      id: a.id,
+      template_id: a.template_id,
+      company_id: a.company_id,
+      assigned_user_id: a.assigned_user_id,
+      frequency: a.frequency,
+      start_date: a.start_date,
+      end_date: a.end_date || "",
+      notes: a.notes || "",
+    });
+    setShowForm(true);
+  };
 
   const submit = () => {
     if (!form.template_id || !form.company_id || !form.assigned_user_id) return;
+
+    // Duplicate check (only on create)
+    if (!form.id) {
+      const dup = assigns.find((a: any) =>
+        a.is_active &&
+        a.template_id === form.template_id &&
+        a.company_id === form.company_id &&
+        a.assigned_user_id === form.assigned_user_id,
+      );
+      if (dup) {
+        const ok = window.confirm(
+          "Já existe uma atribuição ativa deste modelo para esta empresa e colaborador. Isso pode duplicar execuções. Deseja criar mesmo assim?",
+        );
+        if (!ok) return;
+      }
+    }
+
     save.mutate({
+      id: form.id,
       template_id: form.template_id, company_id: form.company_id, assigned_user_id: form.assigned_user_id,
       frequency: form.frequency, start_date: form.start_date, end_date: form.end_date || null, notes: form.notes,
-    }, { onSuccess: () => setShowForm(false) });
+    }, { onSuccess: () => { setShowForm(false); setForm(emptyForm()); } });
+  };
+
+  const handleDelete = (a: any) => {
+    const ok = window.confirm(
+      `Excluir a atribuição "${a.chk_templates?.title}" para ${a.chk_companies?.name}?\n\nATENÇÃO: execuções vinculadas também serão removidas.`,
+    );
+    if (!ok) return;
+    del.mutate(a.id);
   };
 
   return (
@@ -33,13 +90,14 @@ export default function ChkAtribuicoes() {
             <p className="text-sm text-muted-foreground">Vincule um modelo a uma empresa e a um colaborador responsável</p>
           </div>
         </div>
-        <button onClick={() => setShowForm(true)} className="px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-medium flex items-center gap-1.5 hover:opacity-90">
+        <button onClick={openNew} className="px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-medium flex items-center gap-1.5 hover:opacity-90">
           <Plus className="h-4 w-4" /> Nova atribuição
         </button>
       </div>
 
       {showForm && (
         <div className="card-elevated p-4 space-y-3">
+          <p className="text-sm font-medium">{form.id ? "Editar atribuição" : "Nova atribuição"}</p>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
             <select value={form.template_id} onChange={(e) => setForm({ ...form, template_id: e.target.value })} className="px-3 py-2 rounded-lg border border-input bg-background text-sm">
               <option value="">— Modelo —</option>
@@ -64,8 +122,10 @@ export default function ChkAtribuicoes() {
           </div>
           <textarea placeholder="Observações (opcional)" value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} rows={2} className="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm" />
           <div className="flex gap-2 justify-end">
-            <button onClick={() => setShowForm(false)} className="px-4 py-2 text-sm rounded-lg border border-input hover:bg-muted">Cancelar</button>
-            <button onClick={submit} disabled={save.isPending} className="px-4 py-2 text-sm rounded-lg bg-primary text-primary-foreground hover:opacity-90 disabled:opacity-50">Criar</button>
+            <button onClick={() => { setShowForm(false); setForm(emptyForm()); }} className="px-4 py-2 text-sm rounded-lg border border-input hover:bg-muted">Cancelar</button>
+            <button onClick={submit} disabled={save.isPending} className="px-4 py-2 text-sm rounded-lg bg-primary text-primary-foreground hover:opacity-90 disabled:opacity-50">
+              {form.id ? "Salvar alterações" : "Criar"}
+            </button>
           </div>
         </div>
       )}
@@ -87,8 +147,14 @@ export default function ChkAtribuicoes() {
               <span className={`text-xs px-2 py-0.5 rounded-full ${a.is_active ? "bg-emerald-100 text-emerald-700" : "bg-muted text-muted-foreground"}`}>
                 {a.is_active ? "Ativa" : "Pausada"}
               </span>
-              <button onClick={() => toggle.mutate({ id: a.id, is_active: !a.is_active })} className="p-1.5 rounded-md hover:bg-muted text-muted-foreground">
+              <button onClick={() => toggle.mutate({ id: a.id, is_active: !a.is_active })} title={a.is_active ? "Pausar" : "Ativar"} className="p-1.5 rounded-md hover:bg-muted text-muted-foreground">
                 {a.is_active ? <ToggleRight className="h-5 w-5 text-primary" /> : <ToggleLeft className="h-5 w-5" />}
+              </button>
+              <button onClick={() => openEdit(a)} title="Editar" className="p-1.5 rounded-md hover:bg-muted text-muted-foreground">
+                <Pencil className="h-4 w-4" />
+              </button>
+              <button onClick={() => handleDelete(a)} title="Excluir" disabled={del.isPending} className="p-1.5 rounded-md hover:bg-muted text-destructive disabled:opacity-50">
+                <Trash2 className="h-4 w-4" />
               </button>
             </div>
           ))}
