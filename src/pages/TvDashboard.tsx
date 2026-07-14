@@ -394,9 +394,13 @@ export default function TvDashboard() {
             />
           </section>
 
-          {/* Row 2: Agenda do dia — destaque, full width */}
+          {/* Row 2: Agenda — filtro por período */}
           <section>
-            <TodayAgendaPanel tickets={d.today_tickets ?? []} />
+            <TodayAgendaPanel
+              tickets={(agendaFilter.type === "today" ? d.today_tickets : agendaQuery.data?.today_tickets) ?? []}
+              filter={agendaFilter}
+              onFilterChange={setAgendaFilter}
+            />
           </section>
 
           {/* Rodapé: funil compacto */}
