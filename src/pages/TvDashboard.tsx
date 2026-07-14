@@ -7,7 +7,6 @@ import {
   Sun, Moon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { computeOpStatus, opStatusLabel } from "@/lib/opStatus";
 import { DailyKpiTile } from "@/components/tv/DailyKpiTile";
