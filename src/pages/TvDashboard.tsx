@@ -378,7 +378,7 @@ export default function TvDashboard() {
           </section>
 
           {/* Row 2: Agenda do dia — destaque, full width */}
-          <section className="flex-1 min-h-0">
+          <section>
             <TodayAgendaPanel tickets={d.today_tickets ?? []} />
           </section>
 
