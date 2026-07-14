@@ -240,7 +240,7 @@ export default function TvDashboard() {
 
   return (
     <div
-      className={cn("min-h-screen p-4 md:p-6 flex flex-col gap-4 relative overflow-hidden", theme === "light" && "tv-light")}
+      className={cn("min-h-screen p-3 md:p-5 flex flex-col gap-4 relative overflow-hidden", theme === "light" && "tv-light")}
       style={{
         background: "radial-gradient(1200px 600px at 15% -10%, hsl(var(--tv-accent-cyan)/0.08), transparent 60%), radial-gradient(900px 500px at 95% 110%, hsl(var(--tv-accent-violet)/0.08), transparent 60%), hsl(var(--tv-bg))",
         color: "hsl(var(--tv-text))",
@@ -248,7 +248,18 @@ export default function TvDashboard() {
       }}
     >
       {/* subtle grid */}
-      <div className="pointer-events-none fixed inset-0 tv-grid-bg opacity-[0.04]" />
+      <div className="pointer-events-none fixed inset-0 tv-grid-bg opacity-[0.10]" />
+
+      {/* bezel frame */}
+      <div className="relative z-10 flex-1 flex flex-col border rounded-2xl p-3 md:p-5 gap-4 md:gap-5 overflow-hidden"
+        style={{
+          borderColor: "hsl(var(--tv-border-strong))",
+          background: "linear-gradient(180deg, hsl(var(--tv-surface)/0.25) 0%, hsl(var(--tv-surface)/0.08) 100%)",
+          boxShadow: "inset 0 0 0 1px hsl(var(--tv-border)/0.4), 0 0 60px -12px hsl(var(--tv-accent-cyan)/0.12)",
+        }}>
+
+      {/* centered max-width container */}
+      <div className="w-full max-w-[1700px] mx-auto flex-1 flex flex-col gap-4 md:gap-5">
 
       {alert && (
         <div className="fixed top-6 left-1/2 -translate-x-1/2 z-50 animate-in slide-in-from-top-8">
@@ -414,6 +425,8 @@ export default function TvDashboard() {
           </section>
         </>
       )}
+      </div>
+      </div>
     </div>
   );
 }
