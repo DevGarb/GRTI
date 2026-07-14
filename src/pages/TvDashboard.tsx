@@ -10,7 +10,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { computeOpStatus, opStatusLabel } from "@/lib/opStatus";
 import { DailyKpiTile } from "@/components/tv/DailyKpiTile";
 import { TodayTicket } from "@/components/tv/TodayTimelinePanel";
-import { TodayAgendaPanel } from "@/components/tv/TodayAgendaPanel";
+import { TodayAgendaPanel, computeAgendaRange, type AgendaFilter } from "@/components/tv/TodayAgendaPanel";
 import { FunnelStrip } from "@/components/tv/FunnelStrip";
 
 const FUNCTIONS_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/tv-dashboard`;
