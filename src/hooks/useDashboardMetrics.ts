@@ -265,8 +265,8 @@ export function useDashboardMetrics(dateFrom?: Date, dateTo?: Date) {
       const allResolutionEndMap = await fetchTicketResolutionEnds(
         closedUnfiltered.map((t) => t.id)
       );
-      // Tempo de trabalho acumulado por ticket (para o gráfico mensal)
-      const allWorkMinutesMap = await fetchTicketWorkMinutes(closedUnfiltered);
+      // TMA por ticket (para gráfico mensal) — mesma regra única
+      const allWorkMinutesMap = await fetchTicketTmaMinutes(closedUnfiltered);
 
       // Fetch ALL evaluations for monthly chart
       const { data: allEvalsForChart } = await (supabase
