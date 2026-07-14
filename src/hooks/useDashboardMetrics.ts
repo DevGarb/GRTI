@@ -78,9 +78,9 @@ export function useDashboardMetrics(dateFrom?: Date, dateTo?: Date) {
         closedTickets.map((t) => t.id)
       );
 
-      // Tempo de trabalho acumulado (soma das janelas em "Em Andamento",
-      // descontando pausas em Aguardando Aprovação e somando retrabalhos)
-      const workMinutesMap = await fetchTicketWorkMinutes(closedTickets);
+      // TMA (regra única): wall clock started_at → 1ª "Aguardando Aprovação"
+      // (fallback: closed_at)
+      const workMinutesMap = await fetchTicketTmaMinutes(closedTickets);
 
       // Para o TMA, considera apenas chamados atribuídos a técnicos/desenvolvedores/admins
       // (mesma regra do RPC get_metas_tecnicos, para os números baterem entre Dashboard e Metas).
