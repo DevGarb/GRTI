@@ -27,7 +27,7 @@ export default function ChkDashboard() {
     ? [
         { to: "/checklists/modelos", icon: FileText, label: "Modelos", count: templates.length },
         { to: "/checklists/empresas", icon: Building2, label: "Empresas", count: companies.length },
-        { to: "/checklists/atribuicoes", icon: UserCheck, label: "Atribuições", count: 0 },
+        { to: "/checklists/atribuicoes", icon: UserCheck, label: "Atribuições", count: assigns.length },
         { to: "/checklists/execucoes", icon: ListChecks, label: "Execuções", count: execs.length },
         { to: "/checklists/relatorios", icon: BarChart3, label: "Relatórios", count: null },
       ]
