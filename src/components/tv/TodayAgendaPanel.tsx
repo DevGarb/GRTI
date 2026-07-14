@@ -1,8 +1,11 @@
-import { useMemo, useState } from "react";
+import { createContext, useContext, useEffect, useMemo, useState } from "react";
 import { CalendarDays, Sunrise, Sunset, ChevronDown } from "lucide-react";
 import { BentoTile } from "./BentoTile";
 import { TodayTicket } from "./TodayTimelinePanel";
 import { useTicketModal } from "@/contexts/TicketModalContext";
+
+interface FlashCtx { flashKey: number; targetId: string | null }
+const FlashContext = createContext<FlashCtx>({ flashKey: 0, targetId: null });
 import {
   DropdownMenu,
   DropdownMenuContent,
