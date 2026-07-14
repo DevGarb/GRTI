@@ -290,11 +290,11 @@ export function useDeleteChkAssignment() {
 }
 
 // ============ EXECUTIONS ============
-export function useChkExecutions(filters?: { status?: ChkExecStatus | "all"; mine?: boolean }) {
+export function useChkExecutions(filters?: { status?: ChkExecStatus | "all"; mine?: boolean; from?: string; to?: string }) {
   const { profile, user } = useAuth();
   const org = profile?.organization_id;
   return useQuery({
-    queryKey: ["chk_executions", org, filters?.status, filters?.mine, user?.id],
+    queryKey: ["chk_executions", org, filters?.status, filters?.mine, filters?.from, filters?.to, user?.id],
     enabled: !!org,
     queryFn: async () => {
       let q = supabase
@@ -304,6 +304,8 @@ export function useChkExecutions(filters?: { status?: ChkExecStatus | "all"; min
         .order("target_date", { ascending: false });
       if (filters?.status && filters.status !== "all") q = q.eq("status", filters.status);
       if (filters?.mine) q = q.eq("assigned_user_id", user!.id);
+      if (filters?.from) q = q.gte("target_date", filters.from);
+      if (filters?.to) q = q.lte("target_date", filters.to);
       const { data, error } = await q;
       if (error) throw error;
       const rows = (data || []) as any[];
