@@ -123,9 +123,9 @@ export default function ChkExecutar() {
                   ti?.requires_photo && <span className="text-xs text-red-600">Foto obrigatória</span>
                 )}
                 {!readonly && (
-                  <label className="text-xs px-3 py-1.5 rounded-lg border border-input hover:bg-muted cursor-pointer flex items-center gap-1.5">
+                  <label className={`text-xs px-3 py-1.5 rounded-lg border cursor-pointer flex items-center gap-1.5 ${failedIds.has(it.id) ? "border-red-500 text-red-600 hover:bg-red-50" : "border-input hover:bg-muted"}`}>
                     {uploadingId === it.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Camera className="h-3.5 w-3.5" />}
-                    {it.photo_path ? "Trocar foto" : "Anexar foto"}
+                    {failedIds.has(it.id) ? "Falha no envio, toque pra tentar de novo" : it.photo_path ? "Trocar foto" : "Anexar foto"}
                     <input type="file" accept="image/*" capture="environment" className="hidden" onChange={(e) => e.target.files?.[0] && handlePhoto(it, e.target.files[0])} />
                   </label>
                 )}
