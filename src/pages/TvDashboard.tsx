@@ -279,9 +279,13 @@ export default function TvDashboard() {
     },
   ] : [];
 
+  const topTechPct = topTech && d && d.kpis.closed_today > 0
+    ? Math.round((topTech.fechados / d.kpis.closed_today) * 100)
+    : 0;
+
   return (
     <div
-      className="min-h-screen p-4 md:p-6 flex flex-col gap-4 relative overflow-hidden"
+      className={cn("min-h-screen p-4 md:p-6 flex flex-col gap-4 relative overflow-hidden", theme === "light" && "tv-light")}
       style={{
         background: "radial-gradient(1200px 600px at 15% -10%, hsl(var(--tv-accent-cyan)/0.08), transparent 60%), radial-gradient(900px 500px at 95% 110%, hsl(var(--tv-accent-violet)/0.08), transparent 60%), hsl(var(--tv-bg))",
         color: "hsl(var(--tv-text))",
