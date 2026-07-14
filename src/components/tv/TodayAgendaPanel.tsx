@@ -106,7 +106,7 @@ function TicketChip({ t }: { t: TodayTicket & { date?: string } }) {
       onClick={() => openTicket(t.id)}
       className={cn(
         "relative w-full text-left rounded-md border border-[hsl(var(--tv-border))] bg-[hsl(var(--tv-surface-2))] px-1.5 py-1 overflow-hidden min-w-0 cursor-pointer transition hover:border-[hsl(var(--tv-border-strong))] hover:bg-[hsl(var(--tv-surface))] focus:outline-none focus-visible:ring-1 focus-visible:ring-[hsl(var(--tv-accent-cyan))]",
-        flash && "tv-flash",
+        flashing && "tv-flash",
       )}
       style={{ backgroundImage: gradient }}
       title={`${t.code} · ${t.title} · ${t.hour}`}
