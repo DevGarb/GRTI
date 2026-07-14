@@ -95,6 +95,23 @@ export default function TvDashboard() {
     },
   });
 
+  const [agendaFilter, setAgendaFilter] = useState<AgendaFilter>(() => computeAgendaRange("today"));
+  const agendaQuery = useQuery<TvData>({
+    queryKey: ["tv-dashboard-agenda", orgSlug, token, agendaFilter.from, agendaFilter.to],
+    enabled: !!orgSlug && !!token && agendaFilter.type !== "today",
+    refetchInterval: 300_000,
+    refetchOnWindowFocus: false,
+    retry: 1,
+    queryFn: async () => {
+      const r = await fetch(
+        `${FUNCTIONS_URL}?org=${encodeURIComponent(orgSlug!)}&token=${encodeURIComponent(token)}&from=${agendaFilter.from}&to=${agendaFilter.to}`,
+        { headers: { apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY as string } },
+      );
+      if (!r.ok) throw new Error(`HTTP ${r.status}`);
+      return r.json();
+    },
+  });
+
   // Realtime: banner + som
   const [alert, setAlert] = useState<{ count: number; titles: string[] } | null>(null);
   const [soundEnabled, setSoundEnabled] = useState(false);
