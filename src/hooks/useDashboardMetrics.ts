@@ -2,7 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 
-import { fetchTicketResolutionEnds, fetchTicketWorkMinutes } from "@/lib/ticketTiming";
+import { fetchTicketResolutionEnds, fetchTicketTmaMinutes } from "@/lib/ticketTiming";
 
 export interface TechCsatData {
   name: string;
