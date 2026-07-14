@@ -15,9 +15,61 @@ export interface GoalPill {
 
 interface Props {
   goals: GoalPill[];
+  variant?: "full" | "compact";
 }
 
-export function MonthGoalsStrip({ goals }: Props) {
+export function MonthGoalsStrip({ goals, variant = "full" }: Props) {
+  if (variant === "compact") {
+    return (
+      <div className="grid grid-cols-2 md:grid-cols-4 xl:grid-cols-7 gap-2">
+        {goals.map((g, i) => {
+          const color = `hsl(${accentVar[g.accent]})`;
+          const higher = g.higherIsBetter !== false;
+          const rawPct = g.target > 0 ? (g.actual / g.target) * 100 : 0;
+          const displayPct = higher
+            ? Math.min(100, rawPct)
+            : Math.min(100, g.target > 0 ? (g.target / Math.max(g.actual, 0.0001)) * 100 : 0);
+          const fmt = g.format ?? ((v: number) => v.toLocaleString("pt-BR"));
+          const Icon = g.icon;
+          return (
+            <div
+              key={i}
+              className="relative rounded-md border border-[hsl(var(--tv-border))] bg-[hsl(var(--tv-surface)/0.6)] backdrop-blur px-2.5 py-1.5 overflow-hidden"
+            >
+              <div className="absolute left-0 top-0 h-full w-[2px]" style={{ background: color }} />
+              <div className="flex items-center gap-1.5 mb-0.5">
+                <Icon className="h-3 w-3 shrink-0" strokeWidth={1.75} style={{ color }} />
+                <span className="text-[9px] uppercase tracking-wider text-[hsl(var(--tv-text-dim))] truncate">
+                  {g.label}
+                </span>
+                <span
+                  className="ml-auto font-mono-tech text-[9px] px-1 rounded shrink-0"
+                  style={{ color, background: `${color}18` }}
+                >
+                  {Math.round(displayPct)}%
+                </span>
+              </div>
+              <div className="flex items-baseline gap-1">
+                <span className="font-display font-semibold text-sm tabular-nums leading-none text-[hsl(var(--tv-text))]">
+                  {fmt(g.actual)}{g.suffix ?? ""}
+                </span>
+                <span className="font-mono-tech text-[9px] text-[hsl(var(--tv-text-mute))] truncate">
+                  / {g.target > 0 ? fmt(g.target) : "—"}{g.suffix ?? ""}
+                </span>
+              </div>
+              <div className="mt-1 h-[2px] rounded-full bg-[hsl(var(--tv-border))] overflow-hidden">
+                <div
+                  className="h-full transition-all duration-700"
+                  style={{ width: `${g.target > 0 ? displayPct : 0}%`, background: color }}
+                />
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    );
+  }
+
   return (
     <BentoTile accent="violet">
       <div className="flex items-center justify-between mb-4">
