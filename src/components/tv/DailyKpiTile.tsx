@@ -40,7 +40,7 @@ export function DailyKpiTile({ label, value, suffix, sub, icon: Icon, accent, co
       ) : (
         <div className="flex items-baseline gap-1.5">
           <span
-            className="font-display font-semibold tabular-nums leading-none text-[hsl(var(--tv-text))]"
+            className="font-tv-display font-semibold tabular-nums leading-none text-[hsl(var(--tv-text))]"
             style={{ fontSize: "3.25rem" }}
           >
             {value}

@@ -50,7 +50,7 @@ export function MonthGoalsStrip({ goals, variant = "full" }: Props) {
                 </span>
               </div>
               <div className="flex items-baseline gap-1">
-                <span className="font-display font-semibold text-sm tabular-nums leading-none text-[hsl(var(--tv-text))]">
+                <span className="font-tv-display font-semibold text-sm tabular-nums leading-none text-[hsl(var(--tv-text))]">
                   {fmt(g.actual)}{g.suffix ?? ""}
                 </span>
                 <span className="font-mono-tech text-[9px] text-[hsl(var(--tv-text-mute))] truncate">
@@ -119,7 +119,7 @@ export function MonthGoalsStrip({ goals, variant = "full" }: Props) {
               </div>
               <div className="flex items-baseline gap-1 mb-2">
                 <span
-                  className="font-display font-semibold text-2xl tabular-nums leading-none"
+                  className="font-tv-display font-semibold text-2xl tabular-nums leading-none"
                   style={{ color: "hsl(var(--tv-text))" }}
                 >
                   {fmt(g.actual)}{g.suffix ?? ""}

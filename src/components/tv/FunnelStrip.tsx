@@ -49,7 +49,7 @@ export function FunnelStrip({ received, inProgress, awaiting, closed }: Props) {
               </span>
             </div>
             <div className="mt-1.5 flex items-baseline gap-1.5">
-              <span className="font-display font-semibold text-2xl tabular-nums leading-none text-[hsl(var(--tv-text))]">
+              <span className="font-tv-display font-semibold text-2xl tabular-nums leading-none text-[hsl(var(--tv-text))]">
                 {c.value}
               </span>
               <span className="font-mono-tech text-[9px] text-[hsl(var(--tv-text-mute))]">
