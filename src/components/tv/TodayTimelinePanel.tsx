@@ -9,6 +9,7 @@ export interface TodayTicket {
   priority: string;
   status: string;
   hour: string; // "HH:mm"
+  date?: string; // "YYYY-MM-DD" (returned when agenda range is used)
   technician?: string | null;
 }
 
