@@ -9,6 +9,7 @@ export default function ChkDashboard() {
   const { data: execs = [] } = useChkExecutions();
   const { data: templates = [] } = useChkTemplates();
   const { data: companies = [] } = useChkCompanies();
+  const { data: assigns = [] } = useChkAssignments();
 
   const totals = {
     total: execs.length,
