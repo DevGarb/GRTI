@@ -15,6 +15,7 @@ export default function ChkExecutar() {
 
   const [photoUrls, setPhotoUrls] = useState<Record<string, string>>({});
   const [uploadingId, setUploadingId] = useState<string | null>(null);
+  const [failedIds, setFailedIds] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     if (!exec?.items) return;
