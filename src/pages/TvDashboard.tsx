@@ -425,6 +425,8 @@ export default function TvDashboard() {
           </section>
         </>
       )}
+      </div>
+      </div>
     </div>
   );
 }
