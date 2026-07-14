@@ -360,5 +360,7 @@ export function TodayAgendaPanel({ tickets, filter, onFilterChange, flashKey = 0
         <MultiDayView tickets={tickets} />
       )}
     </BentoTile>
+    </div>
+    </FlashContext.Provider>
   );
 }
