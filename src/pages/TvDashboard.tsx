@@ -155,11 +155,14 @@ export default function TvDashboard() {
       .on("broadcast", { event: "new_ticket" }, (msg) => {
         const payload = (msg as any).payload ?? {};
         const title = payload.title ?? "Novo chamado";
+        const ticketId = payload.id ?? payload.ticket_id ?? null;
         setAlert((prev) => {
           const titles = prev ? [title, ...prev.titles].slice(0, 3) : [title];
           const count = (prev?.count ?? 0) + 1;
           return { count, titles };
         });
+        setFlashTicketId(ticketId);
+        setFlashKey((k) => k + 1);
         if (soundEnabledRef.current) playBeep();
         if (alertTimeoutRef.current) window.clearTimeout(alertTimeoutRef.current);
         alertTimeoutRef.current = window.setTimeout(() => setAlert(null), 15_000);
