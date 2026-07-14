@@ -70,7 +70,8 @@ export default function GoalsManager({ year, month }: Props) {
   const { data: goals = [], isLoading } = useGoals(year, month);
   const updateGoal = useUpdateGoal();
   const deleteGoal = useDeleteGoal();
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
+  const orgId = profile?.organization_id;
   const qc = useQueryClient();
 
   const [showForm, setShowForm] = useState(false);
