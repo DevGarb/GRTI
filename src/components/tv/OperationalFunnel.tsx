@@ -1,11 +1,11 @@
-import { Inbox, PlayCircle, PauseCircle, CheckCircle2, Filter, ChevronRight } from "lucide-react";
+import { Inbox, PlayCircle, PauseCircle, CheckCircle2, Filter, ChevronRight, LucideIcon } from "lucide-react";
 import { BentoTile, Accent, accentVar } from "./BentoTile";
 
 interface Stage {
   label: string;
   value: number;
   accent: Accent;
-  icon: React.ComponentType<{ className?: string; strokeWidth?: number; style?: any }>;
+  icon: LucideIcon;
 }
 
 interface Props {
