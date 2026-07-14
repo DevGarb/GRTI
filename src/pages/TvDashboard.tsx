@@ -417,6 +417,8 @@ export default function TvDashboard() {
               tickets={(agendaFilter.type === "today" ? d.today_tickets : agendaQuery.data?.today_tickets) ?? []}
               filter={agendaFilter}
               onFilterChange={setAgendaFilter}
+              flashKey={flashKey}
+              flashTicketId={flashTicketId}
             />
           </section>
 
