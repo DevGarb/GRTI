@@ -25,7 +25,8 @@ type Bucket = { overdue: number; dueInMonth: number };
 
 export default function PreventivasMonthlyTarget({ year, month }: Props) {
   const { data: equipment = [], isLoading } = useOverdueEquipment();
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
+  const orgId = profile?.organization_id;
   const qc = useQueryClient();
 
   const [divideBy, setDivideBy] = useState(2);
@@ -84,12 +85,13 @@ export default function PreventivasMonthlyTarget({ year, month }: Props) {
 
   // Technicians for apply dialog
   const { data: technicians = [] } = useQuery({
-    queryKey: ["technicians-for-prev-target"],
-    enabled: showApply,
+    queryKey: ["technicians-for-prev-target", orgId],
+    enabled: showApply && !!orgId,
     queryFn: async () => {
       const { data: roles } = await supabase
         .from("user_organization_roles")
         .select("user_id, role")
+        .eq("organization_id", orgId!)
         .in("role", ["tecnico", "desenvolvedor"]);
       const ids = [...new Set((roles || []).map((r) => r.user_id))];
       if (ids.length === 0) return [] as Array<{ user_id: string; full_name: string }>;
@@ -97,10 +99,12 @@ export default function PreventivasMonthlyTarget({ year, month }: Props) {
         .from("profiles")
         .select("user_id, full_name")
         .in("user_id", ids)
+        .eq("organization_id", orgId!)
         .order("full_name");
       return profiles || [];
     },
   });
+
 
   const openApply = () => {
     setSelectedTechs(new Set());
