@@ -1,78 +1,43 @@
 ## Objetivo
-Refazer o Painel de TV no estilo **Bento Grid Tech** — mesma estrutura do mockup aprovado (imagem enviada), mas com estética séria/tecnológica em vez de infantil.
+Refinar o Painel da TV com 4 mudanças pontuais, sem alterar demais dados.
 
-## Direção visual (Bento Tech)
+## 1) Toggle claro/escuro
+- Adicionar botão `Sun/Moon` no header (ao lado do "Ativar Som").
+- Persistir em `localStorage` (`tv-theme`).
+- Trocar valores hardcoded `hsl(var(--tv-bg))` etc. por tokens que respondem à classe `.dark` no root do dashboard.
+- Definir em `src/index.css` um bloco `.tv-light` com paleta clara equivalente (fundo off-white, superfícies brancas, texto near-black, mantendo mesmos acentos cyan/lime/amber/violet/magenta).
+- Remover o `document.documentElement.classList.add("dark")` fixo; aplicar classe no wrapper do dashboard.
 
-Fora:
-- Gradientes pastel saturados (coral, roxo lavanda, verde menta, laranja abóbora)
-- Emojis 3D (estrela amarela, cronômetro, avatar cartoon)
-- Bordas arredondadas exageradas (rounded-3xl)
-- Ícones em círculos coloridos "fofos"
+## 2) Top Técnico (KPI 03)
+Novo layout do tile:
+- Linha 1: nome completo (truncado a 2 linhas se preciso, font Space Grotesk).
+- Linha 2: `<qtd> tickets` + badge `<pct>%` da produção do dia (fechados hoje do técnico ÷ total closed_today).
+- Se sem fechamentos: manter placeholder "—".
+- Edge function já retorna `ranking_today` com `fechados` — só calcular `pct = top.fechados / kpis.closed_today * 100`.
 
-Dentro:
-- Fundo escuro **near-black** (`#0A0E1A` / `#0F1420`) com camadas sutis de superfície
-- Cartões bento com **glassmorphism sutil**: `bg-white/[0.03]`, borda `border-white/[0.06]`, `backdrop-blur`
-- Acentos monocromáticos por cartão: **ciano elétrico**, **âmbar**, **violeta**, **verde-limão** — usados só em números, ícones lineares e uma barra fina de "spine" no topo do card
-- Tipografia display **JetBrains Mono** ou **Space Grotesk** para números gigantes (tabular-nums, tracking apertado); corpo em **Inter** já existente
-- Ícones **Lucide stroke 1.5** — nada de emoji, nada de 3D
-- Micro-labels em UPPERCASE + `tracking-[0.2em]` + `text-[10px]` em cinza-azulado
-- Grid lines sutis nos backgrounds (SVG pattern) em alguns cards, estilo "HUD"
-- Status dots pulsantes pequenos (2px) em vez de badges coloridos grandes
-- Timeline horária como linha fina com nodes circulares vazados; hover/active preenchido com o accent do ticket
-
-## Estrutura (mantém o mockup)
-
-```text
-┌─────────┬─────────┬───────────────────────────────┐
-│ FECHADOS│  CSAT   │  HOJE — timeline 8h → 18h     │
-│  HOJE   │  4.8    │  ─●─●──●─●───●──●──●──●──●─   │
-├─────────┼─────────┤  [#7812] [#7813] [#7814] ...  │
-│TOP TÉC. │  TMA    │                               │
-│  João   │ 2h14    │                               │
-├─────────┴─────────┴───────────────────────────────┤
-│ FUNIL OPERACIONAL                                 │
-│ Recebidos ─▶ Andamento ─▶ Aguardando ─▶ Fechados  │
-│   128         78            32            47      │
-├───────────────────────────────────────────────────┤
-│ METAS DO MÊS — 7 pills escuras com spine colorida │
-│ Tickets · CSAT · TMA · 1º Contato · Reab · Qual · Trein│
-└───────────────────────────────────────────────────┘
+## 3) TMA Hoje — wall-clock
+Na edge function `tv-dashboard/index.ts`, substituir o cálculo de TMA por diferença bruta em minutos entre `started_at` e `closed_at`:
 ```
+const m = (cd.getTime() - new Date(t.started_at).getTime()) / 60000;
+```
+Aplicar aos três agregados (`tma_minutes`, `tma_month_minutes`, `tma_today_minutes`).
+Tile "TMA Hoje" continua exibindo só chamados fechados hoje pelo técnico (já é o escopo atual).
+Nota: `first_response_min` e SLA seguem usando `calcBusinessMinutes` (não são TMA).
 
-## Componentes a criar/refatorar
-
-- `BentoTile.tsx` — wrapper glassmorphism com prop `accent` (cyan|amber|violet|lime|magenta) que controla spine + cor do número
-- `DailyKpiTile.tsx` — variante do BentoTile para os 4 KPIs (Fechados, CSAT, Top Técnico, TMA)
-- `TodayTimelinePanel.tsx` — timeline horária 8h–18h com nodes SVG + lista horizontal scrollável de cards de ticket compactos
-- `OperationalFunnel.tsx` — 4 estágios em linha, ícone lucide + número mono grande + % do volume, conectados por seta fina animada
-- `MonthGoalsStrip.tsx` — 7 pills escuras horizontais, cada uma com spine vertical accent + label + valor/alvo + barra de progresso 2px
-
-Reaproveita `GoalsPanel` como base, mas visual novo.
-
-## Design tokens (index.css)
-
-Adicionar semânticos:
-- `--tv-bg`: `220 30% 6%`
-- `--tv-surface`: `220 25% 9%`
-- `--tv-border`: `220 20% 18%`
-- `--tv-accent-cyan`: `190 95% 55%`
-- `--tv-accent-amber`: `35 95% 60%`
-- `--tv-accent-violet`: `260 85% 68%`
-- `--tv-accent-lime`: `85 80% 55%`
-- `--tv-accent-magenta`: `320 85% 62%`
-
-Fonte display: adicionar **Space Grotesk** via Google Fonts no `index.html`, classe `.font-display`.
-
-## Dados (mantém o plano aprovado)
-
-Sem mudanças no backend em relação ao último plano — edge `tv-dashboard` já vai expor `csat_today`, `tma_today_minutes`, `today_tickets`. Só refatoro visual + adiciono esses campos na edge se ainda não estiverem lá.
+## 4) Metas do Mês no header
+- Remover a `<section>` inferior `<MonthGoalsStrip>`.
+- Reposicionar como tira horizontal fina logo abaixo do título/nome da org, ocupando toda a largura do header.
+- Criar variante `compact` em `MonthGoalsStrip.tsx`: altura menor (~44px), cada pill com ícone + label micro (10px) + valor + barra de progresso 2px. Sem título "METAS DO MÊS".
+- Layout do dashboard passa a ser: Header (com metas embaixo) → Row KPIs+Timeline → Row Funil.
 
 ## Fora de escopo
+- Não muda backend de metas/goals_summary.
+- Não redesenha timeline, funil, ou KPIs 01/02/04.
+- Não altera CSAT, backlog, preventivas.
 
-- Trocar dados/RPCs
-- Alterar página de Metas dos técnicos
-- Animações pesadas (mantém transições CSS simples)
-
-## Próximo passo
-
-Aprovando, implemento direto: tokens → componentes bento → refactor `TvDashboard.tsx` → ajuste edge se faltar campo.
+## Arquivos afetados
+- `src/pages/TvDashboard.tsx` — toggle tema, mover metas, passar pct do top tech.
+- `src/components/tv/DailyKpiTile.tsx` — variante "topTech" com nome+qtd+pct (ou renderizar via `children`).
+- `src/components/tv/MonthGoalsStrip.tsx` — prop `variant: "full" | "compact"`.
+- `src/index.css` — tokens `.tv-light` equivalentes aos `--tv-*` atuais.
+- `supabase/functions/tv-dashboard/index.ts` — TMA wall-clock.

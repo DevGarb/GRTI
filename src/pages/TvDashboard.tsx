@@ -4,6 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import {
   Bell, CheckCircle2, Star, Trophy, Timer,
   MessageCircle, Smile, Clock, PhoneIncoming, RefreshCw, ShieldCheck, GraduationCap,
+  Sun, Moon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
@@ -68,10 +69,12 @@ export default function TvDashboard() {
   const [clock, setClock] = useState(new Date());
   const [tick, setTick] = useState(0);
 
+  const [theme, setTheme] = useState<"dark" | "light">(() => {
+    return (typeof window !== "undefined" && (localStorage.getItem("tv-theme") as "dark" | "light")) || "dark";
+  });
   useEffect(() => {
-    document.documentElement.classList.add("dark");
-    return () => { document.documentElement.classList.remove("dark"); };
-  }, []);
+    localStorage.setItem("tv-theme", theme);
+  }, [theme]);
 
   useEffect(() => {
     const i = setInterval(() => { setClock(new Date()); setTick(t => t + 1); }, 1000);
@@ -276,9 +279,13 @@ export default function TvDashboard() {
     },
   ] : [];
 
+  const topTechPct = topTech && d && d.kpis.closed_today > 0
+    ? Math.round((topTech.fechados / d.kpis.closed_today) * 100)
+    : 0;
+
   return (
     <div
-      className="min-h-screen p-4 md:p-6 flex flex-col gap-4 relative overflow-hidden"
+      className={cn("min-h-screen p-4 md:p-6 flex flex-col gap-4 relative overflow-hidden", theme === "light" && "tv-light")}
       style={{
         background: "radial-gradient(1200px 600px at 15% -10%, hsl(var(--tv-accent-cyan)/0.08), transparent 60%), radial-gradient(900px 500px at 95% 110%, hsl(var(--tv-accent-violet)/0.08), transparent 60%), hsl(var(--tv-bg))",
         color: "hsl(var(--tv-text))",
@@ -336,7 +343,19 @@ export default function TvDashboard() {
             </div>
           )}
         </div>
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => setTheme(t => t === "dark" ? "light" : "dark")}
+            className="rounded-lg border px-2.5 py-1.5 hover:opacity-80 transition"
+            style={{
+              borderColor: "hsl(var(--tv-border-strong))",
+              background: "hsl(var(--tv-surface))",
+              color: "hsl(var(--tv-text))",
+            }}
+            title={theme === "dark" ? "Tema claro" : "Tema escuro"}
+          >
+            {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+          </button>
           {!soundEnabled && (
             <button
               onClick={enableSound}
@@ -375,6 +394,11 @@ export default function TvDashboard() {
         </div>
       ) : (
         <>
+          {/* Metas do mês — tira compacta no topo */}
+          <section>
+            <MonthGoalsStrip goals={goals} variant="compact" />
+          </section>
+
           {/* Row 1: 4 KPIs (2x2) + Today Timeline (spans right) */}
           <section className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-6 gap-3">
             <div className="xl:col-span-2 grid grid-cols-2 gap-3">
@@ -397,19 +421,27 @@ export default function TvDashboard() {
               />
               <DailyKpiTile
                 label="Top Técnico"
-                value={topTech?.name.split(" ")[0] ?? "—"}
                 icon={Trophy}
                 accent="amber"
                 code="03"
-                sub={topTech ? `${topTech.fechados} tickets fechados` : "Sem fechamentos hoje"}
-              />
+                sub={topTech ? `${topTech.fechados} tickets · ${topTechPct}% da produção` : "Sem fechamentos hoje"}
+              >
+                <div className="flex flex-col gap-1">
+                  <span
+                    className="font-display font-semibold leading-tight text-[hsl(var(--tv-text))] break-words"
+                    style={{ fontSize: topTech && topTech.name.length > 14 ? "1.5rem" : "1.9rem", lineHeight: 1.05 }}
+                  >
+                    {topTech?.name ?? "—"}
+                  </span>
+                </div>
+              </DailyKpiTile>
               <DailyKpiTile
                 label="TMA Hoje"
                 value={fmtHoursMin(d.kpis.tma_today_minutes)}
                 icon={Timer}
                 accent="violet"
                 code="04"
-                sub="Média de atendimento"
+                sub="Início → Finalização"
               />
             </div>
             <div className="xl:col-span-4">
@@ -418,18 +450,13 @@ export default function TvDashboard() {
           </section>
 
           {/* Row 2: Operational Funnel — full width, destaque */}
-          <section>
+          <section className="flex-1 min-h-0">
             <OperationalFunnel
               received={d.kpis.open + d.kpis.in_progress + d.kpis.awaiting + d.kpis.closed_today}
               inProgress={d.kpis.in_progress}
               awaiting={d.kpis.awaiting}
               closed={d.kpis.closed_today}
             />
-          </section>
-
-          {/* Row 3: Metas do Mês */}
-          <section className="flex-1 min-h-0">
-            <MonthGoalsStrip goals={goals} />
           </section>
         </>
       )}

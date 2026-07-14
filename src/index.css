@@ -133,6 +133,25 @@
     --tv-accent-magenta: 322 85% 64%;
     --tv-accent-blue: 214 95% 62%;
   }
+
+  /* TV Dashboard — Light theme scope */
+  .tv-light {
+    --tv-bg: 210 25% 97%;
+    --tv-bg-2: 210 25% 94%;
+    --tv-surface: 0 0% 100%;
+    --tv-surface-2: 210 20% 96%;
+    --tv-border: 220 15% 85%;
+    --tv-border-strong: 220 15% 72%;
+    --tv-text: 222 40% 12%;
+    --tv-text-dim: 220 15% 38%;
+    --tv-text-mute: 220 12% 55%;
+    --tv-accent-cyan: 190 90% 38%;
+    --tv-accent-amber: 32 92% 46%;
+    --tv-accent-violet: 258 70% 52%;
+    --tv-accent-lime: 90 60% 38%;
+    --tv-accent-magenta: 322 70% 48%;
+    --tv-accent-blue: 214 85% 48%;
+  }
 }
 
 @layer utilities {

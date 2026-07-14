@@ -135,7 +135,8 @@ Deno.serve(async (req) => {
           }
           if (cd >= startMonth && cd < endMonth) closed_month++;
           if (t.started_at) {
-            const m = calcBusinessMinutes(new Date(t.started_at), cd);
+            // TMA = tempo real entre início e finalização do atendimento (wall clock)
+            const m = (cd.getTime() - new Date(t.started_at).getTime()) / 60000;
             if (m > 0) {
               tmaSum += m; tmaN++;
               if (cd >= startMonth && cd < endMonth) { tmaMonthSum += m; tmaMonthN++; }

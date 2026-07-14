@@ -1,18 +1,19 @@
 import { LucideIcon } from "lucide-react";
 import { BentoTile, Accent, accentVar } from "./BentoTile";
-import { cn } from "@/lib/utils";
+import { ReactNode } from "react";
 
 interface Props {
   label: string;
-  value: string | number;
+  value?: string | number;
   suffix?: string;
   sub?: string;
   icon: LucideIcon;
   accent: Accent;
-  code?: string; // e.g. "01" or "CSAT"
+  code?: string;
+  children?: ReactNode;
 }
 
-export function DailyKpiTile({ label, value, suffix, sub, icon: Icon, accent, code }: Props) {
+export function DailyKpiTile({ label, value, suffix, sub, icon: Icon, accent, code, children }: Props) {
   const color = `hsl(${accentVar[accent]})`;
   return (
     <BentoTile accent={accent} grid>
@@ -34,17 +35,21 @@ export function DailyKpiTile({ label, value, suffix, sub, icon: Icon, accent, co
           </span>
         )}
       </div>
-      <div className="flex items-baseline gap-1.5">
-        <span
-          className="font-display font-semibold tabular-nums leading-none text-[hsl(var(--tv-text))]"
-          style={{ fontSize: "3.25rem" }}
-        >
-          {value}
-        </span>
-        {suffix && (
-          <span className="text-lg font-mono-tech text-[hsl(var(--tv-text-dim))]">{suffix}</span>
-        )}
-      </div>
+      {children ? (
+        children
+      ) : (
+        <div className="flex items-baseline gap-1.5">
+          <span
+            className="font-display font-semibold tabular-nums leading-none text-[hsl(var(--tv-text))]"
+            style={{ fontSize: "3.25rem" }}
+          >
+            {value}
+          </span>
+          {suffix && (
+            <span className="text-lg font-mono-tech text-[hsl(var(--tv-text-dim))]">{suffix}</span>
+          )}
+        </div>
+      )}
       {sub && (
         <div className="mt-2 text-xs text-[hsl(var(--tv-text-dim))] truncate">{sub}</div>
       )}
