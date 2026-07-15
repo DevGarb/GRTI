@@ -6,7 +6,7 @@ import { LogOut, Menu, Moon, Sun, HelpCircle, Repeat, Bell } from "lucide-react"
 import { cn } from "@/lib/utils";
 import OrgSwitcher from "@/components/OrgSwitcher";
 import { useAuth } from "@/contexts/AuthContext";
-import { menuItems } from "@/config/menuItems";
+import { menuItems, type MenuItem } from "@/config/menuItems";
 import { useMenuAccess } from "@/hooks/useMenuAccess";
 import { useUserOrganizations } from "@/hooks/useUserOrganizations";
 import { useNewTicketNotifier, triggerTestAlert } from "@/hooks/useNewTicketNotifier";
