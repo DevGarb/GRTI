@@ -204,17 +204,19 @@ Deno.serve(async (req) => {
       const closedInRange = t.closed_at && new Date(t.closed_at) >= agendaStart && new Date(t.closed_at) < agendaEnd;
       if (createdInRange || closedInRange) {
         const refDate = closedInRange ? new Date(t.closed_at!) : createdAt;
-        const y = refDate.getFullYear();
-        const mo = String(refDate.getMonth() + 1).padStart(2, "0");
-        const da = String(refDate.getDate()).padStart(2, "0");
+        const wp = wallPartsInTz(refDate);
+        const mo = String(wp.m).padStart(2, "0");
+        const da = String(wp.d).padStart(2, "0");
+        const hh = String(wp.hh).padStart(2, "0");
+        const mm = String(wp.mm).padStart(2, "0");
         todayTickets.push({
           id: t.id,
           code: String(t.id).slice(0, 4).toUpperCase(),
           title: t.title,
           priority: t.priority,
           status: t.status,
-          date: `${y}-${mo}-${da}`,
-          hour: `${String(refDate.getHours()).padStart(2, "0")}:${String(refDate.getMinutes()).padStart(2, "0")}`,
+          date: `${wp.y}-${mo}-${da}`,
+          hour: `${hh}:${mm}`,
           technician: t.assigned_to ? (nameOf.get(t.assigned_to) ?? null) : null,
         });
       }
