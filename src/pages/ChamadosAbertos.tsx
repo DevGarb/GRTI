@@ -4,7 +4,7 @@ import { Clock, HandMetal, Search } from "lucide-react";
 import { StatusBadge, PriorityBadge } from "@/components/StatusBadge";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import TicketDetailModal from "@/components/TicketDetailModal";
 import AssignTicketModal from "@/components/AssignTicketModal";
 import ChamadosTabs from "@/components/chamados/ChamadosTabs";
@@ -13,10 +13,28 @@ import type { Ticket } from "@/hooks/useTickets";
 export default function ChamadosAbertos() {
   const { profile, user } = useAuth();
   const orgId = profile?.organization_id;
+  const queryClient = useQueryClient();
   const [assignTicketId, setAssignTicketId] = useState<string | null>(null);
   const [selectedTicket, setSelectedTicket] = useState<Ticket | null>(null);
   const [searchText, setSearchText] = useState("");
   const [searchParams, setSearchParams] = useSearchParams();
+
+  useEffect(() => {
+    if (!orgId) return;
+    const channel = supabase
+      .channel(`open-tickets-${orgId}`)
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "tickets", filter: `organization_id=eq.${orgId}` },
+        () => {
+          queryClient.invalidateQueries({ queryKey: ["open-tickets", orgId] });
+        }
+      )
+      .subscribe();
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [orgId, queryClient]);
 
   const { data: tickets = [], isLoading } = useQuery({
     queryKey: ["open-tickets", orgId],
