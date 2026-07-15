@@ -4,7 +4,7 @@ import { Clock, HandMetal, Search } from "lucide-react";
 import { StatusBadge, PriorityBadge } from "@/components/StatusBadge";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import TicketDetailModal from "@/components/TicketDetailModal";
 import AssignTicketModal from "@/components/AssignTicketModal";
 import ChamadosTabs from "@/components/chamados/ChamadosTabs";
