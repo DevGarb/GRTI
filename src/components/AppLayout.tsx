@@ -215,41 +215,19 @@ export default function AppLayout({ children }: AppLayoutProps) {
             Menu
           </span>
           <ul className="mt-2 space-y-0.5">
-            {visibleNavItems.map((item) => {
-              const active = location.pathname === item.path;
-              return (
-                <li key={item.path}>
-                  <Tooltip delayDuration={400}>
-                    <TooltipTrigger asChild>
-                      <Link
-                        to={item.path}
-                        onClick={() => setSidebarOpen(false)}
-                        className={cn(
-                          "flex items-center gap-3 px-3 py-2.5 rounded-lg text-[13px] font-medium transition-colors",
-                          active
-                            ? "bg-sidebar-accent text-sidebar-accent-foreground"
-                            : "text-sidebar-foreground hover:bg-sidebar-accent/50 hover:text-sidebar-accent-foreground"
-                        )}
-                      >
-                        <item.icon className="h-4 w-4" />
-                        <div className="flex flex-col">
-                          <span>{item.label}</span>
-                          {(item as any).subtitle && (
-                            <span className="text-[10px] font-normal text-sidebar-muted leading-tight">
-                              {(item as any).subtitle}
-                            </span>
-                          )}
-                        </div>
-                      </Link>
-                    </TooltipTrigger>
-                    <TooltipContent side="right" className="text-xs max-w-[200px]">
-                      {(item as any).tooltip}
-                    </TooltipContent>
-                  </Tooltip>
-                </li>
-              );
-            })}
+            {mainItems.map(renderNavItem)}
           </ul>
+
+          {gerencialItems.length > 0 && (
+            <>
+              <span className="mt-5 block px-3 text-[10px] font-semibold uppercase tracking-widest text-sidebar-muted">
+                Gerencial
+              </span>
+              <ul className="mt-2 space-y-0.5">
+                {gerencialItems.map(renderNavItem)}
+              </ul>
+            </>
+          )}
         </nav>
 
         <div className="px-4 py-4 border-t border-sidebar-border">
