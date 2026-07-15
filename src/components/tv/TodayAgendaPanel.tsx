@@ -51,7 +51,7 @@ const statusGradient: Record<string, string> = {
   Aprovado: "linear-gradient(135deg, hsl(var(--tv-accent-lime) / 0.38) 0%, hsl(var(--tv-accent-lime) / 0.05) 100%)",
   "Aguardando Aprovação": "linear-gradient(135deg, hsl(var(--tv-accent-lime) / 0.38) 0%, hsl(var(--tv-accent-lime) / 0.05) 100%)",
   "Em Andamento": "linear-gradient(135deg, hsl(var(--tv-accent-amber) / 0.36) 0%, hsl(var(--tv-accent-amber) / 0.05) 100%)",
-  Aberto: "linear-gradient(135deg, hsl(var(--tv-accent-magenta) / 0.38) 0%, hsl(var(--tv-accent-magenta) / 0.05) 100%)",
+  Aberto: "linear-gradient(135deg, hsl(var(--tv-accent-red) / 0.42) 0%, hsl(var(--tv-accent-red) / 0.06) 100%)",
 };
 
 function ymd(d: Date) {
