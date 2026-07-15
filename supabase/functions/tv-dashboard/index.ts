@@ -1,4 +1,14 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
+import {
+  ORG_TZ,
+  localDateInTz,
+  startOfDayInTz,
+  startOfMonthInTz,
+  addDaysInTz,
+  addMonthsInTz,
+  wallPartsInTz,
+  weekdayInTz,
+} from "./tz.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -9,27 +19,22 @@ const corsHeaders = {
 const BUSINESS_START = 8;
 const BUSINESS_END = 18;
 
-function isWeekday(d: Date) {
-  const dw = d.getDay();
-  return dw >= 1 && dw <= 5;
-}
-
 function calcBusinessMinutes(start: Date, end: Date): number {
   if (end <= start) return 0;
   let total = 0;
-  const cur = new Date(start);
-  cur.setHours(0, 0, 0, 0);
-  const endDay = new Date(end);
-  endDay.setHours(0, 0, 0, 0);
-  while (cur <= endDay) {
-    if (isWeekday(cur)) {
-      const ds = new Date(cur); ds.setHours(BUSINESS_START, 0, 0, 0);
-      const de = new Date(cur); de.setHours(BUSINESS_END, 0, 0, 0);
+  let cur = startOfDayInTz(start);
+  const endDay = startOfDayInTz(end);
+  while (cur.getTime() <= endDay.getTime()) {
+    const dw = weekdayInTz(cur);
+    if (dw >= 1 && dw <= 5) {
+      const { y, m, d } = wallPartsInTz(cur);
+      const ds = localDateInTz(y, m, d, BUSINESS_START, 0, 0, 0);
+      const de = localDateInTz(y, m, d, BUSINESS_END, 0, 0, 0);
       const os = start > ds ? start : ds;
       const oe = end < de ? end : de;
       if (os < oe) total += (oe.getTime() - os.getTime()) / 60000;
     }
-    cur.setDate(cur.getDate() + 1);
+    cur = addDaysInTz(cur, 1);
   }
   return total;
 }
