@@ -65,7 +65,7 @@ export const menuItems: MenuItem[] = [
   { key: "super-admin", label: "Painel Admin", icon: Shield, path: "/super-admin", superAdminOnly: true, subtitle: "Organizações, Usuários e Planos", tooltip: "Gestão global de organizações, usuários e planos" },
   { key: "planos", label: "Planos", icon: CreditCard, path: "/planos", superAdminOnly: true, tooltip: "Gerenciar planos de assinatura" },
   { key: "migracao", label: "Migração", icon: Database, path: "/migracao", superAdminOnly: true, tooltip: "Migração de dados e espelhamento entre projetos" },
-  { key: "white-label", label: "White Label", icon: Building2, path: "/white-label", adminOnly: true, tooltip: "Personalizar identidade visual" },
+  { key: "white-label", label: "White Label", icon: Building2, path: "/white-label", adminOnly: true, section: "gerencial", tooltip: "Personalizar identidade visual" },
   { key: "integracoes", label: "Integrações", icon: MessageSquare, path: "/integracoes", adminOnly: true, tooltip: "Configurar integrações externas (WhatsApp)" },
   { key: "documentacao", label: "Documentação", icon: BookOpen, path: "/documentacao", adminOnly: true, tooltip: "Guias e manuais do sistema" },
   { key: "configuracoes", label: "Configurações", icon: Settings, path: "/configuracoes", tooltip: "Preferências e configurações gerais" },
