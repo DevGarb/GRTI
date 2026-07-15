@@ -41,6 +41,8 @@ export interface MenuItem {
   auditorOnly?: boolean;
   /** If set, only show when current org slug matches one of these. */
   orgSlugs?: string[];
+  /** Visual grouping section in the sidebar. */
+  section?: "gerencial";
 }
 
 export const menuItems: MenuItem[] = [
@@ -50,20 +52,20 @@ export const menuItems: MenuItem[] = [
   { key: "chamados-abertos", label: "Chamados Abertos", icon: Clock, path: "/chamados-abertos", techAllowed: true, tooltip: "Ver todos os chamados em aberto e atribuir para si" },
   { key: "todos", label: "TODO List", icon: CheckSquare, path: "/todos", tooltip: "Tarefas pessoais; técnicos e admins compartilham visibilidade" },
   { key: "usuarios", label: "Usuários", icon: Users, path: "/usuarios", adminOnly: true, tooltip: "Gerenciar usuários da organização" },
-  { key: "avaliacoes", label: "Avaliações", icon: Star, path: "/avaliacoes", adminOnly: true, tooltip: "Avaliações de atendimento dos chamados" },
+  { key: "avaliacoes", label: "Avaliações", icon: Star, path: "/avaliacoes", adminOnly: true, section: "gerencial", tooltip: "Avaliações de atendimento dos chamados" },
   { key: "metas", label: "Metas", icon: Target, path: "/metas", techAllowed: true, tooltip: "Metas de desempenho dos técnicos" },
-  { key: "historico", label: "Histórico", icon: History, path: "/historico", adminOnly: true, tooltip: "Log de auditoria de ações no sistema" },
-  { key: "auditoria", label: "Auditoria", icon: Shield, path: "/auditoria", auditorOnly: true, tooltip: "Trilha de auditoria completa" },
-  { key: "categorias", label: "Categorias", icon: LayoutList, path: "/categorias", adminOnly: true, tooltip: "Categorias hierárquicas de serviço" },
-  { key: "setores", label: "Setores", icon: Building2, path: "/setores", adminOnly: true, tooltip: "Gerenciar setores da organização" },
-  { key: "webhook-logs", label: "Webhook Logs", icon: Webhook, path: "/webhook-logs", adminOnly: true, tooltip: "Monitorar webhooks enviados" },
+  { key: "historico", label: "Histórico", icon: History, path: "/historico", adminOnly: true, section: "gerencial", tooltip: "Log de auditoria de ações no sistema" },
+  { key: "auditoria", label: "Auditoria", icon: Shield, path: "/auditoria", auditorOnly: true, section: "gerencial", tooltip: "Trilha de auditoria completa" },
+  { key: "categorias", label: "Categorias", icon: LayoutList, path: "/categorias", adminOnly: true, section: "gerencial", tooltip: "Categorias hierárquicas de serviço" },
+  { key: "setores", label: "Setores", icon: Building2, path: "/setores", adminOnly: true, section: "gerencial", tooltip: "Gerenciar setores da organização" },
+  { key: "webhook-logs", label: "Webhook Logs", icon: Webhook, path: "/webhook-logs", adminOnly: true, section: "gerencial", tooltip: "Monitorar webhooks enviados" },
   { key: "preventivas", label: "Preventivas", icon: Wrench, path: "/preventivas", techAllowed: true, tooltip: "Manutenções preventivas programadas" },
   { key: "patrimonio", label: "Patrimônio", icon: Package, path: "/patrimonio", adminOnly: true, techAllowed: true, tooltip: "Cadastro e histórico de equipamentos" },
   { key: "projetos", label: "Projetos", icon: FolderKanban, path: "/projetos", adminOnly: true, tooltip: "Gestão de projetos da organização" },
   { key: "super-admin", label: "Painel Admin", icon: Shield, path: "/super-admin", superAdminOnly: true, subtitle: "Organizações, Usuários e Planos", tooltip: "Gestão global de organizações, usuários e planos" },
   { key: "planos", label: "Planos", icon: CreditCard, path: "/planos", superAdminOnly: true, tooltip: "Gerenciar planos de assinatura" },
   { key: "migracao", label: "Migração", icon: Database, path: "/migracao", superAdminOnly: true, tooltip: "Migração de dados e espelhamento entre projetos" },
-  { key: "white-label", label: "White Label", icon: Building2, path: "/white-label", adminOnly: true, tooltip: "Personalizar identidade visual" },
+  { key: "white-label", label: "White Label", icon: Building2, path: "/white-label", adminOnly: true, section: "gerencial", tooltip: "Personalizar identidade visual" },
   { key: "integracoes", label: "Integrações", icon: MessageSquare, path: "/integracoes", adminOnly: true, tooltip: "Configurar integrações externas (WhatsApp)" },
   { key: "documentacao", label: "Documentação", icon: BookOpen, path: "/documentacao", adminOnly: true, tooltip: "Guias e manuais do sistema" },
   { key: "configuracoes", label: "Configurações", icon: Settings, path: "/configuracoes", tooltip: "Preferências e configurações gerais" },
