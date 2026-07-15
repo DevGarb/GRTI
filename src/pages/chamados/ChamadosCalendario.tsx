@@ -10,7 +10,6 @@ import {
   isSameMonth,
   startOfWeek,
   endOfWeek,
-  startOfDay,
 } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { ChevronLeft, ChevronRight, Users } from "lucide-react";
@@ -24,20 +23,17 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { StatusBadge, PriorityBadge } from "@/components/StatusBadge";
 import type { Ticket } from "@/hooks/useTickets";
 
-function colorFor(status: string, dueDate: string | null, reworkCount = 0) {
-  // Entregue: verde, mesmo que tenha passado do prazo
+function colorFor(status: string, _dueDate: string | null, reworkCount = 0) {
+  // Concluído/resolvido: verde
   if (status === "Fechado" || status === "Aprovado" || status === "Aguardando Aprovação")
-    return "bg-emerald-500/20 border-emerald-500/50 text-emerald-800 dark:text-emerald-200";
-  // Retrabalho pendente: vermelho
-  if (reworkCount > 0)
-    return "bg-red-500/20 border-red-500/50 text-red-800 dark:text-red-200";
-  // Em Andamento: sempre amarelo (técnico já está executando)
+    return "bg-emerald-500/35 border-emerald-500/60 text-emerald-900 dark:text-emerald-100";
+  // Em Andamento: laranja (sendo atendido)
   if (status === "Em Andamento")
-    return "bg-amber-500/20 border-amber-500/50 text-amber-800 dark:text-amber-200";
-  // Aberto vencido: vermelho
-  const isLate = dueDate && new Date(dueDate) < startOfDay(new Date());
-  if (isLate) return "bg-red-500/20 border-red-500/50 text-red-800 dark:text-red-200";
-  return "bg-blue-500/20 border-blue-500/50 text-blue-800 dark:text-blue-200";
+    return "bg-orange-500/35 border-orange-500/60 text-orange-900 dark:text-orange-100";
+  // Aberto ou retrabalho pendente: vermelho (precisa agir)
+  if (status === "Aberto" || reworkCount > 0)
+    return "bg-red-500/35 border-red-500/60 text-red-900 dark:text-red-100";
+  return "bg-blue-500/35 border-blue-500/60 text-blue-900 dark:text-blue-100";
 }
 
 export default function ChamadosCalendario() {
@@ -160,9 +156,8 @@ export default function ChamadosCalendario() {
 
       <div className="flex items-center gap-3 text-xs text-muted-foreground flex-wrap">
         <span className="inline-flex items-center gap-1"><span className="w-2.5 h-2.5 rounded bg-emerald-500" />Aguardando Aprovação/Aprovado/Fechado</span>
-        <span className="inline-flex items-center gap-1"><span className="w-2.5 h-2.5 rounded bg-blue-500" />Aberto</span>
-        <span className="inline-flex items-center gap-1"><span className="w-2.5 h-2.5 rounded bg-amber-500" />Em Andamento</span>
-        <span className="inline-flex items-center gap-1"><span className="w-2.5 h-2.5 rounded bg-red-500" />Vencido ou Retrabalho</span>
+        <span className="inline-flex items-center gap-1"><span className="w-2.5 h-2.5 rounded bg-red-500" />Aberto / Retrabalho</span>
+        <span className="inline-flex items-center gap-1"><span className="w-2.5 h-2.5 rounded bg-orange-500" />Em Andamento</span>
       </div>
 
       <div className="grid grid-cols-7 gap-px bg-border rounded-lg overflow-hidden">
