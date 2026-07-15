@@ -339,8 +339,7 @@ Deno.serve(async (req) => {
     const prevPendente = Math.max(0, prevTotal - prevDone);
 
     // Goals summary (metas dos técnicos + reais do mês)
-    const y = now.getFullYear();
-    const m = now.getMonth() + 1;
+    const { y, m } = wallPartsInTz(now);
     const { data: goalsSummary } = await supabase.rpc("get_tv_goals_summary", {
       _organization_id: orgId, _year: y, _month: m,
     });
