@@ -129,6 +129,43 @@ export default function AppLayout({ children }: AppLayoutProps) {
     if (item.orgSlugs && (!orgSlug || !item.orgSlugs.includes(orgSlug))) return false;
     return canAccess(item.key);
   });
+  const mainItems = visibleNavItems.filter((item) => item.section !== "gerencial");
+  const gerencialItems = visibleNavItems.filter((item) => item.section === "gerencial");
+
+  const renderNavItem = (item: MenuItem) => {
+    const active = location.pathname === item.path;
+    return (
+      <li key={item.path}>
+        <Tooltip delayDuration={400}>
+          <TooltipTrigger asChild>
+            <Link
+              to={item.path}
+              onClick={() => setSidebarOpen(false)}
+              className={cn(
+                "flex items-center gap-3 px-3 py-2.5 rounded-lg text-[13px] font-medium transition-colors",
+                active
+                  ? "bg-sidebar-accent text-sidebar-accent-foreground"
+                  : "text-sidebar-foreground hover:bg-sidebar-accent/50 hover:text-sidebar-accent-foreground"
+              )}
+            >
+              <item.icon className="h-4 w-4" />
+              <div className="flex flex-col">
+                <span>{item.label}</span>
+                {(item as any).subtitle && (
+                  <span className="text-[10px] font-normal text-sidebar-muted leading-tight">
+                    {(item as any).subtitle}
+                  </span>
+                )}
+              </div>
+            </Link>
+          </TooltipTrigger>
+          <TooltipContent side="right" className="text-xs max-w-[200px]">
+            {(item as any).tooltip}
+          </TooltipContent>
+        </Tooltip>
+      </li>
+    );
+  };
 
   const toggleDark = () => {
     setDarkMode(prev => !prev);
