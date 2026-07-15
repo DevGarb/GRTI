@@ -23,21 +23,35 @@ export function TicketModalProvider({ children }: { children: ReactNode }) {
       return;
     }
     setLoading(true);
-    supabase
-      .from("tickets")
-      .select("*")
-      .eq("id", ticketId)
-      .maybeSingle()
-      .then(({ data, error }) => {
-        if (cancelled) return;
-        if (error || !data) {
-          toast.error("Chamado não encontrado");
-          setTicketId(null);
-        } else {
-          setTicket(data as Ticket);
-        }
+    (async () => {
+      const { data, error } = await supabase
+        .from("tickets")
+        .select("*")
+        .eq("id", ticketId)
+        .maybeSingle();
+      if (cancelled) return;
+      if (error || !data) {
+        toast.error("Chamado não encontrado");
+        setTicketId(null);
         setLoading(false);
-      });
+        return;
+      }
+      const userIds = [
+        ...new Set([data.assigned_to, data.created_by].filter(Boolean)),
+      ] as string[];
+      const { data: profiles } = await supabase
+        .from("profiles")
+        .select("user_id, full_name")
+        .in("user_id", userIds);
+      const profileMap = new Map((profiles || []).map((p) => [p.user_id, p.full_name]));
+      setTicket({
+        ...data,
+        assignedProfile: data.assigned_to ? { full_name: profileMap.get(data.assigned_to) || "" } : null,
+        creatorProfile: { full_name: profileMap.get(data.created_by) || "" },
+        reworkCount: 0,
+      } as Ticket);
+      setLoading(false);
+    })();
     return () => {
       cancelled = true;
     };
