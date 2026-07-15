@@ -157,9 +157,8 @@ export default function ChamadosCalendario() {
 
       <div className="flex items-center gap-3 text-xs text-muted-foreground flex-wrap">
         <span className="inline-flex items-center gap-1"><span className="w-2.5 h-2.5 rounded bg-emerald-500" />Aguardando Aprovação/Aprovado/Fechado</span>
-        <span className="inline-flex items-center gap-1"><span className="w-2.5 h-2.5 rounded bg-blue-500" />Aberto</span>
-        <span className="inline-flex items-center gap-1"><span className="w-2.5 h-2.5 rounded bg-amber-500" />Em Andamento</span>
-        <span className="inline-flex items-center gap-1"><span className="w-2.5 h-2.5 rounded bg-red-500" />Vencido ou Retrabalho</span>
+        <span className="inline-flex items-center gap-1"><span className="w-2.5 h-2.5 rounded bg-red-500" />Aberto / Retrabalho</span>
+        <span className="inline-flex items-center gap-1"><span className="w-2.5 h-2.5 rounded bg-orange-500" />Em Andamento</span>
       </div>
 
       <div className="grid grid-cols-7 gap-px bg-border rounded-lg overflow-hidden">
