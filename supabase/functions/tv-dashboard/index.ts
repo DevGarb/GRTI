@@ -145,7 +145,7 @@ Deno.serve(async (req) => {
     }
 
     // KPIs
-    let closed_today = 0, closed_month = 0;
+    let closed_today = 0, closed_month = 0, opened_today = 0;
     let in_progress = 0, open_count = 0, awaiting = 0, backlog = 0;
     let tmaSum = 0, tmaN = 0;
     let tmaMonthSum = 0, tmaMonthN = 0;
@@ -158,6 +158,7 @@ Deno.serve(async (req) => {
     for (const t of list) {
       const createdAt = new Date(t.created_at);
       const isCreatedToday = createdAt >= startToday;
+      if (isCreatedToday) opened_today++;
 
       if (t.status === "Fechado" || t.status === "Aprovado") {
         if (t.closed_at) {
@@ -348,7 +349,7 @@ Deno.serve(async (req) => {
       org: { id: orgId, name: org.name, slug: org.slug },
       generated_at: now.toISOString(),
       kpis: {
-        closed_today, closed_month,
+        closed_today, closed_month, opened_today,
         in_progress, open: open_count, awaiting, backlog,
         csat: Number(csat.toFixed(2)), csat_count: csatN,
         csat_today: Number(csatToday.toFixed(2)), csat_today_count: csatTodayN,

@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useParams, useSearchParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import {
-  Bell, CheckCircle2, Star, Trophy, Timer,
+  Bell, CheckCircle2, Inbox, Trophy, Timer,
   Sun, Moon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -38,7 +38,7 @@ interface TvData {
   org: { name: string; slug: string };
   generated_at: string;
   kpis: {
-    closed_today: number; closed_month: number;
+    opened_today: number; closed_today: number; closed_month: number;
     in_progress: number; open: number; awaiting: number; backlog: number;
     csat: number; csat_count: number;
     csat_today: number; csat_today_count: number;
@@ -368,22 +368,20 @@ export default function TvDashboard() {
           {/* Row 1: 4 KPIs do dia — full width */}
           <section className="grid grid-cols-2 xl:grid-cols-4 gap-3">
             <DailyKpiTile
+              label="Abertos Hoje"
+              value={d.kpis.opened_today}
+              icon={Inbox}
+              accent="blue"
+              code="01"
+              sub="Chamados recebidos"
+            />
+            <DailyKpiTile
               label="Fechados Hoje"
               value={d.kpis.closed_today}
               icon={CheckCircle2}
               accent="cyan"
-              code="01"
-              sub="Produtividade do dia"
-            />
-            <DailyKpiTile
-              label="CSAT Hoje"
-              value={d.kpis.csat_today > 0 ? d.kpis.csat_today : "—"}
-              decimals={1}
-              suffix={d.kpis.csat_today > 0 ? "/5" : undefined}
-              icon={Star}
-              accent="lime"
               code="02"
-              sub={`${d.kpis.csat_today_count} avaliações`}
+              sub="Produtividade do dia"
             />
             <DailyKpiTile
               label="Top Técnico"
