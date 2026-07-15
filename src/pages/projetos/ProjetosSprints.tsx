@@ -19,6 +19,8 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Label } from "@/components/ui/label";
 import { Link } from "react-router-dom";
 import {
   CheckCircle2,
@@ -110,6 +112,7 @@ function CloseSprintDialog({
   onOpenChange: (v: boolean) => void;
 }) {
   const qc = useQueryClient();
+  const { profile } = useAuth();
   const [checks, setChecks] = useState<Record<CheckKey, boolean>>({
     doc_ok: false,
     evidence_ok: false,
@@ -125,7 +128,43 @@ function CloseSprintDialog({
     standards_ok: null,
   });
   const [uploading, setUploading] = useState<CheckKey | null>(null);
+  const [finishedBy, setFinishedBy] = useState<string>("");
   const inputs = useRef<Record<CheckKey, HTMLInputElement | null>>({} as any);
+
+  // Técnicos/desenvolvedores/admins da organização da sprint
+  const { data: staff = [] } = useQuery({
+    queryKey: ["sprint-close-staff", profile?.organization_id],
+    enabled: !!open && !!profile?.organization_id,
+    queryFn: async () => {
+      const orgId = profile!.organization_id!;
+      const { data: roles } = await supabase
+        .from("user_organization_roles")
+        .select("user_id, role")
+        .eq("organization_id", orgId)
+        .in("role", ["tecnico", "desenvolvedor", "admin"]);
+      const ids = Array.from(new Set((roles || []).map((r: any) => r.user_id)));
+      if (ids.length === 0) return [] as any[];
+      const { data: profs } = await supabase
+        .from("profiles")
+        .select("user_id, full_name, email")
+        .in("user_id", ids)
+        .order("full_name");
+      return (profs || []) as any[];
+    },
+  });
+
+  // Soma de pontos dos backlogs da sprint (preview do crédito)
+  const { data: totalPoints = 0 } = useQuery({
+    queryKey: ["sprint-total-points", sprint?.id],
+    enabled: !!open && !!sprint?.id,
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("project_tasks")
+        .select("story_points")
+        .eq("sprint_id", sprint!.id);
+      return (data || []).reduce((s: number, r: any) => s + (r.story_points || 0), 0);
+    },
+  });
 
   const handleUpload = async (key: CheckKey, file: File) => {
     if (!sprint) return;
@@ -159,6 +198,7 @@ function CloseSprintDialog({
         _homolog_ok: checks.homolog_ok,
         _backlog_ok: checks.backlog_ok,
         _standards_ok: checks.standards_ok,
+        _finished_by: finishedBy,
         _evidences: evidencesPayload,
       });
       if (error) throw error;
@@ -167,6 +207,7 @@ function CloseSprintDialog({
       qc.invalidateQueries({ queryKey: ["all-sprints"] });
       qc.invalidateQueries({ queryKey: ["sprints"] });
       qc.invalidateQueries({ queryKey: ["projetos-dashboard"] });
+      qc.invalidateQueries({ queryKey: ["tickets"] });
       toast.success("Sprint encerrada");
       onOpenChange(false);
     },
@@ -174,8 +215,9 @@ function CloseSprintDialog({
   });
 
   const allChecked = Object.values(checks).every(Boolean);
-  const canClose = allChecked;
+  const canClose = allChecked && !!finishedBy;
   const score = Object.values(checks).filter(Boolean).length * 20;
+  const selectedStaff = staff.find((s: any) => s.user_id === finishedBy);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -188,7 +230,31 @@ function CloseSprintDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-2 py-1 max-h-[50vh] overflow-y-auto">
+        <div className="space-y-1.5">
+          <Label className="text-xs">Técnico responsável pela entrega</Label>
+          <Select value={finishedBy} onValueChange={setFinishedBy}>
+            <SelectTrigger className="h-9">
+              <SelectValue placeholder="Selecione o responsável..." />
+            </SelectTrigger>
+            <SelectContent>
+              {staff.map((s: any) => (
+                <SelectItem key={s.user_id} value={s.user_id}>
+                  {s.full_name || s.email}
+                </SelectItem>
+              ))}
+              {staff.length === 0 && (
+                <div className="px-2 py-1.5 text-xs text-muted-foreground">Nenhum técnico/admin nesta organização</div>
+              )}
+            </SelectContent>
+          </Select>
+          <p className="text-[11px] text-muted-foreground">
+            Este encerramento vai gerar 1 chamado para{" "}
+            <strong>{selectedStaff ? selectedStaff.full_name || selectedStaff.email : "—"}</strong>{" "}
+            com <strong>{totalPoints}</strong> {totalPoints === 1 ? "ponto" : "pontos"} (soma dos backlogs da sprint).
+          </p>
+        </div>
+
+        <div className="space-y-2 py-1 max-h-[45vh] overflow-y-auto">
           {CHECKLIST.map((it) => {
             const ev = evidences[it.key];
             const checked = checks[it.key];
@@ -269,7 +335,7 @@ function CloseSprintDialog({
           {!canClose && (
             <div className="flex items-center gap-1 text-[11px] text-amber-700">
               <AlertTriangle className="h-3 w-3" />
-              Confirme todos os itens
+              {!finishedBy ? "Selecione o responsável" : "Confirme todos os itens"}
             </div>
           )}
         </div>

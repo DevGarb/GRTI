@@ -3087,6 +3087,7 @@ export type Database = {
           _doc_ok: boolean
           _evidence_ok: boolean
           _evidences?: Json
+          _finished_by: string
           _homolog_ok: boolean
           _sprint_id: string
           _standards_ok: boolean
