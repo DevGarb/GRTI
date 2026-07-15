@@ -10,7 +10,6 @@ import {
   isSameMonth,
   startOfWeek,
   endOfWeek,
-  startOfDay,
 } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { ChevronLeft, ChevronRight, Users } from "lucide-react";
