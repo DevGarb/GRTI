@@ -88,21 +88,22 @@ Deno.serve(async (req) => {
     const orgId = org.id;
 
     const now = new Date();
-    const startToday = new Date(now); startToday.setHours(0, 0, 0, 0);
-    const startMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-    const endMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+    const startToday = startOfDayInTz(now);
+    const startMonth = startOfMonthInTz(now);
+    const endMonth = addMonthsInTz(now, 1);
 
-    // Optional agenda range (defaults to today when omitted)
+    // Optional agenda range (defaults to today when omitted), interpreted in ORG_TZ
     const fromParam = url.searchParams.get("from");
     const toParam = url.searchParams.get("to");
     let agendaStart = startToday;
-    let agendaEnd = new Date(startToday.getTime() + 86400000);
+    let agendaEnd = addDaysInTz(startToday, 1);
     if (fromParam && toParam) {
-      const f = new Date(fromParam + "T00:00:00");
-      const t = new Date(toParam + "T00:00:00");
-      if (!isNaN(f.getTime()) && !isNaN(t.getTime())) {
-        agendaStart = f;
-        agendaEnd = new Date(t.getTime() + 86400000);
+      const fm = fromParam.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+      const tm = toParam.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+      if (fm && tm) {
+        agendaStart = localDateInTz(+fm[1], +fm[2], +fm[3], 0, 0, 0, 0);
+        const tEnd = localDateInTz(+tm[1], +tm[2], +tm[3], 0, 0, 0, 0);
+        agendaEnd = addDaysInTz(tEnd, 1);
       }
     }
 
