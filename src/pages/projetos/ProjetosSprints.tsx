@@ -112,6 +112,7 @@ function CloseSprintDialog({
   onOpenChange: (v: boolean) => void;
 }) {
   const qc = useQueryClient();
+  const { profile } = useAuth();
   const [checks, setChecks] = useState<Record<CheckKey, boolean>>({
     doc_ok: false,
     evidence_ok: false,
@@ -127,7 +128,43 @@ function CloseSprintDialog({
     standards_ok: null,
   });
   const [uploading, setUploading] = useState<CheckKey | null>(null);
+  const [finishedBy, setFinishedBy] = useState<string>("");
   const inputs = useRef<Record<CheckKey, HTMLInputElement | null>>({} as any);
+
+  // Técnicos/desenvolvedores/admins da organização da sprint
+  const { data: staff = [] } = useQuery({
+    queryKey: ["sprint-close-staff", profile?.organization_id],
+    enabled: !!open && !!profile?.organization_id,
+    queryFn: async () => {
+      const orgId = profile!.organization_id!;
+      const { data: roles } = await supabase
+        .from("user_organization_roles")
+        .select("user_id, role")
+        .eq("organization_id", orgId)
+        .in("role", ["tecnico", "desenvolvedor", "admin"]);
+      const ids = Array.from(new Set((roles || []).map((r: any) => r.user_id)));
+      if (ids.length === 0) return [] as any[];
+      const { data: profs } = await supabase
+        .from("profiles")
+        .select("user_id, full_name, email")
+        .in("user_id", ids)
+        .order("full_name");
+      return (profs || []) as any[];
+    },
+  });
+
+  // Soma de pontos dos backlogs da sprint (preview do crédito)
+  const { data: totalPoints = 0 } = useQuery({
+    queryKey: ["sprint-total-points", sprint?.id],
+    enabled: !!open && !!sprint?.id,
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("project_tasks")
+        .select("story_points")
+        .eq("sprint_id", sprint!.id);
+      return (data || []).reduce((s: number, r: any) => s + (r.story_points || 0), 0);
+    },
+  });
 
   const handleUpload = async (key: CheckKey, file: File) => {
     if (!sprint) return;
@@ -161,6 +198,7 @@ function CloseSprintDialog({
         _homolog_ok: checks.homolog_ok,
         _backlog_ok: checks.backlog_ok,
         _standards_ok: checks.standards_ok,
+        _finished_by: finishedBy,
         _evidences: evidencesPayload,
       });
       if (error) throw error;
@@ -169,6 +207,7 @@ function CloseSprintDialog({
       qc.invalidateQueries({ queryKey: ["all-sprints"] });
       qc.invalidateQueries({ queryKey: ["sprints"] });
       qc.invalidateQueries({ queryKey: ["projetos-dashboard"] });
+      qc.invalidateQueries({ queryKey: ["tickets"] });
       toast.success("Sprint encerrada");
       onOpenChange(false);
     },
@@ -176,8 +215,9 @@ function CloseSprintDialog({
   });
 
   const allChecked = Object.values(checks).every(Boolean);
-  const canClose = allChecked;
+  const canClose = allChecked && !!finishedBy;
   const score = Object.values(checks).filter(Boolean).length * 20;
+  const selectedStaff = staff.find((s: any) => s.user_id === finishedBy);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
