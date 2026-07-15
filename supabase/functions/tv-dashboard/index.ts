@@ -127,7 +127,7 @@ Deno.serve(async (req) => {
     }
 
     const [{ data: profiles }, { data: cats }, { data: history }] = await Promise.all([
-      supabase.from("profiles").select("id, full_name").in("id", Array.from(userIds).length ? Array.from(userIds) : ["00000000-0000-0000-0000-000000000000"]),
+      supabase.from("profiles").select("user_id, full_name").in("user_id", Array.from(userIds).length ? Array.from(userIds) : ["00000000-0000-0000-0000-000000000000"]),
       supabase.from("categories").select("id, name").in("id", Array.from(catIds).length ? Array.from(catIds) : ["00000000-0000-0000-0000-000000000000"]),
       supabase.from("ticket_history")
         .select("ticket_id, new_value, created_at")
@@ -136,7 +136,7 @@ Deno.serve(async (req) => {
         .eq("new_value", "Aguardando Aprovação")
         .order("created_at", { ascending: true }),
     ]);
-    const nameOf = new Map((profiles ?? []).map((p: any) => [p.id, p.full_name]));
+    const nameOf = new Map((profiles ?? []).map((p: any) => [p.user_id, p.full_name]));
     const catOf = new Map((cats ?? []).map((c: any) => [c.id, c.name]));
     // Primeiro momento em que o técnico finalizou o atendimento (foi para "Aguardando Aprovação")
     const finishedAt = new Map<string, Date>();
