@@ -230,7 +230,31 @@ function CloseSprintDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-2 py-1 max-h-[50vh] overflow-y-auto">
+        <div className="space-y-1.5">
+          <Label className="text-xs">Técnico responsável pela entrega</Label>
+          <Select value={finishedBy} onValueChange={setFinishedBy}>
+            <SelectTrigger className="h-9">
+              <SelectValue placeholder="Selecione o responsável..." />
+            </SelectTrigger>
+            <SelectContent>
+              {staff.map((s: any) => (
+                <SelectItem key={s.user_id} value={s.user_id}>
+                  {s.full_name || s.email}
+                </SelectItem>
+              ))}
+              {staff.length === 0 && (
+                <div className="px-2 py-1.5 text-xs text-muted-foreground">Nenhum técnico/admin nesta organização</div>
+              )}
+            </SelectContent>
+          </Select>
+          <p className="text-[11px] text-muted-foreground">
+            Este encerramento vai gerar 1 chamado para{" "}
+            <strong>{selectedStaff ? selectedStaff.full_name || selectedStaff.email : "—"}</strong>{" "}
+            com <strong>{totalPoints}</strong> {totalPoints === 1 ? "ponto" : "pontos"} (soma dos backlogs da sprint).
+          </p>
+        </div>
+
+        <div className="space-y-2 py-1 max-h-[45vh] overflow-y-auto">
           {CHECKLIST.map((it) => {
             const ev = evidences[it.key];
             const checked = checks[it.key];
