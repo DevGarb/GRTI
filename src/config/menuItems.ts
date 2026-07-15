@@ -41,6 +41,8 @@ export interface MenuItem {
   auditorOnly?: boolean;
   /** If set, only show when current org slug matches one of these. */
   orgSlugs?: string[];
+  /** Visual grouping section in the sidebar. */
+  section?: "gerencial";
 }
 
 export const menuItems: MenuItem[] = [
