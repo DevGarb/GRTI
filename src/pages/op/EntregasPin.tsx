@@ -20,9 +20,7 @@ export default function EntregasPin() {
   const { items: requesters } = useDeliveryRequesters();
   const { setProfile } = useEntregasProfile();
 
-  const [driverId, setDriverId] = useState("");
   const [driverPin, setDriverPin] = useState("");
-  const [reqId, setReqId] = useState("");
   const [reqPin, setReqPin] = useState("");
 
   const activeDrivers = drivers.filter((d) => d.is_active);
@@ -38,19 +36,23 @@ export default function EntregasPin() {
   };
 
   const loginDriver = () => {
-    const d = activeDrivers.find((x) => x.id === driverId);
-    if (!d) return toast.error("Selecione um motorista");
-    if (!d.pin) return toast.error("Este motorista não tem PIN cadastrado. Peça ao admin.");
-    if (d.pin !== driverPin.trim()) return toast.error("PIN inválido");
+    const pin = driverPin.trim();
+    if (!pin) return toast.error("Informe o PIN");
+    const matches = activeDrivers.filter((d) => d.pin && d.pin === pin);
+    if (matches.length === 0) return toast.error("PIN inválido");
+    if (matches.length > 1) return toast.error("PIN duplicado. Contate o admin.");
+    const d = matches[0];
     setProfile({ type: "motorista", id: d.id, name: d.name, phone: d.phone });
     navigate("/op/entregas/minhas");
   };
 
   const loginRequester = () => {
-    const r = activeRequesters.find((x) => x.id === reqId);
-    if (!r) return toast.error("Selecione um solicitante");
-    if (!r.pin) return toast.error("Este solicitante não tem PIN cadastrado. Peça ao admin.");
-    if (r.pin !== reqPin.trim()) return toast.error("PIN inválido");
+    const pin = reqPin.trim();
+    if (!pin) return toast.error("Informe o PIN");
+    const matches = activeRequesters.filter((r) => r.pin && r.pin === pin);
+    if (matches.length === 0) return toast.error("PIN inválido");
+    if (matches.length > 1) return toast.error("PIN duplicado. Contate o admin.");
+    const r = matches[0];
     setProfile({ type: "solicitante", id: r.id, name: r.name, phone: r.phone });
     navigate("/op/entregas/solicitar");
   };
