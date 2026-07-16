@@ -39,6 +39,7 @@ export default function OpEntregasMinhas() {
   const [tab, setTab] = useState<"tarefas" | "finalizadas">("tarefas");
   const [highContrast, setHighContrast] = useState(false);
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [finishingId, setFinishingId] = useState<string | null>(null);
 
   const isMotorista = profile?.type === "motorista";
   const isSolicitante = profile?.type === "solicitante";
@@ -71,9 +72,20 @@ export default function OpEntregasMinhas() {
     await update(id, { status: "Em rota" });
     toast.success("🚀 Em rota!");
   };
-  const finish = async (id: string) => {
-    await update(id, { status: "Finalizado", closed_at: new Date().toISOString() as any });
+  const handleFinishConfirm = async (
+    id: string,
+    payload: { receiver_name: string; receiver_document?: string; notes?: string; photos: string[] }
+  ) => {
+    await update(id, {
+      status: "Finalizado",
+      closed_at: new Date().toISOString() as any,
+      receiver_name: payload.receiver_name,
+      receiver_document: payload.receiver_document || null,
+      closure_summary: payload.notes || null,
+      photos: payload.photos as any,
+    } as any);
     toast.success("✅ Entrega finalizada!");
+    setFinishingId(null);
     setExpandedId(null);
   };
 
