@@ -1,48 +1,80 @@
-# Padronizar TMA em todo o sistema
+# Evolução do módulo Entregas — 3 fases
 
-**Regra única do TMA (wall clock):**
-`TMA = 1ª transição para "Aguardando Aprovação" − started_at`
-Fallback: se não houver "Aguardando Aprovação" no histórico, usa `closed_at` (tickets legados).
-Sem descontar pausas, sem horário comercial, sem somar retrabalhos separadamente — é tempo corrido do relógio.
+Auth Supabase atual preservada (sem PIN). Identidade CearaGPS (teal `#0d4a56` + laranja `#e8531f`) aplicada apenas nas telas `/op/entregas` e derivadas, sem tocar tokens globais.
 
-## Onde aplicar
+Motoristas atuais (Carlos Daniel, Luis Gustavo, Rodrigo Cordeiro) migrados para a nova tabela na primeira migration.
 
-### 1. Frontend (`src/lib/ticketTiming.ts`)
-- Criar `fetchTicketTmaMinutes(tickets)`: retorna `Map<ticket_id, minutos>` usando a regra única.
-- Manter `fetchTicketWorkMinutes` (ainda usado para métricas de "horas trabalhadas em horário comercial" — que é conceito diferente de TMA). Marcar no comentário que **não é TMA**.
+---
 
-### 2. Consumidores no frontend — trocar para `fetchTicketTmaMinutes`
-- `src/hooks/useDashboardMetrics.ts` — `avgResolutionMinutes` (dashboard e comparativo mês anterior).
-- `src/components/metas/MyGoalCard.tsx` — TMA do card "Minha Meta".
+## Fase 1 — Cadastros e campos novos
 
-### 3. Backend — RPC `get_metas_tecnicos` (SQL)
-Substituir o cálculo atual de `avg_handle_minutes` (que usa `business_minutes_between` com janelas em "Em Andamento") por:
-```sql
-avg_handle_minutes = AVG( EXTRACT(EPOCH FROM (finished_at − started_at)) / 60 )
-```
-onde `finished_at` = `MIN(ticket_history.created_at)` do 1º `status_change` para `"Aguardando Aprovação"`; fallback `closed_at`. Apenas tickets com `started_at NOT NULL`.
+**Banco (migration única):**
+- `op_delivery_categories` (nome, cor, ícone lucide, ativo, ordem, org_id) — seed com Entrega, Buscar Mercadoria, Vistoria Resolve
+- `op_deliveries`: colunas novas `category_id` (FK opcional; mantém `type` legado por compat), `vehicle_required` (`carro`/`moto`/`qualquer`), `receiver_phone`, `requester_name`
+- `op_drivers`: garantir colunas `vehicle_type`, `phone`, `active` (já existem parcialmente — verificar)
+- RLS + GRANTs padrão multi-tenant por `organization_id`
 
-Isso corrige automaticamente:
-- `TeamRanking.tsx` (usa `avg_handle_minutes` da RPC)
-- `ExecutiveSummary` (idem)
-- `supabase/functions/send-management-report/index.ts` (idem)
-- `supabase/functions/generate-executive-summary/index.ts` (idem)
+**Frontend `/op/entregas`:**
+- Header/botões repintados com paleta CearaGPS via classes locais (sem trocar tokens globais)
+- Aba/subrota `/op/entregas/motoristas` — CRUD de motoristas (nome, telefone, veículo, ativo)
+- Aba/subrota `/op/entregas/categorias` — CRUD de categorias (nome, cor, ícone, ativo, reordenar)
+- Colunas do Kanban geradas dinamicamente a partir dos motoristas ativos (nada hardcoded)
+- Modal "Nova Entrega" com select dinâmico de categoria + campos `vehicle_required`, `receiver_phone`, `requester_name` (auto-preenchido com nome do usuário logado)
+- Card do Kanban exibe badge da categoria (cor/ícone dinâmicos), ícone do veículo exigido, telefone do recebedor com botão de ligar/WhatsApp, nome do solicitante
 
-### 4. Edge function `tv-dashboard/index.ts`
-Já está na regra correta (feita no turno anterior). Nada a fazer.
+---
 
-### 5. Anomalias de TMA (`detect_tma_anomalies`)
-Fora do escopo — é detecção estatística de outliers, não medição de TMA médio. Não mexer.
+## Fase 2 — Portal do solicitante e avaliação
 
-## Fora do escopo
-- Cálculos de "tempo trabalhado" em horário comercial (`fetchTicketWorkMinutes`, `MetasRevisaoTMA`) — são conceito diferente (produtividade em horas úteis), continuam iguais.
-- SLA de primeira resposta (`first_response_min`) — continua em horário comercial.
-- Detecção de anomalias de TMA.
+**Banco:**
+- `op_delivery_ratings` (delivery_id, rating 1-5, comment, rated_by, rated_at)
+- Trigger opcional pra recalcular média por motorista (ou view)
 
-## Arquivos alterados
-- `src/lib/ticketTiming.ts` (novo helper)
-- `src/hooks/useDashboardMetrics.ts`
-- `src/components/metas/MyGoalCard.tsx`
-- 1 nova migration SQL alterando `public.get_metas_tecnicos`
+**Frontend:**
+- Rota `/op/entregas/solicitar` — visível para role `colaborador`; formulário simplificado (categoria, endereço, data, período, veículo exigido, telefone recebedor, obs); cria como `Pendente` sem motorista
+- Lista "Minhas solicitações" no mesmo portal mostrando status em tempo real
+- Dialog de finalização (`OpClosureDialog`) ganha campo de estrelas (1-5) + comentário opcional, não bloqueia salvar
+- Card do motorista na aba Motoristas exibe média de estrelas e total de avaliações
 
-Após aprovação, deploy da RPC via migration e redeploy das edge functions consumidoras não é necessário (elas apenas leem o resultado da RPC).
+---
+
+## Fase 3 — Dashboard, suporte e outdoor
+
+**Banco:**
+- `op_driver_support_tickets` (motorista_id, gps_lat, gps_lng, transcript, status, created_at, resolved_at) OU reaproveita `tickets` marcando categoria "Suporte Motorista"
+- Decisão técnica: reaproveitar `tickets` existente é mais simples e cai no fluxo de chamados que admin já usa
+
+**Frontend:**
+- Rota `/op/entregas/dashboard` com:
+  - Comparativo abertos x fechados (barras, filtro dia/semana/mês)
+  - Cards: total aberto, total fechado, taxa conclusão %, tempo médio abertura→finalização
+  - Quebra por motorista (recebido x finalizado, tempo médio, média de estrelas)
+  - Quebra por categoria
+- Tela mobile do motorista: botão "Suporte" que captura GPS (Geolocation API) + Web Speech API pra ditado (fallback textarea)
+- Botão "Alto contraste outdoor" fixo no header mobile do motorista — toggle que aumenta font-size e força preto/branco puro via classe no `<html>`
+
+---
+
+## Detalhes técnicos
+
+**Tabelas afetadas:** `op_deliveries` (colunas novas), `op_drivers` (garantir campos), 2 novas (`op_delivery_categories`, `op_delivery_ratings`). Migrations em 3 chamadas separadas, uma por fase, todas com GRANT + RLS por org.
+
+**Escopo visual isolado:** cria `src/pages/op/entregas.css` (ou classes em `index.css` sob `.cearagps-scope`) com variáveis `--cgps-primary: 13 65 33%` (teal) e `--cgps-accent: 14 82 51%` (laranja) aplicadas via wrapper div. Nenhum token global tocado.
+
+**Roles:** usa roles existentes. Admin/super_admin = admin. Novo role `motorista` adicionado ao enum `app_role`. `colaborador` já existe = solicitante.
+
+**Realtime:** habilita `supabase.channel` nas tabelas de entregas pra admin/motorista/solicitante verem updates entre dispositivos.
+
+**Não faz:** login por PIN, troca de tokens globais, mapas visuais.
+
+---
+
+## Ordem de execução
+
+1. Aprovar plano
+2. Fase 1: migration → aprovar → CRUD motoristas → CRUD categorias → repaint + campos novos → validar
+3. Fase 2: migration → portal solicitante → avaliação → validar
+4. Fase 3: migration → dashboard → suporte → outdoor → validar
+5. `bun run build` no fim de cada fase
+
+Cada fase é entregável independente. Se algo travar, paramos numa fase estável.

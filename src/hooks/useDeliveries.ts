@@ -22,6 +22,10 @@ export interface Delivery {
   closure_summary?: string | null;
   closed_at?: string | null;
   closed_by?: string | null;
+  category_id?: string | null;
+  vehicle_required?: string | null;
+  receiver_phone?: string | null;
+  requester_name?: string | null;
 }
 
 export function useDeliveries() {

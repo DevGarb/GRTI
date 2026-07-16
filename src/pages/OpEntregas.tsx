@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { Truck, Plus, Pencil, Trash2, Clock, MapPin, ClipboardList, CheckCircle2, Calendar as CalIcon, Search, LayoutGrid, List, Eye, EyeOff } from "lucide-react";
+import { Truck, Plus, Pencil, Trash2, Clock, MapPin, ClipboardList, CheckCircle2, Calendar as CalIcon, Search, LayoutGrid, List, Eye, EyeOff, Phone, MessageCircle, Bike, Car, HelpCircle, Package, PackageOpen, ClipboardCheck, Wrench, Camera, ShoppingBag, Box } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -11,17 +11,28 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from "@/contexts/AuthContext";
 import { useDeliveries, type Delivery } from "@/hooks/useDeliveries";
 import { useDrivers, useCompanies, useVehicles } from "@/hooks/useOperacional";
+import { useDeliveryCategories, type DeliveryCategory } from "@/hooks/useDeliveryCategories";
 import { cn } from "@/lib/utils";
 import OpKanbanBoard, { type KanbanColumn } from "@/components/operacional/OpKanbanBoard";
 import OpClosureDialog from "@/components/operacional/OpClosureDialog";
 import OpQuickActions from "@/components/operacional/OpQuickActions";
 import OpNotesPanel from "@/components/operacional/OpNotesPanel";
+import EntregasNav from "./op/EntregasNav";
+import "./op/cearagps.css";
 import { formatDateBR, formatDateTimeFullBR } from "@/lib/dateFormat";
 
-const TYPES = ["Entrega", "Vistoria", "Retirada", "Outro"];
 const PERIODS = ["Manhã", "Tarde", "Noite"];
 const STATUSES = ["Pendente", "Em rota", "Finalizado", "Cancelado"];
 const TERMINAL = "Finalizado";
+const VEHICLE_REQUIRED = [
+  { value: "qualquer", label: "Qualquer", icon: HelpCircle },
+  { value: "moto", label: "Moto", icon: Bike },
+  { value: "carro", label: "Carro", icon: Car },
+];
+
+const CATEGORY_ICON_MAP: Record<string, any> = {
+  Package, PackageOpen, ClipboardCheck, Truck, Bike, Car, Wrench, Camera, MapPin, ShoppingBag, Box,
+};
 
 const STATUS_COLORS: Record<string, string> = {
   "Pendente": "bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300",
@@ -42,11 +53,13 @@ function weekday(iso: string) {
 function todayISO() { return new Date().toISOString().slice(0, 10); }
 
 export default function OpEntregas() {
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const { items, loading, add, update, remove } = useDeliveries();
   const { items: drivers } = useDrivers();
   const { items: companies } = useCompanies();
   const { items: vehicles } = useVehicles();
+  const { activeItems: categories } = useDeliveryCategories();
+
 
   const [view, setView] = useState<"lista" | "kanban">("kanban");
   const [hideFinalized, setHideFinalized] = useState(true);
@@ -81,7 +94,7 @@ export default function OpEntregas() {
       if (filterMode === "data" && d.scheduled_date !== filterDate) return false;
       if (activeDriver !== "all" && d.driver_id !== activeDriver) return false;
       if (statusFilter !== "all" && d.status !== statusFilter) return false;
-      if (typeFilter !== "all" && d.type !== typeFilter) return false;
+      if (typeFilter !== "all" && d.category_id !== typeFilter) return false;
 
       if (search) {
         const s = search.toLowerCase();
@@ -178,6 +191,10 @@ export default function OpEntregas() {
     const company = companies.find(c => c.id === d.company_id);
     const driver = drivers.find(x => x.id === d.driver_id);
     const carried = isCarriedOver(d);
+    const cat = categories.find(c => c.id === d.category_id);
+    const CatIcon = cat ? (CATEGORY_ICON_MAP[cat.icon] || Package) : Package;
+    const vr = VEHICLE_REQUIRED.find(v => v.value === (d.vehicle_required || "qualquer"));
+    const VIcon = vr?.icon || HelpCircle;
     return (
       <div onClick={() => openEdit(d)}>
         <div className="flex items-start gap-2 mb-2">
@@ -187,19 +204,40 @@ export default function OpEntregas() {
               {formatDateBR(d.scheduled_date)} · {d.period}{carried && " · atrasada"}
             </div>
           </div>
-          <Badge variant="outline" className="text-[10px]">{d.type}</Badge>
+          {cat ? (
+            <Badge
+              className="text-[10px] border-0 gap-1"
+              style={{ background: cat.color + "22", color: cat.color }}
+            >
+              <CatIcon className="h-3 w-3" />
+              {cat.name}
+            </Badge>
+          ) : (
+            <Badge variant="outline" className="text-[10px]">{d.type}</Badge>
+          )}
         </div>
         {d.address && (
           <div className="text-xs text-muted-foreground line-clamp-2 mb-1">📍 {d.address}</div>
         )}
-        {(d.contact_name || driver) && (
-          <div className="text-[11px] text-muted-foreground truncate mb-2">
-            {driver?.name && `🛵 ${driver.name}`}{driver && d.contact_name ? " · " : ""}{d.contact_name}
+        <div className="flex items-center gap-2 text-[11px] text-muted-foreground mb-1">
+          <VIcon className="h-3 w-3" />
+          <span>Exige: {vr?.label}</span>
+          {driver && <span className="truncate">· 🛵 {driver.name}</span>}
+        </div>
+        {d.requester_name && (
+          <div className="text-[11px] text-muted-foreground truncate mb-1">
+            Solicitado por: <span className="font-medium">{d.requester_name}</span>
+          </div>
+        )}
+        {(d.contact_name || d.receiver_phone) && (
+          <div className="text-[11px] text-muted-foreground truncate mb-2 flex items-center gap-1">
+            <Phone className="h-3 w-3" />
+            {d.contact_name || "Recebedor"} {d.receiver_phone && `· ${d.receiver_phone}`}
           </div>
         )}
         <div className="flex items-center justify-between">
           <Badge className={cn("text-[10px] font-normal", STATUS_COLORS[d.status])}>{d.status}</Badge>
-          <OpQuickActions phone={d.contact_phone} address={d.address} size="icon" />
+          <OpQuickActions phone={d.receiver_phone || d.contact_phone} address={d.address} size="icon" />
         </div>
       </div>
     );
@@ -207,14 +245,16 @@ export default function OpEntregas() {
 
 
   return (
+    <div className="cgps-scope min-h-screen bg-[hsl(var(--cgps-muted))]">
+      <EntregasNav />
     <div className="p-4 md:p-6 max-w-7xl mx-auto">
       <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
         <div className="flex items-center gap-3">
-          <div className="h-10 w-10 rounded-lg bg-primary text-primary-foreground flex items-center justify-center">
-            <Truck className="h-5 w-5" />
+          <div className="h-10 w-10 rounded-lg flex items-center justify-center" style={{ background: "hsl(191 74% 20%)" }}>
+            <Truck className="h-5 w-5 text-white" />
           </div>
           <div>
-            <h1 className="text-2xl font-bold">Entregas</h1>
+            <h1 className="text-2xl font-bold" style={{ color: "hsl(191 74% 20%)" }}>Entregas</h1>
             <p className="text-sm text-muted-foreground">Controle de Entregas</p>
           </div>
         </div>
@@ -288,10 +328,10 @@ export default function OpEntregas() {
           </SelectContent>
         </Select>
         <Select value={typeFilter} onValueChange={setTypeFilter}>
-          <SelectTrigger className="w-[140px]"><SelectValue placeholder="Tipo" /></SelectTrigger>
+          <SelectTrigger className="w-[160px]"><SelectValue placeholder="Categoria" /></SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">Todos tipos</SelectItem>
-            {TYPES.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}
+            <SelectItem value="all">Todas categorias</SelectItem>
+            {categories.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
           </SelectContent>
         </Select>
       </div>
@@ -379,6 +419,8 @@ export default function OpEntregas() {
         drivers={drivers}
         companies={companies}
         vehicles={vehicles}
+        categories={categories}
+        defaultRequester={profile?.full_name || ""}
         onStatusChange={handleStatusChange}
         onDelete={(id) => { remove(id); setModalOpen(false); }}
         onSubmit={async (payload) => {
@@ -397,6 +439,7 @@ export default function OpEntregas() {
         hideDate
         onConfirm={confirmClosure}
       />
+    </div>
     </div>
   );
 }
@@ -428,9 +471,11 @@ function DriverChip({ active, onClick, label }: { active: boolean; onClick: () =
   );
 }
 
-function DeliveryModal({ open, onOpenChange, editing, drivers, companies, vehicles, onSubmit, onStatusChange, onDelete }: {
+function DeliveryModal({ open, onOpenChange, editing, drivers, companies, vehicles, categories, defaultRequester, onSubmit, onStatusChange, onDelete }: {
   open: boolean; onOpenChange: (b: boolean) => void; editing: Delivery | null;
   drivers: any[]; companies: any[]; vehicles: any[];
+  categories: DeliveryCategory[];
+  defaultRequester?: string;
   onSubmit: (p: Partial<Delivery>) => Promise<void>;
   onStatusChange: (d: Delivery, newStatus: string) => void;
   onDelete: (id: string) => void;
@@ -440,10 +485,19 @@ function DeliveryModal({ open, onOpenChange, editing, drivers, companies, vehicl
   useMemo(() => {
     if (open) setForm(editing ? { ...editing } : {
       type: "Entrega", period: "Manhã", status: "Pendente", scheduled_date: todayISO(),
+      vehicle_required: "qualquer", requester_name: defaultRequester || "",
     });
   }, [open, editing]);
 
   const setF = (k: keyof Delivery, v: any) => setForm(p => ({ ...p, [k]: v }));
+
+  const handleSubmit = () => {
+    if (!form.scheduled_date) return;
+    // Sync legacy type with category name for compat
+    const cat = categories.find(c => c.id === form.category_id);
+    const payload = { ...form, type: cat?.name || form.type || "Entrega" };
+    onSubmit(payload);
+  };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -453,7 +507,7 @@ function DeliveryModal({ open, onOpenChange, editing, drivers, companies, vehicl
             <span>{editing ? "Detalhes da entrega" : "Nova entrega"}</span>
             {editing && (
               <div className="flex items-center gap-2">
-                <OpQuickActions phone={editing.contact_phone} address={editing.address} />
+                <OpQuickActions phone={editing.receiver_phone || editing.contact_phone} address={editing.address} />
               </div>
             )}
           </DialogTitle>
@@ -478,22 +532,22 @@ function DeliveryModal({ open, onOpenChange, editing, drivers, companies, vehicl
               <SelectContent>{companies.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}</SelectContent>
             </Select>
           </div>
+          <div><Label>Categoria do serviço</Label>
+            <Select value={form.category_id || ""} onValueChange={v => setF("category_id", v)}>
+              <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
+              <SelectContent>{categories.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}</SelectContent>
+            </Select>
+          </div>
           <div><Label>Motorista</Label>
             <Select value={form.driver_id || ""} onValueChange={v => setF("driver_id", v)}>
-              <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
+              <SelectTrigger><SelectValue placeholder="Sem motorista" /></SelectTrigger>
               <SelectContent>{drivers.map(d => <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>)}</SelectContent>
             </Select>
           </div>
-          <div><Label>Veículo</Label>
-            <Select value={form.vehicle_id || ""} onValueChange={v => setF("vehicle_id", v)}>
-              <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
-              <SelectContent>{vehicles.map(v => <SelectItem key={v.id} value={v.id}>{v.plate} {v.model && `· ${v.model}`}</SelectItem>)}</SelectContent>
-            </Select>
-          </div>
-          <div><Label>Tipo</Label>
-            <Select value={form.type} onValueChange={v => setF("type", v)}>
+          <div><Label>Veículo exigido</Label>
+            <Select value={form.vehicle_required || "qualquer"} onValueChange={v => setF("vehicle_required", v)}>
               <SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent>{TYPES.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent>
+              <SelectContent>{VEHICLE_REQUIRED.map(v => <SelectItem key={v.value} value={v.value}>{v.label}</SelectItem>)}</SelectContent>
             </Select>
           </div>
           <div><Label>Período</Label>
@@ -508,14 +562,14 @@ function DeliveryModal({ open, onOpenChange, editing, drivers, companies, vehicl
           <div className="md:col-span-2"><Label>Endereço</Label>
             <Input value={form.address || ""} onChange={e => setF("address", e.target.value)} />
           </div>
-          <div><Label>Associado</Label>
-            <Input value={form.associated_name || ""} onChange={e => setF("associated_name", e.target.value)} />
+          <div><Label>Nome do solicitante</Label>
+            <Input value={form.requester_name || ""} onChange={e => setF("requester_name", e.target.value)} placeholder="Quem pediu o serviço" />
           </div>
-          <div><Label>Contato</Label>
-            <Input value={form.contact_name || ""} onChange={e => setF("contact_name", e.target.value)} />
+          <div><Label>Nome do recebedor</Label>
+            <Input value={form.contact_name || ""} onChange={e => setF("contact_name", e.target.value)} placeholder="Quem vai receber" />
           </div>
-          <div><Label>Telefone</Label>
-            <Input value={form.contact_phone || ""} onChange={e => setF("contact_phone", e.target.value)} />
+          <div><Label>Telefone do recebedor *</Label>
+            <Input value={form.receiver_phone || ""} onChange={e => setF("receiver_phone", e.target.value)} placeholder="(85) 9 9999-9999" />
           </div>
           <div><Label>Status</Label>
             <Select
@@ -551,7 +605,7 @@ function DeliveryModal({ open, onOpenChange, editing, drivers, companies, vehicl
             </Button>
           )}
           <Button variant="outline" onClick={() => onOpenChange(false)}>Fechar</Button>
-          <Button onClick={() => { if (!form.scheduled_date) return; onSubmit(form); }}>{editing ? "Salvar" : "Criar"}</Button>
+          <Button onClick={handleSubmit} className="cgps-btn-primary">{editing ? "Salvar" : "Criar"}</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

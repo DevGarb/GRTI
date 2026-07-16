@@ -1,0 +1,49 @@
+/* Identidade visual CearaGPS — escopo isolado no módulo Entregas */
+.cgps-scope {
+  --cgps-primary: 191 74% 20%;      /* #0d4a56 teal */
+  --cgps-primary-fg: 0 0% 100%;
+  --cgps-accent: 14 82% 51%;        /* #e8531f laranja */
+  --cgps-accent-fg: 0 0% 100%;
+  --cgps-surface: 0 0% 100%;
+  --cgps-muted: 210 20% 96%;
+  --cgps-border: 210 20% 88%;
+}
+
+.cgps-scope .cgps-header {
+  background: hsl(var(--cgps-primary));
+  color: hsl(var(--cgps-primary-fg));
+}
+
+.cgps-scope .cgps-btn-primary {
+  background: hsl(var(--cgps-primary));
+  color: hsl(var(--cgps-primary-fg));
+  border: 1px solid hsl(var(--cgps-primary));
+}
+.cgps-scope .cgps-btn-primary:hover { background: hsl(var(--cgps-primary) / 0.9); }
+
+.cgps-scope .cgps-btn-accent {
+  background: hsl(var(--cgps-accent));
+  color: hsl(var(--cgps-accent-fg));
+  border: 1px solid hsl(var(--cgps-accent));
+}
+.cgps-scope .cgps-btn-accent:hover { background: hsl(var(--cgps-accent) / 0.9); }
+
+.cgps-scope .cgps-tab {
+  color: hsl(var(--cgps-primary) / 0.7);
+  border-bottom: 2px solid transparent;
+  padding: 8px 14px;
+  font-weight: 600;
+  font-size: 14px;
+  transition: all 0.15s;
+}
+.cgps-scope .cgps-tab:hover { color: hsl(var(--cgps-primary)); }
+.cgps-scope .cgps-tab[data-active="true"] {
+  color: hsl(var(--cgps-primary));
+  border-bottom-color: hsl(var(--cgps-accent));
+}
+
+.cgps-scope .cgps-chip-accent {
+  background: hsl(var(--cgps-accent) / 0.12);
+  color: hsl(var(--cgps-accent));
+  border: 1px solid hsl(var(--cgps-accent) / 0.3);
+}
