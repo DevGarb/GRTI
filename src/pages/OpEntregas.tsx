@@ -43,8 +43,22 @@ const STATUS_COLORS: Record<string, string> = {
   "Cancelado": "bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300",
 };
 
-const PENDING_COL = "Pendente";
+const PENDING_COL = "__unassigned__";
 const FINALIZED_COL = "Finalizado";
+
+const VEHICLE_BADGE: Record<string, { label: string; bg: string; color: string }> = {
+  qualquer: { label: "QUALQUER", bg: "#e5e7eb", color: "#374151" },
+  moto: { label: "MOTO", bg: "#fee2e2", color: "#b91c1c" },
+  carro: { label: "CARRO", bg: "#dbeafe", color: "#1d4ed8" },
+};
+
+const CARD_STATUS_PILL = (d: Delivery) => {
+  if (d.status === "Finalizado") return { label: "FINALIZADO", bg: "#dcfce7", color: "#166534" };
+  if (d.status === "Cancelado") return { label: "CANCELADO", bg: "#fee2e2", color: "#991b1b" };
+  if (!d.driver_id) return { label: "SEM ROTA", bg: "#fef3c7", color: "#92400e" };
+  if (d.status === "Em rota") return { label: "EM ROTA", bg: "#dbeafe", color: "#1d4ed8" };
+  return { label: "PENDENTE", bg: "#fef3c7", color: "#92400e" };
+};
 
 type FilterMode = "tudo" | "hoje" | "semana" | "data";
 
