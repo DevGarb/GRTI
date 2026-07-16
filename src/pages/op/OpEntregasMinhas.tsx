@@ -391,7 +391,7 @@ export default function OpEntregasMinhas() {
                               {d.status === "Em rota" && (
                                 <motion.button
                                   whileTap={{ scale: 0.97 }}
-                                  onClick={() => finish(d.id)}
+                                  onClick={() => setFinishingId(d.id)}
                                   className="w-full rounded-xl py-3.5 flex items-center justify-center gap-2 text-sm font-extrabold uppercase tracking-wide"
                                   style={{ background: "hsl(160 65% 38%)", color: "#ffffff", boxShadow: "0 8px 24px -10px hsl(160 65% 38% / 0.6)" }}
                                 >
