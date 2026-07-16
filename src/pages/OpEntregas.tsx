@@ -419,6 +419,8 @@ export default function OpEntregas() {
         drivers={drivers}
         companies={companies}
         vehicles={vehicles}
+        categories={categories}
+        defaultRequester={profile?.full_name || ""}
         onStatusChange={handleStatusChange}
         onDelete={(id) => { remove(id); setModalOpen(false); }}
         onSubmit={async (payload) => {
