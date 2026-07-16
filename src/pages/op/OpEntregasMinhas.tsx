@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { MapPin, Phone, MessageCircle, LogOut, Sun, Moon, CheckCircle2, PlayCircle, Navigation, Package, Clock, ChevronDown, ChevronUp } from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
+import { MapPin, Phone, MessageCircle, LogOut, Sun, Moon, CheckCircle2, PlayCircle, Navigation, Clock, ChevronDown, Package, ListTodo, Trophy } from "lucide-react";
+import { motion, AnimatePresence, LayoutGroup } from "framer-motion";
 import { useDeliveries } from "@/hooks/useDeliveries";
 import { useDeliveryCategories } from "@/hooks/useDeliveryCategories";
 import { useCompanies } from "@/hooks/useOperacional";
@@ -21,6 +21,12 @@ const TEAL = "hsl(191 74% 20%)";
 const TEAL_DARK = "hsl(191 74% 12%)";
 const ORANGE = "hsl(14 82% 51%)";
 
+function formatTime(iso?: string | null) {
+  if (!iso) return "";
+  try { return new Date(iso).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }); }
+  catch { return ""; }
+}
+
 export default function OpEntregasMinhas() {
   const navigate = useNavigate();
   const { profile, clear } = useEntregasProfile();
@@ -29,8 +35,9 @@ export default function OpEntregasMinhas() {
   const { items: companies } = useCompanies();
   const { items: requesters } = useDeliveryRequesters();
 
-  const [tab, setTab] = useState<"tarefas" | "chamado">("tarefas");
+  const [tab, setTab] = useState<"tarefas" | "finalizadas">("tarefas");
   const [highContrast, setHighContrast] = useState(false);
+  const [expandedId, setExpandedId] = useState<string | null>(null);
 
   const isMotorista = profile?.type === "motorista";
   const isSolicitante = profile?.type === "solicitante";
@@ -42,24 +49,31 @@ export default function OpEntregasMinhas() {
     return items;
   }, [items, profile, isMotorista, isSolicitante]);
 
-  // hide finalized/cancelled
   const active = useMemo(
     () => mine.filter((d) => d.status !== "Finalizado" && d.status !== "Cancelado"),
+    [mine]
+  );
+  const finished = useMemo(
+    () => mine
+      .filter((d) => d.status === "Finalizado" || d.status === "Cancelado")
+      .sort((a, b) => (b.closed_at || b.scheduled_date).localeCompare(a.closed_at || a.scheduled_date)),
     [mine]
   );
 
   const todayISO = new Date().toISOString().slice(0, 10);
   const routesToday = active.filter((d) => d.scheduled_date === todayISO).length;
+  const doneToday = finished.filter((d) => (d.closed_at || "").slice(0, 10) === todayISO).length;
 
   const logout = () => { clear(); navigate("/op/entregas/pin"); };
 
   const startRoute = async (id: string) => {
     await update(id, { status: "Em rota" });
-    toast.success("Em rota");
+    toast.success("🚀 Em rota!");
   };
   const finish = async (id: string) => {
     await update(id, { status: "Finalizado", closed_at: new Date().toISOString() as any });
-    toast.success("Entrega finalizada");
+    toast.success("✅ Entrega finalizada!");
+    setExpandedId(null);
   };
 
   const catNameOf = (id?: string | null) => categories.find((c) => c.id === id)?.name;
@@ -72,10 +86,12 @@ export default function OpEntregasMinhas() {
   const textMain = highContrast ? "#ffffff" : "hsl(222 20% 18%)";
   const textMuted = highContrast ? "#c4c4c4" : "hsl(215 15% 45%)";
 
+  const listToShow = tab === "tarefas" ? active : finished;
+
   return (
-    <div className="cgps-scope min-h-screen" style={{ background: bg, color: textMain }}>
+    <div className="cgps-scope min-h-screen pb-24" style={{ background: bg, color: textMain }}>
       {/* Header */}
-      <header className="px-4 py-3 flex items-center justify-between" style={{ background: TEAL }}>
+      <header className="px-4 py-3 flex items-center justify-between sticky top-0 z-30" style={{ background: TEAL }}>
         <div className="flex items-center gap-3">
           <span className="text-white font-extrabold tracking-tight text-lg">
             CEARA<span style={{ color: ORANGE }}> GPS</span>
@@ -90,188 +106,295 @@ export default function OpEntregasMinhas() {
           )}
         </div>
         <div className="flex items-center gap-2">
-          <button
+          <motion.button
+            whileTap={{ scale: 0.9 }}
             onClick={() => setHighContrast((v) => !v)}
             className="h-9 w-9 rounded-md flex items-center justify-center"
             style={{ background: "rgba(255,255,255,0.12)", color: "#ffffff" }}
             aria-label="Alto contraste"
           >
             {highContrast ? <Moon className="h-4 w-4" /> : <Sun className="h-4 w-4" />}
-          </button>
-          <button
+          </motion.button>
+          <motion.button
+            whileTap={{ scale: 0.9 }}
             onClick={logout}
             className="h-9 w-9 rounded-md flex items-center justify-center"
             style={{ background: ORANGE, color: "#ffffff" }}
             aria-label="Sair"
           >
             <LogOut className="h-4 w-4" />
-          </button>
+          </motion.button>
         </div>
       </header>
 
-      {/* Welcome + counter */}
-      <section className="px-5 pt-5 pb-3 flex items-start justify-between" style={{ background: cardBg, borderBottom: "1px solid hsl(210 15% 90%)" }}>
-        <div>
-          <div className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: textMuted }}>Bem-vindo(a),</div>
-          <h1 className="text-2xl font-extrabold leading-tight" style={{ color: textMain }}>
-            {profile?.name || "—"}
-          </h1>
-        </div>
-        <div className="text-right">
-          <div className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: textMuted }}>Rotas de hoje</div>
-          <div className="mt-1 inline-flex items-center justify-center min-w-8 h-8 px-2.5 rounded-full text-sm font-bold" style={{ background: "hsl(180 25% 92%)", color: TEAL }}>
-            {routesToday}
+      {/* Welcome + counters */}
+      <section className="px-5 pt-5 pb-4" style={{ background: cardBg, borderBottom: "1px solid hsl(210 15% 90%)" }}>
+        <div className="flex items-start justify-between">
+          <div>
+            <div className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: textMuted }}>Bem-vindo(a),</div>
+            <h1 className="text-2xl font-extrabold leading-tight" style={{ color: textMain }}>
+              {profile?.name || "—"}
+            </h1>
+          </div>
+          <div className="text-right">
+            <div className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: textMuted }}>Rotas de hoje</div>
+            <motion.div
+              key={routesToday}
+              initial={{ scale: 0.5, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              className="mt-1 inline-flex items-center justify-center min-w-8 h-8 px-2.5 rounded-full text-sm font-bold"
+              style={{ background: "hsl(180 25% 92%)", color: TEAL }}
+            >
+              {routesToday}
+            </motion.div>
           </div>
         </div>
+
+        {/* Progress bar */}
+        {mine.length > 0 && (
+          <div className="mt-4">
+            <div className="flex items-center justify-between text-[11px] font-semibold mb-1.5" style={{ color: textMuted }}>
+              <span>PROGRESSO DO DIA</span>
+              <span>{doneToday}/{doneToday + routesToday} entregues</span>
+            </div>
+            <div className="h-2 rounded-full overflow-hidden" style={{ background: "hsl(210 15% 90%)" }}>
+              <motion.div
+                initial={{ width: 0 }}
+                animate={{ width: `${(doneToday / Math.max(1, doneToday + routesToday)) * 100}%` }}
+                transition={{ duration: 0.6, ease: "easeOut" }}
+                className="h-full rounded-full"
+                style={{ background: `linear-gradient(90deg, ${ORANGE}, hsl(160 65% 45%))` }}
+              />
+            </div>
+          </div>
+        )}
       </section>
 
       {/* Tabs */}
       <div className="px-4 pt-4 pb-2 grid grid-cols-2 gap-3">
-        <button
-          onClick={() => setTab("tarefas")}
-          className="rounded-xl px-4 py-3 text-sm font-bold text-left transition"
+        <motion.button
+          whileTap={{ scale: 0.97 }}
+          onClick={() => { setTab("tarefas"); setExpandedId(null); }}
+          className="rounded-xl px-4 py-3 text-sm font-bold flex items-center justify-center gap-2 transition"
           style={
             tab === "tarefas"
-              ? { background: ORANGE, color: "#ffffff", boxShadow: "0 6px 20px -8px hsl(14 82% 51% / 0.6)" }
+              ? { background: ORANGE, color: "#ffffff", boxShadow: "0 8px 24px -8px hsl(14 82% 51% / 0.55)" }
               : { background: cardBg, color: textMain, border: "1px solid hsl(210 15% 88%)" }
           }
         >
+          <ListTodo className="h-4 w-4" />
           MINHAS TAREFAS ({active.length})
-        </button>
-        <button
-          onClick={() => setTab("chamado")}
-          className="rounded-xl px-4 py-3 text-xs font-bold leading-tight text-left transition"
+        </motion.button>
+        <motion.button
+          whileTap={{ scale: 0.97 }}
+          onClick={() => { setTab("finalizadas"); setExpandedId(null); }}
+          className="rounded-xl px-4 py-3 text-sm font-bold flex items-center justify-center gap-2 transition"
           style={
-            tab === "chamado"
-              ? { background: ORANGE, color: "#ffffff" }
+            tab === "finalizadas"
+              ? { background: "hsl(160 65% 38%)", color: "#ffffff", boxShadow: "0 8px 24px -8px hsl(160 65% 38% / 0.55)" }
               : { background: cardBg, color: textMain, border: "1px solid hsl(210 15% 88%)" }
           }
         >
-          ABRIR CHAMADO<br />VOZ / GPS
-        </button>
+          <Trophy className="h-4 w-4" />
+          FINALIZADAS ({finished.length})
+        </motion.button>
       </div>
 
       {/* Content */}
-      <main className="px-4 pt-2 pb-8">
-        {tab === "chamado" ? (
-          <div className="mt-4 rounded-xl p-6 text-center" style={{ background: cardBg, border: "1px dashed hsl(210 15% 82%)" }}>
-            <Mic className="h-8 w-8 mx-auto mb-2" style={{ color: TEAL }} />
-            <div className="font-bold mb-1" style={{ color: textMain }}>Chamado por voz + GPS</div>
-            <p className="text-xs" style={{ color: textMuted }}>
-              Recurso em breve. Vai permitir abrir um chamado ditando o problema e enviando sua localização.
-            </p>
-          </div>
-        ) : loading ? (
+      <main className="px-4 pt-2">
+        {loading ? (
           <div className="text-center py-12" style={{ color: textMuted }}>Carregando...</div>
-        ) : active.length === 0 ? (
-          <div className="mt-6 rounded-xl p-8 text-center" style={{ background: cardBg, border: "1px solid hsl(210 15% 88%)" }}>
-            <CheckCircle2 className="h-10 w-10 mx-auto mb-2" style={{ color: "hsl(160 60% 40%)" }} />
-            <div className="font-bold" style={{ color: textMain }}>Sem tarefas pendentes</div>
-            <p className="text-xs mt-1" style={{ color: textMuted }}>Todas as entregas foram finalizadas.</p>
-          </div>
+        ) : listToShow.length === 0 ? (
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mt-6 rounded-xl p-8 text-center"
+            style={{ background: cardBg, border: "1px solid hsl(210 15% 88%)" }}
+          >
+            {tab === "tarefas" ? (
+              <>
+                <CheckCircle2 className="h-12 w-12 mx-auto mb-3" style={{ color: "hsl(160 60% 45%)" }} />
+                <div className="font-extrabold text-lg" style={{ color: textMain }}>Tudo em dia! 🎉</div>
+                <p className="text-sm mt-1" style={{ color: textMuted }}>Sem entregas pendentes no momento.</p>
+              </>
+            ) : (
+              <>
+                <Package className="h-12 w-12 mx-auto mb-3" style={{ color: textMuted }} />
+                <div className="font-extrabold text-lg" style={{ color: textMain }}>Nenhuma entrega finalizada</div>
+                <p className="text-sm mt-1" style={{ color: textMuted }}>Suas entregas concluídas aparecerão aqui.</p>
+              </>
+            )}
+          </motion.div>
         ) : (
-          <div className="space-y-4">
-            {active.map((d) => {
-              const catName = catNameOf(d.category_id) || d.type;
-              const catColor = catColorOf(d.category_id);
-              const cName = companyName(d.company_id);
-              const reqName = requesterName(d);
-              const phone = d.receiver_phone || d.contact_phone;
-              const cleanPhone = phone?.replace(/\D/g, "");
+          <LayoutGroup>
+            <AnimatePresence mode="popLayout">
+              <div className="space-y-3">
+                {listToShow.map((d) => {
+                  const catName = catNameOf(d.category_id) || d.type;
+                  const catColor = catColorOf(d.category_id);
+                  const cName = companyName(d.company_id);
+                  const reqName = requesterName(d);
+                  const phone = d.receiver_phone || d.contact_phone;
+                  const cleanPhone = phone?.replace(/\D/g, "");
+                  const isExpanded = expandedId === d.id;
+                  const isFinished = d.status === "Finalizado" || d.status === "Cancelado";
+                  const mapsUrl = d.address ? `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(d.address)}` : null;
 
-              return (
-                <article
-                  key={d.id}
-                  className="rounded-2xl overflow-hidden"
-                  style={{ background: cardBg, border: "1px solid hsl(210 15% 88%)", boxShadow: highContrast ? "none" : "0 2px 8px -4px rgba(0,0,0,0.08)" }}
-                >
-                  <div className="p-4 space-y-3">
-                    <div className="flex items-start justify-between gap-2">
-                      <div>
-                        <div className="text-lg font-extrabold" style={{ color: textMain }}>
-                          {cName || d.associated_name || "Entrega"}
+                  return (
+                    <motion.article
+                      layout
+                      key={d.id}
+                      initial={{ opacity: 0, y: 12, scale: 0.98 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      exit={{ opacity: 0, x: -60, scale: 0.9 }}
+                      transition={{ type: "spring", stiffness: 260, damping: 24 }}
+                      className="rounded-2xl overflow-hidden"
+                      style={{
+                        background: cardBg,
+                        border: `1px solid ${isExpanded ? ORANGE : "hsl(210 15% 88%)"}`,
+                        boxShadow: highContrast ? "none" : isExpanded
+                          ? "0 12px 32px -12px hsl(14 82% 51% / 0.35)"
+                          : "0 2px 8px -4px rgba(0,0,0,0.08)",
+                      }}
+                    >
+                      {/* Header row (always visible, tap to expand) */}
+                      <button
+                        onClick={() => setExpandedId(isExpanded ? null : d.id)}
+                        className="w-full text-left p-4"
+                      >
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="min-w-0 flex-1">
+                            <div className="text-lg font-extrabold truncate" style={{ color: textMain }}>
+                              {cName || d.associated_name || "Entrega"}
+                            </div>
+                            <div className="flex items-center gap-2 mt-1 flex-wrap">
+                              <span
+                                className="inline-flex px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider"
+                                style={{ background: catColor + "22", color: catColor }}
+                              >
+                                {catName}
+                              </span>
+                              {isFinished && d.closed_at && (
+                                <span className="inline-flex items-center gap-1 text-[10px] font-semibold" style={{ color: textMuted }}>
+                                  <Clock className="h-3 w-3" />
+                                  {formatTime(d.closed_at)}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-1.5">
+                            <span className={`px-2.5 py-1 rounded-md border text-[10px] font-bold uppercase tracking-wider ${STATUS_STYLES[d.status] || ""}`}>
+                              {d.status}
+                            </span>
+                            {!isFinished && (
+                              <motion.span animate={{ rotate: isExpanded ? 180 : 0 }} transition={{ duration: 0.2 }}>
+                                <ChevronDown className="h-4 w-4" style={{ color: textMuted }} />
+                              </motion.span>
+                            )}
+                          </div>
                         </div>
-                        <span
-                          className="inline-flex mt-1 px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider"
-                          style={{ background: catColor + "22", color: catColor }}
-                        >
-                          {catName}
-                        </span>
-                      </div>
-                      <span className={`px-2.5 py-1 rounded-md border text-[10px] font-bold uppercase tracking-wider ${STATUS_STYLES[d.status] || ""}`}>
-                        {d.status}
-                      </span>
-                    </div>
 
-                    {d.address && (
-                      <div className="flex items-start gap-2 text-sm" style={{ color: textMain }}>
-                        <MapPin className="h-4 w-4 mt-0.5 flex-shrink-0" style={{ color: ORANGE }} />
-                        <span className="font-medium">{d.address}</span>
-                      </div>
-                    )}
-
-                    {(reqName || phone) && (
-                      <div className="rounded-lg p-3 space-y-2" style={{ background: highContrast ? "#161616" : "hsl(210 20% 97%)" }}>
-                        {reqName && (
-                          <div className="flex items-center justify-between text-sm">
-                            <span style={{ color: textMuted }}>Solicitado por:</span>
-                            <span className="font-bold" style={{ color: textMain }}>{reqName}</span>
+                        {d.address && (
+                          <div className="flex items-start gap-2 text-sm mt-3" style={{ color: textMain }}>
+                            <MapPin className="h-4 w-4 mt-0.5 flex-shrink-0" style={{ color: ORANGE }} />
+                            <span className="font-medium">{d.address}</span>
                           </div>
                         )}
-                        {phone && (
-                          <div className="flex items-center justify-between text-sm">
-                            <span style={{ color: textMuted }}>Telefone do Recebedor:</span>
-                            <span className="font-bold" style={{ color: textMain }}>{phone}</span>
-                          </div>
-                        )}
-                        {cleanPhone && (
-                          <div className="grid grid-cols-2 gap-2 pt-1">
-                            <a
-                              href={`tel:${cleanPhone}`}
-                              className="rounded-lg py-2.5 flex items-center justify-center gap-1.5 text-sm font-bold"
-                              style={{ background: TEAL, color: "#ffffff" }}
-                            >
-                              <Phone className="h-4 w-4" /> Ligar
-                            </a>
-                            <a
-                              href={`https://wa.me/55${cleanPhone}`}
-                              target="_blank"
-                              rel="noreferrer"
-                              className="rounded-lg py-2.5 flex items-center justify-center gap-1.5 text-sm font-bold"
-                              style={{ background: "hsl(142 70% 40%)", color: "#ffffff" }}
-                            >
-                              <MessageCircle className="h-4 w-4" /> WhatsApp
-                            </a>
-                          </div>
-                        )}
-                      </div>
-                    )}
-                  </div>
-
-                  <div className="p-4 pt-0">
-                    {d.status === "Pendente" && (
-                      <button
-                        onClick={() => startRoute(d.id)}
-                        className="w-full rounded-xl py-3.5 flex items-center justify-center gap-2 text-sm font-extrabold uppercase tracking-wide"
-                        style={{ background: "hsl(220 90% 55%)", color: "#ffffff" }}
-                      >
-                        <PlayCircle className="h-5 w-5" /> Iniciar deslocamento (em rota)
                       </button>
-                    )}
-                    {d.status === "Em rota" && (
-                      <button
-                        onClick={() => finish(d.id)}
-                        className="w-full rounded-xl py-3.5 flex items-center justify-center gap-2 text-sm font-extrabold uppercase tracking-wide"
-                        style={{ background: "hsl(160 65% 38%)", color: "#ffffff" }}
-                      >
-                        <CheckCircle2 className="h-5 w-5" /> Finalizar entrega
-                      </button>
-                    )}
-                  </div>
-                </article>
-              );
-            })}
-          </div>
+
+                      {/* Expanded content: contacts + actions */}
+                      <AnimatePresence initial={false}>
+                        {(isExpanded && !isFinished) && (
+                          <motion.div
+                            initial={{ height: 0, opacity: 0 }}
+                            animate={{ height: "auto", opacity: 1 }}
+                            exit={{ height: 0, opacity: 0 }}
+                            transition={{ duration: 0.25, ease: "easeOut" }}
+                            className="overflow-hidden"
+                          >
+                            <div className="px-4 pb-4 space-y-3">
+                              {(reqName || phone) && (
+                                <div className="rounded-lg p-3 space-y-2" style={{ background: highContrast ? "#161616" : "hsl(210 20% 97%)" }}>
+                                  {reqName && (
+                                    <div className="flex items-center justify-between text-sm">
+                                      <span style={{ color: textMuted }}>Solicitado por:</span>
+                                      <span className="font-bold" style={{ color: textMain }}>{reqName}</span>
+                                    </div>
+                                  )}
+                                  {phone && (
+                                    <div className="flex items-center justify-between text-sm">
+                                      <span style={{ color: textMuted }}>Telefone:</span>
+                                      <span className="font-bold" style={{ color: textMain }}>{phone}</span>
+                                    </div>
+                                  )}
+                                  {cleanPhone && (
+                                    <div className="grid grid-cols-2 gap-2 pt-1">
+                                      <motion.a
+                                        whileTap={{ scale: 0.96 }}
+                                        href={`tel:${cleanPhone}`}
+                                        className="rounded-lg py-2.5 flex items-center justify-center gap-1.5 text-sm font-bold"
+                                        style={{ background: TEAL, color: "#ffffff" }}
+                                      >
+                                        <Phone className="h-4 w-4" /> Ligar
+                                      </motion.a>
+                                      <motion.a
+                                        whileTap={{ scale: 0.96 }}
+                                        href={`https://wa.me/55${cleanPhone}`}
+                                        target="_blank"
+                                        rel="noreferrer"
+                                        className="rounded-lg py-2.5 flex items-center justify-center gap-1.5 text-sm font-bold"
+                                        style={{ background: "hsl(142 70% 40%)", color: "#ffffff" }}
+                                      >
+                                        <MessageCircle className="h-4 w-4" /> WhatsApp
+                                      </motion.a>
+                                    </div>
+                                  )}
+                                </div>
+                              )}
+
+                              {mapsUrl && (
+                                <motion.a
+                                  whileTap={{ scale: 0.97 }}
+                                  href={mapsUrl}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                  className="w-full rounded-xl py-3 flex items-center justify-center gap-2 text-sm font-bold"
+                                  style={{ background: "hsl(210 15% 96%)", color: TEAL, border: "1px solid hsl(210 15% 88%)" }}
+                                >
+                                  <Navigation className="h-4 w-4" /> Abrir no Google Maps
+                                </motion.a>
+                              )}
+
+                              {d.status === "Pendente" && (
+                                <motion.button
+                                  whileTap={{ scale: 0.97 }}
+                                  onClick={() => startRoute(d.id)}
+                                  className="w-full rounded-xl py-3.5 flex items-center justify-center gap-2 text-sm font-extrabold uppercase tracking-wide"
+                                  style={{ background: "hsl(220 90% 55%)", color: "#ffffff", boxShadow: "0 8px 24px -10px hsl(220 90% 55% / 0.6)" }}
+                                >
+                                  <PlayCircle className="h-5 w-5" /> Iniciar deslocamento
+                                </motion.button>
+                              )}
+                              {d.status === "Em rota" && (
+                                <motion.button
+                                  whileTap={{ scale: 0.97 }}
+                                  onClick={() => finish(d.id)}
+                                  className="w-full rounded-xl py-3.5 flex items-center justify-center gap-2 text-sm font-extrabold uppercase tracking-wide"
+                                  style={{ background: "hsl(160 65% 38%)", color: "#ffffff", boxShadow: "0 8px 24px -10px hsl(160 65% 38% / 0.6)" }}
+                                >
+                                  <CheckCircle2 className="h-5 w-5" /> Finalizar entrega
+                                </motion.button>
+                              )}
+                            </div>
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+                    </motion.article>
+                  );
+                })}
+              </div>
+            </AnimatePresence>
+          </LayoutGroup>
         )}
       </main>
     </div>
