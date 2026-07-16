@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { Truck, Plus, Pencil, Trash2, Clock, MapPin, ClipboardList, CheckCircle2, Calendar as CalIcon, Search, LayoutGrid, List, Eye, EyeOff } from "lucide-react";
+import { Truck, Plus, Pencil, Trash2, Clock, MapPin, ClipboardList, CheckCircle2, Calendar as CalIcon, Search, LayoutGrid, List, Eye, EyeOff, Phone, MessageCircle, Bike, Car, HelpCircle, Package, PackageOpen, ClipboardCheck, Wrench, Camera, ShoppingBag, Box } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -11,17 +11,28 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from "@/contexts/AuthContext";
 import { useDeliveries, type Delivery } from "@/hooks/useDeliveries";
 import { useDrivers, useCompanies, useVehicles } from "@/hooks/useOperacional";
+import { useDeliveryCategories, type DeliveryCategory } from "@/hooks/useDeliveryCategories";
 import { cn } from "@/lib/utils";
 import OpKanbanBoard, { type KanbanColumn } from "@/components/operacional/OpKanbanBoard";
 import OpClosureDialog from "@/components/operacional/OpClosureDialog";
 import OpQuickActions from "@/components/operacional/OpQuickActions";
 import OpNotesPanel from "@/components/operacional/OpNotesPanel";
+import EntregasNav from "./op/EntregasNav";
+import "./op/cearagps.css";
 import { formatDateBR, formatDateTimeFullBR } from "@/lib/dateFormat";
 
-const TYPES = ["Entrega", "Vistoria", "Retirada", "Outro"];
 const PERIODS = ["Manhã", "Tarde", "Noite"];
 const STATUSES = ["Pendente", "Em rota", "Finalizado", "Cancelado"];
 const TERMINAL = "Finalizado";
+const VEHICLE_REQUIRED = [
+  { value: "qualquer", label: "Qualquer", icon: HelpCircle },
+  { value: "moto", label: "Moto", icon: Bike },
+  { value: "carro", label: "Carro", icon: Car },
+];
+
+const CATEGORY_ICON_MAP: Record<string, any> = {
+  Package, PackageOpen, ClipboardCheck, Truck, Bike, Car, Wrench, Camera, MapPin, ShoppingBag, Box,
+};
 
 const STATUS_COLORS: Record<string, string> = {
   "Pendente": "bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300",
