@@ -44,7 +44,7 @@ export default function EntregasPin() {
     if (!d.pin) return toast.error("Este motorista não tem PIN cadastrado. Peça ao admin.");
     if (d.pin !== driverPin.trim()) return toast.error("PIN inválido");
     setProfile({ type: "motorista", id: d.id, name: d.name, phone: d.phone });
-    navigate("/op/entregas");
+    navigate("/op/entregas/minhas");
   };
 
   const loginRequester = () => {

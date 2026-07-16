@@ -209,7 +209,7 @@ const App = () => (
                       <Route path="/setores" element={<MenuGuard menuKey="setores"><AdminRoute><Setores /></AdminRoute></MenuGuard>} />
                       <Route path="/op/cadastros" element={<MenuGuard menuKey="op-cadastros"><OpCadastros /></MenuGuard>} />
                       <Route path="/op/entregas/pin" element={<MenuGuard menuKey="op-entregas"><EntregasProfileProvider><EntregasPin /></EntregasProfileProvider></MenuGuard>} />
-                      <Route path="/op/entregas" element={<MenuGuard menuKey="op-entregas"><EntregasProfileProvider><EntregasGuard><OpEntregas /></EntregasGuard></EntregasProfileProvider></MenuGuard>} />
+                      <Route path="/op/entregas" element={<MenuGuard menuKey="op-entregas"><EntregasProfileProvider><EntregasGuard allow={["admin"]}><OpEntregas /></EntregasGuard></EntregasProfileProvider></MenuGuard>} />
                       <Route path="/op/entregas/motoristas" element={<MenuGuard menuKey="op-entregas"><EntregasProfileProvider><EntregasGuard allow={["admin"]}><OpEntregasMotoristas /></EntregasGuard></EntregasProfileProvider></MenuGuard>} />
                       <Route path="/op/entregas/categorias" element={<MenuGuard menuKey="op-entregas"><EntregasProfileProvider><EntregasGuard allow={["admin"]}><OpEntregasCategorias /></EntregasGuard></EntregasProfileProvider></MenuGuard>} />
                       <Route path="/op/entregas/solicitantes" element={<MenuGuard menuKey="op-entregas"><EntregasProfileProvider><EntregasGuard allow={["admin"]}><OpEntregasSolicitantes /></EntregasGuard></EntregasProfileProvider></MenuGuard>} />
