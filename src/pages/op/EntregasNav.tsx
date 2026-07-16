@@ -25,7 +25,7 @@ export default function EntregasNav() {
         { to: "/op/entregas/solicitar", label: "Nova solicitação", icon: ClipboardList },
         { to: "/op/entregas/minhas", label: "Minhas entregas", icon: LayoutGrid },
       ]
-    : [{ to: "/op/entregas", label: "Minhas entregas", icon: LayoutGrid }];
+    : [{ to: "/op/entregas/minhas", label: "Minhas entregas", icon: LayoutGrid }];
 
   const roleColor =
     profile?.type === "admin" ? "bg-slate-800 text-white"
