@@ -469,9 +469,11 @@ function DriverChip({ active, onClick, label }: { active: boolean; onClick: () =
   );
 }
 
-function DeliveryModal({ open, onOpenChange, editing, drivers, companies, vehicles, onSubmit, onStatusChange, onDelete }: {
+function DeliveryModal({ open, onOpenChange, editing, drivers, companies, vehicles, categories, defaultRequester, onSubmit, onStatusChange, onDelete }: {
   open: boolean; onOpenChange: (b: boolean) => void; editing: Delivery | null;
   drivers: any[]; companies: any[]; vehicles: any[];
+  categories: DeliveryCategory[];
+  defaultRequester?: string;
   onSubmit: (p: Partial<Delivery>) => Promise<void>;
   onStatusChange: (d: Delivery, newStatus: string) => void;
   onDelete: (id: string) => void;
@@ -481,10 +483,19 @@ function DeliveryModal({ open, onOpenChange, editing, drivers, companies, vehicl
   useMemo(() => {
     if (open) setForm(editing ? { ...editing } : {
       type: "Entrega", period: "Manhã", status: "Pendente", scheduled_date: todayISO(),
+      vehicle_required: "qualquer", requester_name: defaultRequester || "",
     });
   }, [open, editing]);
 
   const setF = (k: keyof Delivery, v: any) => setForm(p => ({ ...p, [k]: v }));
+
+  const handleSubmit = () => {
+    if (!form.scheduled_date) return;
+    // Sync legacy type with category name for compat
+    const cat = categories.find(c => c.id === form.category_id);
+    const payload = { ...form, type: cat?.name || form.type || "Entrega" };
+    onSubmit(payload);
+  };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -494,7 +505,7 @@ function DeliveryModal({ open, onOpenChange, editing, drivers, companies, vehicl
             <span>{editing ? "Detalhes da entrega" : "Nova entrega"}</span>
             {editing && (
               <div className="flex items-center gap-2">
-                <OpQuickActions phone={editing.contact_phone} address={editing.address} />
+                <OpQuickActions phone={editing.receiver_phone || editing.contact_phone} address={editing.address} />
               </div>
             )}
           </DialogTitle>
@@ -519,22 +530,22 @@ function DeliveryModal({ open, onOpenChange, editing, drivers, companies, vehicl
               <SelectContent>{companies.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}</SelectContent>
             </Select>
           </div>
+          <div><Label>Categoria do serviço</Label>
+            <Select value={form.category_id || ""} onValueChange={v => setF("category_id", v)}>
+              <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
+              <SelectContent>{categories.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}</SelectContent>
+            </Select>
+          </div>
           <div><Label>Motorista</Label>
             <Select value={form.driver_id || ""} onValueChange={v => setF("driver_id", v)}>
-              <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
+              <SelectTrigger><SelectValue placeholder="Sem motorista" /></SelectTrigger>
               <SelectContent>{drivers.map(d => <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>)}</SelectContent>
             </Select>
           </div>
-          <div><Label>Veículo</Label>
-            <Select value={form.vehicle_id || ""} onValueChange={v => setF("vehicle_id", v)}>
-              <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
-              <SelectContent>{vehicles.map(v => <SelectItem key={v.id} value={v.id}>{v.plate} {v.model && `· ${v.model}`}</SelectItem>)}</SelectContent>
-            </Select>
-          </div>
-          <div><Label>Tipo</Label>
-            <Select value={form.type} onValueChange={v => setF("type", v)}>
+          <div><Label>Veículo exigido</Label>
+            <Select value={form.vehicle_required || "qualquer"} onValueChange={v => setF("vehicle_required", v)}>
               <SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent>{TYPES.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent>
+              <SelectContent>{VEHICLE_REQUIRED.map(v => <SelectItem key={v.value} value={v.value}>{v.label}</SelectItem>)}</SelectContent>
             </Select>
           </div>
           <div><Label>Período</Label>
@@ -549,14 +560,14 @@ function DeliveryModal({ open, onOpenChange, editing, drivers, companies, vehicl
           <div className="md:col-span-2"><Label>Endereço</Label>
             <Input value={form.address || ""} onChange={e => setF("address", e.target.value)} />
           </div>
-          <div><Label>Associado</Label>
-            <Input value={form.associated_name || ""} onChange={e => setF("associated_name", e.target.value)} />
+          <div><Label>Nome do solicitante</Label>
+            <Input value={form.requester_name || ""} onChange={e => setF("requester_name", e.target.value)} placeholder="Quem pediu o serviço" />
           </div>
-          <div><Label>Contato</Label>
-            <Input value={form.contact_name || ""} onChange={e => setF("contact_name", e.target.value)} />
+          <div><Label>Nome do recebedor</Label>
+            <Input value={form.contact_name || ""} onChange={e => setF("contact_name", e.target.value)} placeholder="Quem vai receber" />
           </div>
-          <div><Label>Telefone</Label>
-            <Input value={form.contact_phone || ""} onChange={e => setF("contact_phone", e.target.value)} />
+          <div><Label>Telefone do recebedor *</Label>
+            <Input value={form.receiver_phone || ""} onChange={e => setF("receiver_phone", e.target.value)} placeholder="(85) 9 9999-9999" />
           </div>
           <div><Label>Status</Label>
             <Select
@@ -592,7 +603,7 @@ function DeliveryModal({ open, onOpenChange, editing, drivers, companies, vehicl
             </Button>
           )}
           <Button variant="outline" onClick={() => onOpenChange(false)}>Fechar</Button>
-          <Button onClick={() => { if (!form.scheduled_date) return; onSubmit(form); }}>{editing ? "Salvar" : "Criar"}</Button>
+          <Button onClick={handleSubmit} className="cgps-btn-primary">{editing ? "Salvar" : "Criar"}</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
