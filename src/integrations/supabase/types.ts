@@ -1179,6 +1179,9 @@ export type Database = {
           notes: string | null
           organization_id: string
           period: string
+          photos: string[]
+          receiver_document: string | null
+          receiver_name: string | null
           receiver_phone: string | null
           requester_name: string | null
           scheduled_date: string
@@ -1205,6 +1208,9 @@ export type Database = {
           notes?: string | null
           organization_id: string
           period?: string
+          photos?: string[]
+          receiver_document?: string | null
+          receiver_name?: string | null
           receiver_phone?: string | null
           requester_name?: string | null
           scheduled_date: string
@@ -1231,6 +1237,9 @@ export type Database = {
           notes?: string | null
           organization_id?: string
           period?: string
+          photos?: string[]
+          receiver_document?: string | null
+          receiver_name?: string | null
           receiver_phone?: string | null
           requester_name?: string | null
           scheduled_date?: string
