@@ -89,6 +89,19 @@ export default function OpEntregasMinhas() {
     setExpandedId(null);
   };
 
+  const reportProblem = (d: any) => {
+    const rPhone = requesterPhone(d)?.replace(/\D/g, "");
+    const rName = requesterName(d) || "solicitante";
+    const ref = companyName(d.company_id) || d.address || catNameOf(d.category_id) || "entrega";
+    const msg = `Olá ${rName}, sou o motorista responsável pela entrega "${ref}". Preciso relatar um problema/pedir uma informação:`;
+    if (rPhone) {
+      const withDdi = rPhone.length <= 11 ? `55${rPhone}` : rPhone;
+      window.open(`https://wa.me/${withDdi}?text=${encodeURIComponent(msg)}`, "_blank");
+    } else {
+      toast.error("Solicitante sem telefone cadastrado. Contate a equipe.");
+    }
+  };
+
   const catNameOf = (id?: string | null) => categories.find((c) => c.id === id)?.name;
   const catColorOf = (id?: string | null) => categories.find((c) => c.id === id)?.color || "#0d4a56";
   const companyName = (id?: string | null) => companies.find((c) => c.id === id)?.name;
