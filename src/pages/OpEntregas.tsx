@@ -94,7 +94,7 @@ export default function OpEntregas() {
       if (filterMode === "data" && d.scheduled_date !== filterDate) return false;
       if (activeDriver !== "all" && d.driver_id !== activeDriver) return false;
       if (statusFilter !== "all" && d.status !== statusFilter) return false;
-      if (typeFilter !== "all" && d.type !== typeFilter) return false;
+      if (typeFilter !== "all" && d.category_id !== typeFilter) return false;
 
       if (search) {
         const s = search.toLowerCase();
