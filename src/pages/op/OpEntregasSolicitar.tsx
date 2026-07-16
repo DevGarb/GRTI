@@ -69,6 +69,19 @@ export default function OpEntregasSolicitar() {
 
         <div className="bg-white border rounded-xl p-5 space-y-4">
           <div>
+            <Label className="flex items-center gap-1.5">
+              <Building2 className="h-4 w-4" style={{ color: "hsl(191 74% 20%)" }} />
+              Empresa solicitante *
+            </Label>
+            <Select value={form.company_id} onValueChange={(v) => setForm((p) => ({ ...p, company_id: v }))}>
+              <SelectTrigger><SelectValue placeholder="Escolha a empresa" /></SelectTrigger>
+              <SelectContent>
+                {companies.map((c) => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div>
             <Label>Categoria *</Label>
             <Select value={form.category_id} onValueChange={(v) => setForm((p) => ({ ...p, category_id: v }))}>
               <SelectTrigger><SelectValue placeholder="Escolha o tipo de serviço" /></SelectTrigger>
