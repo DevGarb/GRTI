@@ -5,7 +5,6 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useAuth } from "@/contexts/AuthContext";
 import { useDrivers } from "@/hooks/useOperacional";
 import { useDeliveryRequesters } from "@/hooks/useDeliveryRequesters";
@@ -21,9 +20,7 @@ export default function EntregasPin() {
   const { items: requesters } = useDeliveryRequesters();
   const { setProfile } = useEntregasProfile();
 
-  const [driverId, setDriverId] = useState("");
   const [driverPin, setDriverPin] = useState("");
-  const [reqId, setReqId] = useState("");
   const [reqPin, setReqPin] = useState("");
 
   const activeDrivers = drivers.filter((d) => d.is_active);
@@ -39,19 +36,23 @@ export default function EntregasPin() {
   };
 
   const loginDriver = () => {
-    const d = activeDrivers.find((x) => x.id === driverId);
-    if (!d) return toast.error("Selecione um motorista");
-    if (!d.pin) return toast.error("Este motorista não tem PIN cadastrado. Peça ao admin.");
-    if (d.pin !== driverPin.trim()) return toast.error("PIN inválido");
+    const pin = driverPin.trim();
+    if (!pin) return toast.error("Informe o PIN");
+    const matches = activeDrivers.filter((d) => d.pin && d.pin === pin);
+    if (matches.length === 0) return toast.error("PIN inválido");
+    if (matches.length > 1) return toast.error("PIN duplicado. Contate o admin.");
+    const d = matches[0];
     setProfile({ type: "motorista", id: d.id, name: d.name, phone: d.phone });
     navigate("/op/entregas/minhas");
   };
 
   const loginRequester = () => {
-    const r = activeRequesters.find((x) => x.id === reqId);
-    if (!r) return toast.error("Selecione um solicitante");
-    if (!r.pin) return toast.error("Este solicitante não tem PIN cadastrado. Peça ao admin.");
-    if (r.pin !== reqPin.trim()) return toast.error("PIN inválido");
+    const pin = reqPin.trim();
+    if (!pin) return toast.error("Informe o PIN");
+    const matches = activeRequesters.filter((r) => r.pin && r.pin === pin);
+    if (matches.length === 0) return toast.error("PIN inválido");
+    if (matches.length > 1) return toast.error("PIN duplicado. Contate o admin.");
+    const r = matches[0];
     setProfile({ type: "solicitante", id: r.id, name: r.name, phone: r.phone });
     navigate("/op/entregas/solicitar");
   };
@@ -80,18 +81,18 @@ export default function EntregasPin() {
 
           <TabsContent value="motorista" className="space-y-3">
             <div>
-              <Label>Motorista</Label>
-              <Select value={driverId} onValueChange={setDriverId}>
-                <SelectTrigger><SelectValue placeholder="Selecione seu nome" /></SelectTrigger>
-                <SelectContent>
-                  {activeDrivers.length === 0 && <div className="p-2 text-xs text-muted-foreground">Nenhum motorista ativo</div>}
-                  {activeDrivers.map((d) => <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>)}
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <Label>PIN</Label>
-              <Input type="password" inputMode="numeric" maxLength={6} value={driverPin} onChange={(e) => setDriverPin(e.target.value.replace(/\D/g, ""))} placeholder="••••" className="text-center text-lg tracking-widest" />
+              <Label>PIN do motorista</Label>
+              <Input
+                type="password"
+                inputMode="numeric"
+                maxLength={6}
+                value={driverPin}
+                onChange={(e) => setDriverPin(e.target.value.replace(/\D/g, ""))}
+                onKeyDown={(e) => e.key === "Enter" && loginDriver()}
+                placeholder="••••"
+                className="text-center text-2xl tracking-[0.5em] h-14"
+                autoFocus
+              />
             </div>
             <Button onClick={loginDriver} className="w-full cgps-btn-primary">
               Entrar como motorista <ArrowRight className="h-4 w-4 ml-1" />
@@ -100,18 +101,17 @@ export default function EntregasPin() {
 
           <TabsContent value="solicitante" className="space-y-3">
             <div>
-              <Label>Solicitante</Label>
-              <Select value={reqId} onValueChange={setReqId}>
-                <SelectTrigger><SelectValue placeholder="Selecione seu nome" /></SelectTrigger>
-                <SelectContent>
-                  {activeRequesters.length === 0 && <div className="p-2 text-xs text-muted-foreground">Nenhum solicitante cadastrado</div>}
-                  {activeRequesters.map((r) => <SelectItem key={r.id} value={r.id}>{r.name}</SelectItem>)}
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <Label>PIN</Label>
-              <Input type="password" inputMode="numeric" maxLength={6} value={reqPin} onChange={(e) => setReqPin(e.target.value.replace(/\D/g, ""))} placeholder="••••" className="text-center text-lg tracking-widest" />
+              <Label>PIN do solicitante</Label>
+              <Input
+                type="password"
+                inputMode="numeric"
+                maxLength={6}
+                value={reqPin}
+                onChange={(e) => setReqPin(e.target.value.replace(/\D/g, ""))}
+                onKeyDown={(e) => e.key === "Enter" && loginRequester()}
+                placeholder="••••"
+                className="text-center text-2xl tracking-[0.5em] h-14"
+              />
             </div>
             <Button onClick={loginRequester} className="w-full cgps-btn-primary">
               Entrar como solicitante <ArrowRight className="h-4 w-4 ml-1" />
