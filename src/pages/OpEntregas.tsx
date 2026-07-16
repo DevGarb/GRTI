@@ -234,59 +234,127 @@ export default function OpEntregas() {
 
   const renderKanbanCard = (d: Delivery) => {
     const company = companies.find(c => c.id === d.company_id);
-    const driver = drivers.find(x => x.id === d.driver_id);
     const carried = isCarriedOver(d);
     const cat = categories.find(c => c.id === d.category_id);
     const CatIcon = cat ? (CATEGORY_ICON_MAP[cat.icon] || Package) : Package;
-    const vr = VEHICLE_REQUIRED.find(v => v.value === (d.vehicle_required || "qualquer"));
-    const VIcon = vr?.icon || HelpCircle;
+    const vr = VEHICLE_BADGE[d.vehicle_required || "qualquer"] || VEHICLE_BADGE.qualquer;
+    const pill = CARD_STATUS_PILL(d);
     return (
-      <div onClick={() => openEdit(d)}>
-        <div className="flex items-start gap-2 mb-2">
-          <div className="flex-1 min-w-0">
-            <div className="font-semibold text-sm truncate">{company?.name || "Sem empresa"}</div>
-            <div className={cn("text-[11px] truncate", carried ? "text-rose-500 font-medium" : "text-muted-foreground")}>
-              {formatDateBR(d.scheduled_date)} · {d.period}{carried && " · atrasada"}
-            </div>
+      <div onClick={() => openEdit(d)} className="space-y-2">
+        {/* Header: company + star */}
+        <div className="flex items-start justify-between gap-2">
+          <div className="font-bold text-[15px] leading-tight truncate">{company?.name || "Sem empresa"}</div>
+          <Star className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+        </div>
+
+        {/* Category badge */}
+        {cat ? (
+          <div
+            className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-1 rounded"
+            style={{ background: cat.color + "22", color: cat.color }}
+          >
+            <CatIcon className="h-3 w-3" />
+            {cat.name.toUpperCase()}
           </div>
-          {cat ? (
-            <Badge
-              className="text-[10px] border-0 gap-1"
-              style={{ background: cat.color + "22", color: cat.color }}
+        ) : (
+          <Badge variant="outline" className="text-[10px]">{d.type}</Badge>
+        )}
+
+        {/* Address */}
+        {d.address && (
+          <div className="flex items-start gap-1.5 text-[12px] text-muted-foreground">
+            <MapPin className="h-3.5 w-3.5 mt-0.5 flex-shrink-0" />
+            <span className="line-clamp-2">{d.address}</span>
+          </div>
+        )}
+
+        {/* Info rows */}
+        <div className="space-y-1 pt-1 text-[12px]">
+          {d.requester_name && (
+            <div className="flex justify-between gap-2">
+              <span className="text-muted-foreground">Solicitante:</span>
+              <span className="font-semibold truncate text-right">{d.requester_name}</span>
+            </div>
+          )}
+          <div className="flex justify-between gap-2 items-center">
+            <span className="text-muted-foreground">Veículo Necessário:</span>
+            <span
+              className="text-[10px] font-bold px-2 py-0.5 rounded"
+              style={{ background: vr.bg, color: vr.color }}
             >
-              <CatIcon className="h-3 w-3" />
-              {cat.name}
-            </Badge>
-          ) : (
-            <Badge variant="outline" className="text-[10px]">{d.type}</Badge>
+              {vr.label}
+            </span>
+          </div>
+          {(d.receiver_phone || d.contact_name) && (
+            <div className="flex justify-between gap-2">
+              <span className="text-muted-foreground">Recebedor:</span>
+              <span className="font-semibold truncate text-right">
+                {d.contact_name || d.receiver_phone}
+              </span>
+            </div>
           )}
         </div>
-        {d.address && (
-          <div className="text-xs text-muted-foreground line-clamp-2 mb-1">📍 {d.address}</div>
-        )}
-        <div className="flex items-center gap-2 text-[11px] text-muted-foreground mb-1">
-          <VIcon className="h-3 w-3" />
-          <span>Exige: {vr?.label}</span>
-          {driver && <span className="truncate">· 🛵 {driver.name}</span>}
-        </div>
-        {d.requester_name && (
-          <div className="text-[11px] text-muted-foreground truncate mb-1">
-            Solicitado por: <span className="font-medium">{d.requester_name}</span>
+
+        {/* Footer: date + status pill */}
+        <div className="flex items-center justify-between pt-2 border-t">
+          <div className={cn("flex items-center gap-1.5 text-[11px]", carried ? "text-rose-600 font-semibold" : "text-muted-foreground")}>
+            <CalIcon className="h-3.5 w-3.5" />
+            {formatDateBR(d.scheduled_date)} ({d.period}){carried && " · atrasada"}
           </div>
-        )}
-        {(d.contact_name || d.receiver_phone) && (
-          <div className="text-[11px] text-muted-foreground truncate mb-2 flex items-center gap-1">
-            <Phone className="h-3 w-3" />
-            {d.contact_name || "Recebedor"} {d.receiver_phone && `· ${d.receiver_phone}`}
-          </div>
-        )}
-        <div className="flex items-center justify-between">
-          <Badge className={cn("text-[10px] font-normal", STATUS_COLORS[d.status])}>{d.status}</Badge>
-          <OpQuickActions phone={d.receiver_phone || d.contact_phone} address={d.address} size="icon" />
+          <span
+            className="text-[10px] font-bold px-2 py-1 rounded"
+            style={{ background: pill.bg, color: pill.color }}
+          >
+            {pill.label}
+          </span>
         </div>
       </div>
     );
   };
+
+  const renderKanbanHeader = (col: KanbanColumn, count: number) => {
+    if (col.id === PENDING_COL) {
+      return (
+        <div className="bg-white border rounded-t-lg px-3 py-2.5 flex items-center justify-between">
+          <span className="text-[11px] font-bold tracking-wide text-muted-foreground">SEM ATRIBUIÇÃO</span>
+          <span className="text-[11px] font-bold bg-muted rounded-full px-2 py-0.5">{count}</span>
+        </div>
+      );
+    }
+    if (col.id === FINALIZED_COL) {
+      return (
+        <div className="bg-emerald-600 text-white rounded-t-lg px-3 py-2.5 flex items-center justify-between">
+          <span className="text-[11px] font-bold tracking-wide">FINALIZADAS</span>
+          <span className="text-[11px] font-bold bg-white/20 rounded-full px-2 py-0.5">{count}</span>
+        </div>
+      );
+    }
+    const driverId = col.id.slice("driver:".length);
+    const driver = drivers.find(x => x.id === driverId);
+    const initials = (driver?.name || "?").split(" ").filter(Boolean).slice(0, 2).map(s => s[0]).join("").toUpperCase();
+    const vType = (driver?.default_vehicle_type || "").toLowerCase();
+    const vLabel = vType === "moto" ? "Moto" : vType === "carro" ? "Carro" : "Veículo";
+    const r = driverRatings[driverId];
+    const avg = r ? r.avg.toFixed(1) : "—";
+    return (
+      <div className="bg-white border rounded-t-lg px-3 py-2 flex items-center gap-2">
+        <div className="h-9 w-9 rounded-full bg-slate-800 text-white text-[12px] font-bold flex items-center justify-center flex-shrink-0">
+          {initials}
+        </div>
+        <div className="flex-1 min-w-0">
+          <div className="font-semibold text-[13px] truncate">{driver?.name || col.label}</div>
+          <div className="text-[10px] text-muted-foreground flex items-center gap-1">
+            {vLabel} · Média: {avg}
+            <Star className="h-2.5 w-2.5 fill-amber-400 text-amber-400" />
+          </div>
+        </div>
+        <span className="text-[11px] font-bold bg-slate-800 text-white rounded-full h-6 min-w-6 px-1.5 flex items-center justify-center">
+          {count}
+        </span>
+      </div>
+    );
+  };
+
 
 
   return (
