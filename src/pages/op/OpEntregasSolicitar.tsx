@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import EntregasNav from "./EntregasNav";
 import { Button } from "@/components/ui/button";
@@ -9,8 +9,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { useDeliveries } from "@/hooks/useDeliveries";
 import { useDeliveryCategories } from "@/hooks/useDeliveryCategories";
+import { useCompanies } from "@/hooks/useOperacional";
 import { useEntregasProfile } from "@/contexts/EntregasProfileContext";
-import { Bike, Car, HelpCircle, MapPin, Phone, Send } from "lucide-react";
+import { Bike, Car, HelpCircle, MapPin, Phone, Send, Building2 } from "lucide-react";
 import { toast } from "sonner";
 
 const VEHICLE_REQUIRED = [
@@ -27,9 +28,11 @@ export default function OpEntregasSolicitar() {
   const { profile } = useEntregasProfile();
   const { add } = useDeliveries();
   const { activeItems: categories } = useDeliveryCategories();
+  const { items: companies } = useCompanies();
 
   const [form, setForm] = useState({
     category_id: "",
+    company_id: "",
     address: "",
     contact_name: "",
     contact_phone: profile?.phone || "",
@@ -41,6 +44,7 @@ export default function OpEntregasSolicitar() {
   });
 
   const submit = async () => {
+    if (!form.company_id) return toast.error("Escolha a empresa solicitante");
     if (!form.category_id) return toast.error("Escolha a categoria");
     if (!form.address.trim()) return toast.error("Informe o endereço");
     const res = await add({
@@ -64,6 +68,19 @@ export default function OpEntregasSolicitar() {
         </div>
 
         <div className="bg-white border rounded-xl p-5 space-y-4">
+          <div>
+            <Label className="flex items-center gap-1.5">
+              <Building2 className="h-4 w-4" style={{ color: "hsl(191 74% 20%)" }} />
+              Empresa solicitante *
+            </Label>
+            <Select value={form.company_id} onValueChange={(v) => setForm((p) => ({ ...p, company_id: v }))}>
+              <SelectTrigger><SelectValue placeholder="Escolha a empresa" /></SelectTrigger>
+              <SelectContent>
+                {companies.map((c) => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
+
           <div>
             <Label>Categoria *</Label>
             <Select value={form.category_id} onValueChange={(v) => setForm((p) => ({ ...p, category_id: v }))}>
