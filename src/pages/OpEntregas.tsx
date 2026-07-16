@@ -54,7 +54,13 @@ function todayISO() { return new Date().toISOString().slice(0, 10); }
 
 export default function OpEntregas() {
   const { user, profile } = useAuth();
-  const { items, loading, add, update, remove } = useDeliveries();
+  const { items: allItems, loading, add, update, remove } = useDeliveries();
+  const { profile: entregasProfile } = useEntregasProfile();
+  const items = useMemo(() => {
+    if (!entregasProfile) return allItems;
+    if (entregasProfile.type === "motorista") return allItems.filter(d => d.driver_id === entregasProfile.id);
+    return allItems;
+  }, [allItems, entregasProfile]);
   const { items: drivers } = useDrivers();
   const { items: companies } = useCompanies();
   const { items: vehicles } = useVehicles();
