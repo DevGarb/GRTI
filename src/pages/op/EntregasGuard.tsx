@@ -23,7 +23,12 @@ export default function EntregasGuard({
     return <Navigate to="/op/entregas/pin" replace />;
   }
   if (allow && !allow.includes(profile.type)) {
-    return <Navigate to="/op/entregas/pin" replace />;
+    // Route not allowed for this profile — send to their home
+    const home =
+      profile.type === "admin" ? "/op/entregas"
+      : profile.type === "solicitante" ? "/op/entregas/solicitar"
+      : "/op/entregas/minhas";
+    return <Navigate to={home} replace />;
   }
   return <>{children}</>;
 }
