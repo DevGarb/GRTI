@@ -438,6 +438,7 @@ export default function OpEntregas() {
         onConfirm={confirmClosure}
       />
     </div>
+    </div>
   );
 }
 
