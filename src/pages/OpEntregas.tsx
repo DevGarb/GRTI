@@ -173,15 +173,16 @@ export default function OpEntregas() {
   }, [filtered]);
 
   const kanbanColumns = useMemo<KanbanColumn[]>(() => {
-    const cols: KanbanColumn[] = [{ id: PENDING_COL, label: "Pendente", color: "bg-amber-500" }];
+    const cols: KanbanColumn[] = [{ id: PENDING_COL, label: "SEM ATRIBUIÇÃO" }];
     drivers.filter(d => d.is_active).forEach(d => {
-      cols.push({ id: `driver:${d.id}`, label: d.name, color: "bg-blue-500" });
+      cols.push({ id: `driver:${d.id}`, label: d.name });
     });
     if (!hideFinalized) {
-      cols.push({ id: FINALIZED_COL, label: "Finalizado", color: "bg-emerald-600" });
+      cols.push({ id: FINALIZED_COL, label: "FINALIZADAS" });
     }
     return cols;
   }, [drivers, hideFinalized]);
+
 
   const itemsByCol = useMemo(() => {
     const map: Record<string, Delivery[]> = {};
