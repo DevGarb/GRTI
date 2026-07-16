@@ -28,9 +28,11 @@ export default function OpEntregasSolicitar() {
   const { profile } = useEntregasProfile();
   const { add } = useDeliveries();
   const { activeItems: categories } = useDeliveryCategories();
+  const { items: companies } = useCompanies();
 
   const [form, setForm] = useState({
     category_id: "",
+    company_id: "",
     address: "",
     contact_name: "",
     contact_phone: profile?.phone || "",
