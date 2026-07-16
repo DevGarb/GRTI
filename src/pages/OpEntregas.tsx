@@ -119,6 +119,7 @@ export default function OpEntregas() {
       setDriverRatings(result);
     })();
   }, [allItems]);
+  const monthStart = `${activeMonth}-01`;
 
   const isCarriedOver = (d: Delivery) =>
     d.scheduled_date < monthStart && d.status !== "Finalizado" && d.status !== "Cancelado";
