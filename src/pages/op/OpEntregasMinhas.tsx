@@ -93,6 +93,21 @@ export default function OpEntregasMinhas() {
   const catColorOf = (id?: string | null) => categories.find((c) => c.id === id)?.color || "#0d4a56";
   const companyName = (id?: string | null) => companies.find((c) => c.id === id)?.name;
   const requesterName = (d: any) => d.requester_name || requesters.find((r) => r.id === d.requester_id)?.name;
+  const requesterPhone = (d: any) => {
+    const name = d.requester_name;
+    if (name) return requesters.find((r) => r.name === name)?.phone || null;
+    return requesters.find((r) => r.id === d.requester_id)?.phone || null;
+  };
+  const vehicleLabel = (v?: string | null) => {
+    if (v === "moto") return { label: "Moto", Icon: Bike };
+    if (v === "carro") return { label: "Carro", Icon: Car };
+    return { label: "Qualquer", Icon: HelpCircle };
+  };
+  const formatDate = (d?: string | null) => {
+    if (!d) return "";
+    const [y, m, day] = d.split("-");
+    return `${day}/${m}/${y}`;
+  };
 
   const bg = highContrast ? "#000000" : "hsl(210 20% 96%)";
   const cardBg = highContrast ? "#0b0b0b" : "#ffffff";
