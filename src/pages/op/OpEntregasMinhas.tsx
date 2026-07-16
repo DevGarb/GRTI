@@ -410,6 +410,231 @@ export default function OpEntregasMinhas() {
           </LayoutGroup>
         )}
       </main>
+
+      <FinishDeliveryModal
+        deliveryId={finishingId}
+        highContrast={highContrast}
+        onClose={() => setFinishingId(null)}
+        onConfirm={handleFinishConfirm}
+      />
     </div>
+  );
+}
+
+// ============ Modal de finalização ============
+function FinishDeliveryModal({
+  deliveryId,
+  highContrast,
+  onClose,
+  onConfirm,
+}: {
+  deliveryId: string | null;
+  highContrast: boolean;
+  onClose: () => void;
+  onConfirm: (
+    id: string,
+    payload: { receiver_name: string; receiver_document?: string; notes?: string; photos: string[] }
+  ) => Promise<void>;
+}) {
+  const [receiverName, setReceiverName] = useState("");
+  const [receiverDoc, setReceiverDoc] = useState("");
+  const [notes, setNotes] = useState("");
+  const [photos, setPhotos] = useState<{ url: string; path: string }[]>([]);
+  const [uploading, setUploading] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const fileRef = useRef<HTMLInputElement | null>(null);
+
+  const isOpen = !!deliveryId;
+  const bg = highContrast ? "#0b0b0b" : "#ffffff";
+  const text = highContrast ? "#ffffff" : "hsl(222 20% 18%)";
+  const muted = highContrast ? "#b4b4b4" : "hsl(215 15% 45%)";
+  const inputBg = highContrast ? "#161616" : "hsl(210 20% 97%)";
+  const border = highContrast ? "#2a2a2a" : "hsl(210 15% 88%)";
+
+  const reset = () => {
+    setReceiverName(""); setReceiverDoc(""); setNotes(""); setPhotos([]);
+  };
+
+  const close = () => { if (!saving && !uploading) { reset(); onClose(); } };
+
+  const handleFiles = async (files: FileList | null) => {
+    if (!files || !deliveryId) return;
+    setUploading(true);
+    try {
+      const uploaded: { url: string; path: string }[] = [];
+      for (const file of Array.from(files)) {
+        const ext = file.name.split(".").pop() || "jpg";
+        const path = `${deliveryId}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
+        const { error } = await supabase.storage.from("delivery-photos").upload(path, file, {
+          cacheControl: "3600", upsert: false, contentType: file.type,
+        });
+        if (error) throw error;
+        const { data } = supabase.storage.from("delivery-photos").getPublicUrl(path);
+        uploaded.push({ url: data.publicUrl, path });
+      }
+      setPhotos((p) => [...p, ...uploaded]);
+    } catch (err: any) {
+      toast.error(err.message || "Falha ao enviar foto");
+    } finally {
+      setUploading(false);
+      if (fileRef.current) fileRef.current.value = "";
+    }
+  };
+
+  const removePhoto = async (path: string) => {
+    await supabase.storage.from("delivery-photos").remove([path]);
+    setPhotos((p) => p.filter((x) => x.path !== path));
+  };
+
+  const submit = async () => {
+    if (!deliveryId) return;
+    if (!receiverName.trim()) { toast.error("Informe o nome de quem recebeu"); return; }
+    setSaving(true);
+    try {
+      await onConfirm(deliveryId, {
+        receiver_name: receiverName.trim(),
+        receiver_document: receiverDoc.trim() || undefined,
+        notes: notes.trim() || undefined,
+        photos: photos.map((p) => p.url),
+      });
+      reset();
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <AnimatePresence>
+      {isOpen && (
+        <motion.div
+          initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+          className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4"
+          style={{ background: "rgba(0,0,0,0.6)" }}
+          onClick={close}
+        >
+          <motion.div
+            initial={{ y: 60, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: 60, opacity: 0 }}
+            transition={{ type: "spring", stiffness: 300, damping: 28 }}
+            onClick={(e) => e.stopPropagation()}
+            className="w-full sm:max-w-md rounded-t-3xl sm:rounded-3xl overflow-hidden max-h-[92vh] flex flex-col"
+            style={{ background: bg, color: text }}
+          >
+            <header className="px-5 py-4 flex items-center justify-between" style={{ background: TEAL, color: "#fff" }}>
+              <div className="flex items-center gap-2">
+                <CheckCircle2 className="h-5 w-5" />
+                <h2 className="font-extrabold text-base uppercase tracking-wide">Finalizar entrega</h2>
+              </div>
+              <button onClick={close} className="h-8 w-8 rounded-md flex items-center justify-center" style={{ background: "rgba(255,255,255,0.15)" }}>
+                <X className="h-4 w-4" />
+              </button>
+            </header>
+
+            <div className="p-5 space-y-4 overflow-y-auto">
+              <div>
+                <label className="text-[11px] font-bold uppercase tracking-wider block mb-1.5" style={{ color: muted }}>
+                  Quem recebeu? *
+                </label>
+                <div className="relative">
+                  <User className="h-4 w-4 absolute left-3 top-1/2 -translate-y-1/2" style={{ color: muted }} />
+                  <input
+                    value={receiverName}
+                    onChange={(e) => setReceiverName(e.target.value)}
+                    placeholder="Nome completo"
+                    className="w-full rounded-lg pl-9 pr-3 py-3 text-sm font-medium outline-none"
+                    style={{ background: inputBg, color: text, border: `1px solid ${border}` }}
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="text-[11px] font-bold uppercase tracking-wider block mb-1.5" style={{ color: muted }}>
+                  Documento (opcional)
+                </label>
+                <input
+                  value={receiverDoc}
+                  onChange={(e) => setReceiverDoc(e.target.value)}
+                  placeholder="RG, CPF ou matrícula"
+                  className="w-full rounded-lg px-3 py-3 text-sm font-medium outline-none"
+                  style={{ background: inputBg, color: text, border: `1px solid ${border}` }}
+                />
+              </div>
+
+              <div>
+                <label className="text-[11px] font-bold uppercase tracking-wider block mb-1.5" style={{ color: muted }}>
+                  Observações (opcional)
+                </label>
+                <textarea
+                  value={notes}
+                  onChange={(e) => setNotes(e.target.value)}
+                  rows={3}
+                  placeholder="Ex: entregue na portaria, cliente ausente..."
+                  className="w-full rounded-lg px-3 py-3 text-sm font-medium outline-none resize-none"
+                  style={{ background: inputBg, color: text, border: `1px solid ${border}` }}
+                />
+              </div>
+
+              <div>
+                <label className="text-[11px] font-bold uppercase tracking-wider block mb-1.5" style={{ color: muted }}>
+                  Fotos ({photos.length})
+                </label>
+                <div className="grid grid-cols-3 gap-2">
+                  {photos.map((p) => (
+                    <div key={p.path} className="relative aspect-square rounded-lg overflow-hidden" style={{ border: `1px solid ${border}` }}>
+                      <img src={p.url} alt="foto" className="w-full h-full object-cover" />
+                      <button
+                        onClick={() => removePhoto(p.path)}
+                        className="absolute top-1 right-1 h-6 w-6 rounded-md flex items-center justify-center"
+                        style={{ background: "rgba(0,0,0,0.7)", color: "#fff" }}
+                      >
+                        <Trash2 className="h-3 w-3" />
+                      </button>
+                    </div>
+                  ))}
+                  <button
+                    onClick={() => fileRef.current?.click()}
+                    disabled={uploading}
+                    className="aspect-square rounded-lg flex flex-col items-center justify-center gap-1 text-[10px] font-bold uppercase tracking-wider"
+                    style={{ background: inputBg, color: muted, border: `1.5px dashed ${border}` }}
+                  >
+                    {uploading ? <Loader2 className="h-5 w-5 animate-spin" /> : <Camera className="h-5 w-5" />}
+                    {uploading ? "Enviando" : "Adicionar"}
+                  </button>
+                </div>
+                <input
+                  ref={fileRef}
+                  type="file"
+                  accept="image/*"
+                  capture="environment"
+                  multiple
+                  className="hidden"
+                  onChange={(e) => handleFiles(e.target.files)}
+                />
+              </div>
+            </div>
+
+            <footer className="p-4 flex gap-2" style={{ borderTop: `1px solid ${border}` }}>
+              <button
+                onClick={close}
+                disabled={saving || uploading}
+                className="flex-1 rounded-xl py-3 text-sm font-bold uppercase tracking-wide"
+                style={{ background: inputBg, color: text, border: `1px solid ${border}` }}
+              >
+                Cancelar
+              </button>
+              <motion.button
+                whileTap={{ scale: 0.97 }}
+                onClick={submit}
+                disabled={saving || uploading || !receiverName.trim()}
+                className="flex-[2] rounded-xl py-3 flex items-center justify-center gap-2 text-sm font-extrabold uppercase tracking-wide disabled:opacity-50"
+                style={{ background: "hsl(160 65% 38%)", color: "#fff", boxShadow: "0 8px 24px -10px hsl(160 65% 38% / 0.6)" }}
+              >
+                {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
+                {saving ? "Salvando" : "Confirmar entrega"}
+              </motion.button>
+            </footer>
+          </motion.div>
+        </motion.div>
+      )}
+    </AnimatePresence>
   );
 }
