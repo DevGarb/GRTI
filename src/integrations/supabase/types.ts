@@ -1289,6 +1289,101 @@ export type Database = {
         }
         Relationships: []
       }
+      op_delivery_ratings: {
+        Row: {
+          comment: string | null
+          created_at: string
+          delivery_id: string
+          id: string
+          organization_id: string
+          rated_by_name: string | null
+          rated_by_type: string
+          rated_by_user: string | null
+          rating: number
+        }
+        Insert: {
+          comment?: string | null
+          created_at?: string
+          delivery_id: string
+          id?: string
+          organization_id: string
+          rated_by_name?: string | null
+          rated_by_type: string
+          rated_by_user?: string | null
+          rating: number
+        }
+        Update: {
+          comment?: string | null
+          created_at?: string
+          delivery_id?: string
+          id?: string
+          organization_id?: string
+          rated_by_name?: string | null
+          rated_by_type?: string
+          rated_by_user?: string | null
+          rating?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "op_delivery_ratings_delivery_id_fkey"
+            columns: ["delivery_id"]
+            isOneToOne: false
+            referencedRelation: "op_deliveries"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "op_delivery_ratings_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      op_delivery_requesters: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          is_active: boolean
+          name: string
+          organization_id: string
+          phone: string | null
+          pin: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_active?: boolean
+          name: string
+          organization_id: string
+          phone?: string | null
+          pin?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_active?: boolean
+          name?: string
+          organization_id?: string
+          phone?: string | null
+          pin?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "op_delivery_requesters_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       op_drivers: {
         Row: {
           created_at: string
@@ -1299,6 +1394,7 @@ export type Database = {
           name: string
           organization_id: string
           phone: string | null
+          pin: string | null
           updated_at: string
           user_id: string | null
         }
@@ -1311,6 +1407,7 @@ export type Database = {
           name: string
           organization_id: string
           phone?: string | null
+          pin?: string | null
           updated_at?: string
           user_id?: string | null
         }
@@ -1323,6 +1420,7 @@ export type Database = {
           name?: string
           organization_id?: string
           phone?: string | null
+          pin?: string | null
           updated_at?: string
           user_id?: string | null
         }

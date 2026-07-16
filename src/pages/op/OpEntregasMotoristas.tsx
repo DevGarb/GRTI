@@ -102,6 +102,11 @@ export default function OpEntregasMotoristas() {
                 <SelectContent>{VEHICLE_TYPES.map(v => <SelectItem key={v} value={v}>{v}</SelectItem>)}</SelectContent>
               </Select>
             </div>
+            <div>
+              <Label>PIN (4 a 6 dígitos)</Label>
+              <Input inputMode="numeric" maxLength={6} value={form.pin || ""} onChange={e => setForm(p => ({ ...p, pin: e.target.value.replace(/\D/g, "") }))} placeholder="ex.: 1234" />
+              <p className="text-xs text-muted-foreground mt-1">Usado pelo motorista para entrar no módulo de entregas.</p>
+            </div>
             <div className="flex items-center justify-between border rounded-md p-3">
               <div>
                 <div className="text-sm font-medium">Ativo</div>

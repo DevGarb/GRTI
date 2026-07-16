@@ -53,6 +53,12 @@ import OpCadastros from "@/pages/OpCadastros";
 import OpEntregas from "@/pages/OpEntregas";
 import OpEntregasMotoristas from "@/pages/op/OpEntregasMotoristas";
 import OpEntregasCategorias from "@/pages/op/OpEntregasCategorias";
+import OpEntregasSolicitantes from "@/pages/op/OpEntregasSolicitantes";
+import OpEntregasSolicitar from "@/pages/op/OpEntregasSolicitar";
+import OpEntregasMinhas from "@/pages/op/OpEntregasMinhas";
+import EntregasPin from "@/pages/op/EntregasPin";
+import EntregasGuard from "@/pages/op/EntregasGuard";
+import { EntregasProfileProvider } from "@/contexts/EntregasProfileContext";
 import OpOficina from "@/pages/OpOficina";
 import OpManutencao from "@/pages/OpManutencao";
 import NotFound from "./pages/NotFound";
@@ -202,9 +208,14 @@ const App = () => (
                       <Route path="/documentacao" element={<MenuGuard menuKey="documentacao"><AdminRoute><Documentacao /></AdminRoute></MenuGuard>} />
                       <Route path="/setores" element={<MenuGuard menuKey="setores"><AdminRoute><Setores /></AdminRoute></MenuGuard>} />
                       <Route path="/op/cadastros" element={<MenuGuard menuKey="op-cadastros"><OpCadastros /></MenuGuard>} />
-                      <Route path="/op/entregas" element={<MenuGuard menuKey="op-entregas"><OpEntregas /></MenuGuard>} />
-                      <Route path="/op/entregas/motoristas" element={<MenuGuard menuKey="op-entregas"><OpEntregasMotoristas /></MenuGuard>} />
-                      <Route path="/op/entregas/categorias" element={<MenuGuard menuKey="op-entregas"><OpEntregasCategorias /></MenuGuard>} />
+                      <Route path="/op/entregas/pin" element={<MenuGuard menuKey="op-entregas"><EntregasProfileProvider><EntregasPin /></EntregasProfileProvider></MenuGuard>} />
+                      <Route path="/op/entregas" element={<MenuGuard menuKey="op-entregas"><EntregasProfileProvider><EntregasGuard><OpEntregas /></EntregasGuard></EntregasProfileProvider></MenuGuard>} />
+                      <Route path="/op/entregas/motoristas" element={<MenuGuard menuKey="op-entregas"><EntregasProfileProvider><EntregasGuard allow={["admin"]}><OpEntregasMotoristas /></EntregasGuard></EntregasProfileProvider></MenuGuard>} />
+                      <Route path="/op/entregas/categorias" element={<MenuGuard menuKey="op-entregas"><EntregasProfileProvider><EntregasGuard allow={["admin"]}><OpEntregasCategorias /></EntregasGuard></EntregasProfileProvider></MenuGuard>} />
+                      <Route path="/op/entregas/solicitantes" element={<MenuGuard menuKey="op-entregas"><EntregasProfileProvider><EntregasGuard allow={["admin"]}><OpEntregasSolicitantes /></EntregasGuard></EntregasProfileProvider></MenuGuard>} />
+                      <Route path="/op/entregas/solicitar" element={<MenuGuard menuKey="op-entregas"><EntregasProfileProvider><EntregasGuard allow={["solicitante"]}><OpEntregasSolicitar /></EntregasGuard></EntregasProfileProvider></MenuGuard>} />
+                      <Route path="/op/entregas/minhas" element={<MenuGuard menuKey="op-entregas"><EntregasProfileProvider><EntregasGuard allow={["motorista","solicitante"]}><OpEntregasMinhas /></EntregasGuard></EntregasProfileProvider></MenuGuard>} />
+
 
                       <Route path="/op/oficina" element={<MenuGuard menuKey="op-oficina"><OpOficina /></MenuGuard>} />
                       <Route path="/op/manutencao" element={<MenuGuard menuKey="op-manutencao"><OpManutencao /></MenuGuard>} />
