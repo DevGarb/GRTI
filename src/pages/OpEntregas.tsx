@@ -18,6 +18,7 @@ import OpClosureDialog from "@/components/operacional/OpClosureDialog";
 import OpQuickActions from "@/components/operacional/OpQuickActions";
 import OpNotesPanel from "@/components/operacional/OpNotesPanel";
 import EntregasNav from "./op/EntregasNav";
+import { useEntregasProfile } from "@/contexts/EntregasProfileContext";
 import "./op/cearagps.css";
 import { formatDateBR, formatDateTimeFullBR } from "@/lib/dateFormat";
 
