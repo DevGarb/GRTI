@@ -404,7 +404,7 @@ export default function OpEntregasMinhas() {
                                 </motion.a>
                               )}
 
-                              {d.status === "Pendente" && (
+                              {d.status === "Pendente" && isMotorista && (
                                 <motion.button
                                   whileTap={{ scale: 0.97 }}
                                   onClick={() => startRoute(d.id)}
