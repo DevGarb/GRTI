@@ -1,6 +1,6 @@
 import { useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { MapPin, Phone, MessageCircle, LogOut, Sun, Moon, CheckCircle2, PlayCircle, Navigation, Clock, ChevronDown, Package, ListTodo, Trophy, X, Camera, Trash2, Loader2, User, Plus } from "lucide-react";
+import { MapPin, Phone, MessageCircle, LogOut, Sun, Moon, CheckCircle2, PlayCircle, Navigation, Clock, ChevronDown, Package, ListTodo, Trophy, X, Camera, Trash2, Loader2, User, Plus, Building2, Calendar, Bike, Car, HelpCircle, FileText, AlertTriangle } from "lucide-react";
 import { motion, AnimatePresence, LayoutGroup } from "framer-motion";
 import { useDeliveries } from "@/hooks/useDeliveries";
 import { useDeliveryCategories } from "@/hooks/useDeliveryCategories";
@@ -89,10 +89,38 @@ export default function OpEntregasMinhas() {
     setExpandedId(null);
   };
 
+  const reportProblem = (d: any) => {
+    const rPhone = requesterPhone(d)?.replace(/\D/g, "");
+    const rName = requesterName(d) || "solicitante";
+    const ref = companyName(d.company_id) || d.address || catNameOf(d.category_id) || "entrega";
+    const msg = `Olá ${rName}, sou o motorista responsável pela entrega "${ref}". Preciso relatar um problema/pedir uma informação:`;
+    if (rPhone) {
+      const withDdi = rPhone.length <= 11 ? `55${rPhone}` : rPhone;
+      window.open(`https://wa.me/${withDdi}?text=${encodeURIComponent(msg)}`, "_blank");
+    } else {
+      toast.error("Solicitante sem telefone cadastrado. Contate a equipe.");
+    }
+  };
+
   const catNameOf = (id?: string | null) => categories.find((c) => c.id === id)?.name;
   const catColorOf = (id?: string | null) => categories.find((c) => c.id === id)?.color || "#0d4a56";
   const companyName = (id?: string | null) => companies.find((c) => c.id === id)?.name;
   const requesterName = (d: any) => d.requester_name || requesters.find((r) => r.id === d.requester_id)?.name;
+  const requesterPhone = (d: any) => {
+    const name = d.requester_name;
+    if (name) return requesters.find((r) => r.name === name)?.phone || null;
+    return requesters.find((r) => r.id === d.requester_id)?.phone || null;
+  };
+  const vehicleLabel = (v?: string | null) => {
+    if (v === "moto") return { label: "Moto", Icon: Bike };
+    if (v === "carro") return { label: "Carro", Icon: Car };
+    return { label: "Qualquer", Icon: HelpCircle };
+  };
+  const formatDate = (d?: string | null) => {
+    if (!d) return "";
+    const [y, m, day] = d.split("-");
+    return `${day}/${m}/${y}`;
+  };
 
   const bg = highContrast ? "#000000" : "hsl(210 20% 96%)";
   const cardBg = highContrast ? "#0b0b0b" : "#ffffff";
@@ -341,9 +369,9 @@ export default function OpEntregasMinhas() {
                         </div>
                       </button>
 
-                      {/* Expanded content: contacts + actions */}
+                      {/* Expanded content: full details + actions */}
                       <AnimatePresence initial={false}>
-                        {(isExpanded && !isFinished) && (
+                        {isExpanded && (
                           <motion.div
                             initial={{ height: 0, opacity: 0 }}
                             animate={{ height: "auto", opacity: 1 }}
@@ -352,46 +380,99 @@ export default function OpEntregasMinhas() {
                             className="overflow-hidden"
                           >
                             <div className="px-4 pb-4 space-y-3">
-                              {(reqName || phone) && (
-                                <div className="rounded-lg p-3 space-y-2" style={{ background: highContrast ? "#161616" : "hsl(210 20% 97%)" }}>
-                                  {reqName && (
-                                    <div className="flex items-center justify-between text-sm">
-                                      <span style={{ color: textMuted }}>Solicitado por:</span>
-                                      <span className="font-bold" style={{ color: textMain }}>{reqName}</span>
+                              {/* Detalhes completos (somente leitura) */}
+                              <div className="rounded-lg p-3 space-y-2" style={{ background: highContrast ? "#161616" : "hsl(210 20% 97%)" }}>
+                                <div className="text-[10px] font-bold uppercase tracking-wider mb-1" style={{ color: textMuted }}>
+                                  Detalhes da solicitação
+                                </div>
+                                {cName && (
+                                  <div className="flex items-center gap-2 text-sm">
+                                    <Building2 className="h-4 w-4 flex-shrink-0" style={{ color: TEAL }} />
+                                    <span style={{ color: textMuted }}>Empresa:</span>
+                                    <span className="font-bold ml-auto text-right" style={{ color: textMain }}>{cName}</span>
+                                  </div>
+                                )}
+                                {reqName && (
+                                  <div className="flex items-center gap-2 text-sm">
+                                    <User className="h-4 w-4 flex-shrink-0" style={{ color: TEAL }} />
+                                    <span style={{ color: textMuted }}>Solicitante:</span>
+                                    <span className="font-bold ml-auto text-right" style={{ color: textMain }}>{reqName}</span>
+                                  </div>
+                                )}
+                                <div className="flex items-center gap-2 text-sm">
+                                  <Calendar className="h-4 w-4 flex-shrink-0" style={{ color: TEAL }} />
+                                  <span style={{ color: textMuted }}>Data / Período:</span>
+                                  <span className="font-bold ml-auto text-right" style={{ color: textMain }}>
+                                    {formatDate(d.scheduled_date)} • {d.period}
+                                  </span>
+                                </div>
+                                {d.vehicle_required && (() => {
+                                  const v = vehicleLabel(d.vehicle_required);
+                                  return (
+                                    <div className="flex items-center gap-2 text-sm">
+                                      <v.Icon className="h-4 w-4 flex-shrink-0" style={{ color: TEAL }} />
+                                      <span style={{ color: textMuted }}>Veículo:</span>
+                                      <span className="font-bold ml-auto text-right" style={{ color: textMain }}>{v.label}</span>
                                     </div>
-                                  )}
-                                  {phone && (
-                                    <div className="flex items-center justify-between text-sm">
-                                      <span style={{ color: textMuted }}>Telefone:</span>
-                                      <span className="font-bold" style={{ color: textMain }}>{phone}</span>
+                                  );
+                                })()}
+                                {d.contact_name && (
+                                  <div className="flex items-center gap-2 text-sm">
+                                    <User className="h-4 w-4 flex-shrink-0" style={{ color: "hsl(142 70% 40%)" }} />
+                                    <span style={{ color: textMuted }}>Recebedor:</span>
+                                    <span className="font-bold ml-auto text-right" style={{ color: textMain }}>{d.contact_name}</span>
+                                  </div>
+                                )}
+                                {phone && (
+                                  <div className="flex items-center gap-2 text-sm">
+                                    <Phone className="h-4 w-4 flex-shrink-0" style={{ color: "hsl(142 70% 40%)" }} />
+                                    <span style={{ color: textMuted }}>Tel. recebedor:</span>
+                                    <span className="font-bold ml-auto text-right" style={{ color: textMain }}>{phone}</span>
+                                  </div>
+                                )}
+                                {d.address && (
+                                  <div className="flex items-start gap-2 text-sm">
+                                    <MapPin className="h-4 w-4 mt-0.5 flex-shrink-0" style={{ color: ORANGE }} />
+                                    <span style={{ color: textMuted }}>Endereço:</span>
+                                    <span className="font-bold ml-auto text-right" style={{ color: textMain }}>{d.address}</span>
+                                  </div>
+                                )}
+                                {d.notes && (
+                                  <div className="flex items-start gap-2 text-sm pt-1 mt-1 border-t" style={{ borderColor: highContrast ? "#2a2a2a" : "hsl(210 15% 90%)" }}>
+                                    <FileText className="h-4 w-4 mt-0.5 flex-shrink-0" style={{ color: textMuted }} />
+                                    <div className="flex-1">
+                                      <div className="text-[10px] font-bold uppercase tracking-wider" style={{ color: textMuted }}>Observações</div>
+                                      <div className="font-medium mt-0.5" style={{ color: textMain }}>{d.notes}</div>
                                     </div>
-                                  )}
-                                  {cleanPhone && (
-                                    <div className="grid grid-cols-2 gap-2 pt-1">
-                                      <motion.a
-                                        whileTap={{ scale: 0.96 }}
-                                        href={`tel:${cleanPhone}`}
-                                        className="rounded-lg py-2.5 flex items-center justify-center gap-1.5 text-sm font-bold"
-                                        style={{ background: TEAL, color: "#ffffff" }}
-                                      >
-                                        <Phone className="h-4 w-4" /> Ligar
-                                      </motion.a>
-                                      <motion.a
-                                        whileTap={{ scale: 0.96 }}
-                                        href={`https://wa.me/55${cleanPhone}`}
-                                        target="_blank"
-                                        rel="noreferrer"
-                                        className="rounded-lg py-2.5 flex items-center justify-center gap-1.5 text-sm font-bold"
-                                        style={{ background: "hsl(142 70% 40%)", color: "#ffffff" }}
-                                      >
-                                        <MessageCircle className="h-4 w-4" /> WhatsApp
-                                      </motion.a>
-                                    </div>
-                                  )}
+                                  </div>
+                                )}
+                              </div>
+
+                              {/* Ações de contato com recebedor */}
+                              {cleanPhone && !isFinished && (
+                                <div className="grid grid-cols-2 gap-2">
+                                  <motion.a
+                                    whileTap={{ scale: 0.96 }}
+                                    href={`tel:${cleanPhone}`}
+                                    className="rounded-lg py-2.5 flex items-center justify-center gap-1.5 text-sm font-bold"
+                                    style={{ background: TEAL, color: "#ffffff" }}
+                                  >
+                                    <Phone className="h-4 w-4" /> Ligar recebedor
+                                  </motion.a>
+                                  <motion.a
+                                    whileTap={{ scale: 0.96 }}
+                                    href={`https://wa.me/55${cleanPhone}`}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    className="rounded-lg py-2.5 flex items-center justify-center gap-1.5 text-sm font-bold"
+                                    style={{ background: "hsl(142 70% 40%)", color: "#ffffff" }}
+                                  >
+                                    <MessageCircle className="h-4 w-4" /> WhatsApp
+                                  </motion.a>
                                 </div>
                               )}
 
-                              {mapsUrl && (
+                              {mapsUrl && !isFinished && (
                                 <motion.a
                                   whileTap={{ scale: 0.97 }}
                                   href={mapsUrl}
@@ -403,6 +484,18 @@ export default function OpEntregasMinhas() {
                                   <Navigation className="h-4 w-4" /> Abrir no Google Maps
                                 </motion.a>
                               )}
+
+                              {isMotorista && !isFinished && (
+                                <motion.button
+                                  whileTap={{ scale: 0.97 }}
+                                  onClick={() => reportProblem(d)}
+                                  className="w-full rounded-xl py-3 flex items-center justify-center gap-2 text-sm font-bold"
+                                  style={{ background: "hsl(38 92% 50%)", color: "#ffffff", boxShadow: "0 6px 18px -8px hsl(38 92% 50% / 0.6)" }}
+                                >
+                                  <AlertTriangle className="h-4 w-4" /> Reportar problema ao solicitante
+                                </motion.button>
+                              )}
+
 
                               {d.status === "Pendente" && isMotorista && (
                                 <motion.button
