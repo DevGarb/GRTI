@@ -307,12 +307,30 @@ export default function OpEntregasMinhas() {
                           </div>
                         </div>
 
-                        {d.address && (
-                          <div className="flex items-start gap-2 text-sm mt-3" style={{ color: textMain }}>
-                            <MapPin className="h-4 w-4 mt-0.5 flex-shrink-0" style={{ color: ORANGE }} />
-                            <span className="font-medium">{d.address}</span>
-                          </div>
-                        )}
+                        <div className="mt-3 space-y-1.5">
+                          {reqName && (
+                            <div className="flex items-center gap-2 text-sm" style={{ color: textMain }}>
+                              <User className="h-4 w-4 flex-shrink-0" style={{ color: TEAL }} />
+                              <span className="font-medium">
+                                <span style={{ color: textMuted }}>Solicitante: </span>{reqName}
+                              </span>
+                            </div>
+                          )}
+                          {phone && (
+                            <div className="flex items-center gap-2 text-sm" style={{ color: textMain }}>
+                              <Phone className="h-4 w-4 flex-shrink-0" style={{ color: "hsl(142 70% 40%)" }} />
+                              <span className="font-medium">
+                                <span style={{ color: textMuted }}>Recebedor: </span>{phone}
+                              </span>
+                            </div>
+                          )}
+                          {d.address && (
+                            <div className="flex items-start gap-2 text-sm" style={{ color: textMain }}>
+                              <MapPin className="h-4 w-4 mt-0.5 flex-shrink-0" style={{ color: ORANGE }} />
+                              <span className="font-medium">{d.address}</span>
+                            </div>
+                          )}
+                        </div>
                       </button>
 
                       {/* Expanded content: contacts + actions */}
