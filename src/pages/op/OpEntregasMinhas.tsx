@@ -437,6 +437,18 @@ export default function OpEntregasMinhas() {
         )}
       </main>
 
+      {isSolicitante && (
+        <motion.button
+          whileTap={{ scale: 0.95 }}
+          onClick={() => navigate("/op/entregas/solicitar")}
+          className="fixed bottom-6 right-6 z-40 rounded-full h-16 w-16 flex items-center justify-center shadow-2xl"
+          style={{ background: ORANGE, color: "#ffffff", boxShadow: "0 12px 32px -8px hsl(14 82% 51% / 0.65)" }}
+          aria-label="Nova solicitação"
+        >
+          <Plus className="h-7 w-7" />
+        </motion.button>
+      )}
+
       <FinishDeliveryModal
         deliveryId={finishingId}
         highContrast={highContrast}
