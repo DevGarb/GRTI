@@ -328,10 +328,10 @@ export default function OpEntregas() {
           </SelectContent>
         </Select>
         <Select value={typeFilter} onValueChange={setTypeFilter}>
-          <SelectTrigger className="w-[140px]"><SelectValue placeholder="Tipo" /></SelectTrigger>
+          <SelectTrigger className="w-[160px]"><SelectValue placeholder="Categoria" /></SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">Todos tipos</SelectItem>
-            {TYPES.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}
+            <SelectItem value="all">Todas categorias</SelectItem>
+            {categories.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
           </SelectContent>
         </Select>
       </div>
