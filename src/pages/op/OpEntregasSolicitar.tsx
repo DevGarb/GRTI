@@ -9,8 +9,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { useDeliveries } from "@/hooks/useDeliveries";
 import { useDeliveryCategories } from "@/hooks/useDeliveryCategories";
+import { useCompanies } from "@/hooks/useOperacional";
 import { useEntregasProfile } from "@/contexts/EntregasProfileContext";
-import { Bike, Car, HelpCircle, MapPin, Phone, Send } from "lucide-react";
+import { Bike, Car, HelpCircle, MapPin, Phone, Send, Building2 } from "lucide-react";
 import { toast } from "sonner";
 
 const VEHICLE_REQUIRED = [
