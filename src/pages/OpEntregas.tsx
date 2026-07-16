@@ -53,11 +53,13 @@ function weekday(iso: string) {
 function todayISO() { return new Date().toISOString().slice(0, 10); }
 
 export default function OpEntregas() {
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const { items, loading, add, update, remove } = useDeliveries();
   const { items: drivers } = useDrivers();
   const { items: companies } = useCompanies();
   const { items: vehicles } = useVehicles();
+  const { activeItems: categories } = useDeliveryCategories();
+
 
   const [view, setView] = useState<"lista" | "kanban">("kanban");
   const [hideFinalized, setHideFinalized] = useState(true);
