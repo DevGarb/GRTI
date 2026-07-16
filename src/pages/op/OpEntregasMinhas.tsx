@@ -196,7 +196,7 @@ export default function OpEntregasMinhas() {
           }
         >
           <ListTodo className="h-4 w-4" />
-          MINHAS TAREFAS ({active.length})
+          {isSolicitante ? `STATUS DE SOLICITAÇÃO (${active.length})` : `MINHAS TAREFAS (${active.length})`}
         </motion.button>
         <motion.button
           whileTap={{ scale: 0.97 }}
@@ -209,7 +209,7 @@ export default function OpEntregasMinhas() {
           }
         >
           <Trophy className="h-4 w-4" />
-          FINALIZADAS ({finished.length})
+          {isSolicitante ? `FINALIZADAS (${finished.length})` : `FINALIZADAS (${finished.length})`}
         </motion.button>
       </div>
 
