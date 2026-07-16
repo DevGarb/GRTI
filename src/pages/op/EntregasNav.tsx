@@ -23,7 +23,7 @@ export default function EntregasNav() {
     : isSolicitante
     ? [
         { to: "/op/entregas/solicitar", label: "Nova solicitação", icon: ClipboardList },
-        { to: "/op/entregas/minhas", label: "Minhas entregas", icon: LayoutGrid },
+        { to: "/op/entregas/minhas", label: "Status da solicitação", icon: LayoutGrid },
       ]
     : [{ to: "/op/entregas/minhas", label: "Minhas entregas", icon: LayoutGrid }];
 
