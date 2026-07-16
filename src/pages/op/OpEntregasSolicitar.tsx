@@ -44,6 +44,7 @@ export default function OpEntregasSolicitar() {
   });
 
   const submit = async () => {
+    if (!form.company_id) return toast.error("Escolha a empresa solicitante");
     if (!form.category_id) return toast.error("Escolha a categoria");
     if (!form.address.trim()) return toast.error("Informe o endereço");
     const res = await add({
