@@ -224,17 +224,25 @@ export default function OpEntregasMinhas() {
             className="mt-6 rounded-xl p-8 text-center"
             style={{ background: cardBg, border: "1px solid hsl(210 15% 88%)" }}
           >
-            {tab === "tarefas" ? (
+          {tab === "tarefas" ? (
               <>
                 <CheckCircle2 className="h-12 w-12 mx-auto mb-3" style={{ color: "hsl(160 60% 45%)" }} />
-                <div className="font-extrabold text-lg" style={{ color: textMain }}>Tudo em dia! 🎉</div>
-                <p className="text-sm mt-1" style={{ color: textMuted }}>Sem entregas pendentes no momento.</p>
+                <div className="font-extrabold text-lg" style={{ color: textMain }}>
+                  {isSolicitante ? "Nenhuma solicitação em andamento" : "Tudo em dia! 🎉"}
+                </div>
+                <p className="text-sm mt-1" style={{ color: textMuted }}>
+                  {isSolicitante ? "Suas solicitações pendentes ou em rota aparecerão aqui." : "Sem entregas pendentes no momento."}
+                </p>
               </>
             ) : (
               <>
                 <Package className="h-12 w-12 mx-auto mb-3" style={{ color: textMuted }} />
-                <div className="font-extrabold text-lg" style={{ color: textMain }}>Nenhuma entrega finalizada</div>
-                <p className="text-sm mt-1" style={{ color: textMuted }}>Suas entregas concluídas aparecerão aqui.</p>
+                <div className="font-extrabold text-lg" style={{ color: textMain }}>
+                  {isSolicitante ? "Nenhuma solicitação finalizada" : "Nenhuma entrega finalizada"}
+                </div>
+                <p className="text-sm mt-1" style={{ color: textMuted }}>
+                  {isSolicitante ? "Suas solicitações concluídas aparecerão aqui." : "Suas entregas concluídas aparecerão aqui."}
+                </p>
               </>
             )}
           </motion.div>
