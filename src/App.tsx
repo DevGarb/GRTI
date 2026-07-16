@@ -51,6 +51,8 @@ import Todos from "@/pages/Todos";
 import EscolherOrganizacao from "@/pages/EscolherOrganizacao";
 import OpCadastros from "@/pages/OpCadastros";
 import OpEntregas from "@/pages/OpEntregas";
+import OpEntregasMotoristas from "@/pages/op/OpEntregasMotoristas";
+import OpEntregasCategorias from "@/pages/op/OpEntregasCategorias";
 import OpOficina from "@/pages/OpOficina";
 import OpManutencao from "@/pages/OpManutencao";
 import NotFound from "./pages/NotFound";
