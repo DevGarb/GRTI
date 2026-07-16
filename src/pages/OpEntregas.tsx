@@ -98,7 +98,28 @@ export default function OpEntregas() {
   // Closure flow
   const [closing, setClosing] = useState<Delivery | null>(null);
 
-  const monthStart = `${activeMonth}-01`;
+  // Driver average ratings
+  const [driverRatings, setDriverRatings] = useState<Record<string, { avg: number; count: number }>>({});
+  useEffect(() => {
+    (async () => {
+      const { data } = await supabase
+        .from("op_delivery_ratings")
+        .select("rating, delivery_id, op_deliveries!inner(driver_id)");
+      if (!data) return;
+      const map: Record<string, { sum: number; count: number }> = {};
+      (data as any[]).forEach((r) => {
+        const did = r.op_deliveries?.driver_id;
+        if (!did) return;
+        map[did] = map[did] || { sum: 0, count: 0 };
+        map[did].sum += r.rating;
+        map[did].count += 1;
+      });
+      const result: Record<string, { avg: number; count: number }> = {};
+      Object.entries(map).forEach(([k, v]) => { result[k] = { avg: v.sum / v.count, count: v.count }; });
+      setDriverRatings(result);
+    })();
+  }, [allItems]);
+
   const isCarriedOver = (d: Delivery) =>
     d.scheduled_date < monthStart && d.status !== "Finalizado" && d.status !== "Cancelado";
   const inMonthScope = (d: Delivery) =>
