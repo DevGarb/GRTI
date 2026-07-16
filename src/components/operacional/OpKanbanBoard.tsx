@@ -12,6 +12,7 @@ interface Props<T extends { id: string }> {
   columns: KanbanColumn[];
   itemsByColumn: Record<string, T[]>;
   renderCard: (item: T) => ReactNode;
+  renderHeader?: (col: KanbanColumn, count: number) => ReactNode;
   onMove: (item: T, fromCol: string, toCol: string) => void;
   isAllowed?: (item: T, fromCol: string, toCol: string) => boolean;
   emptyText?: string;
@@ -19,7 +20,7 @@ interface Props<T extends { id: string }> {
 }
 
 export default function OpKanbanBoard<T extends { id: string }>({
-  columns, itemsByColumn, renderCard, onMove, isAllowed, emptyText = "Vazio", resolveItem,
+  columns, itemsByColumn, renderCard, renderHeader, onMove, isAllowed, emptyText = "Vazio", resolveItem,
 }: Props<T>) {
   const handleEnd = (r: DropResult) => {
     const { destination, source, draggableId } = r;
@@ -37,13 +38,15 @@ export default function OpKanbanBoard<T extends { id: string }>({
         {columns.map(col => {
           const list = itemsByColumn[col.id] || [];
           return (
-            <div key={col.id} className="flex-shrink-0 w-[280px] flex flex-col">
-              <div className={`${col.color || "bg-primary"} text-white rounded-t-lg px-3 py-2 flex items-center justify-between`}>
-                <span className="text-xs font-semibold truncate">{col.label}</span>
-                <span className="text-xs font-bold bg-white/20 rounded-full px-2 py-0.5">
-                  {col.count ?? list.length}
-                </span>
-              </div>
+            <div key={col.id} className="flex-shrink-0 w-[300px] flex flex-col">
+              {renderHeader ? renderHeader(col, list.length) : (
+                <div className={`${col.color || "bg-primary"} text-white rounded-t-lg px-3 py-2 flex items-center justify-between`}>
+                  <span className="text-xs font-semibold truncate">{col.label}</span>
+                  <span className="text-xs font-bold bg-white/20 rounded-full px-2 py-0.5">
+                    {col.count ?? list.length}
+                  </span>
+                </div>
+              )}
               <Droppable droppableId={col.id}>
                 {(provided, snapshot) => (
                   <div
