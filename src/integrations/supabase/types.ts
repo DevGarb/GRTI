@@ -1165,6 +1165,7 @@ export type Database = {
         Row: {
           address: string | null
           associated_name: string | null
+          category_id: string | null
           closed_at: string | null
           closed_by: string | null
           closure_summary: string | null
@@ -1178,15 +1179,19 @@ export type Database = {
           notes: string | null
           organization_id: string
           period: string
+          receiver_phone: string | null
+          requester_name: string | null
           scheduled_date: string
           status: string
           type: string
           updated_at: string
           vehicle_id: string | null
+          vehicle_required: string
         }
         Insert: {
           address?: string | null
           associated_name?: string | null
+          category_id?: string | null
           closed_at?: string | null
           closed_by?: string | null
           closure_summary?: string | null
@@ -1200,15 +1205,19 @@ export type Database = {
           notes?: string | null
           organization_id: string
           period?: string
+          receiver_phone?: string | null
+          requester_name?: string | null
           scheduled_date: string
           status?: string
           type?: string
           updated_at?: string
           vehicle_id?: string | null
+          vehicle_required?: string
         }
         Update: {
           address?: string | null
           associated_name?: string | null
+          category_id?: string | null
           closed_at?: string | null
           closed_by?: string | null
           closure_summary?: string | null
@@ -1222,11 +1231,61 @@ export type Database = {
           notes?: string | null
           organization_id?: string
           period?: string
+          receiver_phone?: string | null
+          requester_name?: string | null
           scheduled_date?: string
           status?: string
           type?: string
           updated_at?: string
           vehicle_id?: string | null
+          vehicle_required?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "op_deliveries_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "op_delivery_categories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      op_delivery_categories: {
+        Row: {
+          color: string
+          created_at: string
+          created_by: string
+          icon: string
+          id: string
+          is_active: boolean
+          name: string
+          organization_id: string
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          color?: string
+          created_at?: string
+          created_by: string
+          icon?: string
+          id?: string
+          is_active?: boolean
+          name: string
+          organization_id: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          color?: string
+          created_at?: string
+          created_by?: string
+          icon?: string
+          id?: string
+          is_active?: boolean
+          name?: string
+          organization_id?: string
+          sort_order?: number
+          updated_at?: string
         }
         Relationships: []
       }
