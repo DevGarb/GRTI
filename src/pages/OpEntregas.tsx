@@ -457,6 +457,7 @@ export default function OpEntregas() {
           columns={kanbanColumns}
           itemsByColumn={itemsByCol}
           renderCard={renderKanbanCard}
+          renderHeader={renderKanbanHeader}
           resolveItem={(id) => filtered.find(x => x.id === id)}
           isAllowed={() => true}
           onMove={(item, _from, to) => {
