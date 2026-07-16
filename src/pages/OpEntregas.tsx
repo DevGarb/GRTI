@@ -191,6 +191,10 @@ export default function OpEntregas() {
     const company = companies.find(c => c.id === d.company_id);
     const driver = drivers.find(x => x.id === d.driver_id);
     const carried = isCarriedOver(d);
+    const cat = categories.find(c => c.id === d.category_id);
+    const CatIcon = cat ? (CATEGORY_ICON_MAP[cat.icon] || Package) : Package;
+    const vr = VEHICLE_REQUIRED.find(v => v.value === (d.vehicle_required || "qualquer"));
+    const VIcon = vr?.icon || HelpCircle;
     return (
       <div onClick={() => openEdit(d)}>
         <div className="flex items-start gap-2 mb-2">
@@ -200,19 +204,40 @@ export default function OpEntregas() {
               {formatDateBR(d.scheduled_date)} · {d.period}{carried && " · atrasada"}
             </div>
           </div>
-          <Badge variant="outline" className="text-[10px]">{d.type}</Badge>
+          {cat ? (
+            <Badge
+              className="text-[10px] border-0 gap-1"
+              style={{ background: cat.color + "22", color: cat.color }}
+            >
+              <CatIcon className="h-3 w-3" />
+              {cat.name}
+            </Badge>
+          ) : (
+            <Badge variant="outline" className="text-[10px]">{d.type}</Badge>
+          )}
         </div>
         {d.address && (
           <div className="text-xs text-muted-foreground line-clamp-2 mb-1">📍 {d.address}</div>
         )}
-        {(d.contact_name || driver) && (
-          <div className="text-[11px] text-muted-foreground truncate mb-2">
-            {driver?.name && `🛵 ${driver.name}`}{driver && d.contact_name ? " · " : ""}{d.contact_name}
+        <div className="flex items-center gap-2 text-[11px] text-muted-foreground mb-1">
+          <VIcon className="h-3 w-3" />
+          <span>Exige: {vr?.label}</span>
+          {driver && <span className="truncate">· 🛵 {driver.name}</span>}
+        </div>
+        {d.requester_name && (
+          <div className="text-[11px] text-muted-foreground truncate mb-1">
+            Solicitado por: <span className="font-medium">{d.requester_name}</span>
+          </div>
+        )}
+        {(d.contact_name || d.receiver_phone) && (
+          <div className="text-[11px] text-muted-foreground truncate mb-2 flex items-center gap-1">
+            <Phone className="h-3 w-3" />
+            {d.contact_name || "Recebedor"} {d.receiver_phone && `· ${d.receiver_phone}`}
           </div>
         )}
         <div className="flex items-center justify-between">
           <Badge className={cn("text-[10px] font-normal", STATUS_COLORS[d.status])}>{d.status}</Badge>
-          <OpQuickActions phone={d.contact_phone} address={d.address} size="icon" />
+          <OpQuickActions phone={d.receiver_phone || d.contact_phone} address={d.address} size="icon" />
         </div>
       </div>
     );
@@ -220,14 +245,16 @@ export default function OpEntregas() {
 
 
   return (
+    <div className="cgps-scope min-h-screen bg-[hsl(var(--cgps-muted))]">
+      <EntregasNav />
     <div className="p-4 md:p-6 max-w-7xl mx-auto">
       <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
         <div className="flex items-center gap-3">
-          <div className="h-10 w-10 rounded-lg bg-primary text-primary-foreground flex items-center justify-center">
-            <Truck className="h-5 w-5" />
+          <div className="h-10 w-10 rounded-lg flex items-center justify-center" style={{ background: "hsl(191 74% 20%)" }}>
+            <Truck className="h-5 w-5 text-white" />
           </div>
           <div>
-            <h1 className="text-2xl font-bold">Entregas</h1>
+            <h1 className="text-2xl font-bold" style={{ color: "hsl(191 74% 20%)" }}>Entregas</h1>
             <p className="text-sm text-muted-foreground">Controle de Entregas</p>
           </div>
         </div>
