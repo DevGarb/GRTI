@@ -81,18 +81,18 @@ export default function EntregasPin() {
 
           <TabsContent value="motorista" className="space-y-3">
             <div>
-              <Label>Motorista</Label>
-              <Select value={driverId} onValueChange={setDriverId}>
-                <SelectTrigger><SelectValue placeholder="Selecione seu nome" /></SelectTrigger>
-                <SelectContent>
-                  {activeDrivers.length === 0 && <div className="p-2 text-xs text-muted-foreground">Nenhum motorista ativo</div>}
-                  {activeDrivers.map((d) => <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>)}
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <Label>PIN</Label>
-              <Input type="password" inputMode="numeric" maxLength={6} value={driverPin} onChange={(e) => setDriverPin(e.target.value.replace(/\D/g, ""))} placeholder="••••" className="text-center text-lg tracking-widest" />
+              <Label>PIN do motorista</Label>
+              <Input
+                type="password"
+                inputMode="numeric"
+                maxLength={6}
+                value={driverPin}
+                onChange={(e) => setDriverPin(e.target.value.replace(/\D/g, ""))}
+                onKeyDown={(e) => e.key === "Enter" && loginDriver()}
+                placeholder="••••"
+                className="text-center text-2xl tracking-[0.5em] h-14"
+                autoFocus
+              />
             </div>
             <Button onClick={loginDriver} className="w-full cgps-btn-primary">
               Entrar como motorista <ArrowRight className="h-4 w-4 ml-1" />
@@ -101,18 +101,17 @@ export default function EntregasPin() {
 
           <TabsContent value="solicitante" className="space-y-3">
             <div>
-              <Label>Solicitante</Label>
-              <Select value={reqId} onValueChange={setReqId}>
-                <SelectTrigger><SelectValue placeholder="Selecione seu nome" /></SelectTrigger>
-                <SelectContent>
-                  {activeRequesters.length === 0 && <div className="p-2 text-xs text-muted-foreground">Nenhum solicitante cadastrado</div>}
-                  {activeRequesters.map((r) => <SelectItem key={r.id} value={r.id}>{r.name}</SelectItem>)}
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <Label>PIN</Label>
-              <Input type="password" inputMode="numeric" maxLength={6} value={reqPin} onChange={(e) => setReqPin(e.target.value.replace(/\D/g, ""))} placeholder="••••" className="text-center text-lg tracking-widest" />
+              <Label>PIN do solicitante</Label>
+              <Input
+                type="password"
+                inputMode="numeric"
+                maxLength={6}
+                value={reqPin}
+                onChange={(e) => setReqPin(e.target.value.replace(/\D/g, ""))}
+                onKeyDown={(e) => e.key === "Enter" && loginRequester()}
+                placeholder="••••"
+                className="text-center text-2xl tracking-[0.5em] h-14"
+              />
             </div>
             <Button onClick={loginRequester} className="w-full cgps-btn-primary">
               Entrar como solicitante <ArrowRight className="h-4 w-4 ml-1" />
