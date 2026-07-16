@@ -1,12 +1,13 @@
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { MapPin, Phone, MessageCircle, LogOut, Sun, Moon, CheckCircle2, PlayCircle, Navigation, Clock, ChevronDown, Package, ListTodo, Trophy } from "lucide-react";
+import { MapPin, Phone, MessageCircle, LogOut, Sun, Moon, CheckCircle2, PlayCircle, Navigation, Clock, ChevronDown, Package, ListTodo, Trophy, X, Camera, Trash2, Loader2, User } from "lucide-react";
 import { motion, AnimatePresence, LayoutGroup } from "framer-motion";
 import { useDeliveries } from "@/hooks/useDeliveries";
 import { useDeliveryCategories } from "@/hooks/useDeliveryCategories";
 import { useCompanies } from "@/hooks/useOperacional";
 import { useEntregasProfile } from "@/contexts/EntregasProfileContext";
 import { useDeliveryRequesters } from "@/hooks/useDeliveryRequesters";
+import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import "./cearagps.css";
 
