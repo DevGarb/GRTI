@@ -440,9 +440,11 @@ export default function OpEntregasMinhas() {
                                 {d.notes && (
                                   <div className="flex items-start gap-2 text-sm pt-1 mt-1 border-t" style={{ borderColor: highContrast ? "#2a2a2a" : "hsl(210 15% 90%)" }}>
                                     <FileText className="h-4 w-4 mt-0.5 flex-shrink-0" style={{ color: textMuted }} />
-                                    <div className="flex-1">
+                                    <div className="flex-1 min-w-0">
                                       <div className="text-[10px] font-bold uppercase tracking-wider" style={{ color: textMuted }}>Observações</div>
-                                      <div className="font-medium mt-0.5" style={{ color: textMain }}>{d.notes}</div>
+                                      <div className="font-medium mt-0.5 whitespace-pre-wrap break-words" style={{ color: textMain }}>
+                                        {renderWithLinks(d.notes)}
+                                      </div>
                                     </div>
                                   </div>
                                 )}
