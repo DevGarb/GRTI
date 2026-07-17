@@ -459,7 +459,7 @@ export default function OpEntregasMinhas() {
                                   <div className="flex items-start gap-2 text-sm">
                                     <MapPin className="h-4 w-4 mt-0.5 flex-shrink-0" style={{ color: ORANGE }} />
                                     <span style={{ color: textMuted }}>Endereço:</span>
-                                    <span className="font-bold ml-auto text-right" style={{ color: textMain }}>{d.address}</span>
+                                    <span className="font-bold ml-auto text-right break-words min-w-0" style={{ color: textMain }}>{d.address}</span>
                                   </div>
                                 )}
                                 {d.notes && (
