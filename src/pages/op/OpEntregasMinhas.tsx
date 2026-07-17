@@ -28,6 +28,29 @@ function formatTime(iso?: string | null) {
   catch { return ""; }
 }
 
+// Renderiza texto preservando quebras e transforma URLs em links clicáveis
+function renderWithLinks(text: string) {
+  const urlRegex = /(https?:\/\/[^\s]+)/g;
+  const parts = text.split(urlRegex);
+  return parts.map((part, i) => {
+    if (urlRegex.test(part)) {
+      return (
+        <a
+          key={i}
+          href={part}
+          target="_blank"
+          rel="noreferrer"
+          onClick={(e) => e.stopPropagation()}
+          className="underline break-all"
+          style={{ color: "hsl(14 82% 51%)" }}
+        >
+          {part}
+        </a>
+      );
+    }
+    return <span key={i}>{part}</span>;
+  });
+
 export default function OpEntregasMinhas() {
   const navigate = useNavigate();
   const { profile, clear } = useEntregasProfile();
