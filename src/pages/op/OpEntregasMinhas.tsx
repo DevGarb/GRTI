@@ -50,6 +50,8 @@ function renderWithLinks(text: string) {
     }
     return <span key={i}>{part}</span>;
   });
+}
+
 
 export default function OpEntregasMinhas() {
   const navigate = useNavigate();
