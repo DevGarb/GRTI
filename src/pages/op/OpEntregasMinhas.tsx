@@ -33,7 +33,7 @@ function renderWithLinks(text: string) {
   const urlRegex = /(https?:\/\/[^\s]+)/g;
   const parts = text.split(urlRegex);
   return parts.map((part, i) => {
-    if (urlRegex.test(part)) {
+    if (/^https?:\/\//.test(part)) {
       return (
         <a
           key={i}
