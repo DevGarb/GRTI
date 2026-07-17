@@ -28,6 +28,31 @@ function formatTime(iso?: string | null) {
   catch { return ""; }
 }
 
+// Renderiza texto preservando quebras e transforma URLs em links clicáveis
+function renderWithLinks(text: string) {
+  const urlRegex = /(https?:\/\/[^\s]+)/g;
+  const parts = text.split(urlRegex);
+  return parts.map((part, i) => {
+    if (/^https?:\/\//.test(part)) {
+      return (
+        <a
+          key={i}
+          href={part}
+          target="_blank"
+          rel="noreferrer"
+          onClick={(e) => e.stopPropagation()}
+          className="underline break-all"
+          style={{ color: "hsl(14 82% 51%)" }}
+        >
+          {part}
+        </a>
+      );
+    }
+    return <span key={i}>{part}</span>;
+  });
+}
+
+
 export default function OpEntregasMinhas() {
   const navigate = useNavigate();
   const { profile, clear } = useEntregasProfile();
@@ -434,15 +459,17 @@ export default function OpEntregasMinhas() {
                                   <div className="flex items-start gap-2 text-sm">
                                     <MapPin className="h-4 w-4 mt-0.5 flex-shrink-0" style={{ color: ORANGE }} />
                                     <span style={{ color: textMuted }}>Endereço:</span>
-                                    <span className="font-bold ml-auto text-right" style={{ color: textMain }}>{d.address}</span>
+                                    <span className="font-bold ml-auto text-right break-words min-w-0" style={{ color: textMain }}>{d.address}</span>
                                   </div>
                                 )}
                                 {d.notes && (
                                   <div className="flex items-start gap-2 text-sm pt-1 mt-1 border-t" style={{ borderColor: highContrast ? "#2a2a2a" : "hsl(210 15% 90%)" }}>
                                     <FileText className="h-4 w-4 mt-0.5 flex-shrink-0" style={{ color: textMuted }} />
-                                    <div className="flex-1">
+                                    <div className="flex-1 min-w-0">
                                       <div className="text-[10px] font-bold uppercase tracking-wider" style={{ color: textMuted }}>Observações</div>
-                                      <div className="font-medium mt-0.5" style={{ color: textMain }}>{d.notes}</div>
+                                      <div className="font-medium mt-0.5 whitespace-pre-wrap break-words" style={{ color: textMain }}>
+                                        {renderWithLinks(d.notes)}
+                                      </div>
                                     </div>
                                   </div>
                                 )}
