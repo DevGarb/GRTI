@@ -226,11 +226,22 @@ export default function OpEntregasSolicitar() {
             <Textarea rows={3} value={form.notes} onChange={(e) => setForm((p) => ({ ...p, notes: e.target.value }))} placeholder="Instruções extras, ponto de referência..." />
           </div>
 
-          <Button onClick={submit} className="w-full cgps-btn-primary">
+          <Button onClick={submit} className="w-full cgps-btn-primary" disabled={!!pending}>
             <Send className="h-4 w-4 mr-1" /> Enviar solicitação
           </Button>
         </div>
       </div>
+
+      <OpRatingDialog
+        open={ratingOpen}
+        onOpenChange={setRatingOpen}
+        title="Avalie a entrega anterior"
+        subtitle="Sua opinião ajuda a melhorar o serviço dos nossos motoristas."
+        targetLabel={pending ? `${pending.address}` : undefined}
+        busy={busy}
+        onSubmit={handleSubmitRating}
+      />
     </div>
   );
 }
+
