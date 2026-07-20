@@ -1360,6 +1360,7 @@ export type Database = {
           phone: string | null
           pin: string | null
           updated_at: string
+          user_id: string | null
         }
         Insert: {
           created_at?: string
@@ -1371,6 +1372,7 @@ export type Database = {
           phone?: string | null
           pin?: string | null
           updated_at?: string
+          user_id?: string | null
         }
         Update: {
           created_at?: string
@@ -1382,6 +1384,7 @@ export type Database = {
           phone?: string | null
           pin?: string | null
           updated_at?: string
+          user_id?: string | null
         }
         Relationships: [
           {
@@ -1437,6 +1440,7 @@ export type Database = {
       }
       op_maintenance_orders: {
         Row: {
+          assigned_mechanic_id: string | null
           category: string
           closed_by: string | null
           closure_summary: string | null
@@ -1451,6 +1455,7 @@ export type Database = {
           opened_at: string
           organization_id: string
           priority: string
+          requester_id: string | null
           responsible: string | null
           site_id: string | null
           status: string
@@ -1458,6 +1463,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          assigned_mechanic_id?: string | null
           category?: string
           closed_by?: string | null
           closure_summary?: string | null
@@ -1472,6 +1478,7 @@ export type Database = {
           opened_at?: string
           organization_id: string
           priority?: string
+          requester_id?: string | null
           responsible?: string | null
           site_id?: string | null
           status?: string
@@ -1479,6 +1486,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          assigned_mechanic_id?: string | null
           category?: string
           closed_by?: string | null
           closure_summary?: string | null
@@ -1493,13 +1501,29 @@ export type Database = {
           opened_at?: string
           organization_id?: string
           priority?: string
+          requester_id?: string | null
           responsible?: string | null
           site_id?: string | null
           status?: string
           title?: string
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "op_maintenance_orders_assigned_mechanic_id_fkey"
+            columns: ["assigned_mechanic_id"]
+            isOneToOne: false
+            referencedRelation: "op_mechanics"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "op_maintenance_orders_requester_id_fkey"
+            columns: ["requester_id"]
+            isOneToOne: false
+            referencedRelation: "op_delivery_requesters"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       op_maintenance_photos: {
         Row: {
@@ -1539,6 +1563,7 @@ export type Database = {
           phone: string | null
           specialty: string | null
           updated_at: string
+          user_id: string | null
         }
         Insert: {
           created_at?: string
@@ -1550,6 +1575,7 @@ export type Database = {
           phone?: string | null
           specialty?: string | null
           updated_at?: string
+          user_id?: string | null
         }
         Update: {
           created_at?: string
@@ -1561,6 +1587,7 @@ export type Database = {
           phone?: string | null
           specialty?: string | null
           updated_at?: string
+          user_id?: string | null
         }
         Relationships: []
       }

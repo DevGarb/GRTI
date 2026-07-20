@@ -15,6 +15,9 @@ import {
   MAINT_CATEGORIES, MAINT_PRIORITIES, MAINT_STATUSES,
   type MaintenanceOrder, type Site, type ChecklistTemplate, type ChecklistItem, type MaintenancePhoto,
 } from "@/hooks/useManutencao";
+import { useMechanics, type Mechanic } from "@/hooks/useOficina";
+import { useDeliveryRequesters, type DeliveryRequester } from "@/hooks/useDeliveryRequesters";
+import { useMaintProfile } from "@/hooks/useMaintProfile";
 import OpKanbanBoard, { type KanbanColumn } from "@/components/operacional/OpKanbanBoard";
 import OpClosureDialog from "@/components/operacional/OpClosureDialog";
 import OpQuickActions from "@/components/operacional/OpQuickActions";
@@ -46,9 +49,15 @@ const TERMINAL = "Concluída";
 
 export default function OpManutencao() {
   const { user } = useAuth();
+  const maintProfile = useMaintProfile();
+  const isAdmin = maintProfile.role === "admin";
+  const isTecnico = maintProfile.role === "tecnico";
+  const isSolicitante = maintProfile.role === "solicitante";
   const sites = useSites();
   const orders = useMaintenanceOrders();
   const tpls = useChecklistTemplates();
+  const mechanics = useMechanics();
+  const requesters = useDeliveryRequesters();
 
   const [activeMonth, setActiveMonth] = useState(() => new Date().toISOString().slice(0, 7));
   const [activeSite, setActiveSite] = useState<string>("all");
@@ -75,12 +84,15 @@ export default function OpManutencao() {
 
   const baseFiltered = useMemo(() => {
     return orders.items.filter(o => {
+      // Profile scoping (only affects operacional org via useMaintProfile)
+      if (isTecnico && o.assigned_mechanic_id !== maintProfile.mechanicId) return false;
+      if (isSolicitante && o.requester_id !== maintProfile.requesterId) return false;
       if (!o.opened_at.startsWith(activeMonth)) return false;
       if (activeSite !== "all" && o.site_id !== activeSite) return false;
       if (categoryFilter !== "all" && o.category !== categoryFilter) return false;
       return true;
     });
-  }, [orders.items, activeMonth, activeSite, categoryFilter]);
+  }, [orders.items, activeMonth, activeSite, categoryFilter, isTecnico, isSolicitante, maintProfile.mechanicId, maintProfile.requesterId]);
 
   const filtered = useMemo(() => {
     return baseFiltered.filter(o => {
@@ -189,18 +201,28 @@ export default function OpManutencao() {
             </Button>
           )}
           <Input type="month" value={activeMonth} onChange={e => setActiveMonth(e.target.value)} className="w-40" />
-          <Button onClick={() => { setEditing(null); setOmOpen(true); }}>
-            <Plus className="h-4 w-4 mr-1" /> Nova OM
-          </Button>
+          {!isTecnico && (
+            <Button onClick={() => { setEditing(null); setOmOpen(true); }}>
+              <Plus className="h-4 w-4 mr-1" /> {isSolicitante ? "Nova solicitação" : "Nova OM"}
+            </Button>
+          )}
         </div>
       </div>
 
+      {maintProfile.scoped && (isTecnico || isSolicitante) && (
+        <div className="rounded-md border bg-muted/40 px-3 py-2 text-xs text-muted-foreground">
+          Você está visualizando como <strong className="text-foreground">{isTecnico ? `técnico (${maintProfile.mechanicName})` : `solicitante (${maintProfile.requesterName})`}</strong>.
+          {isTecnico ? " Apenas OMs atribuídas a você aparecem." : " Apenas suas solicitações aparecem."}
+        </div>
+      )}
+
       <Tabs defaultValue="ordens">
         <TabsList>
-          <TabsTrigger value="ordens">Ordens de Manutenção</TabsTrigger>
-          <TabsTrigger value="sedes"><Building2 className="h-4 w-4 mr-1 inline" />Sedes</TabsTrigger>
-          <TabsTrigger value="checklists"><ListChecks className="h-4 w-4 mr-1 inline" />Checklists</TabsTrigger>
+          <TabsTrigger value="ordens">{isSolicitante ? "Minhas solicitações" : "Ordens de Manutenção"}</TabsTrigger>
+          {isAdmin && <TabsTrigger value="sedes"><Building2 className="h-4 w-4 mr-1 inline" />Sedes</TabsTrigger>}
+          {isAdmin && <TabsTrigger value="checklists"><ListChecks className="h-4 w-4 mr-1 inline" />Checklists</TabsTrigger>}
         </TabsList>
+
 
         {/* ORDENS */}
         <TabsContent value="ordens" className="space-y-4">
@@ -334,11 +356,22 @@ export default function OpManutencao() {
         </TabsContent>
       </Tabs>
 
-      <OmModal open={omOpen} onOpenChange={setOmOpen} editing={editing} sites={sites.items} onSave={async (input) => {
-        if (editing) await orders.update(editing.id, input);
-        else await orders.add(input);
-        setOmOpen(false);
-      }} />
+      <OmModal
+        open={omOpen}
+        onOpenChange={setOmOpen}
+        editing={editing}
+        sites={sites.items}
+        mechanics={mechanics.items}
+        requesters={requesters.items}
+        mode={isSolicitante ? "solicitante" : isTecnico ? "tecnico" : "admin"}
+        forcedRequesterId={isSolicitante ? maintProfile.requesterId : undefined}
+        onSave={async (input) => {
+          if (editing) await orders.update(editing.id, input);
+          else await orders.add(input);
+          setOmOpen(false);
+        }}
+      />
+
 
       <SiteModal open={siteOpen} onOpenChange={setSiteOpen} editing={editingSite} onSave={async (input) => {
         if (editingSite) await sites.update(editingSite.id, input);
@@ -379,69 +412,116 @@ function KpiCard({ label, value, color, icon, active, onClick }: { label: string
   );
 }
 
-function OmModal({ open, onOpenChange, editing, sites, onSave }: {
+function OmModal({ open, onOpenChange, editing, sites, mechanics, requesters, mode, forcedRequesterId, onSave }: {
   open: boolean; onOpenChange: (b: boolean) => void; editing: MaintenanceOrder | null; sites: Site[];
+  mechanics: Mechanic[]; requesters: DeliveryRequester[];
+  mode: "admin" | "tecnico" | "solicitante";
+  forcedRequesterId?: string;
   onSave: (input: Partial<MaintenanceOrder>) => Promise<void>;
 }) {
   const [form, setForm] = useState<Partial<MaintenanceOrder>>({});
   useEffect(() => {
     if (open) {
-      setForm(editing || { category: "Outros", priority: "Média", status: "Aberta", opened_at: todayISO() });
+      const base: Partial<MaintenanceOrder> = editing
+        ? { ...editing }
+        : { category: "Outros", priority: "Média", status: "Aberta", opened_at: todayISO() };
+      if (mode === "solicitante" && !editing && forcedRequesterId) {
+        base.requester_id = forcedRequesterId;
+      }
+      setForm(base);
     }
-  }, [open, editing]);
+  }, [open, editing, mode, forcedRequesterId]);
+
+  const readOnly = mode === "tecnico";
+  const solicitanteView = mode === "solicitante";
+  const title = editing
+    ? `${solicitanteView ? "Solicitação" : "OM"} #${editing.om_number}`
+    : solicitanteView ? "Nova solicitação de manutenção" : "Nova OM";
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader><DialogTitle>{editing ? `Editar OM #${editing.om_number}` : "Nova OM"}</DialogTitle></DialogHeader>
+        <DialogHeader><DialogTitle>{title}</DialogTitle></DialogHeader>
         <div className="grid grid-cols-2 gap-3">
           <div className="col-span-2">
             <Label>Título *</Label>
-            <Input value={form.title || ""} onChange={e => setForm({ ...form, title: e.target.value })} />
+            <Input disabled={readOnly} value={form.title || ""} onChange={e => setForm({ ...form, title: e.target.value })} />
           </div>
           <div>
             <Label>Sede</Label>
-            <Select value={form.site_id || ""} onValueChange={v => setForm({ ...form, site_id: v })}>
+            <Select disabled={readOnly} value={form.site_id || ""} onValueChange={v => setForm({ ...form, site_id: v })}>
               <SelectTrigger><SelectValue placeholder="Selecione..." /></SelectTrigger>
               <SelectContent>{sites.map(s => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}</SelectContent>
             </Select>
           </div>
           <div>
             <Label>Categoria</Label>
-            <Select value={form.category} onValueChange={v => setForm({ ...form, category: v })}>
+            <Select disabled={readOnly} value={form.category} onValueChange={v => setForm({ ...form, category: v })}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>{MAINT_CATEGORIES.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
             </Select>
           </div>
           <div>
             <Label>Prioridade</Label>
-            <Select value={form.priority} onValueChange={v => setForm({ ...form, priority: v })}>
+            <Select disabled={readOnly || solicitanteView} value={form.priority} onValueChange={v => setForm({ ...form, priority: v })}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>{MAINT_PRIORITIES.map(p => <SelectItem key={p} value={p}>{p}</SelectItem>)}</SelectContent>
             </Select>
           </div>
-          <div>
-            <Label>Status</Label>
-            <Select value={form.status} onValueChange={v => setForm({ ...form, status: v })}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent>{MAINT_STATUSES.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
-            </Select>
-          </div>
-          <div>
-            <Label>Responsável</Label>
-            <Input value={form.responsible || ""} onChange={e => setForm({ ...form, responsible: e.target.value })} />
-          </div>
-          <div>
-            <Label>Aberta em</Label>
-            <Input type="date" value={form.opened_at || ""} onChange={e => setForm({ ...form, opened_at: e.target.value })} />
-          </div>
-          <div>
-            <Label>Prazo</Label>
-            <Input type="date" value={form.deadline || ""} onChange={e => setForm({ ...form, deadline: e.target.value })} />
-          </div>
+          {!solicitanteView && (
+            <div>
+              <Label>Status</Label>
+              <Select value={form.status} onValueChange={v => setForm({ ...form, status: v })}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>{MAINT_STATUSES.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
+              </Select>
+            </div>
+          )}
+          {mode === "admin" && (
+            <>
+              <div>
+                <Label>Mecânico responsável</Label>
+                <Select value={form.assigned_mechanic_id || "none"} onValueChange={v => setForm({ ...form, assigned_mechanic_id: v === "none" ? null : v })}>
+                  <SelectTrigger><SelectValue placeholder="Nenhum" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">Nenhum</SelectItem>
+                    {mechanics.filter(m => m.is_active !== false).map(m => <SelectItem key={m.id} value={m.id}>{m.name}{m.user_id ? "" : " (sem usuário)"}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label>Solicitante</Label>
+                <Select value={form.requester_id || "none"} onValueChange={v => setForm({ ...form, requester_id: v === "none" ? null : v })}>
+                  <SelectTrigger><SelectValue placeholder="Nenhum" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">Nenhum</SelectItem>
+                    {requesters.filter(r => r.is_active !== false).map(r => <SelectItem key={r.id} value={r.id}>{r.name}{r.user_id ? "" : " (sem usuário)"}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+            </>
+          )}
+          {!solicitanteView && (
+            <div>
+              <Label>Responsável (texto livre)</Label>
+              <Input disabled={readOnly} value={form.responsible || ""} onChange={e => setForm({ ...form, responsible: e.target.value })} />
+            </div>
+          )}
+          {!solicitanteView && (
+            <div>
+              <Label>Aberta em</Label>
+              <Input disabled={readOnly} type="date" value={form.opened_at || ""} onChange={e => setForm({ ...form, opened_at: e.target.value })} />
+            </div>
+          )}
+          {!solicitanteView && (
+            <div>
+              <Label>Prazo</Label>
+              <Input disabled={readOnly} type="date" value={form.deadline || ""} onChange={e => setForm({ ...form, deadline: e.target.value })} />
+            </div>
+          )}
           <div className="col-span-2">
             <Label>Descrição</Label>
-            <Textarea rows={3} value={form.description || ""} onChange={e => setForm({ ...form, description: e.target.value })} />
+            <Textarea disabled={readOnly} rows={3} value={form.description || ""} onChange={e => setForm({ ...form, description: e.target.value })} />
           </div>
           <div className="col-span-2">
             <Label>Observações</Label>
@@ -449,7 +529,7 @@ function OmModal({ open, onOpenChange, editing, sites, onSave }: {
           </div>
         </div>
         <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>Cancelar</Button>
+          <Button variant="outline" onClick={() => onOpenChange(false)}>Fechar</Button>
           <Button onClick={() => onSave(form)} disabled={!form.title}>Salvar</Button>
         </DialogFooter>
       </DialogContent>

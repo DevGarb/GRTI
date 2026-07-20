@@ -8,9 +8,12 @@ import { Switch } from "@/components/ui/switch";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { useDeliveryRequesters, type DeliveryRequester } from "@/hooks/useDeliveryRequesters";
+import { useOrgProfiles } from "@/hooks/useOrgProfiles";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 export default function OpEntregasSolicitantes() {
   const { items, loading, add, update, remove } = useDeliveryRequesters();
+  const orgProfiles = useOrgProfiles();
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<DeliveryRequester | null>(null);
   const [form, setForm] = useState<Partial<DeliveryRequester>>({});
@@ -95,6 +98,16 @@ export default function OpEntregasSolicitantes() {
               <Label>PIN (4 a 6 dígitos)</Label>
               <Input inputMode="numeric" maxLength={6} value={form.pin || ""} onChange={(e) => setForm((p) => ({ ...p, pin: e.target.value.replace(/\D/g, "") }))} placeholder="ex.: 1234" />
               <p className="text-xs text-muted-foreground mt-1">Compartilhe com o solicitante para ele acessar no PIN de entregas.</p>
+            </div>
+            <div>
+              <Label>Usuário do sistema (para acesso às solicitações de manutenção)</Label>
+              <Select value={form.user_id || "none"} onValueChange={(v) => setForm((p) => ({ ...p, user_id: v === "none" ? null : v }))}>
+                <SelectTrigger><SelectValue placeholder="Nenhum" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">Nenhum</SelectItem>
+                  {orgProfiles.map(p => <SelectItem key={p.user_id} value={p.user_id}>{p.full_name || p.email || p.username}</SelectItem>)}
+                </SelectContent>
+              </Select>
             </div>
             <div className="flex items-center justify-between border rounded-md p-3">
               <div>
