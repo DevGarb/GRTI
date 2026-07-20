@@ -110,7 +110,7 @@ Deno.serve(async (req) => {
     // Fetch tickets in two focused queries to avoid PostgREST's 1000-row default
     // truncating results on large orgs. Together they cover every KPI the loop
     // computes: open* uses aging/backlog; recent* uses closed/opened/tma/ranking.
-    const selectCols = "id, title, status, priority, created_at, started_at, closed_at, assigned_to, created_by, category_id";
+    const selectCols = "id, title, status, priority, created_at, started_at, closed_at, aguardando_aprovacao_at, assigned_to, created_by, category_id";
     const startMonthIso = startMonth.toISOString();
     const [openRes, recentRes] = await Promise.all([
       supabase
@@ -123,7 +123,7 @@ Deno.serve(async (req) => {
         .from("tickets")
         .select(selectCols)
         .eq("organization_id", orgId)
-        .or(`created_at.gte.${startMonthIso},closed_at.gte.${startMonthIso}`)
+        .or(`created_at.gte.${startMonthIso},closed_at.gte.${startMonthIso},aguardando_aprovacao_at.gte.${startMonthIso}`)
         .order("created_at", { ascending: false }),
     ]);
     const byId = new Map<string, any>();
@@ -177,15 +177,13 @@ Deno.serve(async (req) => {
       const isCreatedToday = createdAt >= startToday;
       if (isCreatedToday) opened_today++;
 
-      if (t.status === "Fechado" || t.status === "Aprovado") {
-        if (t.closed_at) {
-          const cd = new Date(t.closed_at);
-          if (cd >= startToday) {
-            closed_today++;
-            if (t.assigned_to) activeTechsToday.add(t.assigned_to);
-          }
-          if (cd >= startMonth && cd < endMonth) closed_month++;
+      if (t.aguardando_aprovacao_at) {
+        const aad = new Date(t.aguardando_aprovacao_at);
+        if (aad >= startToday) {
+          closed_today++;
+          if (t.assigned_to) activeTechsToday.add(t.assigned_to);
         }
+        if (aad >= startMonth && aad < endMonth) closed_month++;
       }
 
       // TMA = tempo corrido entre started_at e 1ª "Aguardando Aprovação".
@@ -294,7 +292,7 @@ Deno.serve(async (req) => {
     // Ranking today
     const rankMap = new Map<string, { fechados: number }>();
     for (const t of list) {
-      if ((t.status === "Fechado" || t.status === "Aprovado") && t.closed_at && new Date(t.closed_at) >= startToday && t.assigned_to) {
+      if (t.aguardando_aprovacao_at && new Date(t.aguardando_aprovacao_at) >= startToday && t.assigned_to) {
         const r = rankMap.get(t.assigned_to) ?? { fechados: 0 };
         r.fechados++;
         rankMap.set(t.assigned_to, r);
