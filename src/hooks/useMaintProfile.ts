@@ -33,7 +33,7 @@ export function useMaintProfile(): MaintProfile {
       setIsOperacional(isOp);
 
       // Fallback: for non-operacional orgs, keep everyone as admin (current behavior).
-      if (!isOperacional) {
+      if (!isOp) {
         if (!cancelled) { setState({ role: "admin" }); setLoading(false); }
         return;
       }
