@@ -505,6 +505,8 @@ function OmModal({ open, onOpenChange, editing, sites, mechanics, requesters, mo
   forcedRequesterId?: string;
   onSave: (input: Partial<MaintenanceOrder>) => Promise<void>;
 }) {
+  const { profile } = useAuth();
+  const { data: sectors = [] } = useSectors(profile?.organization_id || null);
   const [form, setForm] = useState<Partial<MaintenanceOrder>>({});
   useEffect(() => {
     if (open) {
@@ -523,6 +525,10 @@ function OmModal({ open, onOpenChange, editing, sites, mechanics, requesters, mo
   const title = editing
     ? `${solicitanteView ? "Solicitação" : "OM"} #${editing.om_number}`
     : solicitanteView ? "Nova solicitação de manutenção" : "Nova OM";
+
+  const openedDisplay = editing?.created_at
+    ? new Date(editing.created_at).toLocaleString("pt-BR")
+    : (form.opened_at || "");
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
