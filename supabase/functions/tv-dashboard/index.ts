@@ -292,7 +292,7 @@ Deno.serve(async (req) => {
     // Ranking today
     const rankMap = new Map<string, { fechados: number }>();
     for (const t of list) {
-      if ((t.status === "Fechado" || t.status === "Aprovado") && t.closed_at && new Date(t.closed_at) >= startToday && t.assigned_to) {
+      if (t.aguardando_aprovacao_at && new Date(t.aguardando_aprovacao_at) >= startToday && t.assigned_to) {
         const r = rankMap.get(t.assigned_to) ?? { fechados: 0 };
         r.fechados++;
         rankMap.set(t.assigned_to, r);
