@@ -326,12 +326,13 @@ export default function OpManutencao() {
             <div className="text-center py-8 text-muted-foreground">Carregando...</div>
           ) : view === "kanban" ? (
             <OpKanbanBoard<MaintenanceOrder>
-              columns={KANBAN_COLUMNS}
+              columns={kanbanColumns}
               itemsByColumn={itemsByCol}
               renderCard={renderCard}
+              renderHeader={renderKanbanHeader}
               resolveItem={(id) => filtered.find(x => x.id === id)}
               isAllowed={() => true}
-              onMove={(item, _from, to) => handleStatusChange(item, to)}
+              onMove={handleKanbanMove}
               emptyText="Sem ordens"
             />
           ) : (
