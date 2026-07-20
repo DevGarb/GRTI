@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { UserCheck, Plus, ToggleLeft, ToggleRight, Pencil, Trash2 } from "lucide-react";
-import { useChkAssignments, useSaveChkAssignment, useToggleChkAssignment, useDeleteChkAssignment, useChkTemplates, useChkCompanies, useChkOrgUsers, type ChkFrequency } from "@/hooks/useChecklists";
+import { useChkAssignments, useSaveChkAssignment, useSaveChkAssignmentsBulk, useToggleChkAssignment, useDeleteChkAssignment, useChkTemplates, useChkCompanies, useChkOrgUsers, type ChkFrequency } from "@/hooks/useChecklists";
 
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 
@@ -8,6 +8,7 @@ type FormState = {
   id?: string;
   template_id: string;
   company_id: string;
+  company_ids: string[];
   assigned_user_id: string;
   frequency: ChkFrequency;
   start_date: string;
@@ -16,7 +17,7 @@ type FormState = {
 };
 
 const emptyForm = (): FormState => ({
-  template_id: "", company_id: "", assigned_user_id: "", frequency: "unica",
+  template_id: "", company_id: "", company_ids: [], assigned_user_id: "", frequency: "unica",
   start_date: new Date().toISOString().slice(0, 10), end_date: "", notes: "",
 });
 
