@@ -110,9 +110,9 @@ export default function NewMaintOrderModal({ open, onOpenChange, defaultTechnici
           </div>
 
           <div>
-            <Label>Setor solicitante</Label>
+            <Label>Setor solicitante *</Label>
             <Select value={form.sector} onValueChange={(v) => setForm((p) => ({ ...p, sector: v }))}>
-              <SelectTrigger><SelectValue placeholder="Escolha o setor (opcional)" /></SelectTrigger>
+              <SelectTrigger><SelectValue placeholder="Escolha o setor" /></SelectTrigger>
               <SelectContent>
                 {sectors.map((s) => (
                   <SelectItem key={s.id} value={s.name}>{s.name}</SelectItem>
