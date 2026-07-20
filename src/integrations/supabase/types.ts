@@ -1561,6 +1561,7 @@ export type Database = {
           name: string
           organization_id: string
           phone: string | null
+          pin: string | null
           specialty: string | null
           updated_at: string
           user_id: string | null
@@ -1573,6 +1574,7 @@ export type Database = {
           name: string
           organization_id: string
           phone?: string | null
+          pin?: string | null
           specialty?: string | null
           updated_at?: string
           user_id?: string | null
@@ -1585,6 +1587,7 @@ export type Database = {
           name?: string
           organization_id?: string
           phone?: string | null
+          pin?: string | null
           specialty?: string | null
           updated_at?: string
           user_id?: string | null
