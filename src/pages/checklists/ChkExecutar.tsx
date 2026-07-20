@@ -96,6 +96,18 @@ export default function ChkExecutar() {
           {exec.chk_companies?.name} · {exec.target_date} · {doneCount}/{total} itens
           {exec.score !== null && ` · Score: ${exec.score}%`}
         </p>
+        <div className="mt-3">
+          <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
+            <span>Progresso</span>
+            <span className="font-medium text-foreground">{progress}%</span>
+          </div>
+          <div className="h-2 w-full rounded-full bg-muted overflow-hidden">
+            <div
+              className="h-full bg-primary transition-all duration-300"
+              style={{ width: `${progress}%` }}
+            />
+          </div>
+        </div>
       </div>
 
       {exec.chk_templates?.description && (
