@@ -67,12 +67,13 @@ export default function OpManutencaoSolicitar() {
     }
     if (!form.title.trim()) return toast.error("Informe o título da solicitação");
     if (!form.site_id) return toast.error("Escolha a sede");
+    if (!form.sector) return toast.error("Escolha o setor solicitante");
     const res = await orders.add({
       ...form,
       status: "Aberta",
       requester_id: maintProfile.requesterId || null,
       deadline: form.deadline || null,
-      sector: form.sector || null,
+      sector: form.sector,
     });
     if (res) navigate("/op/manutencao/minhas");
   };
@@ -141,9 +142,9 @@ export default function OpManutencaoSolicitar() {
           </div>
 
           <div>
-            <Label>Setor solicitante</Label>
+            <Label>Setor solicitante *</Label>
             <Select value={form.sector} onValueChange={(v) => setForm((p) => ({ ...p, sector: v }))}>
-              <SelectTrigger><SelectValue placeholder="Escolha o setor (opcional)" /></SelectTrigger>
+              <SelectTrigger><SelectValue placeholder="Escolha o setor" /></SelectTrigger>
               <SelectContent>
                 {sectors.map((s) => (
                   <SelectItem key={s.id} value={s.name}>{s.name}</SelectItem>
