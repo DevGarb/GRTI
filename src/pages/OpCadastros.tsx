@@ -4,9 +4,10 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Trash2, Users, Building2, Car, Plus, Wrench, Package } from "lucide-react";
+import { Trash2, Users, Building2, Car, Plus, Wrench, Package, HardHat } from "lucide-react";
 import { useDrivers, useCompanies, useVehicles } from "@/hooks/useOperacional";
 import { useMechanics, useParts } from "@/hooks/useOficina";
+import { useMaintTechnicians } from "@/hooks/useMaintTechnicians";
 import { useOrgProfiles } from "@/hooks/useOrgProfiles";
 
 export default function OpCadastros() {
