@@ -224,6 +224,8 @@ const App = () => (
 
                       <Route path="/op/oficina" element={<MenuGuard menuKey="op-oficina"><OpOficina /></MenuGuard>} />
                       <Route path="/op/manutencao/pin" element={<MenuGuard menuKey="op-manutencao"><ManutencaoProfileProvider><ManutencaoPin /></ManutencaoProfileProvider></MenuGuard>} />
+                      <Route path="/op/manutencao/minhas" element={<MenuGuard menuKey="op-manutencao"><ManutencaoProfileProvider><ManutencaoGuard><OpManutencaoMinhas /></ManutencaoGuard></ManutencaoProfileProvider></MenuGuard>} />
+                      <Route path="/op/manutencao/solicitar" element={<MenuGuard menuKey="op-manutencao"><ManutencaoProfileProvider><ManutencaoGuard><OpManutencaoSolicitar /></ManutencaoGuard></ManutencaoProfileProvider></MenuGuard>} />
                       <Route path="/op/manutencao" element={<MenuGuard menuKey="op-manutencao"><ManutencaoProfileProvider><ManutencaoGuard><OpManutencao /></ManutencaoGuard></ManutencaoProfileProvider></MenuGuard>} />
                       <Route path="/checklists" element={<MenuGuard menuKey="chk-dashboard"><ChkDashboard /></MenuGuard>} />
                       <Route path="/checklists/setores" element={<MenuGuard menuKey="chk-setores"><AdminRoute><ChkSetores /></AdminRoute></MenuGuard>} />
