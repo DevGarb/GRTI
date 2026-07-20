@@ -1,17 +1,19 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, Camera, Check, Loader2 } from "lucide-react";
-import { useChkExecution, useSaveChkExecutionItem, useCompleteChkExecution, uploadChkPhoto, getChkPhotoUrl } from "@/hooks/useChecklists";
+import { ArrowLeft, Camera, Check, Loader2, Ban, RotateCcw } from "lucide-react";
+import { useChkExecution, useSaveChkExecutionItem, useCompleteChkExecution, useReopenChkExecution, uploadChkPhoto, getChkPhotoUrl } from "@/hooks/useChecklists";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 
 export default function ChkExecutar() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { profile } = useAuth();
+  const { profile, hasRole } = useAuth();
+  const isAdmin = hasRole("admin") || hasRole("super_admin");
   const { data: exec, isLoading } = useChkExecution(id);
   const saveItem = useSaveChkExecutionItem();
   const complete = useCompleteChkExecution();
+  const reopen = useReopenChkExecution();
 
   const [photoUrls, setPhotoUrls] = useState<Record<string, string>>({});
   const [localPreviews, setLocalPreviews] = useState<Record<string, string>>({});
