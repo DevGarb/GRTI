@@ -79,6 +79,7 @@ import ChkExecucoes from "@/pages/checklists/ChkExecucoes";
 import ChkMinhas from "@/pages/checklists/ChkMinhas";
 import ChkExecutar from "@/pages/checklists/ChkExecutar";
 import ChkRelatorios from "@/pages/checklists/ChkRelatorios";
+import ChkComoFunciona from "@/pages/checklists/ChkComoFunciona";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -255,6 +256,7 @@ const App = () => (
                       <Route path="/checklists/minhas" element={<MenuGuard menuKey="chk-minhas"><ChkMinhas /></MenuGuard>} />
                       <Route path="/checklists/executar/:id" element={<MenuGuard menuKey="chk-dashboard"><ChkExecutar /></MenuGuard>} />
                       <Route path="/checklists/relatorios" element={<MenuGuard menuKey="chk-relatorios"><AdminRoute><ChkRelatorios /></AdminRoute></MenuGuard>} />
+                      <Route path="/checklists/como-funciona" element={<MenuGuard menuKey="chk-como-funciona"><ChkComoFunciona /></MenuGuard>} />
                       <Route path="/connect" element={<Connect />} />
                       <Route path="*" element={<NotFound />} />
                     </Routes>

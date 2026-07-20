@@ -26,6 +26,7 @@ import {
   UserCheck,
   ListChecks,
   BarChart3,
+  HelpCircle,
 } from "lucide-react";
 
 export interface MenuItem {
@@ -75,6 +76,7 @@ export const menuItems: MenuItem[] = [
   { key: "op-manutencao", label: "Manutenção Predial", icon: HardHat, path: "/op/manutencao", orgSlugs: ["cgps-operacional"], tooltip: "Ordens de manutenção, sedes e checklists" },
   { key: "op-avaliacoes", label: "Avaliações Op.", icon: Star, path: "/op/avaliacoes", orgSlugs: ["cgps-operacional"], tooltip: "Feedback dos solicitantes sobre entregas e manutenções" },
   { key: "chk-dashboard", label: "Painel", icon: ClipboardCheck, path: "/checklists", orgSlugs: ["grcheck"], techAllowed: true, tooltip: "Painel de checklists" },
+  { key: "chk-como-funciona", label: "Como Funciona", icon: HelpCircle, path: "/checklists/como-funciona", orgSlugs: ["grcheck"], techAllowed: true, tooltip: "Como funciona o checklist" },
   { key: "chk-minhas", label: "Meus Checklists", icon: ClipboardCheck, path: "/checklists/minhas", orgSlugs: ["grcheck"], techAllowed: true, tooltip: "Checklists atribuídos a você" },
   { key: "chk-execucoes", label: "Execuções", icon: ListChecks, path: "/checklists/execucoes", orgSlugs: ["grcheck"], adminOnly: true, tooltip: "Todas as execuções de checklists" },
   { key: "chk-modelos", label: "Modelos", icon: FileText, path: "/checklists/modelos", orgSlugs: ["grcheck"], adminOnly: true, tooltip: "Modelos de checklist" },
