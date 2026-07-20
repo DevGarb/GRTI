@@ -132,10 +132,12 @@ export default function ChkAtribuicoes() {
               <option value="">— Modelo —</option>
               {templates.map((t: any) => <option key={t.id} value={t.id}>{t.title}</option>)}
             </select>
-            <select value={form.company_id} onChange={(e) => setForm({ ...form, company_id: e.target.value })} className="px-3 py-2 rounded-lg border border-input bg-background text-sm">
-              <option value="">— Empresa —</option>
-              {companies.map((c: any) => <option key={c.id} value={c.id}>{c.name}</option>)}
-            </select>
+            {isEdit ? (
+              <select value={form.company_id} onChange={(e) => setForm({ ...form, company_id: e.target.value })} className="px-3 py-2 rounded-lg border border-input bg-background text-sm">
+                <option value="">— Empresa —</option>
+                {companies.map((c: any) => <option key={c.id} value={c.id}>{c.name}</option>)}
+              </select>
+            ) : <div />}
             <select value={form.assigned_user_id} onChange={(e) => setForm({ ...form, assigned_user_id: e.target.value })} className="px-3 py-2 rounded-lg border border-input bg-background text-sm">
               <option value="">— Colaborador —</option>
               {users.map((u: any) => <option key={u.user_id} value={u.user_id}>{u.full_name || u.email}</option>)}
@@ -149,11 +151,32 @@ export default function ChkAtribuicoes() {
             <input type="date" value={form.start_date} onChange={(e) => setForm({ ...form, start_date: e.target.value })} className="px-3 py-2 rounded-lg border border-input bg-background text-sm" />
             <input type="date" value={form.end_date} onChange={(e) => setForm({ ...form, end_date: e.target.value })} placeholder="Fim (opcional)" className="px-3 py-2 rounded-lg border border-input bg-background text-sm" />
           </div>
+          {!isEdit && (
+            <div>
+              <div className="flex items-center justify-between mb-1.5">
+                <label className="text-xs font-medium text-muted-foreground">Empresas ({form.company_ids.length} selecionada{form.company_ids.length === 1 ? "" : "s"})</label>
+                <div className="flex gap-2 text-xs">
+                  <button type="button" onClick={() => setForm({ ...form, company_ids: companies.map((c: any) => c.id) })} className="text-primary hover:underline">Todas</button>
+                  <button type="button" onClick={() => setForm({ ...form, company_ids: [] })} className="text-muted-foreground hover:underline">Limpar</button>
+                </div>
+              </div>
+              <div className="max-h-48 overflow-y-auto border border-input rounded-lg p-2 grid grid-cols-1 md:grid-cols-2 gap-1">
+                {companies.length === 0 ? (
+                  <p className="text-xs text-muted-foreground p-2">Nenhuma empresa cadastrada.</p>
+                ) : companies.map((c: any) => (
+                  <label key={c.id} className="flex items-center gap-2 px-2 py-1.5 rounded hover:bg-muted cursor-pointer text-sm">
+                    <input type="checkbox" checked={form.company_ids.includes(c.id)} onChange={() => toggleCompany(c.id)} className="rounded" />
+                    <span className="truncate">{c.name}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+          )}
           <textarea placeholder="Observações (opcional)" value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} rows={2} className="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm" />
           <div className="flex gap-2 justify-end">
             <button onClick={() => { setShowForm(false); setForm(emptyForm()); }} className="px-4 py-2 text-sm rounded-lg border border-input hover:bg-muted">Cancelar</button>
-            <button onClick={submit} disabled={save.isPending} className="px-4 py-2 text-sm rounded-lg bg-primary text-primary-foreground hover:opacity-90 disabled:opacity-50">
-              {form.id ? "Salvar alterações" : "Criar"}
+            <button onClick={submit} disabled={save.isPending || saveBulk.isPending} className="px-4 py-2 text-sm rounded-lg bg-primary text-primary-foreground hover:opacity-90 disabled:opacity-50">
+              {isEdit ? "Salvar alterações" : form.company_ids.length > 1 ? `Criar ${form.company_ids.length} atribuições` : "Criar"}
             </button>
           </div>
         </div>
