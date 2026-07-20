@@ -254,6 +254,10 @@ export default function OpManutencao() {
     );
   };
 
+  // Non-admins get their own mobile-first screens (after all hooks to preserve hook order)
+  if (!maintProfile.loading && isTecnico) return <Navigate to="/op/manutencao/minhas" replace />;
+  if (!maintProfile.loading && isSolicitante) return <Navigate to="/op/manutencao/solicitar" replace />;
+
   return (
     <div>
       <ManutencaoNav />
