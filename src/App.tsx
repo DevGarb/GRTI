@@ -65,6 +65,7 @@ import ManutencaoPin from "@/pages/op/ManutencaoPin";
 import ManutencaoGuard from "@/pages/op/ManutencaoGuard";
 import OpManutencaoMinhas from "@/pages/op/OpManutencaoMinhas";
 import OpManutencaoSolicitar from "@/pages/op/OpManutencaoSolicitar";
+import OpAvaliacoes from "@/pages/op/OpAvaliacoes";
 import { ManutencaoProfileProvider } from "@/contexts/ManutencaoProfileContext";
 import NotFound from "./pages/NotFound";
 import OAuthConsent from "@/pages/OAuthConsent";
