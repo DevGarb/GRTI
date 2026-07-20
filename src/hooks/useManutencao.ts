@@ -27,8 +27,11 @@ export interface MaintenanceOrder {
   finished_at: string | null;
   notes: string | null;
   created_at: string;
+  created_by?: string | null;
   closure_summary?: string | null;
   closed_by?: string | null;
+  assigned_mechanic_id?: string | null;
+  requester_id?: string | null;
 }
 
 export interface MaintenancePhoto {

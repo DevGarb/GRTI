@@ -11,6 +11,7 @@ export interface DeliveryRequester {
   pin: string | null;
   is_active: boolean;
   created_at: string;
+  user_id?: string | null;
 }
 
 export function useDeliveryRequesters() {
@@ -41,6 +42,7 @@ export function useDeliveryRequesters() {
       phone: input.phone || null,
       pin: input.pin || null,
       is_active: input.is_active ?? true,
+      user_id: input.user_id || null,
     });
     if (error) toast.error(error.message);
     else { toast.success("Solicitante cadastrado"); fetch(); }
