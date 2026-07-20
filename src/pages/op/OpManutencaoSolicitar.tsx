@@ -72,6 +72,7 @@ export default function OpManutencaoSolicitar() {
       status: "Aberta",
       requester_id: maintProfile.requesterId || null,
       deadline: form.deadline || null,
+      sector: form.sector || null,
     });
     if (res) navigate("/op/manutencao/minhas");
   };
