@@ -11,6 +11,7 @@ export default function ChkEmpresas() {
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState<any>(null);
   const [form, setForm] = useState({ name: "", sector_id: "", document: "", contact: "" });
+  const [toDelete, setToDelete] = useState<{ id: string; name: string } | null>(null);
 
   const openNew = () => { setEditing(null); setForm({ name: "", sector_id: "", document: "", contact: "" }); setShowForm(true); };
   const openEdit = (c: any) => { setEditing(c); setForm({ name: c.name, sector_id: c.sector_id || "", document: c.document || "", contact: c.contact || "" }); setShowForm(true); };
