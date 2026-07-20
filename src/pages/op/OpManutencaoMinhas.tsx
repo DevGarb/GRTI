@@ -13,6 +13,7 @@ import { useMaintProfile } from "@/hooks/useMaintProfile";
 import { useManutencaoProfile } from "@/contexts/ManutencaoProfileContext";
 import { useAuth } from "@/contexts/AuthContext";
 import OpClosureDialog from "@/components/operacional/OpClosureDialog";
+import NewMaintOrderModal from "@/components/operacional/NewMaintOrderModal";
 import { toast } from "sonner";
 import "./cearagps.css";
 
@@ -67,6 +68,7 @@ export default function OpManutencaoMinhas() {
   const [highContrast, setHighContrast] = useState(false);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [closing, setClosing] = useState<MaintenanceOrder | null>(null);
+  const [newOMOpen, setNewOMOpen] = useState(false);
 
   const isTecnico = maintProfile.role === "tecnico";
   const isSolicitante = maintProfile.role === "solicitante";
@@ -322,6 +324,12 @@ export default function OpManutencaoMinhas() {
                               <span className="font-medium"><span style={{ color: textMuted }}>Solicitante: </span>{req.name}</span>
                             </div>
                           )}
+                          {om.sector && (
+                            <div className="flex items-center gap-2 text-sm" style={{ color: textMain }}>
+                              <Building2 className="h-4 w-4 flex-shrink-0" style={{ color: ORANGE }} />
+                              <span className="font-medium"><span style={{ color: textMuted }}>Setor: </span>{om.sector}</span>
+                            </div>
+                          )}
                           {isSolicitante && tech && (
                             <div className="flex items-center gap-2 text-sm" style={{ color: textMain }}>
                               <User className="h-4 w-4 flex-shrink-0" style={{ color: TEAL }} />
@@ -448,11 +456,27 @@ export default function OpManutencaoMinhas() {
         </motion.button>
       )}
 
+      {isTecnico && (
+        <motion.button whileTap={{ scale: 0.95 }} onClick={() => setNewOMOpen(true)}
+          className="fixed bottom-6 right-6 z-40 rounded-full h-16 w-16 flex items-center justify-center shadow-2xl"
+          style={{ background: ORANGE, color: "#fff", boxShadow: "0 12px 32px -8px hsl(14 82% 51% / 0.65)" }}
+          aria-label="Nova OM">
+          <Plus className="h-7 w-7" />
+        </motion.button>
+      )}
+
       <OpClosureDialog
         open={!!closing}
         onOpenChange={(o) => !o && setClosing(null)}
         title="Concluir ordem de manutenção"
         onConfirm={confirmClosure}
+      />
+
+      <NewMaintOrderModal
+        open={newOMOpen}
+        onOpenChange={setNewOMOpen}
+        defaultTechnicianId={maintProfile.mechanicId || null}
+        onCreated={() => orders.refetch()}
       />
     </div>
   );

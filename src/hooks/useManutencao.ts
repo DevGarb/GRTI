@@ -33,6 +33,7 @@ export interface MaintenanceOrder {
   assigned_mechanic_id?: string | null;
   assigned_technician_id?: string | null;
   requester_id?: string | null;
+  sector?: string | null;
 }
 
 export interface MaintenancePhoto {

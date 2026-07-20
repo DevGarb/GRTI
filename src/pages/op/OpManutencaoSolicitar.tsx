@@ -8,6 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Send, Building2, Wrench, AlertTriangle, Calendar, Star } from "lucide-react";
 import { useMaintenanceOrders, useSites, MAINT_CATEGORIES, MAINT_PRIORITIES } from "@/hooks/useManutencao";
+import { useSectors } from "@/hooks/useSectors";
 import { useMaintProfile } from "@/hooks/useMaintProfile";
 import { useAuth } from "@/contexts/AuthContext";
 import { fetchRatedIds, submitOpRating } from "@/hooks/useOpRatings";
@@ -22,10 +23,12 @@ export default function OpManutencaoSolicitar() {
   const sites = useSites();
   const maintProfile = useMaintProfile();
   const { user, profile: authProfile } = useAuth();
+  const { data: sectors = [] } = useSectors(authProfile?.organization_id || null);
 
   const [form, setForm] = useState({
     title: "",
     site_id: "",
+    sector: "",
     category: "Outros",
     priority: "Média",
     description: "",
@@ -69,6 +72,7 @@ export default function OpManutencaoSolicitar() {
       status: "Aberta",
       requester_id: maintProfile.requesterId || null,
       deadline: form.deadline || null,
+      sector: form.sector || null,
     });
     if (res) navigate("/op/manutencao/minhas");
   };
@@ -131,6 +135,18 @@ export default function OpManutencaoSolicitar() {
               <SelectContent>
                 {sites.items.filter((s) => s.is_active).map((s) => (
                   <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div>
+            <Label>Setor solicitante</Label>
+            <Select value={form.sector} onValueChange={(v) => setForm((p) => ({ ...p, sector: v }))}>
+              <SelectTrigger><SelectValue placeholder="Escolha o setor (opcional)" /></SelectTrigger>
+              <SelectContent>
+                {sectors.map((s) => (
+                  <SelectItem key={s.id} value={s.name}>{s.name}</SelectItem>
                 ))}
               </SelectContent>
             </Select>

@@ -1511,6 +1511,7 @@ export type Database = {
           priority: string
           requester_id: string | null
           responsible: string | null
+          sector: string | null
           site_id: string | null
           status: string
           title: string
@@ -1535,6 +1536,7 @@ export type Database = {
           priority?: string
           requester_id?: string | null
           responsible?: string | null
+          sector?: string | null
           site_id?: string | null
           status?: string
           title: string
@@ -1559,6 +1561,7 @@ export type Database = {
           priority?: string
           requester_id?: string | null
           responsible?: string | null
+          sector?: string | null
           site_id?: string | null
           status?: string
           title?: string
