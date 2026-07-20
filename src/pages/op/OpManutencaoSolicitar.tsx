@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Send, Building2, Wrench, AlertTriangle, Calendar, Star } from "lucide-react";
+import { Send, Building2, Wrench, AlertTriangle, Calendar, Star, Camera, X } from "lucide-react";
 import { useMaintenanceOrders, useSites, MAINT_CATEGORIES, MAINT_PRIORITIES } from "@/hooks/useManutencao";
 import { useSectors } from "@/hooks/useSectors";
 import { useMaintProfile } from "@/hooks/useMaintProfile";
@@ -39,6 +39,7 @@ export default function OpManutencaoSolicitar() {
   const [pending, setPending] = useState<any>(null);
   const [ratingOpen, setRatingOpen] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [photos, setPhotos] = useState<File[]>([]);
 
   const findPending = async () => {
     if (!maintProfile.requesterId || !authProfile?.organization_id) return null;
@@ -75,7 +76,12 @@ export default function OpManutencaoSolicitar() {
       deadline: form.deadline || null,
       sector: form.sector,
     });
-    if (res) navigate("/op/manutencao/minhas");
+    if (res) {
+      if (photos.length) {
+        for (const f of photos) await orders.uploadPhoto(res.id, f, "antes");
+      }
+      navigate("/op/manutencao/minhas");
+    }
   };
 
   const handleSubmitRating = async (rating: number, comment: string) => {
@@ -182,6 +188,46 @@ export default function OpManutencaoSolicitar() {
           <div>
             <Label>Descrição / detalhes</Label>
             <Textarea rows={4} value={form.description} onChange={(e) => setForm((p) => ({ ...p, description: e.target.value }))} placeholder="Descreva o problema, local exato, quando começou..." />
+          </div>
+
+          <div>
+            <Label>Fotos (opcional)</Label>
+            <input
+              id="maint-photos-input"
+              type="file"
+              accept="image/*"
+              multiple
+              className="hidden"
+              onChange={(e) => {
+                const files = Array.from(e.target.files || []);
+                setPhotos((prev) => [...prev, ...files]);
+                (e.target as HTMLInputElement).value = "";
+              }}
+            />
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => document.getElementById("maint-photos-input")?.click()}
+            >
+              <Camera className="h-4 w-4 mr-1" /> Adicionar fotos
+            </Button>
+            {photos.length > 0 && (
+              <div className="mt-2 grid grid-cols-3 gap-2">
+                {photos.map((f, i) => (
+                  <div key={i} className="relative">
+                    <img src={URL.createObjectURL(f)} alt={f.name} className="w-full h-20 object-cover rounded border" />
+                    <button
+                      type="button"
+                      onClick={() => setPhotos((prev) => prev.filter((_, j) => j !== i))}
+                      className="absolute -top-1 -right-1 bg-destructive text-white rounded-full w-5 h-5 flex items-center justify-center"
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
 
           <Button onClick={submit} className="w-full cgps-btn-primary" disabled={!!pending}>
