@@ -57,7 +57,7 @@ const steps: Step[] = [
     n: 5,
     icon: Camera,
     title: "Responda item por item",
-    desc: "Cada item pode ser marcado como Conforme, Não conforme ou N/A. Anexe fotos e observações quando necessário. O progresso é salvo em tempo real.",
+    desc: "Marque cada item como feito, adicione observação quando necessário e anexe foto se for obrigatória. Se o item não se aplicar, marque N/A. O progresso é salvo em tempo real.",
     role: "Colaborador",
   },
   {
