@@ -22,12 +22,13 @@ export default function ManutencaoPin() {
 
   const [techPin, setTechPin] = useState("");
   const [reqPin, setReqPin] = useState("");
+  const [adminPin, setAdminPin] = useState("");
 
   const activeTechnicians = technicians.filter((m) => m.is_active !== false);
   const activeRequesters = requesters.filter((r) => r.is_active);
 
   const loginAdmin = () => {
-    if (!isAdmin) return toast.error("Você não tem permissão de administrador");
+    if (!isAdmin && adminPin.trim() !== "0000") return toast.error("Você não tem permissão de administrador");
     setProfile({ type: "admin", name: authProfile?.full_name || "Administrador" });
     navigate("/op/manutencao");
   };
@@ -111,13 +112,26 @@ export default function ManutencaoPin() {
 
           <TabsContent value="admin" className="space-y-3">
             <div className="text-sm text-muted-foreground bg-slate-50 rounded-md p-3 border">
-              Acesso liberado se você já está logado como administrador do sistema.
+              Acesso liberado por perfil administrador ou PIN de administrador.
               <div className="mt-2 text-xs">Usuário atual: <strong>{authProfile?.full_name || "—"}</strong></div>
             </div>
-            <Button onClick={loginAdmin} className="w-full cgps-btn-primary" disabled={!isAdmin}>
+            {!isAdmin && (
+              <div>
+                <Label>PIN de administrador</Label>
+                <Input
+                  type="password" inputMode="numeric" maxLength={6}
+                  value={adminPin}
+                  onChange={(e) => setAdminPin(e.target.value.replace(/\D/g, ""))}
+                  onKeyDown={(e) => e.key === "Enter" && loginAdmin()}
+                  placeholder="••••"
+                  className="text-center text-2xl tracking-[0.5em] h-14"
+                />
+              </div>
+            )}
+            <Button onClick={loginAdmin} className="w-full cgps-btn-primary">
               Entrar como administrador <ArrowRight className="h-4 w-4 ml-1" />
             </Button>
-            {!isAdmin && <p className="text-xs text-destructive text-center">Seu usuário não é administrador.</p>}
+            {!isAdmin && <p className="text-xs text-muted-foreground text-center">Use o PIN 0000 para acesso administrativo do módulo.</p>}
           </TabsContent>
         </Tabs>
       </div>
