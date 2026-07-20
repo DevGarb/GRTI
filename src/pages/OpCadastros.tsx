@@ -31,6 +31,7 @@ export default function OpCadastros() {
         <TabsList className="flex-wrap h-auto">
           <TabsTrigger value="drivers"><Users className="h-4 w-4 mr-1" /> Motoristas</TabsTrigger>
           <TabsTrigger value="requesters"><UserCheck className="h-4 w-4 mr-1" /> Solicitantes</TabsTrigger>
+          <TabsTrigger value="sectors"><Layers className="h-4 w-4 mr-1" /> Setores</TabsTrigger>
           <TabsTrigger value="companies"><Building2 className="h-4 w-4 mr-1" /> Empresas</TabsTrigger>
           <TabsTrigger value="vehicles"><Car className="h-4 w-4 mr-1" /> Veículos</TabsTrigger>
           <TabsTrigger value="mechanics"><Wrench className="h-4 w-4 mr-1" /> Mecânicos (Oficina)</TabsTrigger>
@@ -39,12 +40,59 @@ export default function OpCadastros() {
         </TabsList>
         <TabsContent value="drivers"><DriversTab /></TabsContent>
         <TabsContent value="requesters"><RequestersTab /></TabsContent>
+        <TabsContent value="sectors"><SectorsTab /></TabsContent>
         <TabsContent value="companies"><CompaniesTab /></TabsContent>
         <TabsContent value="vehicles"><VehiclesTab /></TabsContent>
         <TabsContent value="mechanics"><MechanicsTab /></TabsContent>
         <TabsContent value="maint_tech"><MaintTechniciansTab /></TabsContent>
         <TabsContent value="parts"><PartsTab /></TabsContent>
       </Tabs>
+    </div>
+  );
+}
+
+function SectorsTab() {
+  const { profile } = useAuth();
+  const orgId = profile?.organization_id || null;
+  const { data: sectors = [] } = useSectors(orgId);
+  const createSector = useCreateSector();
+  const updateSector = useUpdateSector();
+  const deleteSector = useDeleteSector();
+  const [name, setName] = useState("");
+
+  return (
+    <div className="space-y-4">
+      <div className="rounded-md border bg-sky-50 text-sky-900 px-3 py-2 text-xs">
+        Setores cadastrados aqui aparecem na abertura de OMs de <strong>Manutenção Predial</strong> e são obrigatórios na solicitação.
+      </div>
+      <div className="bg-card border rounded-lg p-4 grid gap-3 md:grid-cols-[1fr_auto]">
+        <div><Label>Nome do setor</Label><Input value={name} onChange={e => setName(e.target.value)} placeholder="Ex.: Financeiro, RH, Almoxarifado" /></div>
+        <div className="flex items-end">
+          <Button onClick={() => {
+            if (!name.trim()) return;
+            createSector.mutate({ name: name.trim(), organization_id: orgId }, { onSuccess: () => setName("") });
+          }} disabled={createSector.isPending}>
+            <Plus className="h-4 w-4 mr-1" /> Adicionar
+          </Button>
+        </div>
+      </div>
+      <div className="bg-card border rounded-lg divide-y">
+        {sectors.length === 0 && <div className="p-8 text-center text-muted-foreground">Nenhum setor cadastrado</div>}
+        {sectors.map(s => (
+          <div key={s.id} className="p-3 flex items-center gap-3">
+            <div className="flex-1">
+              <div className="font-medium">{s.name}</div>
+            </div>
+            <div className="flex items-center gap-2">
+              <Switch checked={s.is_active} onCheckedChange={(v) => updateSector.mutate({ id: s.id, is_active: v })} />
+              <span className="text-xs text-muted-foreground">Ativo</span>
+            </div>
+            <Button variant="ghost" size="icon" onClick={() => { if (confirm(`Remover ${s.name}?`)) deleteSector.mutate(s.id); }}>
+              <Trash2 className="h-4 w-4 text-destructive" />
+            </Button>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
