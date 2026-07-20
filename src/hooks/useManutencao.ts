@@ -34,6 +34,7 @@ export interface MaintenanceOrder {
   assigned_technician_id?: string | null;
   requester_id?: string | null;
   sector?: string | null;
+  kanban_position?: number | null;
 }
 
 export interface MaintenancePhoto {
