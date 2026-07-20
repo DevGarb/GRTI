@@ -168,6 +168,19 @@ export default function ChkModelos() {
           ))}
         </div>
       )}
+
+      <ConfirmDialog
+        open={!!toDelete}
+        onOpenChange={(o) => !o && setToDelete(null)}
+        title="Remover modelo"
+        description={toDelete ? `Remover "${toDelete.title}"?` : ""}
+        confirmLabel="Remover"
+        destructive
+        onConfirm={() => {
+          if (toDelete) del.mutate(toDelete.id);
+          setToDelete(null);
+        }}
+      />
     </div>
   );
 }
