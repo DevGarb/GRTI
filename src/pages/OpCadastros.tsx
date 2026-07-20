@@ -238,3 +238,69 @@ function PartsTab() {
     </div>
   );
 }
+
+function MaintTechniciansTab() {
+  const { items, add, update, remove } = useMaintTechnicians();
+  const orgProfiles = useOrgProfiles();
+  const [name, setName] = useState(""); const [phone, setPhone] = useState(""); const [specialty, setSpecialty] = useState(""); const [userId, setUserId] = useState<string>(""); const [pin, setPin] = useState("");
+  return (
+    <div className="space-y-4">
+      <div className="rounded-md border bg-amber-50 text-amber-900 px-3 py-2 text-xs">
+        Estes técnicos aparecem apenas no módulo <strong>Manutenção Predial</strong>. Para mecânicos da Oficina, use a aba anterior.
+      </div>
+      <div className="bg-card border rounded-lg p-4 grid gap-3 md:grid-cols-[1fr_160px_1fr_1fr_140px_auto]">
+        <div><Label>Nome</Label><Input value={name} onChange={e => setName(e.target.value)} placeholder="Nome do técnico" /></div>
+        <div><Label>Telefone</Label><Input value={phone} onChange={e => setPhone(e.target.value)} /></div>
+        <div><Label>Especialidade</Label><Input value={specialty} onChange={e => setSpecialty(e.target.value)} placeholder="Ex.: Elétrica, hidráulica" /></div>
+        <div><Label>Usuário do sistema</Label>
+          <Select value={userId || "none"} onValueChange={(v) => setUserId(v === "none" ? "" : v)}>
+            <SelectTrigger><SelectValue placeholder="Nenhum" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="none">Nenhum</SelectItem>
+              {orgProfiles.map(p => <SelectItem key={p.user_id} value={p.user_id}>{p.full_name || p.email || p.username}</SelectItem>)}
+            </SelectContent>
+          </Select>
+        </div>
+        <div><Label>PIN (Manutenção)</Label><Input inputMode="numeric" maxLength={6} value={pin} onChange={e => setPin(e.target.value.replace(/\D/g, ""))} placeholder="ex.: 1234" /></div>
+        <div className="flex items-end">
+          <Button onClick={() => { if (!name) return; add({ name, phone, specialty, user_id: userId || null, pin: pin || null }); setName(""); setPhone(""); setSpecialty(""); setUserId(""); setPin(""); }}>
+            <Plus className="h-4 w-4 mr-1" /> Adicionar
+          </Button>
+        </div>
+      </div>
+      <div className="bg-card border rounded-lg divide-y">
+        {items.length === 0 && <div className="p-8 text-center text-muted-foreground">Nenhum técnico cadastrado</div>}
+        {items.map(m => {
+          const linkedUser = orgProfiles.find(p => p.user_id === m.user_id);
+          return (
+            <div key={m.id} className="p-3 flex items-center gap-3 flex-wrap">
+              <div className="flex-1 min-w-[180px]">
+                <div className="font-medium">{m.name} {m.pin && <span className="ml-1 text-[10px] font-mono px-1.5 py-0.5 bg-muted rounded">PIN {m.pin}</span>}</div>
+                <div className="text-xs text-muted-foreground">{m.phone || "—"}{m.specialty ? ` · ${m.specialty}` : ""}{linkedUser ? ` · usuário: ${linkedUser.full_name}` : ""}</div>
+              </div>
+              <Input
+                className="w-28 h-8"
+                inputMode="numeric" maxLength={6}
+                defaultValue={m.pin || ""}
+                placeholder="PIN"
+                onBlur={(e) => {
+                  const v = e.target.value.replace(/\D/g, "");
+                  if ((v || null) !== (m.pin || null)) update(m.id, { pin: v || null });
+                }}
+              />
+              <Select value={m.user_id || "none"} onValueChange={(v) => update(m.id, { user_id: v === "none" ? null : v })}>
+                <SelectTrigger className="w-52 h-8"><SelectValue placeholder="Vincular usuário" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">Sem vínculo</SelectItem>
+                  {orgProfiles.map(p => <SelectItem key={p.user_id} value={p.user_id}>{p.full_name || p.email || p.username}</SelectItem>)}
+                </SelectContent>
+              </Select>
+              <Button variant="ghost" size="icon" onClick={() => remove(m.id)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
