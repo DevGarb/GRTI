@@ -49,11 +49,12 @@ export default function NewMaintOrderModal({ open, onOpenChange, defaultTechnici
     if (!form.title.trim()) return toast.error("Informe o título");
     if (!form.site_id) return toast.error("Escolha a sede");
     if (!form.requester_id) return toast.error("Selecione o solicitante");
+    if (!form.sector) return toast.error("Escolha o setor solicitante");
     setBusy(true);
     const res = await orders.add({
       title: form.title,
       site_id: form.site_id,
-      sector: form.sector || null,
+      sector: form.sector,
       requester_id: form.requester_id,
       category: form.category,
       priority: form.priority,
