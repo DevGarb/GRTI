@@ -171,3 +171,42 @@ export default function ChkModelos() {
     </div>
   );
 }
+
+function SortableItem({ id, item, idx, onUpdate, onRemove }: {
+  id: string; item: Item; idx: number;
+  onUpdate: (idx: number, patch: Partial<Item>) => void;
+  onRemove: (idx: number) => void;
+}) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id });
+  const style = { transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.5 : 1 };
+  return (
+    <div ref={setNodeRef} style={style} className="border border-border rounded-lg p-3 space-y-2 bg-background">
+      <div className="flex items-start gap-2">
+        <button
+          type="button"
+          {...attributes}
+          {...listeners}
+          title="Arrastar para reordenar"
+          className="p-1.5 rounded hover:bg-muted text-muted-foreground cursor-grab active:cursor-grabbing touch-none"
+        >
+          <GripVertical className="h-4 w-4" />
+        </button>
+        <input placeholder="Pergunta do item" value={item.title} onChange={(e) => onUpdate(idx, { title: e.target.value })} className="flex-1 px-3 py-2 rounded-lg border border-input bg-background text-sm" />
+        <button onClick={() => onRemove(idx)} className="p-2 rounded-md hover:bg-muted text-destructive"><Trash2 className="h-4 w-4" /></button>
+      </div>
+      <textarea placeholder="Observação padrão (opcional)" value={item.observation || ""} onChange={(e) => onUpdate(idx, { observation: e.target.value })} rows={1} className="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm" />
+      <div className="flex items-center gap-3 flex-wrap">
+        <label className="text-xs text-muted-foreground">Peso:</label>
+        {[1, 2, 3].map((w) => (
+          <button key={w} onClick={() => onUpdate(idx, { weight: w as 1 | 2 | 3 })} className={`px-3 py-1 rounded-full text-xs font-medium border ${item.weight === w ? "bg-primary text-primary-foreground border-primary" : "border-input hover:bg-muted"}`}>
+            {w === 1 ? "1 · Comum" : w === 2 ? "2 · Importante" : "3 · Imprescindível"}
+          </button>
+        ))}
+        <label className="flex items-center gap-1.5 text-xs text-muted-foreground ml-auto cursor-pointer">
+          <input type="checkbox" checked={item.requires_photo} onChange={(e) => onUpdate(idx, { requires_photo: e.target.checked })} className="rounded" />
+          <Camera className="h-3.5 w-3.5" /> Exige foto
+        </label>
+      </div>
+    </div>
+  );
+}
