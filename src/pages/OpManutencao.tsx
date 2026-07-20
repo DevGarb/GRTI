@@ -58,10 +58,6 @@ export default function OpManutencao() {
   const isTecnico = maintProfile.role === "tecnico";
   const isSolicitante = maintProfile.role === "solicitante";
 
-  // Non-admins get their own mobile-first screens (same pattern as Entregas)
-  if (!maintProfile.loading && isTecnico) return <Navigate to="/op/manutencao/minhas" replace />;
-  if (!maintProfile.loading && isSolicitante) return <Navigate to="/op/manutencao/solicitar" replace />;
-
   const sites = useSites();
   const orders = useMaintenanceOrders();
   const tpls = useChecklistTemplates();
