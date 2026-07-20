@@ -1,5 +1,5 @@
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
-import { Wrench, LogOut, ClipboardList, LayoutGrid } from "lucide-react";
+import { Wrench, LogOut, ClipboardList, LayoutGrid, Star } from "lucide-react";
 import { useManutencaoProfile } from "@/contexts/ManutencaoProfileContext";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
