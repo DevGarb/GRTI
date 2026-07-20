@@ -19,6 +19,7 @@ import {
 import { useMaintTechnicians, type MaintTechnician } from "@/hooks/useMaintTechnicians";
 import { useDeliveryRequesters, type DeliveryRequester } from "@/hooks/useDeliveryRequesters";
 import { useMaintProfile } from "@/hooks/useMaintProfile";
+import { useSectors } from "@/hooks/useSectors";
 import OpKanbanBoard, { type KanbanColumn } from "@/components/operacional/OpKanbanBoard";
 import OpClosureDialog from "@/components/operacional/OpClosureDialog";
 import OpQuickActions from "@/components/operacional/OpQuickActions";
