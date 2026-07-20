@@ -13,6 +13,7 @@ import { useMaintProfile } from "@/hooks/useMaintProfile";
 import { useManutencaoProfile } from "@/contexts/ManutencaoProfileContext";
 import { useAuth } from "@/contexts/AuthContext";
 import OpClosureDialog from "@/components/operacional/OpClosureDialog";
+import NewMaintOrderModal from "@/components/operacional/NewMaintOrderModal";
 import { toast } from "sonner";
 import "./cearagps.css";
 
