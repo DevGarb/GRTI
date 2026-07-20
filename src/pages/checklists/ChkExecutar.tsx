@@ -124,18 +124,20 @@ export default function ChkExecutar() {
           const ti = it.chk_template_items;
           const weightLabel = ti?.weight === 3 ? "Imprescindível" : ti?.weight === 2 ? "Importante" : "Comum";
           const weightColor = ti?.weight === 3 ? "bg-red-100 text-red-700" : ti?.weight === 2 ? "bg-amber-100 text-amber-700" : "bg-muted text-muted-foreground";
+          const na = it.not_applicable;
+          const cardBorder = na ? "border-muted-foreground/30 bg-muted/30" : it.done ? "border-primary/30" : "";
           return (
-            <div key={it.id} className={`card-elevated p-4 space-y-3 ${it.done ? "border-primary/30" : ""}`}>
+            <div key={it.id} className={`card-elevated p-4 space-y-3 ${cardBorder}`}>
               <div className="flex items-start gap-3">
                 <button
-                  disabled={readonly}
+                  disabled={readonly || na}
                   onClick={() => saveItem.mutate({ id: it.id, done: !it.done })}
-                  className={`h-6 w-6 rounded-md border-2 shrink-0 flex items-center justify-center transition-colors ${it.done ? "bg-primary border-primary text-primary-foreground" : "border-input hover:border-primary"}`}
+                  className={`h-6 w-6 rounded-md border-2 shrink-0 flex items-center justify-center transition-colors disabled:opacity-40 disabled:cursor-not-allowed ${it.done && !na ? "bg-primary border-primary text-primary-foreground" : "border-input hover:border-primary"}`}
                 >
-                  {it.done && <Check className="h-4 w-4" />}
+                  {it.done && !na && <Check className="h-4 w-4" />}
                 </button>
                 <div className="flex-1">
-                  <p className="font-medium">{idx + 1}. {ti?.title}</p>
+                  <p className={`font-medium ${na ? "line-through text-muted-foreground" : ""}`}>{idx + 1}. {ti?.title}</p>
                   {ti?.observation && <p className="text-xs text-muted-foreground mt-0.5">{ti.observation}</p>}
                 </div>
                 <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${weightColor}`}>{weightLabel}</span>
@@ -150,8 +152,8 @@ export default function ChkExecutar() {
                 className="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm disabled:opacity-60"
               />
 
-              <div className="flex items-center gap-3">
-                {(() => {
+              <div className="flex items-center gap-3 flex-wrap">
+                {!na && (() => {
                   const displayUrl = localPreviews[it.id] || photoUrls[it.id];
                   if (displayUrl) {
                     return (
@@ -167,12 +169,22 @@ export default function ChkExecutar() {
                   }
                   return ti?.requires_photo && <span className="text-xs text-red-600">Foto obrigatória</span>;
                 })()}
-                {!readonly && (
+                {!readonly && !na && (
                   <label className={`text-xs px-3 py-1.5 rounded-lg border cursor-pointer flex items-center gap-1.5 ${failedIds.has(it.id) ? "border-red-500 text-red-600 hover:bg-red-50" : "border-input hover:bg-muted"}`}>
                     {uploadingId === it.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Camera className="h-3.5 w-3.5" />}
                     {failedIds.has(it.id) ? "Falha no envio, toque pra tentar de novo" : (it.photo_path || localPreviews[it.id]) ? "Trocar foto" : "Anexar foto"}
                     <input type="file" accept="image/*" capture="environment" className="hidden" onChange={(e) => e.target.files?.[0] && handlePhoto(it, e.target.files[0])} />
                   </label>
+                )}
+                {!readonly && (
+                  <button
+                    type="button"
+                    onClick={() => saveItem.mutate({ id: it.id, not_applicable: !na })}
+                    className={`text-xs px-3 py-1.5 rounded-lg border flex items-center gap-1.5 ml-auto ${na ? "bg-muted-foreground/10 border-muted-foreground/40 text-foreground" : "border-input hover:bg-muted text-muted-foreground"}`}
+                    title="Marcar como não aplicável"
+                  >
+                    <Ban className="h-3.5 w-3.5" /> {na ? "N/A ativado" : "N/A"}
+                  </button>
                 )}
               </div>
             </div>
@@ -187,10 +199,22 @@ export default function ChkExecutar() {
             disabled={!canComplete || complete.isPending}
             className="px-5 py-2.5 rounded-lg bg-primary text-primary-foreground font-medium shadow-lg hover:opacity-90 disabled:opacity-50"
           >
-            {canComplete ? "Concluir checklist" : `Faltam ${total - doneCount} item(ns)`}
+            {canComplete ? "Concluir checklist" : `Faltam ${pending} item(ns)`}
+          </button>
+        </div>
+      )}
+      {readonly && isAdmin && (
+        <div className="sticky bottom-4 flex justify-end">
+          <button
+            onClick={() => reopen.mutate(exec.id)}
+            disabled={reopen.isPending}
+            className="px-5 py-2.5 rounded-lg bg-amber-600 text-white font-medium shadow-lg hover:opacity-90 disabled:opacity-50 flex items-center gap-2"
+          >
+            <RotateCcw className="h-4 w-4" /> Reabrir checklist
           </button>
         </div>
       )}
     </div>
+
   );
 }
