@@ -1,0 +1,1 @@
+ALTER TABLE public.op_maintenance_orders ADD COLUMN IF NOT EXISTS sector text;
