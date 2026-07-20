@@ -14,7 +14,10 @@ const STATUS_COLORS: Record<ChkExecStatus, string> = {
 
 export default function ChkMinhas() {
   const { data: execs = [], isLoading } = useChkExecutions({ mine: true });
-  const pendentes = execs.filter((e: any) => e.status !== "concluida");
+  const pendentes = execs
+    .filter((e: any) => e.status !== "concluida")
+    .slice()
+    .sort((a: any, b: any) => (a.target_date || "").localeCompare(b.target_date || ""));
   const concluidas = execs.filter((e: any) => e.status === "concluida");
 
   return (
