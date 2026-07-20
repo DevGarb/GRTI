@@ -464,6 +464,7 @@ export default function OpManutencao() {
         onConfirm={confirmClosure}
       />
     </div>
+    </div>
   );
 }
 
