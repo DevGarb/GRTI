@@ -19,6 +19,7 @@ import {
 import { useMaintTechnicians, type MaintTechnician } from "@/hooks/useMaintTechnicians";
 import { useDeliveryRequesters, type DeliveryRequester } from "@/hooks/useDeliveryRequesters";
 import { useMaintProfile } from "@/hooks/useMaintProfile";
+import { useSectors } from "@/hooks/useSectors";
 import OpKanbanBoard, { type KanbanColumn } from "@/components/operacional/OpKanbanBoard";
 import OpClosureDialog from "@/components/operacional/OpClosureDialog";
 import OpQuickActions from "@/components/operacional/OpQuickActions";
@@ -504,6 +505,8 @@ function OmModal({ open, onOpenChange, editing, sites, mechanics, requesters, mo
   forcedRequesterId?: string;
   onSave: (input: Partial<MaintenanceOrder>) => Promise<void>;
 }) {
+  const { profile } = useAuth();
+  const { data: sectors = [] } = useSectors(profile?.organization_id || null);
   const [form, setForm] = useState<Partial<MaintenanceOrder>>({});
   useEffect(() => {
     if (open) {
@@ -522,6 +525,10 @@ function OmModal({ open, onOpenChange, editing, sites, mechanics, requesters, mo
   const title = editing
     ? `${solicitanteView ? "Solicitação" : "OM"} #${editing.om_number}`
     : solicitanteView ? "Nova solicitação de manutenção" : "Nova OM";
+
+  const openedDisplay = editing?.created_at
+    ? new Date(editing.created_at).toLocaleString("pt-BR")
+    : (form.opened_at || "");
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -586,16 +593,21 @@ function OmModal({ open, onOpenChange, editing, sites, mechanics, requesters, mo
               </div>
             </>
           )}
-          {!solicitanteView && (
-            <div>
-              <Label>Responsável (texto livre)</Label>
-              <Input disabled={readOnly} value={form.responsible || ""} onChange={e => setForm({ ...form, responsible: e.target.value })} />
-            </div>
-          )}
-          {!solicitanteView && (
+          <div>
+            <Label>Setor solicitante *</Label>
+            <Select disabled={readOnly} value={form.sector || ""} onValueChange={v => setForm({ ...form, sector: v })}>
+              <SelectTrigger><SelectValue placeholder="Escolha o setor" /></SelectTrigger>
+              <SelectContent>
+                {sectors.map((s) => (
+                  <SelectItem key={s.id} value={s.name}>{s.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          {!solicitanteView && editing && (
             <div>
               <Label>Aberta em</Label>
-              <Input disabled={readOnly} type="date" value={form.opened_at || ""} onChange={e => setForm({ ...form, opened_at: e.target.value })} />
+              <Input disabled value={openedDisplay} readOnly />
             </div>
           )}
           {!solicitanteView && (
@@ -615,7 +627,7 @@ function OmModal({ open, onOpenChange, editing, sites, mechanics, requesters, mo
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>Fechar</Button>
-          <Button onClick={() => onSave(form)} disabled={!form.title}>Salvar</Button>
+          <Button onClick={() => onSave(form)} disabled={!form.title || !form.sector}>Salvar</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
