@@ -6,7 +6,7 @@ import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, us
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 
-type Item = { id?: string; title: string; observation?: string; weight: 1 | 2 | 3; requires_photo: boolean; sort_order: number };
+type Item = { id?: string; _key?: string; title: string; observation?: string; weight: 1 | 2 | 3; requires_photo: boolean; sort_order: number };
 
 export default function ChkModelos() {
   const { data: templates = [], isLoading } = useChkTemplates();
