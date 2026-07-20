@@ -247,6 +247,11 @@ export default function OpManutencao() {
               <ImageIcon className="h-4 w-4" />
             </Button>
             <OpQuickActions phone={site?.phone} address={site?.address} size="icon" />
+            {isAdmin && (
+              <Button size="icon" variant="ghost" className="h-7 w-7" onClick={(e) => { e.stopPropagation(); if (confirm(`Excluir OM #${om.om_number}?`)) orders.remove(om.id); }} title="Excluir">
+                <Trash2 className="h-4 w-4 text-destructive" />
+              </Button>
+            )}
           </div>
         </div>
       </div>
