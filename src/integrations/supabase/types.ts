@@ -1615,6 +1615,57 @@ export type Database = {
         }
         Relationships: []
       }
+      op_maintenance_ratings: {
+        Row: {
+          comment: string | null
+          created_at: string
+          id: string
+          maintenance_order_id: string
+          organization_id: string
+          rated_by_name: string | null
+          rated_by_type: string
+          rated_by_user: string | null
+          rating: number
+        }
+        Insert: {
+          comment?: string | null
+          created_at?: string
+          id?: string
+          maintenance_order_id: string
+          organization_id: string
+          rated_by_name?: string | null
+          rated_by_type: string
+          rated_by_user?: string | null
+          rating: number
+        }
+        Update: {
+          comment?: string | null
+          created_at?: string
+          id?: string
+          maintenance_order_id?: string
+          organization_id?: string
+          rated_by_name?: string | null
+          rated_by_type?: string
+          rated_by_user?: string | null
+          rating?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "op_maintenance_ratings_maintenance_order_id_fkey"
+            columns: ["maintenance_order_id"]
+            isOneToOne: false
+            referencedRelation: "op_maintenance_orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "op_maintenance_ratings_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       op_mechanics: {
         Row: {
           created_at: string
