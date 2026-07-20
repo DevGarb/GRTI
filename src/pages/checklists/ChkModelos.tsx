@@ -98,39 +98,18 @@ export default function ChkModelos() {
           {form.items.length === 0 ? (
             <p className="text-sm text-muted-foreground text-center py-6">Nenhum item ainda. Adicione ao menos um.</p>
           ) : (
-            <div className="space-y-3">
-              {form.items.map((it, idx) => (
-                <div key={idx} className="border border-border rounded-lg p-3 space-y-2">
-                  <div className="flex items-start gap-2">
-                    <div className="flex flex-col shrink-0">
-                      <button onClick={() => moveItem(idx, -1)} disabled={idx === 0} title="Mover para cima" className="p-0.5 rounded hover:bg-muted text-muted-foreground disabled:opacity-30 disabled:hover:bg-transparent">
-                        <ArrowUp className="h-3.5 w-3.5" />
-                      </button>
-                      <button onClick={() => moveItem(idx, 1)} disabled={idx === form.items.length - 1} title="Mover para baixo" className="p-0.5 rounded hover:bg-muted text-muted-foreground disabled:opacity-30 disabled:hover:bg-transparent">
-                        <ArrowDown className="h-3.5 w-3.5" />
-                      </button>
-                    </div>
-                    <input placeholder="Pergunta do item" value={it.title} onChange={(e) => updateItem(idx, { title: e.target.value })} className="flex-1 px-3 py-2 rounded-lg border border-input bg-background text-sm" />
-                    <button onClick={() => removeItem(idx)} className="p-2 rounded-md hover:bg-muted text-destructive"><Trash2 className="h-4 w-4" /></button>
-                  </div>
-                  <textarea placeholder="Observação padrão (opcional)" value={it.observation || ""} onChange={(e) => updateItem(idx, { observation: e.target.value })} rows={1} className="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm" />
-                  <div className="flex items-center gap-3 flex-wrap">
-                    <label className="text-xs text-muted-foreground">Peso:</label>
-                    {[1, 2, 3].map((w) => (
-                      <button key={w} onClick={() => updateItem(idx, { weight: w as 1 | 2 | 3 })} className={`px-3 py-1 rounded-full text-xs font-medium border ${it.weight === w ? "bg-primary text-primary-foreground border-primary" : "border-input hover:bg-muted"}`}>
-                        {w === 1 ? "1 · Comum" : w === 2 ? "2 · Importante" : "3 · Imprescindível"}
-                      </button>
-                    ))}
-                    <label className="flex items-center gap-1.5 text-xs text-muted-foreground ml-auto cursor-pointer">
-                      <input type="checkbox" checked={it.requires_photo} onChange={(e) => updateItem(idx, { requires_photo: e.target.checked })} className="rounded" />
-                      <Camera className="h-3.5 w-3.5" /> Exige foto
-                    </label>
-                  </div>
+            <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+              <SortableContext items={form.items.map((it, i) => itemKey(it, i))} strategy={verticalListSortingStrategy}>
+                <div className="space-y-3">
+                  {form.items.map((it, idx) => (
+                    <SortableItem key={itemKey(it, idx)} id={itemKey(it, idx)} item={it} idx={idx} onUpdate={updateItem} onRemove={removeItem} />
+                  ))}
                 </div>
-              ))}
-            </div>
+              </SortableContext>
+            </DndContext>
           )}
         </div>
+
 
         <div className="flex gap-2 justify-end">
           <button onClick={() => setEditorId(null)} className="px-4 py-2 text-sm rounded-lg border border-input hover:bg-muted">Cancelar</button>
