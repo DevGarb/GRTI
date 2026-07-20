@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import EntregasNav from "./EntregasNav";
 import { Button } from "@/components/ui/button";
@@ -11,8 +11,11 @@ import { useDeliveries } from "@/hooks/useDeliveries";
 import { useDeliveryCategories } from "@/hooks/useDeliveryCategories";
 import { useCompanies } from "@/hooks/useOperacional";
 import { useEntregasProfile } from "@/contexts/EntregasProfileContext";
-import { Bike, Car, HelpCircle, MapPin, Phone, Send, Building2 } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
+import { Bike, Car, HelpCircle, MapPin, Phone, Send, Building2, Star, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
+import OpRatingDialog from "@/components/operacional/OpRatingDialog";
+import { fetchRatedIds, submitOpRating } from "@/hooks/useOpRatings";
 
 const VEHICLE_REQUIRED = [
   { value: "qualquer", label: "Qualquer", icon: HelpCircle },
