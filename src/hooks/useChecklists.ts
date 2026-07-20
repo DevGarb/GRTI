@@ -358,11 +358,12 @@ export function useSaveChkExecutionItem() {
   const qc = useQueryClient();
   const { user } = useAuth();
   return useMutation({
-    mutationFn: async (input: { id: string; done?: boolean; observation?: string; photo_path?: string | null }) => {
+    mutationFn: async (input: { id: string; done?: boolean; observation?: string; photo_path?: string | null; not_applicable?: boolean }) => {
       const patch: any = { answered_at: new Date().toISOString(), answered_by: user!.id };
       if (input.done !== undefined) patch.done = input.done;
       if (input.observation !== undefined) patch.observation = input.observation;
       if (input.photo_path !== undefined) patch.photo_path = input.photo_path;
+      if (input.not_applicable !== undefined) patch.not_applicable = input.not_applicable;
       const { error } = await supabase.from("chk_execution_items" as any).update(patch).eq("id", input.id);
       if (error) throw error;
     },
@@ -391,6 +392,52 @@ export function useCompleteChkExecution() {
     onError: (e: Error) => toast.error(e.message),
   });
 }
+
+export function useReopenChkExecution() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from("chk_executions" as any).update({
+        status: "em_andamento", completed_at: null,
+      }).eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["chk_executions"] });
+      qc.invalidateQueries({ queryKey: ["chk_execution"] });
+      toast.success("Checklist reaberto");
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+}
+
+export function useSaveChkAssignmentsBulk() {
+  const qc = useQueryClient();
+  const { profile, user } = useAuth();
+  return useMutation({
+    mutationFn: async (input: {
+      template_id: string; company_ids: string[]; assigned_user_id: string;
+      frequency: ChkFrequency; start_date: string; end_date?: string | null; notes?: string;
+    }) => {
+      const rows = input.company_ids.map((company_id) => ({
+        template_id: input.template_id, company_id, assigned_user_id: input.assigned_user_id,
+        frequency: input.frequency, start_date: input.start_date, end_date: input.end_date, notes: input.notes,
+        organization_id: profile!.organization_id, created_by: user!.id,
+      }));
+      const { error } = await supabase.from("chk_assignments" as any).insert(rows);
+      if (error) throw error;
+      await supabase.rpc("generate_recurring_executions" as any);
+      return rows.length;
+    },
+    onSuccess: (count) => {
+      qc.invalidateQueries({ queryKey: ["chk_assignments"] });
+      qc.invalidateQueries({ queryKey: ["chk_executions"] });
+      toast.success(`${count} atribuição(ões) criada(s)`);
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+}
+
 
 // ============ REPORT ============
 export function useChkReport(from: string, to: string) {
