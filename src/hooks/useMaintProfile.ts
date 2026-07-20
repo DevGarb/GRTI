@@ -1,6 +1,8 @@
-import { useEffect, useState } from "react";
+import { useContext, useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+// Bridge to PIN-selected profile if present (optional context)
+import { useManutencaoProfile } from "@/contexts/ManutencaoProfileContext";
 
 export type MaintRole = "admin" | "tecnico" | "solicitante" | "other";
 
