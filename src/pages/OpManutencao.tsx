@@ -201,18 +201,28 @@ export default function OpManutencao() {
             </Button>
           )}
           <Input type="month" value={activeMonth} onChange={e => setActiveMonth(e.target.value)} className="w-40" />
-          <Button onClick={() => { setEditing(null); setOmOpen(true); }}>
-            <Plus className="h-4 w-4 mr-1" /> Nova OM
-          </Button>
+          {!isTecnico && (
+            <Button onClick={() => { setEditing(null); setOmOpen(true); }}>
+              <Plus className="h-4 w-4 mr-1" /> {isSolicitante ? "Nova solicitação" : "Nova OM"}
+            </Button>
+          )}
         </div>
       </div>
 
+      {maintProfile.scoped && (isTecnico || isSolicitante) && (
+        <div className="rounded-md border bg-muted/40 px-3 py-2 text-xs text-muted-foreground">
+          Você está visualizando como <strong className="text-foreground">{isTecnico ? `técnico (${maintProfile.mechanicName})` : `solicitante (${maintProfile.requesterName})`}</strong>.
+          {isTecnico ? " Apenas OMs atribuídas a você aparecem." : " Apenas suas solicitações aparecem."}
+        </div>
+      )}
+
       <Tabs defaultValue="ordens">
         <TabsList>
-          <TabsTrigger value="ordens">Ordens de Manutenção</TabsTrigger>
-          <TabsTrigger value="sedes"><Building2 className="h-4 w-4 mr-1 inline" />Sedes</TabsTrigger>
-          <TabsTrigger value="checklists"><ListChecks className="h-4 w-4 mr-1 inline" />Checklists</TabsTrigger>
+          <TabsTrigger value="ordens">{isSolicitante ? "Minhas solicitações" : "Ordens de Manutenção"}</TabsTrigger>
+          {isAdmin && <TabsTrigger value="sedes"><Building2 className="h-4 w-4 mr-1 inline" />Sedes</TabsTrigger>}
+          {isAdmin && <TabsTrigger value="checklists"><ListChecks className="h-4 w-4 mr-1 inline" />Checklists</TabsTrigger>}
         </TabsList>
+
 
         {/* ORDENS */}
         <TabsContent value="ordens" className="space-y-4">
