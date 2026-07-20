@@ -472,6 +472,7 @@ export default function OpManutencaoMinhas() {
         open={!!closing}
         onOpenChange={(o) => !o && setClosing(null)}
         title="Concluir ordem de manutenção"
+        allowPhotos
         onConfirm={confirmClosure}
       />
 
