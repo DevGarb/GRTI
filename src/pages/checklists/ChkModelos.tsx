@@ -1,7 +1,10 @@
 import { useState, useEffect } from "react";
-import { FileText, Plus, Pencil, Trash2, Camera, ArrowUp, ArrowDown, X } from "lucide-react";
+import { FileText, Plus, Pencil, Trash2, Camera, X, GripVertical } from "lucide-react";
 import { useChkTemplates, useChkTemplate, useSaveChkTemplate, useDeleteChkTemplate, useChkSectors, type ChkFrequency } from "@/hooks/useChecklists";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, type DragEndEvent } from "@dnd-kit/core";
+import { arrayMove, SortableContext, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy } from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 
 type Item = { id?: string; title: string; observation?: string; weight: 1 | 2 | 3; requires_photo: boolean; sort_order: number };
 
