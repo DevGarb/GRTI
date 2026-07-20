@@ -4,7 +4,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { TicketModalProvider } from "@/contexts/TicketModalContext";
 import { useMenuAccess } from "@/hooks/useMenuAccess";
@@ -58,7 +58,7 @@ import OpEntregasSolicitar from "@/pages/op/OpEntregasSolicitar";
 import OpEntregasMinhas from "@/pages/op/OpEntregasMinhas";
 import EntregasPin from "@/pages/op/EntregasPin";
 import EntregasGuard from "@/pages/op/EntregasGuard";
-import { EntregasProfileProvider } from "@/contexts/EntregasProfileContext";
+import { EntregasProfileProvider, useEntregasProfile } from "@/contexts/EntregasProfileContext";
 import OpOficina from "@/pages/OpOficina";
 import OpManutencao from "@/pages/OpManutencao";
 import ManutencaoPin from "@/pages/op/ManutencaoPin";
@@ -66,7 +66,7 @@ import ManutencaoGuard from "@/pages/op/ManutencaoGuard";
 import OpManutencaoMinhas from "@/pages/op/OpManutencaoMinhas";
 import OpManutencaoSolicitar from "@/pages/op/OpManutencaoSolicitar";
 import OpAvaliacoes from "@/pages/op/OpAvaliacoes";
-import { ManutencaoProfileProvider } from "@/contexts/ManutencaoProfileContext";
+import { ManutencaoProfileProvider, useManutencaoProfile } from "@/contexts/ManutencaoProfileContext";
 import NotFound from "./pages/NotFound";
 import OAuthConsent from "@/pages/OAuthConsent";
 import Connect from "@/pages/Connect";
@@ -125,6 +125,23 @@ function MenuGuard({ menuKey, children }: { menuKey: string; children: React.Rea
     return <Navigate to={fallback} replace />;
   }
   return <>{children}</>;
+}
+
+function OpAvaliacoesRouteGuard({ children }: { children: React.ReactNode }) {
+  const { user, loading, hasRole, isSuperAdmin } = useAuth();
+  const { profile: entregasProfile } = useEntregasProfile();
+  const { profile: manutencaoProfile } = useManutencaoProfile();
+  const location = useLocation();
+
+  if (loading) return null;
+  if (!user) return <Navigate to="/login" state={{ from: location }} replace />;
+
+  const isSystemAdmin = isSuperAdmin || hasRole("admin");
+  const isOperationalAdmin = entregasProfile?.type === "admin" || manutencaoProfile?.type === "admin";
+  if (isSystemAdmin || isOperationalAdmin) return <>{children}</>;
+
+  const pinPath = manutencaoProfile ? "/op/manutencao/pin" : "/op/entregas/pin";
+  return <Navigate to={pinPath} replace />;
 }
 
 function HomeRedirect({ children }: { children: React.ReactNode }) {
@@ -228,7 +245,7 @@ const App = () => (
                       <Route path="/op/manutencao/minhas" element={<MenuGuard menuKey="op-manutencao"><ManutencaoProfileProvider><ManutencaoGuard><OpManutencaoMinhas /></ManutencaoGuard></ManutencaoProfileProvider></MenuGuard>} />
                       <Route path="/op/manutencao/solicitar" element={<MenuGuard menuKey="op-manutencao"><ManutencaoProfileProvider><ManutencaoGuard><OpManutencaoSolicitar /></ManutencaoGuard></ManutencaoProfileProvider></MenuGuard>} />
                       <Route path="/op/manutencao" element={<MenuGuard menuKey="op-manutencao"><ManutencaoProfileProvider><ManutencaoGuard><OpManutencao /></ManutencaoGuard></ManutencaoProfileProvider></MenuGuard>} />
-                      <Route path="/op/avaliacoes" element={<MenuGuard menuKey="op-avaliacoes"><OpAvaliacoes /></MenuGuard>} />
+                      <Route path="/op/avaliacoes" element={<MenuGuard menuKey="op-avaliacoes"><EntregasProfileProvider><ManutencaoProfileProvider><OpAvaliacoesRouteGuard><OpAvaliacoes /></OpAvaliacoesRouteGuard></ManutencaoProfileProvider></EntregasProfileProvider></MenuGuard>} />
                       <Route path="/checklists" element={<MenuGuard menuKey="chk-dashboard"><ChkDashboard /></MenuGuard>} />
                       <Route path="/checklists/setores" element={<MenuGuard menuKey="chk-setores"><AdminRoute><ChkSetores /></AdminRoute></MenuGuard>} />
                       <Route path="/checklists/empresas" element={<MenuGuard menuKey="chk-empresas"><AdminRoute><ChkEmpresas /></AdminRoute></MenuGuard>} />
