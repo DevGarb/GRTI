@@ -215,7 +215,7 @@ function RatingsPanel({ kind, targetNameMap, labelMap }: PanelProps) {
 export default function OpAvaliacoes() {
   const deliveries = useDeliveries();
   const maint = useMaintenanceOrders();
-  const drivers = useOperators();
+  const drivers = useDrivers();
   const technicians = useMaintTechnicians();
 
   const deliveryNameMap = useMemo(() => {
