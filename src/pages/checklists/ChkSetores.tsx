@@ -68,7 +68,7 @@ export default function ChkSetores() {
                   <Building2 className="h-4 w-4 text-muted-foreground shrink-0" />
                   <span className="flex-1 text-sm">{s.name}</span>
                   <button onClick={() => { setEditingId(s.id); setEditName(s.name); }} className="p-1.5 rounded-md hover:bg-muted text-muted-foreground"><Pencil className="h-4 w-4" /></button>
-                  <button onClick={() => confirm(`Remover setor "${s.name}"?`) && del.mutate(s.id)} className="p-1.5 rounded-md hover:bg-muted text-destructive"><Trash2 className="h-4 w-4" /></button>
+                  <button onClick={() => setToDelete({ id: s.id, name: s.name })} className="p-1.5 rounded-md hover:bg-muted text-destructive"><Trash2 className="h-4 w-4" /></button>
                 </>
               )}
             </div>
