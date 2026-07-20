@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { ListChecks, ChevronRight } from "lucide-react";
 import { useChkExecutions, type ChkExecStatus } from "@/hooks/useChecklists";
 
@@ -13,13 +13,26 @@ const STATUS_COLORS: Record<ChkExecStatus, string> = {
   atrasada: "bg-red-100 text-red-700",
 };
 
+const VALID_STATUSES: ReadonlyArray<ChkExecStatus | "all"> = ["all", "pendente", "em_andamento", "concluida", "atrasada"];
+
 export default function ChkExecucoes() {
   const today = new Date().toISOString().slice(0, 10);
   const monthAgo = new Date(Date.now() - 30 * 86400000).toISOString().slice(0, 10);
-  const [status, setStatus] = useState<ChkExecStatus | "all">("all");
+  const [searchParams, setSearchParams] = useSearchParams();
+  const initialStatus = (searchParams.get("status") as ChkExecStatus | "all" | null);
+  const [status, setStatus] = useState<ChkExecStatus | "all">(
+    initialStatus && VALID_STATUSES.includes(initialStatus) ? initialStatus : "all"
+  );
   const [from, setFrom] = useState(monthAgo);
   const [to, setTo] = useState(today);
   const { data: execs = [], isLoading } = useChkExecutions({ status, from, to });
+
+  const changeStatus = (s: ChkExecStatus | "all") => {
+    setStatus(s);
+    const next = new URLSearchParams(searchParams);
+    if (s === "all") next.delete("status"); else next.set("status", s);
+    setSearchParams(next, { replace: true });
+  };
 
   return (
     <div className="space-y-6">
