@@ -60,11 +60,15 @@ export function useMechanics() {
     const { error } = await supabase.from("op_mechanics").insert({ ...input, organization_id: profile.organization_id, created_by: user.id, name: input.name || "" });
     if (error) toast.error(error.message); else { toast.success("Mecânico cadastrado"); fetch(); }
   };
+  const update = async (id: string, patch: Partial<Mechanic>) => {
+    const { error } = await supabase.from("op_mechanics").update(patch).eq("id", id);
+    if (error) toast.error(error.message); else fetch();
+  };
   const remove = async (id: string) => {
     const { error } = await supabase.from("op_mechanics").delete().eq("id", id);
     if (error) toast.error(error.message); else fetch();
   };
-  return { items, add, remove, refetch: fetch };
+  return { items, add, update, remove, refetch: fetch };
 }
 
 export function useParts() {
