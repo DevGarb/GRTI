@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Building, Plus, Pencil, Trash2 } from "lucide-react";
 import { useChkCompanies, useSaveChkCompany, useDeleteChkCompany, useChkSectors } from "@/hooks/useChecklists";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 
 export default function ChkEmpresas() {
   const { data: companies = [], isLoading } = useChkCompanies();
