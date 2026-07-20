@@ -49,6 +49,14 @@ export default function ChkAtribuicoes() {
     setShowForm(true);
   };
 
+  const doSave = () => {
+    save.mutate({
+      id: form.id,
+      template_id: form.template_id, company_id: form.company_id, assigned_user_id: form.assigned_user_id,
+      frequency: form.frequency, start_date: form.start_date, end_date: form.end_date || null, notes: form.notes,
+    }, { onSuccess: () => { setShowForm(false); setForm(emptyForm()); } });
+  };
+
   const submit = () => {
     if (!form.template_id || !form.company_id || !form.assigned_user_id) return;
 
@@ -61,27 +69,15 @@ export default function ChkAtribuicoes() {
         a.assigned_user_id === form.assigned_user_id,
       );
       if (dup) {
-        const ok = window.confirm(
-          "Já existe uma atribuição ativa deste modelo para esta empresa e colaborador. Isso pode duplicar execuções. Deseja criar mesmo assim?",
-        );
-        if (!ok) return;
+        setPendingDup(() => doSave);
+        return;
       }
     }
 
-    save.mutate({
-      id: form.id,
-      template_id: form.template_id, company_id: form.company_id, assigned_user_id: form.assigned_user_id,
-      frequency: form.frequency, start_date: form.start_date, end_date: form.end_date || null, notes: form.notes,
-    }, { onSuccess: () => { setShowForm(false); setForm(emptyForm()); } });
+    doSave();
   };
 
-  const handleDelete = (a: any) => {
-    const ok = window.confirm(
-      `Excluir a atribuição "${a.chk_templates?.title}" para ${a.chk_companies?.name}?\n\nATENÇÃO: execuções vinculadas também serão removidas.`,
-    );
-    if (!ok) return;
-    del.mutate(a.id);
-  };
+  const handleDelete = (a: any) => setToDelete(a);
 
   return (
     <div className="space-y-6">
