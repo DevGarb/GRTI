@@ -50,7 +50,17 @@ export default function ChkDashboard() {
           <KPI label="Total" value={totals.total} />
           <KPI label="Concluídas" value={totals.concluidas} tone="success" />
           <KPI label="Pendentes" value={totals.pendentes} tone="warning" />
-          <KPI label="Atrasadas" value={totals.atrasadas} tone="danger" />
+          <Link
+            to="/checklists/execucoes?status=atrasada"
+            className="card-elevated p-4 hover:border-red-500 hover:shadow-md transition-all group"
+          >
+            <div className="flex items-center justify-between">
+              <p className="text-xs text-muted-foreground uppercase tracking-wide">Atrasadas</p>
+              <AlertTriangle className="h-4 w-4 text-red-600 opacity-70 group-hover:opacity-100" />
+            </div>
+            <p className="text-2xl font-bold text-red-600 mt-1">{totals.atrasadas}</p>
+            <p className="text-[10px] text-muted-foreground mt-1">Clique para ver a fila</p>
+          </Link>
         </div>
       )}
 
