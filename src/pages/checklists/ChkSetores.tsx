@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Building2, Plus, Pencil, Trash2, X, Check } from "lucide-react";
 import { useChkSectors, useSaveChkSector, useDeleteChkSector } from "@/hooks/useChecklists";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 
 export default function ChkSetores() {
   const { data: sectors = [], isLoading } = useChkSectors();
@@ -9,6 +10,7 @@ export default function ChkSetores() {
   const [newName, setNewName] = useState("");
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editName, setEditName] = useState("");
+  const [toDelete, setToDelete] = useState<{ id: string; name: string } | null>(null);
 
   return (
     <div className="space-y-6 max-w-2xl">
