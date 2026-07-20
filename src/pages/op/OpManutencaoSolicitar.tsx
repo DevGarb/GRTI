@@ -23,10 +23,12 @@ export default function OpManutencaoSolicitar() {
   const sites = useSites();
   const maintProfile = useMaintProfile();
   const { user, profile: authProfile } = useAuth();
+  const { data: sectors = [] } = useSectors(authProfile?.organization_id || null);
 
   const [form, setForm] = useState({
     title: "",
     site_id: "",
+    sector: "",
     category: "Outros",
     priority: "Média",
     description: "",
