@@ -14,19 +14,30 @@ export default function ChkExecutar() {
   const complete = useCompleteChkExecution();
 
   const [photoUrls, setPhotoUrls] = useState<Record<string, string>>({});
+  const [localPreviews, setLocalPreviews] = useState<Record<string, string>>({});
   const [uploadingId, setUploadingId] = useState<string | null>(null);
   const [failedIds, setFailedIds] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     if (!exec?.items) return;
+    let cancelled = false;
     (async () => {
-      const urls: Record<string, string> = {};
-      for (const it of exec.items) {
-        if (it.photo_path) urls[it.id] = await getChkPhotoUrl(it.photo_path);
-      }
-      setPhotoUrls(urls);
+      const items = exec.items.filter((it: any) => it.photo_path);
+      const entries = await Promise.all(
+        items.map(async (it: any) => [it.id, await getChkPhotoUrl(it.photo_path)] as const)
+      );
+      if (cancelled) return;
+      setPhotoUrls(Object.fromEntries(entries));
     })();
+    return () => { cancelled = true; };
   }, [exec]);
+
+  useEffect(() => {
+    return () => {
+      Object.values(localPreviews).forEach((u) => URL.revokeObjectURL(u));
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   if (isLoading || !exec) {
     return <div className="p-12 flex justify-center"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>;
