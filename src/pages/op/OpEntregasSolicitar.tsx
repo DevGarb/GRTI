@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import EntregasNav from "./EntregasNav";
 import { Button } from "@/components/ui/button";
@@ -11,8 +11,11 @@ import { useDeliveries } from "@/hooks/useDeliveries";
 import { useDeliveryCategories } from "@/hooks/useDeliveryCategories";
 import { useCompanies } from "@/hooks/useOperacional";
 import { useEntregasProfile } from "@/contexts/EntregasProfileContext";
-import { Bike, Car, HelpCircle, MapPin, Phone, Send, Building2 } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
+import { Bike, Car, HelpCircle, MapPin, Phone, Send, Building2, Star, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
+import OpRatingDialog from "@/components/operacional/OpRatingDialog";
+import { fetchRatedIds, submitOpRating } from "@/hooks/useOpRatings";
 
 const VEHICLE_REQUIRED = [
   { value: "qualquer", label: "Qualquer", icon: HelpCircle },
@@ -26,7 +29,8 @@ function todayISO() { return new Date().toISOString().slice(0, 10); }
 export default function OpEntregasSolicitar() {
   const navigate = useNavigate();
   const { profile } = useEntregasProfile();
-  const { add } = useDeliveries();
+  const { user, profile: authProfile } = useAuth();
+  const { items: deliveries, add } = useDeliveries();
   const { activeItems: categories } = useDeliveryCategories();
   const { items: companies } = useCompanies();
 
@@ -43,7 +47,40 @@ export default function OpEntregasSolicitar() {
     notes: "",
   });
 
+  // Pending rating check
+  const [pending, setPending] = useState<any>(null); // delivery pendente de avaliação
+  const [ratingOpen, setRatingOpen] = useState(false);
+  const [busy, setBusy] = useState(false);
+
+  const findPending = async () => {
+    if (!profile?.name || !authProfile?.organization_id) return null;
+    const rated = await fetchRatedIds("delivery", authProfile.organization_id);
+    const mine = deliveries.filter(
+      (d: any) => d.status === "Finalizado" && d.requester_name === profile.name && !rated.has(d.id),
+    );
+    // mais antiga primeiro
+    mine.sort((a: any, b: any) => (a.finished_at || a.created_at).localeCompare(b.finished_at || b.created_at));
+    return mine[0] || null;
+  };
+
+  // Ao entrar / quando lista carrega, verifica pendência
+  useEffect(() => {
+    (async () => {
+      const p = await findPending();
+      if (p) { setPending(p); setRatingOpen(true); }
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [deliveries.length, profile?.name, authProfile?.organization_id]);
+
   const submit = async () => {
+    // Bloqueia se ainda tem avaliação pendente
+    const p = await findPending();
+    if (p) {
+      setPending(p);
+      setRatingOpen(true);
+      toast.error("Avalie a entrega anterior antes de criar uma nova solicitação.");
+      return;
+    }
     if (!form.company_id) return toast.error("Escolha a empresa solicitante");
     if (!form.category_id) return toast.error("Escolha a categoria");
     if (!form.address.trim()) return toast.error("Informe o endereço");
@@ -58,6 +95,27 @@ export default function OpEntregasSolicitar() {
     }
   };
 
+  const handleSubmitRating = async (rating: number, comment: string) => {
+    if (!pending || !authProfile?.organization_id) return;
+    setBusy(true);
+    const ok = await submitOpRating({
+      kind: "delivery",
+      organization_id: authProfile.organization_id,
+      targetId: pending.id,
+      rating,
+      comment,
+      rated_by_type: "solicitante",
+      rated_by_name: profile?.name,
+      rated_by_user: user?.id || null,
+    });
+    setBusy(false);
+    if (ok) {
+      setRatingOpen(false);
+      setPending(null);
+    }
+  };
+
+
   return (
     <div className="cgps-scope min-h-screen bg-[hsl(var(--cgps-muted))]">
       <EntregasNav />
@@ -66,6 +124,22 @@ export default function OpEntregasSolicitar() {
           <h1 className="text-2xl font-bold" style={{ color: "hsl(191 74% 20%)" }}>Nova solicitação de entrega</h1>
           <p className="text-sm text-muted-foreground">Preencha os dados. A equipe atribuirá um motorista.</p>
         </div>
+
+        {pending && (
+          <div className="mb-4 rounded-xl border border-amber-300 bg-amber-50 p-4 flex items-start gap-3">
+            <AlertTriangle className="h-5 w-5 text-amber-600 flex-shrink-0 mt-0.5" />
+            <div className="flex-1">
+              <div className="font-semibold text-amber-900 text-sm">Avaliação pendente</div>
+              <p className="text-xs text-amber-800 mt-0.5">
+                Antes de abrir uma nova solicitação, avalie a entrega anterior: <strong>{pending.address}</strong>
+              </p>
+            </div>
+            <Button size="sm" onClick={() => setRatingOpen(true)} className="cgps-btn-primary">
+              <Star className="h-4 w-4 mr-1" /> Avaliar
+            </Button>
+          </div>
+        )}
+
 
         <div className="bg-white border rounded-xl p-5 space-y-4">
           <div>
@@ -152,11 +226,22 @@ export default function OpEntregasSolicitar() {
             <Textarea rows={3} value={form.notes} onChange={(e) => setForm((p) => ({ ...p, notes: e.target.value }))} placeholder="Instruções extras, ponto de referência..." />
           </div>
 
-          <Button onClick={submit} className="w-full cgps-btn-primary">
+          <Button onClick={submit} className="w-full cgps-btn-primary" disabled={!!pending}>
             <Send className="h-4 w-4 mr-1" /> Enviar solicitação
           </Button>
         </div>
       </div>
+
+      <OpRatingDialog
+        open={ratingOpen}
+        onOpenChange={setRatingOpen}
+        title="Avalie a entrega anterior"
+        subtitle="Sua opinião ajuda a melhorar o serviço dos nossos motoristas."
+        targetLabel={pending ? `${pending.address}` : undefined}
+        busy={busy}
+        onSubmit={handleSubmitRating}
+      />
     </div>
   );
 }
+
