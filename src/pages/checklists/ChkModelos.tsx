@@ -37,15 +37,20 @@ export default function ChkModelos() {
     }
   }, [editorId, loaded]);
 
-  const addItem = () => setForm({ ...form, items: [...form.items, { title: "", observation: "", weight: 1, requires_photo: false, sort_order: form.items.length }] });
+  const addItem = () => setForm({ ...form, items: [...form.items, { _key: crypto.randomUUID(), title: "", observation: "", weight: 1, requires_photo: false, sort_order: form.items.length }] });
   const updateItem = (idx: number, patch: Partial<Item>) => setForm({ ...form, items: form.items.map((it, i) => (i === idx ? { ...it, ...patch } : it)) });
   const removeItem = (idx: number) => setForm({ ...form, items: form.items.filter((_, i) => i !== idx).map((it, i) => ({ ...it, sort_order: i })) });
-  const moveItem = (idx: number, dir: -1 | 1) => {
-    const next = idx + dir;
-    if (next < 0 || next >= form.items.length) return;
-    const items = [...form.items];
-    [items[idx], items[next]] = [items[next], items[idx]];
-    setForm({ ...form, items: items.map((it, i) => ({ ...it, sort_order: i })) });
+
+  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }), useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }));
+  const itemKey = (it: Item, idx: number) => it.id || it._key || `idx-${idx}`;
+  const handleDragEnd = (e: DragEndEvent) => {
+    const { active, over } = e;
+    if (!over || active.id === over.id) return;
+    const oldIdx = form.items.findIndex((it, i) => itemKey(it, i) === active.id);
+    const newIdx = form.items.findIndex((it, i) => itemKey(it, i) === over.id);
+    if (oldIdx < 0 || newIdx < 0) return;
+    const items = arrayMove(form.items, oldIdx, newIdx).map((it, i) => ({ ...it, sort_order: i }));
+    setForm({ ...form, items });
   };
 
   const submit = () => {
