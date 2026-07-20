@@ -15,7 +15,7 @@ import {
   MAINT_CATEGORIES, MAINT_PRIORITIES, MAINT_STATUSES,
   type MaintenanceOrder, type Site, type ChecklistTemplate, type ChecklistItem, type MaintenancePhoto,
 } from "@/hooks/useManutencao";
-import { useMechanics, type Mechanic } from "@/hooks/useOficina";
+import { useMaintTechnicians, type MaintTechnician } from "@/hooks/useMaintTechnicians";
 import { useDeliveryRequesters, type DeliveryRequester } from "@/hooks/useDeliveryRequesters";
 import { useMaintProfile } from "@/hooks/useMaintProfile";
 import OpKanbanBoard, { type KanbanColumn } from "@/components/operacional/OpKanbanBoard";
