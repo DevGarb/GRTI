@@ -159,6 +159,36 @@ export default function ChkAtribuicoes() {
           ))}
         </div>
       )}
+
+      <ConfirmDialog
+        open={!!toDelete}
+        onOpenChange={(o) => !o && setToDelete(null)}
+        title="Excluir atribuição"
+        description={
+          toDelete
+            ? `Excluir a atribuição "${toDelete.chk_templates?.title}" para ${toDelete.chk_companies?.name}?\n\nATENÇÃO: execuções vinculadas também serão removidas.`
+            : ""
+        }
+        confirmLabel="Excluir"
+        destructive
+        onConfirm={() => {
+          if (toDelete) del.mutate(toDelete.id);
+          setToDelete(null);
+        }}
+      />
+
+      <ConfirmDialog
+        open={!!pendingDup}
+        onOpenChange={(o) => !o && setPendingDup(null)}
+        title="Atribuição duplicada"
+        description="Já existe uma atribuição ativa deste modelo para esta empresa e colaborador. Isso pode duplicar execuções. Deseja criar mesmo assim?"
+        confirmLabel="Criar mesmo assim"
+        onConfirm={() => {
+          const run = pendingDup;
+          setPendingDup(null);
+          run?.();
+        }}
+      />
     </div>
   );
 }
