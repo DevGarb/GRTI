@@ -31,6 +31,8 @@ export default function ChkAtribuicoes() {
 
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState<FormState>(emptyForm());
+  const [toDelete, setToDelete] = useState<any | null>(null);
+  const [pendingDup, setPendingDup] = useState<null | (() => void)>(null);
 
   const openNew = () => { setForm(emptyForm()); setShowForm(true); };
   const openEdit = (a: any) => {
