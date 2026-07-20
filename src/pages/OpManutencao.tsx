@@ -49,9 +49,15 @@ const TERMINAL = "Concluída";
 
 export default function OpManutencao() {
   const { user } = useAuth();
+  const maintProfile = useMaintProfile();
+  const isAdmin = maintProfile.role === "admin";
+  const isTecnico = maintProfile.role === "tecnico";
+  const isSolicitante = maintProfile.role === "solicitante";
   const sites = useSites();
   const orders = useMaintenanceOrders();
   const tpls = useChecklistTemplates();
+  const mechanics = useMechanics();
+  const requesters = useDeliveryRequesters();
 
   const [activeMonth, setActiveMonth] = useState(() => new Date().toISOString().slice(0, 7));
   const [activeSite, setActiveSite] = useState<string>("all");
