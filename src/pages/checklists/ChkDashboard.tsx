@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { ClipboardCheck, Building2, FileText, UserCheck, ListChecks, BarChart3 } from "lucide-react";
+import { ClipboardCheck, Building2, FileText, UserCheck, ListChecks, BarChart3, AlertTriangle } from "lucide-react";
 import { useChkExecutions, useChkTemplates, useChkCompanies, useChkAssignments } from "@/hooks/useChecklists";
 import { useAuth } from "@/contexts/AuthContext";
 
