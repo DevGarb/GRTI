@@ -84,12 +84,15 @@ export default function OpManutencao() {
 
   const baseFiltered = useMemo(() => {
     return orders.items.filter(o => {
+      // Profile scoping (only affects operacional org via useMaintProfile)
+      if (isTecnico && o.assigned_mechanic_id !== maintProfile.mechanicId) return false;
+      if (isSolicitante && o.requester_id !== maintProfile.requesterId) return false;
       if (!o.opened_at.startsWith(activeMonth)) return false;
       if (activeSite !== "all" && o.site_id !== activeSite) return false;
       if (categoryFilter !== "all" && o.category !== categoryFilter) return false;
       return true;
     });
-  }, [orders.items, activeMonth, activeSite, categoryFilter]);
+  }, [orders.items, activeMonth, activeSite, categoryFilter, isTecnico, isSolicitante, maintProfile.mechanicId, maintProfile.requesterId]);
 
   const filtered = useMemo(() => {
     return baseFiltered.filter(o => {
