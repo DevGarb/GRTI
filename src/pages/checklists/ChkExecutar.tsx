@@ -46,9 +46,11 @@ export default function ChkExecutar() {
   }
 
   const readonly = exec.status === "concluida";
+  const resolvedCount = exec.items.filter((it: any) => it.done || it.not_applicable).length;
   const doneCount = exec.items.filter((it: any) => it.done).length;
   const total = exec.items.length;
   const canComplete = !readonly && exec.items.every((it: any) => {
+    if (it.not_applicable) return true;
     if (!it.done) return false;
     if (it.chk_template_items?.requires_photo && !it.photo_path) return false;
     return true;
