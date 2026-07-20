@@ -35,7 +35,7 @@ export default function ManutencaoPin() {
   const loginTech = () => {
     const pin = techPin.trim();
     if (!pin) return toast.error("Informe o PIN");
-    const matches = activeMechanics.filter((m) => (m as any).pin && (m as any).pin === pin);
+    const matches = activeTechnicians.filter((m) => (m as any).pin && (m as any).pin === pin);
     if (matches.length === 0) return toast.error("PIN inválido");
     if (matches.length > 1) return toast.error("PIN duplicado. Contate o admin.");
     const m = matches[0];
