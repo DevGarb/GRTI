@@ -1438,9 +1438,60 @@ export type Database = {
         }
         Relationships: []
       }
+      op_maint_technicians: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          is_active: boolean
+          name: string
+          organization_id: string
+          phone: string | null
+          pin: string | null
+          specialty: string | null
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_active?: boolean
+          name: string
+          organization_id: string
+          phone?: string | null
+          pin?: string | null
+          specialty?: string | null
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_active?: boolean
+          name?: string
+          organization_id?: string
+          phone?: string | null
+          pin?: string | null
+          specialty?: string | null
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "op_maint_technicians_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       op_maintenance_orders: {
         Row: {
           assigned_mechanic_id: string | null
+          assigned_technician_id: string | null
           category: string
           closed_by: string | null
           closure_summary: string | null
@@ -1464,6 +1515,7 @@ export type Database = {
         }
         Insert: {
           assigned_mechanic_id?: string | null
+          assigned_technician_id?: string | null
           category?: string
           closed_by?: string | null
           closure_summary?: string | null
@@ -1487,6 +1539,7 @@ export type Database = {
         }
         Update: {
           assigned_mechanic_id?: string | null
+          assigned_technician_id?: string | null
           category?: string
           closed_by?: string | null
           closure_summary?: string | null
@@ -1514,6 +1567,13 @@ export type Database = {
             columns: ["assigned_mechanic_id"]
             isOneToOne: false
             referencedRelation: "op_mechanics"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "op_maintenance_orders_assigned_technician_id_fkey"
+            columns: ["assigned_technician_id"]
+            isOneToOne: false
+            referencedRelation: "op_maint_technicians"
             referencedColumns: ["id"]
           },
           {

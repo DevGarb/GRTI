@@ -56,7 +56,7 @@ export function useMaintProfile(): MaintProfile {
       }
 
       const [mech, req] = await Promise.all([
-        supabase.from("op_mechanics").select("id,name").eq("organization_id", profile.organization_id).eq("user_id", user.id).maybeSingle(),
+        (supabase as any).from("op_maint_technicians").select("id,name").eq("organization_id", profile.organization_id).eq("user_id", user.id).maybeSingle(),
         supabase.from("op_delivery_requesters").select("id,name").eq("organization_id", profile.organization_id).eq("user_id", user.id).maybeSingle(),
       ]);
       if (cancelled) return;
