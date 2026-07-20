@@ -73,6 +73,7 @@ export const menuItems: MenuItem[] = [
   { key: "op-entregas", label: "Entregas", icon: Truck, path: "/op/entregas", orgSlugs: ["cgps-operacional"], tooltip: "Controle de entregas externas" },
   { key: "op-oficina", label: "Oficina", icon: Wrench, path: "/op/oficina", orgSlugs: ["cgps-operacional"], tooltip: "Ordens de serviço da oficina" },
   { key: "op-manutencao", label: "Manutenção Predial", icon: HardHat, path: "/op/manutencao", orgSlugs: ["cgps-operacional"], tooltip: "Ordens de manutenção, sedes e checklists" },
+  { key: "op-avaliacoes", label: "Avaliações Op.", icon: Star, path: "/op/avaliacoes", orgSlugs: ["cgps-operacional"], adminOnly: true, tooltip: "Feedback dos solicitantes sobre entregas e manutenções" },
   { key: "chk-dashboard", label: "Painel", icon: ClipboardCheck, path: "/checklists", orgSlugs: ["grcheck"], techAllowed: true, tooltip: "Painel de checklists" },
   { key: "chk-minhas", label: "Meus Checklists", icon: ClipboardCheck, path: "/checklists/minhas", orgSlugs: ["grcheck"], techAllowed: true, tooltip: "Checklists atribuídos a você" },
   { key: "chk-execucoes", label: "Execuções", icon: ListChecks, path: "/checklists/execucoes", orgSlugs: ["grcheck"], adminOnly: true, tooltip: "Todas as execuções de checklists" },
