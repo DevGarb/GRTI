@@ -2,6 +2,7 @@ import { useState } from "react";
 import { UserCheck, Plus, ToggleLeft, ToggleRight, Pencil, Trash2 } from "lucide-react";
 import { useChkAssignments, useSaveChkAssignment, useToggleChkAssignment, useDeleteChkAssignment, useChkTemplates, useChkCompanies, useChkOrgUsers, type ChkFrequency } from "@/hooks/useChecklists";
 import { toast } from "sonner";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 
 type FormState = {
   id?: string;
