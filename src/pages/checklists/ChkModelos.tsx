@@ -12,6 +12,7 @@ export default function ChkModelos() {
   const del = useDeleteChkTemplate();
   const [editorId, setEditorId] = useState<string | "new" | null>(null);
   const { data: loaded } = useChkTemplate(editorId && editorId !== "new" ? editorId : undefined);
+  const [toDelete, setToDelete] = useState<{ id: string; title: string } | null>(null);
 
   const [form, setForm] = useState<{ title: string; description: string; sector_id: string; frequency: ChkFrequency; items: Item[] }>({
     title: "", description: "", sector_id: "", frequency: "unica", items: [],
