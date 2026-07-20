@@ -29,7 +29,8 @@ function todayISO() { return new Date().toISOString().slice(0, 10); }
 export default function OpEntregasSolicitar() {
   const navigate = useNavigate();
   const { profile } = useEntregasProfile();
-  const { add } = useDeliveries();
+  const { user, profile: authProfile } = useAuth();
+  const { items: deliveries, add } = useDeliveries();
   const { activeItems: categories } = useDeliveryCategories();
   const { items: companies } = useCompanies();
 
@@ -46,7 +47,40 @@ export default function OpEntregasSolicitar() {
     notes: "",
   });
 
+  // Pending rating check
+  const [pending, setPending] = useState<any>(null); // delivery pendente de avaliação
+  const [ratingOpen, setRatingOpen] = useState(false);
+  const [busy, setBusy] = useState(false);
+
+  const findPending = async () => {
+    if (!profile?.name || !authProfile?.organization_id) return null;
+    const rated = await fetchRatedIds("delivery", authProfile.organization_id);
+    const mine = deliveries.filter(
+      (d: any) => d.status === "Finalizado" && d.requester_name === profile.name && !rated.has(d.id),
+    );
+    // mais antiga primeiro
+    mine.sort((a: any, b: any) => (a.finished_at || a.created_at).localeCompare(b.finished_at || b.created_at));
+    return mine[0] || null;
+  };
+
+  // Ao entrar / quando lista carrega, verifica pendência
+  useEffect(() => {
+    (async () => {
+      const p = await findPending();
+      if (p) { setPending(p); setRatingOpen(true); }
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [deliveries.length, profile?.name, authProfile?.organization_id]);
+
   const submit = async () => {
+    // Bloqueia se ainda tem avaliação pendente
+    const p = await findPending();
+    if (p) {
+      setPending(p);
+      setRatingOpen(true);
+      toast.error("Avalie a entrega anterior antes de criar uma nova solicitação.");
+      return;
+    }
     if (!form.company_id) return toast.error("Escolha a empresa solicitante");
     if (!form.category_id) return toast.error("Escolha a categoria");
     if (!form.address.trim()) return toast.error("Informe o endereço");
@@ -60,6 +94,27 @@ export default function OpEntregasSolicitar() {
       navigate("/op/entregas/minhas");
     }
   };
+
+  const handleSubmitRating = async (rating: number, comment: string) => {
+    if (!pending || !authProfile?.organization_id) return;
+    setBusy(true);
+    const ok = await submitOpRating({
+      kind: "delivery",
+      organization_id: authProfile.organization_id,
+      targetId: pending.id,
+      rating,
+      comment,
+      rated_by_type: "solicitante",
+      rated_by_name: profile?.name,
+      rated_by_user: user?.id || null,
+    });
+    setBusy(false);
+    if (ok) {
+      setRatingOpen(false);
+      setPending(null);
+    }
+  };
+
 
   return (
     <div className="cgps-scope min-h-screen bg-[hsl(var(--cgps-muted))]">
