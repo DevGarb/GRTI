@@ -225,7 +225,7 @@ export default function OpManutencao() {
     );
   };
 
-  const confirmClosure = async (payload: { closure_summary: string; closed_at: string }) => {
+  const confirmClosure = async (payload: { closure_summary: string; closed_at: string; photos?: File[] }) => {
     if (!closing) return;
     await orders.update(closing.id, {
       status: TERMINAL,
@@ -233,6 +233,9 @@ export default function OpManutencao() {
       finished_at: payload.closed_at,
       closed_by: user?.id || null,
     });
+    if (payload.photos?.length) {
+      for (const f of payload.photos) await orders.uploadPhoto(closing.id, f, "depois");
+    }
     setClosing(null);
   };
 
