@@ -8,6 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Send, Building2, Wrench, AlertTriangle, Calendar, Star } from "lucide-react";
 import { useMaintenanceOrders, useSites, MAINT_CATEGORIES, MAINT_PRIORITIES } from "@/hooks/useManutencao";
+import { useSectors } from "@/hooks/useSectors";
 import { useMaintProfile } from "@/hooks/useMaintProfile";
 import { useAuth } from "@/contexts/AuthContext";
 import { fetchRatedIds, submitOpRating } from "@/hooks/useOpRatings";
