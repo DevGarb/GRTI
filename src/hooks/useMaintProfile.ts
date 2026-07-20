@@ -21,13 +21,16 @@ export function useMaintProfile(): MaintProfile {
   const { user, profile, hasRole } = useAuth();
   const [state, setState] = useState<Omit<MaintProfile, "loading" | "scoped">>({ role: "other" });
   const [loading, setLoading] = useState(true);
-
-  const isOperacional = (profile as any)?.organization_slug === OPERACIONAL_SLUG;
+  const [isOperacional, setIsOperacional] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
     async function run() {
       if (!user || !profile?.organization_id) { setLoading(false); return; }
+      const { data: org } = await supabase.from("organizations").select("slug").eq("id", profile.organization_id).maybeSingle();
+      const isOp = org?.slug === OPERACIONAL_SLUG;
+      if (cancelled) return;
+      setIsOperacional(isOp);
 
       // Fallback: for non-operacional orgs, keep everyone as admin (current behavior).
       if (!isOperacional) {
