@@ -324,6 +324,12 @@ export default function OpManutencaoMinhas() {
                               <span className="font-medium"><span style={{ color: textMuted }}>Solicitante: </span>{req.name}</span>
                             </div>
                           )}
+                          {om.sector && (
+                            <div className="flex items-center gap-2 text-sm" style={{ color: textMain }}>
+                              <Building2 className="h-4 w-4 flex-shrink-0" style={{ color: ORANGE }} />
+                              <span className="font-medium"><span style={{ color: textMuted }}>Setor: </span>{om.sector}</span>
+                            </div>
+                          )}
                           {isSolicitante && tech && (
                             <div className="flex items-center gap-2 text-sm" style={{ color: textMain }}>
                               <User className="h-4 w-4 flex-shrink-0" style={{ color: TEAL }} />
