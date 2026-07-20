@@ -110,7 +110,7 @@ Deno.serve(async (req) => {
     // Fetch tickets in two focused queries to avoid PostgREST's 1000-row default
     // truncating results on large orgs. Together they cover every KPI the loop
     // computes: open* uses aging/backlog; recent* uses closed/opened/tma/ranking.
-    const selectCols = "id, title, status, priority, created_at, started_at, closed_at, assigned_to, created_by, category_id";
+    const selectCols = "id, title, status, priority, created_at, started_at, closed_at, aguardando_aprovacao_at, assigned_to, created_by, category_id";
     const startMonthIso = startMonth.toISOString();
     const [openRes, recentRes] = await Promise.all([
       supabase
@@ -123,7 +123,7 @@ Deno.serve(async (req) => {
         .from("tickets")
         .select(selectCols)
         .eq("organization_id", orgId)
-        .or(`created_at.gte.${startMonthIso},closed_at.gte.${startMonthIso}`)
+        .or(`created_at.gte.${startMonthIso},closed_at.gte.${startMonthIso},aguardando_aprovacao_at.gte.${startMonthIso}`)
         .order("created_at", { ascending: false }),
     ]);
     const byId = new Map<string, any>();
