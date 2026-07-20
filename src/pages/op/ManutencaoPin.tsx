@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useAuth } from "@/contexts/AuthContext";
-import { useMechanics } from "@/hooks/useOficina";
+import { useMaintTechnicians } from "@/hooks/useMaintTechnicians";
 import { useDeliveryRequesters } from "@/hooks/useDeliveryRequesters";
 import { useManutencaoProfile } from "@/contexts/ManutencaoProfileContext";
 import { toast } from "sonner";
@@ -16,14 +16,14 @@ export default function ManutencaoPin() {
   const navigate = useNavigate();
   const { profile: authProfile, hasRole, isSuperAdmin } = useAuth();
   const isAdmin = isSuperAdmin || hasRole("admin");
-  const { items: mechanics } = useMechanics();
+  const { items: technicians } = useMaintTechnicians();
   const { items: requesters } = useDeliveryRequesters();
   const { setProfile } = useManutencaoProfile();
 
   const [techPin, setTechPin] = useState("");
   const [reqPin, setReqPin] = useState("");
 
-  const activeMechanics = mechanics.filter((m) => m.is_active !== false);
+  const activeTechnicians = technicians.filter((m) => m.is_active !== false);
   const activeRequesters = requesters.filter((r) => r.is_active);
 
   const loginAdmin = () => {
