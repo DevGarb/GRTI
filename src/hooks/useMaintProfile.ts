@@ -59,7 +59,7 @@ export function useMaintProfile(): MaintProfile {
     }
     run();
     return () => { cancelled = true; };
-  }, [user?.id, profile?.organization_id, isOperacional, hasRole]);
+  }, [user?.id, profile?.organization_id, hasRole]);
 
   return { ...state, loading, scoped: isOperacional };
 }
