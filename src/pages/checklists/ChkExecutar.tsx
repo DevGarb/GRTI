@@ -88,7 +88,8 @@ export default function ChkExecutar() {
     }
   };
 
-  const progress = total > 0 ? Math.round((doneCount / total) * 100) : 0;
+  const progress = total > 0 ? Math.round((resolvedCount / total) * 100) : 0;
+  const pending = total - resolvedCount;
 
   return (
     <div className="space-y-6 max-w-3xl">
