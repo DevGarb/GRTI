@@ -1,6 +1,7 @@
-import { useEffect, useState } from "react";
+import { useContext, useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { ManutencaoProfileCtx } from "@/contexts/ManutencaoProfileContext";
 
 export type MaintRole = "admin" | "tecnico" | "solicitante" | "other";
 
@@ -19,6 +20,7 @@ const OPERACIONAL_SLUG = "cgps-operacional";
 
 export function useMaintProfile(): MaintProfile {
   const { user, profile, hasRole } = useAuth();
+  const pinCtx = useContext(ManutencaoProfileCtx);
   const [state, setState] = useState<Omit<MaintProfile, "loading" | "scoped">>({ role: "other" });
   const [loading, setLoading] = useState(true);
   const [isOperacional, setIsOperacional] = useState(false);
@@ -35,6 +37,16 @@ export function useMaintProfile(): MaintProfile {
       // Fallback: for non-operacional orgs, keep everyone as admin (current behavior).
       if (!isOp) {
         if (!cancelled) { setState({ role: "admin" }); setLoading(false); }
+        return;
+      }
+
+      // Prefer PIN-selected profile (Manutenção kiosk-style login).
+      const pin = pinCtx?.profile;
+      if (pin) {
+        if (pin.type === "admin") setState({ role: "admin" });
+        else if (pin.type === "tecnico") setState({ role: "tecnico", mechanicId: pin.id, mechanicName: pin.name });
+        else setState({ role: "solicitante", requesterId: pin.id, requesterName: pin.name });
+        setLoading(false);
         return;
       }
 
@@ -59,7 +71,7 @@ export function useMaintProfile(): MaintProfile {
     }
     run();
     return () => { cancelled = true; };
-  }, [user?.id, profile?.organization_id, hasRole]);
+  }, [user?.id, profile?.organization_id, hasRole, pinCtx?.profile?.type, pinCtx?.profile?.id]);
 
   return { ...state, loading, scoped: isOperacional };
 }

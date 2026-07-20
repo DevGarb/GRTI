@@ -23,6 +23,7 @@ import OpClosureDialog from "@/components/operacional/OpClosureDialog";
 import OpQuickActions from "@/components/operacional/OpQuickActions";
 import OpNotesPanel from "@/components/operacional/OpNotesPanel";
 import { cn } from "@/lib/utils";
+import ManutencaoNav from "@/pages/op/ManutencaoNav";
 
 const STATUS_COLORS: Record<string, string> = {
   "Aberta": "bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300",
@@ -39,12 +40,14 @@ const PRIORITY_COLORS: Record<string, string> = {
 
 function todayISO() { return new Date().toISOString().slice(0, 10); }
 
-const KANBAN_COLUMNS: { id: string; label: string; color: string }[] = [
+const STATUS_KANBAN_COLUMNS: { id: string; label: string; color: string }[] = [
   { id: "Aberta", label: "Aberta", color: "bg-amber-500" },
   { id: "Em execução", label: "Em execução", color: "bg-blue-500" },
   { id: "Concluída", label: "Concluída", color: "bg-emerald-600" },
   { id: "Cancelada", label: "Cancelada", color: "bg-rose-500" },
 ];
+const PENDING_COL = "__unassigned__";
+const FINALIZED_COL = "__finalized__";
 const TERMINAL = "Concluída";
 
 export default function OpManutencao() {
@@ -126,17 +129,83 @@ export default function OpManutencao() {
     filtered.filter(o => !(hideFinalized && statusFilter !== "Concluída" && o.status === "Concluída")),
   [filtered, hideFinalized, statusFilter]);
 
+  // Admin: columns per técnico (like Entregas). Others: columns per status.
+  const kanbanColumns = useMemo(() => {
+    if (!isAdmin) return STATUS_KANBAN_COLUMNS.map(c => ({ id: c.id, label: c.label, color: c.color }));
+    const cols: { id: string; label: string; color?: string }[] = [{ id: PENDING_COL, label: "SEM ATRIBUIÇÃO" }];
+    mechanics.items.filter(m => m.is_active !== false).forEach(m => cols.push({ id: `mech:${m.id}`, label: m.name }));
+    if (!hideFinalized) cols.push({ id: FINALIZED_COL, label: "FINALIZADAS", color: "bg-emerald-600" });
+    return cols;
+  }, [isAdmin, mechanics.items, hideFinalized]);
+
   const itemsByCol = useMemo(() => {
     const map: Record<string, MaintenanceOrder[]> = {};
-    KANBAN_COLUMNS.forEach(c => { map[c.id] = []; });
-    filteredKanban.forEach(o => { (map[o.status] ||= []).push(o); });
+    kanbanColumns.forEach(c => { map[c.id] = []; });
+    filteredKanban.forEach(o => {
+      if (!isAdmin) { (map[o.status] ||= []).push(o); return; }
+      if (o.status === "Concluída") { map[FINALIZED_COL]?.push(o); return; }
+      if (o.assigned_mechanic_id && map[`mech:${o.assigned_mechanic_id}`]) map[`mech:${o.assigned_mechanic_id}`].push(o);
+      else map[PENDING_COL]?.push(o);
+    });
     return map;
-  }, [filteredKanban]);
+  }, [filteredKanban, kanbanColumns, isAdmin]);
 
   const handleStatusChange = (om: MaintenanceOrder, newStatus: string) => {
     if (newStatus === om.status) return;
     if (newStatus === TERMINAL) { setClosing(om); return; }
     orders.update(om.id, { status: newStatus, finished_at: null });
+  };
+
+  const handleKanbanMove = (om: MaintenanceOrder, _from: string, to: string) => {
+    if (!isAdmin) return handleStatusChange(om, to);
+    if (to === FINALIZED_COL) { setClosing(om); return; }
+    if (to === PENDING_COL) { orders.update(om.id, { assigned_mechanic_id: null }); return; }
+    if (to.startsWith("mech:")) {
+      const mechId = to.slice(5);
+      const patch: Partial<MaintenanceOrder> = { assigned_mechanic_id: mechId };
+      if (om.status === "Aberta") patch.status = "Em execução";
+      orders.update(om.id, patch);
+    }
+  };
+
+  const renderKanbanHeader = (col: { id: string; label: string; color?: string }, count: number) => {
+    if (!isAdmin) {
+      return (
+        <div className={`${col.color || "bg-primary"} text-white rounded-t-lg px-3 py-2 flex items-center justify-between`}>
+          <span className="text-xs font-semibold truncate">{col.label}</span>
+          <span className="text-xs font-bold bg-white/20 rounded-full px-2 py-0.5">{count}</span>
+        </div>
+      );
+    }
+    if (col.id === PENDING_COL) {
+      return (
+        <div className="bg-white border rounded-t-lg px-3 py-2.5 flex items-center justify-between">
+          <span className="text-[11px] font-bold tracking-wide text-muted-foreground">SEM ATRIBUIÇÃO</span>
+          <span className="text-[11px] font-bold bg-muted rounded-full px-2 py-0.5">{count}</span>
+        </div>
+      );
+    }
+    if (col.id === FINALIZED_COL) {
+      return (
+        <div className="bg-emerald-600 text-white rounded-t-lg px-3 py-2.5 flex items-center justify-between">
+          <span className="text-[11px] font-bold tracking-wide">FINALIZADAS</span>
+          <span className="text-[11px] font-bold bg-white/20 rounded-full px-2 py-0.5">{count}</span>
+        </div>
+      );
+    }
+    const mechId = col.id.slice(5);
+    const mech = mechanics.items.find(x => x.id === mechId);
+    const initials = (mech?.name || "?").split(" ").filter(Boolean).slice(0, 2).map(s => s[0]).join("").toUpperCase();
+    return (
+      <div className="bg-white border rounded-t-lg px-3 py-2 flex items-center gap-2">
+        <div className="h-9 w-9 rounded-full bg-slate-800 text-white text-[12px] font-bold flex items-center justify-center flex-shrink-0">{initials}</div>
+        <div className="flex-1 min-w-0">
+          <div className="font-semibold text-[13px] truncate">{mech?.name || col.label}</div>
+          {mech?.specialty && <div className="text-[10px] text-muted-foreground truncate">{mech.specialty}</div>}
+        </div>
+        <span className="text-[11px] font-bold bg-slate-800 text-white rounded-full h-6 min-w-6 px-1.5 flex items-center justify-center">{count}</span>
+      </div>
+    );
   };
 
   const confirmClosure = async (payload: { closure_summary: string; closed_at: string }) => {
@@ -179,7 +248,10 @@ export default function OpManutencao() {
   };
 
   return (
+    <div>
+      <ManutencaoNav />
     <div className="space-y-6 p-6">
+
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div className="flex items-center gap-3">
           <Wrench className="h-7 w-7 text-primary" />
@@ -258,12 +330,13 @@ export default function OpManutencao() {
             <div className="text-center py-8 text-muted-foreground">Carregando...</div>
           ) : view === "kanban" ? (
             <OpKanbanBoard<MaintenanceOrder>
-              columns={KANBAN_COLUMNS}
+              columns={kanbanColumns}
               itemsByColumn={itemsByCol}
               renderCard={renderCard}
+              renderHeader={renderKanbanHeader}
               resolveItem={(id) => filtered.find(x => x.id === id)}
               isAllowed={() => true}
-              onMove={(item, _from, to) => handleStatusChange(item, to)}
+              onMove={handleKanbanMove}
               emptyText="Sem ordens"
             />
           ) : (
@@ -391,6 +464,7 @@ export default function OpManutencao() {
         title="Concluir ordem de manutenção"
         onConfirm={confirmClosure}
       />
+    </div>
     </div>
   );
 }
