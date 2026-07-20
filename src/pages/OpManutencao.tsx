@@ -627,7 +627,7 @@ function OmModal({ open, onOpenChange, editing, sites, mechanics, requesters, mo
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>Fechar</Button>
-          <Button onClick={() => onSave(form)} disabled={!form.title}>Salvar</Button>
+          <Button onClick={() => onSave(form)} disabled={!form.title || !form.sector}>Salvar</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
