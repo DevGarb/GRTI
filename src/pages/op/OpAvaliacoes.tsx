@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useOpRatings, type OpRating } from "@/hooks/useOpRatings";
 import { useDeliveries } from "@/hooks/useDeliveries";
 import { useMaintenanceOrders } from "@/hooks/useManutencao";
-import { useOperators } from "@/hooks/useOperacional";
+import { useDrivers } from "@/hooks/useOperacional";
 import { useMaintTechnicians } from "@/hooks/useMaintTechnicians";
 import { cn } from "@/lib/utils";
 
