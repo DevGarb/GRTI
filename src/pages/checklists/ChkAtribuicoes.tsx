@@ -27,6 +27,7 @@ export default function ChkAtribuicoes() {
   const { data: companies = [] } = useChkCompanies();
   const { data: users = [] } = useChkOrgUsers();
   const save = useSaveChkAssignment();
+  const saveBulk = useSaveChkAssignmentsBulk();
   const toggle = useToggleChkAssignment();
   const del = useDeleteChkAssignment();
 
@@ -35,12 +36,15 @@ export default function ChkAtribuicoes() {
   const [toDelete, setToDelete] = useState<any | null>(null);
   const [pendingDup, setPendingDup] = useState<null | (() => void)>(null);
 
+  const isEdit = !!form.id;
+
   const openNew = () => { setForm(emptyForm()); setShowForm(true); };
   const openEdit = (a: any) => {
     setForm({
       id: a.id,
       template_id: a.template_id,
       company_id: a.company_id,
+      company_ids: [a.company_id],
       assigned_user_id: a.assigned_user_id,
       frequency: a.frequency,
       start_date: a.start_date,
@@ -50,7 +54,12 @@ export default function ChkAtribuicoes() {
     setShowForm(true);
   };
 
-  const doSave = () => {
+  const toggleCompany = (cid: string) => setForm((f) => ({
+    ...f,
+    company_ids: f.company_ids.includes(cid) ? f.company_ids.filter((x) => x !== cid) : [...f.company_ids, cid],
+  }));
+
+  const doSaveEdit = () => {
     save.mutate({
       id: form.id,
       template_id: form.template_id, company_id: form.company_id, assigned_user_id: form.assigned_user_id,
@@ -58,25 +67,45 @@ export default function ChkAtribuicoes() {
     }, { onSuccess: () => { setShowForm(false); setForm(emptyForm()); } });
   };
 
-  const submit = () => {
-    if (!form.template_id || !form.company_id || !form.assigned_user_id) return;
+  const doCreate = (companyIds: string[]) => {
+    if (companyIds.length === 1) {
+      save.mutate({
+        template_id: form.template_id, company_id: companyIds[0], assigned_user_id: form.assigned_user_id,
+        frequency: form.frequency, start_date: form.start_date, end_date: form.end_date || null, notes: form.notes,
+      }, { onSuccess: () => { setShowForm(false); setForm(emptyForm()); } });
+    } else {
+      saveBulk.mutate({
+        template_id: form.template_id, company_ids: companyIds, assigned_user_id: form.assigned_user_id,
+        frequency: form.frequency, start_date: form.start_date, end_date: form.end_date || null, notes: form.notes,
+      }, { onSuccess: () => { setShowForm(false); setForm(emptyForm()); } });
+    }
+  };
 
-    // Duplicate check (only on create)
-    if (!form.id) {
-      const dup = assigns.find((a: any) =>
+  const submit = () => {
+    if (!form.template_id || !form.assigned_user_id) return;
+    if (isEdit) {
+      if (!form.company_id) return;
+      doSaveEdit();
+      return;
+    }
+    if (form.company_ids.length === 0) return;
+
+    // Duplicate check per company
+    const dupCompanyIds = form.company_ids.filter((cid) =>
+      assigns.some((a: any) =>
         a.is_active &&
         a.template_id === form.template_id &&
-        a.company_id === form.company_id &&
+        a.company_id === cid &&
         a.assigned_user_id === form.assigned_user_id,
-      );
-      if (dup) {
-        setPendingDup(() => doSave);
-        return;
-      }
+      )
+    );
+    if (dupCompanyIds.length > 0) {
+      setPendingDup(() => () => doCreate(form.company_ids));
+      return;
     }
-
-    doSave();
+    doCreate(form.company_ids);
   };
+
 
   const handleDelete = (a: any) => setToDelete(a);
 
