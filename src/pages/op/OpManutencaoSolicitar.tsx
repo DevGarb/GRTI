@@ -140,6 +140,18 @@ export default function OpManutencaoSolicitar() {
             </Select>
           </div>
 
+          <div>
+            <Label>Setor solicitante</Label>
+            <Select value={form.sector} onValueChange={(v) => setForm((p) => ({ ...p, sector: v }))}>
+              <SelectTrigger><SelectValue placeholder="Escolha o setor (opcional)" /></SelectTrigger>
+              <SelectContent>
+                {sectors.map((s) => (
+                  <SelectItem key={s.id} value={s.name}>{s.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
           <div className="grid grid-cols-2 gap-3">
             <div>
               <Label>Categoria</Label>
