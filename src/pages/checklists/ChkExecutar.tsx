@@ -146,17 +146,26 @@ export default function ChkExecutar() {
               />
 
               <div className="flex items-center gap-3">
-                {photoUrls[it.id] ? (
-                  <a href={photoUrls[it.id]} target="_blank" rel="noreferrer">
-                    <img src={photoUrls[it.id]} alt="" className="h-16 w-16 object-cover rounded-lg border border-border" />
-                  </a>
-                ) : (
-                  ti?.requires_photo && <span className="text-xs text-red-600">Foto obrigatória</span>
-                )}
+                {(() => {
+                  const displayUrl = localPreviews[it.id] || photoUrls[it.id];
+                  if (displayUrl) {
+                    return (
+                      <a href={displayUrl} target="_blank" rel="noreferrer" className="relative">
+                        <img src={displayUrl} alt="" className="h-16 w-16 object-cover rounded-lg border border-border" />
+                        {uploadingId === it.id && (
+                          <div className="absolute inset-0 flex items-center justify-center bg-black/40 rounded-lg">
+                            <Loader2 className="h-4 w-4 animate-spin text-white" />
+                          </div>
+                        )}
+                      </a>
+                    );
+                  }
+                  return ti?.requires_photo && <span className="text-xs text-red-600">Foto obrigatória</span>;
+                })()}
                 {!readonly && (
                   <label className={`text-xs px-3 py-1.5 rounded-lg border cursor-pointer flex items-center gap-1.5 ${failedIds.has(it.id) ? "border-red-500 text-red-600 hover:bg-red-50" : "border-input hover:bg-muted"}`}>
                     {uploadingId === it.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Camera className="h-3.5 w-3.5" />}
-                    {failedIds.has(it.id) ? "Falha no envio, toque pra tentar de novo" : it.photo_path ? "Trocar foto" : "Anexar foto"}
+                    {failedIds.has(it.id) ? "Falha no envio, toque pra tentar de novo" : (it.photo_path || localPreviews[it.id]) ? "Trocar foto" : "Anexar foto"}
                     <input type="file" accept="image/*" capture="environment" className="hidden" onChange={(e) => e.target.files?.[0] && handlePhoto(it, e.target.files[0])} />
                   </label>
                 )}
