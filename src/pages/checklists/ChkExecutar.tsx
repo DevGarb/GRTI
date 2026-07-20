@@ -54,6 +54,12 @@ export default function ChkExecutar() {
 
   const handlePhoto = async (item: any, file: File) => {
     if (!profile?.organization_id) return;
+    // Preview local imediato
+    const previewUrl = URL.createObjectURL(file);
+    setLocalPreviews((prev) => {
+      if (prev[item.id]) URL.revokeObjectURL(prev[item.id]);
+      return { ...prev, [item.id]: previewUrl };
+    });
     setUploadingId(item.id);
     try {
       const path = await uploadChkPhoto(profile.organization_id, exec.id, item.id, file);
@@ -77,6 +83,8 @@ export default function ChkExecutar() {
       setUploadingId(null);
     }
   };
+
+  const progress = total > 0 ? Math.round((doneCount / total) * 100) : 0;
 
   return (
     <div className="space-y-6 max-w-3xl">
