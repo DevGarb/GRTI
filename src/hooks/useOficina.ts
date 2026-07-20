@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 
-export interface Mechanic { id: string; name: string; phone: string | null; specialty: string | null; is_active: boolean; }
+export interface Mechanic { id: string; name: string; phone: string | null; specialty: string | null; is_active: boolean; user_id?: string | null; }
 export interface Part { id: string; name: string; code: string | null; default_price: number; is_active: boolean; }
 
 export interface ServiceOrder {
