@@ -356,11 +356,22 @@ export default function OpManutencao() {
         </TabsContent>
       </Tabs>
 
-      <OmModal open={omOpen} onOpenChange={setOmOpen} editing={editing} sites={sites.items} onSave={async (input) => {
-        if (editing) await orders.update(editing.id, input);
-        else await orders.add(input);
-        setOmOpen(false);
-      }} />
+      <OmModal
+        open={omOpen}
+        onOpenChange={setOmOpen}
+        editing={editing}
+        sites={sites.items}
+        mechanics={mechanics.items}
+        requesters={requesters.items}
+        mode={isSolicitante ? "solicitante" : isTecnico ? "tecnico" : "admin"}
+        forcedRequesterId={isSolicitante ? maintProfile.requesterId : undefined}
+        onSave={async (input) => {
+          if (editing) await orders.update(editing.id, input);
+          else await orders.add(input);
+          setOmOpen(false);
+        }}
+      />
+
 
       <SiteModal open={siteOpen} onOpenChange={setSiteOpen} editing={editingSite} onSave={async (input) => {
         if (editingSite) await sites.update(editingSite.id, input);
