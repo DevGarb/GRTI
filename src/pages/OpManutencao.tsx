@@ -593,16 +593,21 @@ function OmModal({ open, onOpenChange, editing, sites, mechanics, requesters, mo
               </div>
             </>
           )}
-          {!solicitanteView && (
-            <div>
-              <Label>Responsável (texto livre)</Label>
-              <Input disabled={readOnly} value={form.responsible || ""} onChange={e => setForm({ ...form, responsible: e.target.value })} />
-            </div>
-          )}
-          {!solicitanteView && (
+          <div>
+            <Label>Setor solicitante *</Label>
+            <Select disabled={readOnly} value={form.sector || ""} onValueChange={v => setForm({ ...form, sector: v })}>
+              <SelectTrigger><SelectValue placeholder="Escolha o setor" /></SelectTrigger>
+              <SelectContent>
+                {sectors.map((s) => (
+                  <SelectItem key={s.id} value={s.name}>{s.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          {!solicitanteView && editing && (
             <div>
               <Label>Aberta em</Label>
-              <Input disabled={readOnly} type="date" value={form.opened_at || ""} onChange={e => setForm({ ...form, opened_at: e.target.value })} />
+              <Input disabled value={openedDisplay} readOnly />
             </div>
           )}
           {!solicitanteView && (
