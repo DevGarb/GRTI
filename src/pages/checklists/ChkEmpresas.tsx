@@ -68,7 +68,7 @@ export default function ChkEmpresas() {
                 <p className="text-xs text-muted-foreground">{c.chk_sectors?.name || "Sem setor"} {c.document ? `· ${c.document}` : ""}</p>
               </div>
               <button onClick={() => openEdit(c)} className="p-1.5 rounded-md hover:bg-muted text-muted-foreground"><Pencil className="h-4 w-4" /></button>
-              <button onClick={() => confirm(`Remover "${c.name}"?`) && del.mutate(c.id)} className="p-1.5 rounded-md hover:bg-muted text-destructive"><Trash2 className="h-4 w-4" /></button>
+              <button onClick={() => setToDelete({ id: c.id, name: c.name })} className="p-1.5 rounded-md hover:bg-muted text-destructive"><Trash2 className="h-4 w-4" /></button>
             </div>
           ))}
         </div>
