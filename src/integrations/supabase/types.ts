@@ -2840,6 +2840,7 @@ export type Database = {
       }
       tickets: {
         Row: {
+          aguardando_aprovacao_at: string | null
           assigned_to: string | null
           category_id: string | null
           closed_at: string | null
@@ -2867,6 +2868,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          aguardando_aprovacao_at?: string | null
           assigned_to?: string | null
           category_id?: string | null
           closed_at?: string | null
@@ -2894,6 +2896,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          aguardando_aprovacao_at?: string | null
           assigned_to?: string | null
           category_id?: string | null
           closed_at?: string | null
