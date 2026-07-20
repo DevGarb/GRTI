@@ -171,16 +171,30 @@ export function useSaveChkTemplate() {
         if (error) throw error;
         templateId = (data as any).id;
       }
-      // Replace items: delete all then reinsert (simples e seguro no MVP)
-      await supabase.from("chk_template_items" as any).delete().eq("template_id", templateId!);
-      if (input.items.length > 0) {
-        const rows = input.items.map((it, idx) => ({
-          template_id: templateId, organization_id: org,
-          title: it.title, observation: it.observation,
-          weight: it.weight, requires_photo: it.requires_photo, sort_order: idx,
-        }));
-        const { error } = await supabase.from("chk_template_items" as any).insert(rows);
-        if (error) throw error;
+      // Upsert real: preserva IDs de itens existentes (evita cascade DELETE em chk_execution_items).
+      const existingIds = input.items.filter((it) => it.id).map((it) => it.id as string);
+      // 1) Deleta apenas os itens que o usuário removeu no editor.
+      let delQ = supabase.from("chk_template_items" as any).delete().eq("template_id", templateId!);
+      if (existingIds.length > 0) delQ = delQ.not("id", "in", `(${existingIds.join(",")})`);
+      const { error: delErr } = await delQ;
+      if (delErr) throw delErr;
+      // 2) Update dos existentes / Insert dos novos, preservando sort_order pelo índice.
+      for (let idx = 0; idx < input.items.length; idx++) {
+        const it = input.items[idx];
+        if (it.id) {
+          const { error } = await supabase.from("chk_template_items" as any).update({
+            title: it.title, observation: it.observation,
+            weight: it.weight, requires_photo: it.requires_photo, sort_order: idx,
+          }).eq("id", it.id);
+          if (error) throw error;
+        } else {
+          const { error } = await supabase.from("chk_template_items" as any).insert({
+            template_id: templateId, organization_id: org,
+            title: it.title, observation: it.observation,
+            weight: it.weight, requires_photo: it.requires_photo, sort_order: idx,
+          });
+          if (error) throw error;
+        }
       }
       return templateId;
     },

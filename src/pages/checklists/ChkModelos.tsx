@@ -1,9 +1,12 @@
 import { useState, useEffect } from "react";
-import { FileText, Plus, Pencil, Trash2, Camera, ArrowUp, ArrowDown, X } from "lucide-react";
+import { FileText, Plus, Pencil, Trash2, Camera, X, GripVertical } from "lucide-react";
 import { useChkTemplates, useChkTemplate, useSaveChkTemplate, useDeleteChkTemplate, useChkSectors, type ChkFrequency } from "@/hooks/useChecklists";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, type DragEndEvent } from "@dnd-kit/core";
+import { arrayMove, SortableContext, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy } from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 
-type Item = { id?: string; title: string; observation?: string; weight: 1 | 2 | 3; requires_photo: boolean; sort_order: number };
+type Item = { id?: string; _key?: string; title: string; observation?: string; weight: 1 | 2 | 3; requires_photo: boolean; sort_order: number };
 
 export default function ChkModelos() {
   const { data: templates = [], isLoading } = useChkTemplates();
@@ -34,15 +37,20 @@ export default function ChkModelos() {
     }
   }, [editorId, loaded]);
 
-  const addItem = () => setForm({ ...form, items: [...form.items, { title: "", observation: "", weight: 1, requires_photo: false, sort_order: form.items.length }] });
+  const addItem = () => setForm({ ...form, items: [...form.items, { _key: crypto.randomUUID(), title: "", observation: "", weight: 1, requires_photo: false, sort_order: form.items.length }] });
   const updateItem = (idx: number, patch: Partial<Item>) => setForm({ ...form, items: form.items.map((it, i) => (i === idx ? { ...it, ...patch } : it)) });
   const removeItem = (idx: number) => setForm({ ...form, items: form.items.filter((_, i) => i !== idx).map((it, i) => ({ ...it, sort_order: i })) });
-  const moveItem = (idx: number, dir: -1 | 1) => {
-    const next = idx + dir;
-    if (next < 0 || next >= form.items.length) return;
-    const items = [...form.items];
-    [items[idx], items[next]] = [items[next], items[idx]];
-    setForm({ ...form, items: items.map((it, i) => ({ ...it, sort_order: i })) });
+
+  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }), useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }));
+  const itemKey = (it: Item, idx: number) => it.id || it._key || `idx-${idx}`;
+  const handleDragEnd = (e: DragEndEvent) => {
+    const { active, over } = e;
+    if (!over || active.id === over.id) return;
+    const oldIdx = form.items.findIndex((it, i) => itemKey(it, i) === active.id);
+    const newIdx = form.items.findIndex((it, i) => itemKey(it, i) === over.id);
+    if (oldIdx < 0 || newIdx < 0) return;
+    const items = arrayMove(form.items, oldIdx, newIdx).map((it, i) => ({ ...it, sort_order: i }));
+    setForm({ ...form, items });
   };
 
   const submit = () => {
@@ -90,39 +98,18 @@ export default function ChkModelos() {
           {form.items.length === 0 ? (
             <p className="text-sm text-muted-foreground text-center py-6">Nenhum item ainda. Adicione ao menos um.</p>
           ) : (
-            <div className="space-y-3">
-              {form.items.map((it, idx) => (
-                <div key={idx} className="border border-border rounded-lg p-3 space-y-2">
-                  <div className="flex items-start gap-2">
-                    <div className="flex flex-col shrink-0">
-                      <button onClick={() => moveItem(idx, -1)} disabled={idx === 0} title="Mover para cima" className="p-0.5 rounded hover:bg-muted text-muted-foreground disabled:opacity-30 disabled:hover:bg-transparent">
-                        <ArrowUp className="h-3.5 w-3.5" />
-                      </button>
-                      <button onClick={() => moveItem(idx, 1)} disabled={idx === form.items.length - 1} title="Mover para baixo" className="p-0.5 rounded hover:bg-muted text-muted-foreground disabled:opacity-30 disabled:hover:bg-transparent">
-                        <ArrowDown className="h-3.5 w-3.5" />
-                      </button>
-                    </div>
-                    <input placeholder="Pergunta do item" value={it.title} onChange={(e) => updateItem(idx, { title: e.target.value })} className="flex-1 px-3 py-2 rounded-lg border border-input bg-background text-sm" />
-                    <button onClick={() => removeItem(idx)} className="p-2 rounded-md hover:bg-muted text-destructive"><Trash2 className="h-4 w-4" /></button>
-                  </div>
-                  <textarea placeholder="Observação padrão (opcional)" value={it.observation || ""} onChange={(e) => updateItem(idx, { observation: e.target.value })} rows={1} className="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm" />
-                  <div className="flex items-center gap-3 flex-wrap">
-                    <label className="text-xs text-muted-foreground">Peso:</label>
-                    {[1, 2, 3].map((w) => (
-                      <button key={w} onClick={() => updateItem(idx, { weight: w as 1 | 2 | 3 })} className={`px-3 py-1 rounded-full text-xs font-medium border ${it.weight === w ? "bg-primary text-primary-foreground border-primary" : "border-input hover:bg-muted"}`}>
-                        {w === 1 ? "1 · Comum" : w === 2 ? "2 · Importante" : "3 · Imprescindível"}
-                      </button>
-                    ))}
-                    <label className="flex items-center gap-1.5 text-xs text-muted-foreground ml-auto cursor-pointer">
-                      <input type="checkbox" checked={it.requires_photo} onChange={(e) => updateItem(idx, { requires_photo: e.target.checked })} className="rounded" />
-                      <Camera className="h-3.5 w-3.5" /> Exige foto
-                    </label>
-                  </div>
+            <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+              <SortableContext items={form.items.map((it, i) => itemKey(it, i))} strategy={verticalListSortingStrategy}>
+                <div className="space-y-3">
+                  {form.items.map((it, idx) => (
+                    <SortableItem key={itemKey(it, idx)} id={itemKey(it, idx)} item={it} idx={idx} onUpdate={updateItem} onRemove={removeItem} />
+                  ))}
                 </div>
-              ))}
-            </div>
+              </SortableContext>
+            </DndContext>
           )}
         </div>
+
 
         <div className="flex gap-2 justify-end">
           <button onClick={() => setEditorId(null)} className="px-4 py-2 text-sm rounded-lg border border-input hover:bg-muted">Cancelar</button>
@@ -181,6 +168,45 @@ export default function ChkModelos() {
           setToDelete(null);
         }}
       />
+    </div>
+  );
+}
+
+function SortableItem({ id, item, idx, onUpdate, onRemove }: {
+  id: string; item: Item; idx: number;
+  onUpdate: (idx: number, patch: Partial<Item>) => void;
+  onRemove: (idx: number) => void;
+}) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id });
+  const style = { transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.5 : 1 };
+  return (
+    <div ref={setNodeRef} style={style} className="border border-border rounded-lg p-3 space-y-2 bg-background">
+      <div className="flex items-start gap-2">
+        <button
+          type="button"
+          {...attributes}
+          {...listeners}
+          title="Arrastar para reordenar"
+          className="p-1.5 rounded hover:bg-muted text-muted-foreground cursor-grab active:cursor-grabbing touch-none"
+        >
+          <GripVertical className="h-4 w-4" />
+        </button>
+        <input placeholder="Pergunta do item" value={item.title} onChange={(e) => onUpdate(idx, { title: e.target.value })} className="flex-1 px-3 py-2 rounded-lg border border-input bg-background text-sm" />
+        <button onClick={() => onRemove(idx)} className="p-2 rounded-md hover:bg-muted text-destructive"><Trash2 className="h-4 w-4" /></button>
+      </div>
+      <textarea placeholder="Observação padrão (opcional)" value={item.observation || ""} onChange={(e) => onUpdate(idx, { observation: e.target.value })} rows={1} className="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm" />
+      <div className="flex items-center gap-3 flex-wrap">
+        <label className="text-xs text-muted-foreground">Peso:</label>
+        {[1, 2, 3].map((w) => (
+          <button key={w} onClick={() => onUpdate(idx, { weight: w as 1 | 2 | 3 })} className={`px-3 py-1 rounded-full text-xs font-medium border ${item.weight === w ? "bg-primary text-primary-foreground border-primary" : "border-input hover:bg-muted"}`}>
+            {w === 1 ? "1 · Comum" : w === 2 ? "2 · Importante" : "3 · Imprescindível"}
+          </button>
+        ))}
+        <label className="flex items-center gap-1.5 text-xs text-muted-foreground ml-auto cursor-pointer">
+          <input type="checkbox" checked={item.requires_photo} onChange={(e) => onUpdate(idx, { requires_photo: e.target.checked })} className="rounded" />
+          <Camera className="h-3.5 w-3.5" /> Exige foto
+        </label>
+      </div>
     </div>
   );
 }
