@@ -75,6 +75,19 @@ export default function ChkSetores() {
           ))}
         </div>
       )}
+
+      <ConfirmDialog
+        open={!!toDelete}
+        onOpenChange={(o) => !o && setToDelete(null)}
+        title="Remover setor"
+        description={toDelete ? `Remover setor "${toDelete.name}"?` : ""}
+        confirmLabel="Remover"
+        destructive
+        onConfirm={() => {
+          if (toDelete) del.mutate(toDelete.id);
+          setToDelete(null);
+        }}
+      />
     </div>
   );
 }
