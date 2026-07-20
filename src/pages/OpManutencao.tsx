@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { Navigate } from "react-router-dom";
 import { Wrench, Plus, Pencil, Trash2, AlertTriangle, Building2, ListChecks, Image as ImageIcon, X, LayoutGrid, List, Eye, EyeOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -56,6 +57,11 @@ export default function OpManutencao() {
   const isAdmin = maintProfile.role === "admin";
   const isTecnico = maintProfile.role === "tecnico";
   const isSolicitante = maintProfile.role === "solicitante";
+
+  // Non-admins get their own mobile-first screens (same pattern as Entregas)
+  if (!maintProfile.loading && isTecnico) return <Navigate to="/op/manutencao/minhas" replace />;
+  if (!maintProfile.loading && isSolicitante) return <Navigate to="/op/manutencao/solicitar" replace />;
+
   const sites = useSites();
   const orders = useMaintenanceOrders();
   const tpls = useChecklistTemplates();

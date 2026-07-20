@@ -63,6 +63,8 @@ import OpOficina from "@/pages/OpOficina";
 import OpManutencao from "@/pages/OpManutencao";
 import ManutencaoPin from "@/pages/op/ManutencaoPin";
 import ManutencaoGuard from "@/pages/op/ManutencaoGuard";
+import OpManutencaoMinhas from "@/pages/op/OpManutencaoMinhas";
+import OpManutencaoSolicitar from "@/pages/op/OpManutencaoSolicitar";
 import { ManutencaoProfileProvider } from "@/contexts/ManutencaoProfileContext";
 import NotFound from "./pages/NotFound";
 import OAuthConsent from "@/pages/OAuthConsent";
@@ -222,6 +224,8 @@ const App = () => (
 
                       <Route path="/op/oficina" element={<MenuGuard menuKey="op-oficina"><OpOficina /></MenuGuard>} />
                       <Route path="/op/manutencao/pin" element={<MenuGuard menuKey="op-manutencao"><ManutencaoProfileProvider><ManutencaoPin /></ManutencaoProfileProvider></MenuGuard>} />
+                      <Route path="/op/manutencao/minhas" element={<MenuGuard menuKey="op-manutencao"><ManutencaoProfileProvider><ManutencaoGuard><OpManutencaoMinhas /></ManutencaoGuard></ManutencaoProfileProvider></MenuGuard>} />
+                      <Route path="/op/manutencao/solicitar" element={<MenuGuard menuKey="op-manutencao"><ManutencaoProfileProvider><ManutencaoGuard><OpManutencaoSolicitar /></ManutencaoGuard></ManutencaoProfileProvider></MenuGuard>} />
                       <Route path="/op/manutencao" element={<MenuGuard menuKey="op-manutencao"><ManutencaoProfileProvider><ManutencaoGuard><OpManutencao /></ManutencaoGuard></ManutencaoProfileProvider></MenuGuard>} />
                       <Route path="/checklists" element={<MenuGuard menuKey="chk-dashboard"><ChkDashboard /></MenuGuard>} />
                       <Route path="/checklists/setores" element={<MenuGuard menuKey="chk-setores"><AdminRoute><ChkSetores /></AdminRoute></MenuGuard>} />

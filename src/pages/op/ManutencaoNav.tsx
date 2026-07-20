@@ -1,13 +1,26 @@
-import { useNavigate } from "react-router-dom";
-import { Wrench, LogOut } from "lucide-react";
+import { NavLink, useLocation, useNavigate } from "react-router-dom";
+import { Wrench, LogOut, ClipboardList, LayoutGrid } from "lucide-react";
 import { useManutencaoProfile } from "@/contexts/ManutencaoProfileContext";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import "./cearagps.css";
 
 export default function ManutencaoNav() {
+  const { pathname } = useLocation();
   const navigate = useNavigate();
   const { profile, clear } = useManutencaoProfile();
+
+  const isSolicitante = profile?.type === "solicitante";
+  const isTecnico = profile?.type === "tecnico";
+
+  const TABS = isSolicitante
+    ? [
+        { to: "/op/manutencao/solicitar", label: "Nova solicitação", icon: ClipboardList },
+        { to: "/op/manutencao/minhas", label: "Status da solicitação", icon: LayoutGrid },
+      ]
+    : isTecnico
+    ? [{ to: "/op/manutencao/minhas", label: "Minhas OMs", icon: LayoutGrid }]
+    : [];
 
   const roleColor =
     profile?.type === "admin" ? "bg-slate-800 text-white"
@@ -25,7 +38,18 @@ export default function ManutencaoNav() {
           </div>
           <span className="font-bold text-sm" style={{ color: "hsl(191 74% 20%)" }}>Manutenção Predial</span>
         </div>
-        <div className="flex-1" />
+        <nav className="flex items-center flex-1 flex-wrap">
+          {TABS.map((t) => {
+            const active = pathname === t.to;
+            const Icon = t.icon;
+            return (
+              <NavLink key={t.to} to={t.to} className="cgps-tab flex items-center gap-1.5" data-active={active}>
+                <Icon className="h-4 w-4" />
+                {t.label}
+              </NavLink>
+            );
+          })}
+        </nav>
         {profile && (
           <div className="flex items-center gap-2 py-2">
             <Badge className={roleColor + " border-0 capitalize"}>{profile.type}</Badge>
