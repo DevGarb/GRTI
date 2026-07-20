@@ -1504,6 +1504,7 @@ export type Database = {
           description: string | null
           finished_at: string | null
           id: string
+          kanban_position: number | null
           notes: string | null
           om_number: number
           opened_at: string
@@ -1529,6 +1530,7 @@ export type Database = {
           description?: string | null
           finished_at?: string | null
           id?: string
+          kanban_position?: number | null
           notes?: string | null
           om_number?: number
           opened_at?: string
@@ -1554,6 +1556,7 @@ export type Database = {
           description?: string | null
           finished_at?: string | null
           id?: string
+          kanban_position?: number | null
           notes?: string | null
           om_number?: number
           opened_at?: string

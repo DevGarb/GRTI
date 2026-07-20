@@ -150,8 +150,22 @@ export default function OpManutencao() {
       if (o.assigned_technician_id && map[`mech:${o.assigned_technician_id}`]) map[`mech:${o.assigned_technician_id}`].push(o);
       else map[PENDING_COL]?.push(o);
     });
+    // Sort each column by kanban_position (nulls last), then newest first
+    Object.keys(map).forEach(k => {
+      map[k].sort((a, b) => {
+        const pa = a.kanban_position ?? Number.MAX_SAFE_INTEGER;
+        const pb = b.kanban_position ?? Number.MAX_SAFE_INTEGER;
+        if (pa !== pb) return pa - pb;
+        return (b.created_at || "").localeCompare(a.created_at || "");
+      });
+    });
     return map;
   }, [filteredKanban, kanbanColumns, isAdmin]);
+
+  const handleKanbanReorder = async (colId: string, orderedIds: string[]) => {
+    if (!isAdmin) return;
+    await Promise.all(orderedIds.map((id, idx) => orders.update(id, { kanban_position: idx })));
+  };
 
   const handleStatusChange = (om: MaintenanceOrder, newStatus: string) => {
     if (newStatus === om.status) return;
@@ -349,6 +363,7 @@ export default function OpManutencao() {
               resolveItem={(id) => filtered.find(x => x.id === id)}
               isAllowed={() => true}
               onMove={handleKanbanMove}
+              onReorder={isAdmin ? handleKanbanReorder : undefined}
               emptyText="Sem ordens"
             />
           ) : (
