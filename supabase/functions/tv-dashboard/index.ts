@@ -177,15 +177,13 @@ Deno.serve(async (req) => {
       const isCreatedToday = createdAt >= startToday;
       if (isCreatedToday) opened_today++;
 
-      if (t.status === "Fechado" || t.status === "Aprovado") {
-        if (t.closed_at) {
-          const cd = new Date(t.closed_at);
-          if (cd >= startToday) {
-            closed_today++;
-            if (t.assigned_to) activeTechsToday.add(t.assigned_to);
-          }
-          if (cd >= startMonth && cd < endMonth) closed_month++;
+      if (t.aguardando_aprovacao_at) {
+        const aad = new Date(t.aguardando_aprovacao_at);
+        if (aad >= startToday) {
+          closed_today++;
+          if (t.assigned_to) activeTechsToday.add(t.assigned_to);
         }
+        if (aad >= startMonth && aad < endMonth) closed_month++;
       }
 
       // TMA = tempo corrido entre started_at e 1ª "Aguardando Aprovação".
