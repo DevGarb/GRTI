@@ -488,7 +488,7 @@ function KpiCard({ label, value, color, icon, active, onClick }: { label: string
 
 function OmModal({ open, onOpenChange, editing, sites, mechanics, requesters, mode, forcedRequesterId, onSave }: {
   open: boolean; onOpenChange: (b: boolean) => void; editing: MaintenanceOrder | null; sites: Site[];
-  mechanics: Mechanic[]; requesters: DeliveryRequester[];
+  mechanics: MaintTechnician[]; requesters: DeliveryRequester[];
   mode: "admin" | "tecnico" | "solicitante";
   forcedRequesterId?: string;
   onSave: (input: Partial<MaintenanceOrder>) => Promise<void>;
