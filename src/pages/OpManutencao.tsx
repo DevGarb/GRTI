@@ -59,7 +59,7 @@ export default function OpManutencao() {
   const sites = useSites();
   const orders = useMaintenanceOrders();
   const tpls = useChecklistTemplates();
-  const mechanics = useMechanics();
+  const mechanics = useMaintTechnicians();
   const requesters = useDeliveryRequesters();
 
   const [activeMonth, setActiveMonth] = useState(() => new Date().toISOString().slice(0, 7));
