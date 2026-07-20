@@ -28,6 +28,7 @@ export default function OpCadastros() {
       <Tabs defaultValue="drivers">
         <TabsList className="flex-wrap h-auto">
           <TabsTrigger value="drivers"><Users className="h-4 w-4 mr-1" /> Motoristas</TabsTrigger>
+          <TabsTrigger value="requesters"><UserCheck className="h-4 w-4 mr-1" /> Solicitantes</TabsTrigger>
           <TabsTrigger value="companies"><Building2 className="h-4 w-4 mr-1" /> Empresas</TabsTrigger>
           <TabsTrigger value="vehicles"><Car className="h-4 w-4 mr-1" /> Veículos</TabsTrigger>
           <TabsTrigger value="mechanics"><Wrench className="h-4 w-4 mr-1" /> Mecânicos (Oficina)</TabsTrigger>
@@ -35,12 +36,90 @@ export default function OpCadastros() {
           <TabsTrigger value="parts"><Package className="h-4 w-4 mr-1" /> Peças</TabsTrigger>
         </TabsList>
         <TabsContent value="drivers"><DriversTab /></TabsContent>
+        <TabsContent value="requesters"><RequestersTab /></TabsContent>
         <TabsContent value="companies"><CompaniesTab /></TabsContent>
         <TabsContent value="vehicles"><VehiclesTab /></TabsContent>
         <TabsContent value="mechanics"><MechanicsTab /></TabsContent>
         <TabsContent value="maint_tech"><MaintTechniciansTab /></TabsContent>
         <TabsContent value="parts"><PartsTab /></TabsContent>
       </Tabs>
+    </div>
+  );
+}
+
+function RequestersTab() {
+  const { items, add, update, remove } = useDeliveryRequesters();
+  const orgProfiles = useOrgProfiles();
+  const [name, setName] = useState(""); const [phone, setPhone] = useState(""); const [pin, setPin] = useState(""); const [userId, setUserId] = useState<string>("");
+  return (
+    <div className="space-y-4">
+      <div className="rounded-md border bg-sky-50 text-sky-900 px-3 py-2 text-xs">
+        Solicitantes cadastrados aqui podem abrir pedidos tanto em <strong>Entregas</strong> quanto em <strong>Manutenção Predial</strong> — o mesmo PIN vale para os dois módulos.
+      </div>
+      <div className="bg-card border rounded-lg p-4 grid gap-3 md:grid-cols-[1fr_160px_140px_1fr_auto]">
+        <div><Label>Nome</Label><Input value={name} onChange={e => setName(e.target.value)} placeholder="Nome do solicitante" /></div>
+        <div><Label>Telefone</Label><Input value={phone} onChange={e => setPhone(e.target.value)} placeholder="(00) 00000-0000" /></div>
+        <div><Label>PIN (4-6 dígitos)</Label><Input inputMode="numeric" maxLength={6} value={pin} onChange={e => setPin(e.target.value.replace(/\D/g, ""))} placeholder="ex.: 4444" /></div>
+        <div><Label>Usuário do sistema</Label>
+          <Select value={userId || "none"} onValueChange={(v) => setUserId(v === "none" ? "" : v)}>
+            <SelectTrigger><SelectValue placeholder="Nenhum" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="none">Nenhum</SelectItem>
+              {orgProfiles.map(p => <SelectItem key={p.user_id} value={p.user_id}>{p.full_name || p.email || p.username}</SelectItem>)}
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="flex items-end">
+          <Button onClick={() => {
+            if (!name) return;
+            if (pin && !/^[0-9]{4,6}$/.test(pin)) return alert("PIN deve ter 4 a 6 dígitos");
+            add({ name, phone, pin: pin || null, user_id: userId || null, is_active: true });
+            setName(""); setPhone(""); setPin(""); setUserId("");
+          }}>
+            <Plus className="h-4 w-4 mr-1" /> Adicionar
+          </Button>
+        </div>
+      </div>
+      <div className="bg-card border rounded-lg divide-y">
+        {items.length === 0 && <div className="p-8 text-center text-muted-foreground">Nenhum solicitante cadastrado</div>}
+        {items.map(r => {
+          const linkedUser = orgProfiles.find(p => p.user_id === r.user_id);
+          return (
+            <div key={r.id} className="p-3 flex items-center gap-3 flex-wrap">
+              <div className="flex-1 min-w-[180px]">
+                <div className="font-medium flex items-center gap-2">
+                  {r.name}
+                  {r.pin && <span className="text-[10px] font-mono px-1.5 py-0.5 bg-muted rounded">PIN {r.pin}</span>}
+                  {!r.is_active && <span className="text-[10px] px-1.5 py-0.5 bg-muted rounded">Inativo</span>}
+                </div>
+                <div className="text-xs text-muted-foreground">{r.phone || "—"}{linkedUser ? ` · usuário: ${linkedUser.full_name}` : ""}</div>
+              </div>
+              <Input
+                className="w-28 h-8"
+                inputMode="numeric" maxLength={6}
+                defaultValue={r.pin || ""}
+                placeholder="PIN"
+                onBlur={(e) => {
+                  const v = e.target.value.replace(/\D/g, "");
+                  if ((v || null) !== (r.pin || null)) update(r.id, { pin: v || null });
+                }}
+              />
+              <Select value={r.user_id || "none"} onValueChange={(v) => update(r.id, { user_id: v === "none" ? null : v })}>
+                <SelectTrigger className="w-52 h-8"><SelectValue placeholder="Vincular usuário" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">Sem vínculo</SelectItem>
+                  {orgProfiles.map(p => <SelectItem key={p.user_id} value={p.user_id}>{p.full_name || p.email || p.username}</SelectItem>)}
+                </SelectContent>
+              </Select>
+              <div className="flex items-center gap-2">
+                <Switch checked={r.is_active} onCheckedChange={(v) => update(r.id, { is_active: v })} />
+                <span className="text-xs text-muted-foreground">Ativo</span>
+              </div>
+              <Button variant="ghost" size="icon" onClick={() => { if (confirm(`Remover ${r.name}?`)) remove(r.id); }}><Trash2 className="h-4 w-4 text-destructive" /></Button>
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 }
