@@ -88,7 +88,7 @@ export default function OpManutencao() {
   const baseFiltered = useMemo(() => {
     return orders.items.filter(o => {
       // Profile scoping (only affects operacional org via useMaintProfile)
-      if (isTecnico && o.assigned_mechanic_id !== maintProfile.mechanicId) return false;
+      if (isTecnico && o.assigned_technician_id !== maintProfile.mechanicId) return false;
       if (isSolicitante && o.requester_id !== maintProfile.requesterId) return false;
       if (!o.opened_at.startsWith(activeMonth)) return false;
       if (activeSite !== "all" && o.site_id !== activeSite) return false;
@@ -144,7 +144,7 @@ export default function OpManutencao() {
     filteredKanban.forEach(o => {
       if (!isAdmin) { (map[o.status] ||= []).push(o); return; }
       if (o.status === "Concluída") { map[FINALIZED_COL]?.push(o); return; }
-      if (o.assigned_mechanic_id && map[`mech:${o.assigned_mechanic_id}`]) map[`mech:${o.assigned_mechanic_id}`].push(o);
+      if (o.assigned_technician_id && map[`mech:${o.assigned_technician_id}`]) map[`mech:${o.assigned_technician_id}`].push(o);
       else map[PENDING_COL]?.push(o);
     });
     return map;
@@ -159,10 +159,10 @@ export default function OpManutencao() {
   const handleKanbanMove = (om: MaintenanceOrder, _from: string, to: string) => {
     if (!isAdmin) return handleStatusChange(om, to);
     if (to === FINALIZED_COL) { setClosing(om); return; }
-    if (to === PENDING_COL) { orders.update(om.id, { assigned_mechanic_id: null }); return; }
+    if (to === PENDING_COL) { orders.update(om.id, { assigned_technician_id: null }); return; }
     if (to.startsWith("mech:")) {
       const mechId = to.slice(5);
-      const patch: Partial<MaintenanceOrder> = { assigned_mechanic_id: mechId };
+      const patch: Partial<MaintenanceOrder> = { assigned_technician_id: mechId };
       if (om.status === "Aberta") patch.status = "Em execução";
       orders.update(om.id, patch);
     }
@@ -555,7 +555,7 @@ function OmModal({ open, onOpenChange, editing, sites, mechanics, requesters, mo
             <>
               <div>
                 <Label>Mecânico responsável</Label>
-                <Select value={form.assigned_mechanic_id || "none"} onValueChange={v => setForm({ ...form, assigned_mechanic_id: v === "none" ? null : v })}>
+                <Select value={form.assigned_technician_id || "none"} onValueChange={v => setForm({ ...form, assigned_technician_id: v === "none" ? null : v })}>
                   <SelectTrigger><SelectValue placeholder="Nenhum" /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="none">Nenhum</SelectItem>
