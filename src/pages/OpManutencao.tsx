@@ -23,6 +23,7 @@ import OpClosureDialog from "@/components/operacional/OpClosureDialog";
 import OpQuickActions from "@/components/operacional/OpQuickActions";
 import OpNotesPanel from "@/components/operacional/OpNotesPanel";
 import { cn } from "@/lib/utils";
+import ManutencaoNav from "@/pages/op/ManutencaoNav";
 
 const STATUS_COLORS: Record<string, string> = {
   "Aberta": "bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300",
