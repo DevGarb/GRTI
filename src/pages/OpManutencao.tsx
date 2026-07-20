@@ -363,6 +363,7 @@ export default function OpManutencao() {
               resolveItem={(id) => filtered.find(x => x.id === id)}
               isAllowed={() => true}
               onMove={handleKanbanMove}
+              onReorder={isAdmin ? handleKanbanReorder : undefined}
               emptyText="Sem ordens"
             />
           ) : (
