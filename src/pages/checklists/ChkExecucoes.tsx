@@ -53,7 +53,7 @@ export default function ChkExecucoes() {
 
       <div className="flex gap-2 flex-wrap">
         {(["all", "pendente", "em_andamento", "concluida", "atrasada"] as const).map((s) => (
-          <button key={s} onClick={() => setStatus(s)} className={`px-3 py-1.5 rounded-full text-xs font-medium border ${status === s ? "bg-primary text-primary-foreground border-primary" : "border-input hover:bg-muted"}`}>
+          <button key={s} onClick={() => changeStatus(s)} className={`px-3 py-1.5 rounded-full text-xs font-medium border ${status === s ? "bg-primary text-primary-foreground border-primary" : "border-input hover:bg-muted"}`}>
             {s === "all" ? "Todas" : STATUS_LABELS[s]}
           </button>
         ))}
