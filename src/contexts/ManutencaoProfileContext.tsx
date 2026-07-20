@@ -16,7 +16,7 @@ interface Ctx {
 }
 
 const STORAGE_KEY = "cgps.manutencao.profile";
-const ManutencaoProfileCtx = createContext<Ctx | undefined>(undefined);
+export const ManutencaoProfileCtx = createContext<Ctx | undefined>(undefined);
 
 export function ManutencaoProfileProvider({ children }: { children: ReactNode }) {
   const [profile, setProfileState] = useState<ManutencaoProfile | null>(() => {
