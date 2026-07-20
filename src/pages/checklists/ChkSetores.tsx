@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Building2, Plus, Pencil, Trash2, X, Check } from "lucide-react";
 import { useChkSectors, useSaveChkSector, useDeleteChkSector } from "@/hooks/useChecklists";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 
 export default function ChkSetores() {
   const { data: sectors = [], isLoading } = useChkSectors();
@@ -9,6 +10,7 @@ export default function ChkSetores() {
   const [newName, setNewName] = useState("");
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editName, setEditName] = useState("");
+  const [toDelete, setToDelete] = useState<{ id: string; name: string } | null>(null);
 
   return (
     <div className="space-y-6 max-w-2xl">
@@ -66,13 +68,26 @@ export default function ChkSetores() {
                   <Building2 className="h-4 w-4 text-muted-foreground shrink-0" />
                   <span className="flex-1 text-sm">{s.name}</span>
                   <button onClick={() => { setEditingId(s.id); setEditName(s.name); }} className="p-1.5 rounded-md hover:bg-muted text-muted-foreground"><Pencil className="h-4 w-4" /></button>
-                  <button onClick={() => confirm(`Remover setor "${s.name}"?`) && del.mutate(s.id)} className="p-1.5 rounded-md hover:bg-muted text-destructive"><Trash2 className="h-4 w-4" /></button>
+                  <button onClick={() => setToDelete({ id: s.id, name: s.name })} className="p-1.5 rounded-md hover:bg-muted text-destructive"><Trash2 className="h-4 w-4" /></button>
                 </>
               )}
             </div>
           ))}
         </div>
       )}
+
+      <ConfirmDialog
+        open={!!toDelete}
+        onOpenChange={(o) => !o && setToDelete(null)}
+        title="Remover setor"
+        description={toDelete ? `Remover setor "${toDelete.name}"?` : ""}
+        confirmLabel="Remover"
+        destructive
+        onConfirm={() => {
+          if (toDelete) del.mutate(toDelete.id);
+          setToDelete(null);
+        }}
+      />
     </div>
   );
 }

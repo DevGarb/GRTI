@@ -14,19 +14,30 @@ export default function ChkExecutar() {
   const complete = useCompleteChkExecution();
 
   const [photoUrls, setPhotoUrls] = useState<Record<string, string>>({});
+  const [localPreviews, setLocalPreviews] = useState<Record<string, string>>({});
   const [uploadingId, setUploadingId] = useState<string | null>(null);
   const [failedIds, setFailedIds] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     if (!exec?.items) return;
+    let cancelled = false;
     (async () => {
-      const urls: Record<string, string> = {};
-      for (const it of exec.items) {
-        if (it.photo_path) urls[it.id] = await getChkPhotoUrl(it.photo_path);
-      }
-      setPhotoUrls(urls);
+      const items = exec.items.filter((it: any) => it.photo_path);
+      const entries = await Promise.all(
+        items.map(async (it: any) => [it.id, await getChkPhotoUrl(it.photo_path)] as const)
+      );
+      if (cancelled) return;
+      setPhotoUrls(Object.fromEntries(entries));
     })();
+    return () => { cancelled = true; };
   }, [exec]);
+
+  useEffect(() => {
+    return () => {
+      Object.values(localPreviews).forEach((u) => URL.revokeObjectURL(u));
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   if (isLoading || !exec) {
     return <div className="p-12 flex justify-center"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>;
@@ -43,6 +54,12 @@ export default function ChkExecutar() {
 
   const handlePhoto = async (item: any, file: File) => {
     if (!profile?.organization_id) return;
+    // Preview local imediato
+    const previewUrl = URL.createObjectURL(file);
+    setLocalPreviews((prev) => {
+      if (prev[item.id]) URL.revokeObjectURL(prev[item.id]);
+      return { ...prev, [item.id]: previewUrl };
+    });
     setUploadingId(item.id);
     try {
       const path = await uploadChkPhoto(profile.organization_id, exec.id, item.id, file);
@@ -67,6 +84,8 @@ export default function ChkExecutar() {
     }
   };
 
+  const progress = total > 0 ? Math.round((doneCount / total) * 100) : 0;
+
   return (
     <div className="space-y-6 max-w-3xl">
       <button onClick={() => navigate(-1)} className="text-sm text-muted-foreground hover:text-foreground flex items-center gap-1"><ArrowLeft className="h-4 w-4" /> Voltar</button>
@@ -77,6 +96,18 @@ export default function ChkExecutar() {
           {exec.chk_companies?.name} · {exec.target_date} · {doneCount}/{total} itens
           {exec.score !== null && ` · Score: ${exec.score}%`}
         </p>
+        <div className="mt-3">
+          <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
+            <span>Progresso</span>
+            <span className="font-medium text-foreground">{progress}%</span>
+          </div>
+          <div className="h-2 w-full rounded-full bg-muted overflow-hidden">
+            <div
+              className="h-full bg-primary transition-all duration-300"
+              style={{ width: `${progress}%` }}
+            />
+          </div>
+        </div>
       </div>
 
       {exec.chk_templates?.description && (
@@ -115,17 +146,26 @@ export default function ChkExecutar() {
               />
 
               <div className="flex items-center gap-3">
-                {photoUrls[it.id] ? (
-                  <a href={photoUrls[it.id]} target="_blank" rel="noreferrer">
-                    <img src={photoUrls[it.id]} alt="" className="h-16 w-16 object-cover rounded-lg border border-border" />
-                  </a>
-                ) : (
-                  ti?.requires_photo && <span className="text-xs text-red-600">Foto obrigatória</span>
-                )}
+                {(() => {
+                  const displayUrl = localPreviews[it.id] || photoUrls[it.id];
+                  if (displayUrl) {
+                    return (
+                      <a href={displayUrl} target="_blank" rel="noreferrer" className="relative">
+                        <img src={displayUrl} alt="" className="h-16 w-16 object-cover rounded-lg border border-border" />
+                        {uploadingId === it.id && (
+                          <div className="absolute inset-0 flex items-center justify-center bg-black/40 rounded-lg">
+                            <Loader2 className="h-4 w-4 animate-spin text-white" />
+                          </div>
+                        )}
+                      </a>
+                    );
+                  }
+                  return ti?.requires_photo && <span className="text-xs text-red-600">Foto obrigatória</span>;
+                })()}
                 {!readonly && (
                   <label className={`text-xs px-3 py-1.5 rounded-lg border cursor-pointer flex items-center gap-1.5 ${failedIds.has(it.id) ? "border-red-500 text-red-600 hover:bg-red-50" : "border-input hover:bg-muted"}`}>
                     {uploadingId === it.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Camera className="h-3.5 w-3.5" />}
-                    {failedIds.has(it.id) ? "Falha no envio, toque pra tentar de novo" : it.photo_path ? "Trocar foto" : "Anexar foto"}
+                    {failedIds.has(it.id) ? "Falha no envio, toque pra tentar de novo" : (it.photo_path || localPreviews[it.id]) ? "Trocar foto" : "Anexar foto"}
                     <input type="file" accept="image/*" capture="environment" className="hidden" onChange={(e) => e.target.files?.[0] && handlePhoto(it, e.target.files[0])} />
                   </label>
                 )}

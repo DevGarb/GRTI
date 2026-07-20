@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { FileText, Plus, Pencil, Trash2, Camera, ArrowUp, ArrowDown, X } from "lucide-react";
 import { useChkTemplates, useChkTemplate, useSaveChkTemplate, useDeleteChkTemplate, useChkSectors, type ChkFrequency } from "@/hooks/useChecklists";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 
 type Item = { id?: string; title: string; observation?: string; weight: 1 | 2 | 3; requires_photo: boolean; sort_order: number };
 
@@ -11,6 +12,7 @@ export default function ChkModelos() {
   const del = useDeleteChkTemplate();
   const [editorId, setEditorId] = useState<string | "new" | null>(null);
   const { data: loaded } = useChkTemplate(editorId && editorId !== "new" ? editorId : undefined);
+  const [toDelete, setToDelete] = useState<{ id: string; title: string } | null>(null);
 
   const [form, setForm] = useState<{ title: string; description: string; sector_id: string; frequency: ChkFrequency; items: Item[] }>({
     title: "", description: "", sector_id: "", frequency: "unica", items: [],
@@ -161,11 +163,24 @@ export default function ChkModelos() {
                 </p>
               </div>
               <button onClick={() => setEditorId(t.id)} className="p-1.5 rounded-md hover:bg-muted text-muted-foreground"><Pencil className="h-4 w-4" /></button>
-              <button onClick={() => confirm(`Remover "${t.title}"?`) && del.mutate(t.id)} className="p-1.5 rounded-md hover:bg-muted text-destructive"><Trash2 className="h-4 w-4" /></button>
+              <button onClick={() => setToDelete({ id: t.id, title: t.title })} className="p-1.5 rounded-md hover:bg-muted text-destructive"><Trash2 className="h-4 w-4" /></button>
             </div>
           ))}
         </div>
       )}
+
+      <ConfirmDialog
+        open={!!toDelete}
+        onOpenChange={(o) => !o && setToDelete(null)}
+        title="Remover modelo"
+        description={toDelete ? `Remover "${toDelete.title}"?` : ""}
+        confirmLabel="Remover"
+        destructive
+        onConfirm={() => {
+          if (toDelete) del.mutate(toDelete.id);
+          setToDelete(null);
+        }}
+      />
     </div>
   );
 }

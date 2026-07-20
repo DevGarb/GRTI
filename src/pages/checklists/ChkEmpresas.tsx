@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Building, Plus, Pencil, Trash2 } from "lucide-react";
 import { useChkCompanies, useSaveChkCompany, useDeleteChkCompany, useChkSectors } from "@/hooks/useChecklists";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 
 export default function ChkEmpresas() {
   const { data: companies = [], isLoading } = useChkCompanies();
@@ -10,6 +11,7 @@ export default function ChkEmpresas() {
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState<any>(null);
   const [form, setForm] = useState({ name: "", sector_id: "", document: "", contact: "" });
+  const [toDelete, setToDelete] = useState<{ id: string; name: string } | null>(null);
 
   const openNew = () => { setEditing(null); setForm({ name: "", sector_id: "", document: "", contact: "" }); setShowForm(true); };
   const openEdit = (c: any) => { setEditing(c); setForm({ name: c.name, sector_id: c.sector_id || "", document: c.document || "", contact: c.contact || "" }); setShowForm(true); };
@@ -66,11 +68,24 @@ export default function ChkEmpresas() {
                 <p className="text-xs text-muted-foreground">{c.chk_sectors?.name || "Sem setor"} {c.document ? `· ${c.document}` : ""}</p>
               </div>
               <button onClick={() => openEdit(c)} className="p-1.5 rounded-md hover:bg-muted text-muted-foreground"><Pencil className="h-4 w-4" /></button>
-              <button onClick={() => confirm(`Remover "${c.name}"?`) && del.mutate(c.id)} className="p-1.5 rounded-md hover:bg-muted text-destructive"><Trash2 className="h-4 w-4" /></button>
+              <button onClick={() => setToDelete({ id: c.id, name: c.name })} className="p-1.5 rounded-md hover:bg-muted text-destructive"><Trash2 className="h-4 w-4" /></button>
             </div>
           ))}
         </div>
       )}
+
+      <ConfirmDialog
+        open={!!toDelete}
+        onOpenChange={(o) => !o && setToDelete(null)}
+        title="Remover empresa"
+        description={toDelete ? `Remover "${toDelete.name}"?` : ""}
+        confirmLabel="Remover"
+        destructive
+        onConfirm={() => {
+          if (toDelete) del.mutate(toDelete.id);
+          setToDelete(null);
+        }}
+      />
     </div>
   );
 }

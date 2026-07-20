@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { UserCheck, Plus, ToggleLeft, ToggleRight, Pencil, Trash2 } from "lucide-react";
 import { useChkAssignments, useSaveChkAssignment, useToggleChkAssignment, useDeleteChkAssignment, useChkTemplates, useChkCompanies, useChkOrgUsers, type ChkFrequency } from "@/hooks/useChecklists";
-import { toast } from "sonner";
+
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 
 type FormState = {
   id?: string;
@@ -30,6 +31,8 @@ export default function ChkAtribuicoes() {
 
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState<FormState>(emptyForm());
+  const [toDelete, setToDelete] = useState<any | null>(null);
+  const [pendingDup, setPendingDup] = useState<null | (() => void)>(null);
 
   const openNew = () => { setForm(emptyForm()); setShowForm(true); };
   const openEdit = (a: any) => {
@@ -46,6 +49,14 @@ export default function ChkAtribuicoes() {
     setShowForm(true);
   };
 
+  const doSave = () => {
+    save.mutate({
+      id: form.id,
+      template_id: form.template_id, company_id: form.company_id, assigned_user_id: form.assigned_user_id,
+      frequency: form.frequency, start_date: form.start_date, end_date: form.end_date || null, notes: form.notes,
+    }, { onSuccess: () => { setShowForm(false); setForm(emptyForm()); } });
+  };
+
   const submit = () => {
     if (!form.template_id || !form.company_id || !form.assigned_user_id) return;
 
@@ -58,27 +69,15 @@ export default function ChkAtribuicoes() {
         a.assigned_user_id === form.assigned_user_id,
       );
       if (dup) {
-        const ok = window.confirm(
-          "Já existe uma atribuição ativa deste modelo para esta empresa e colaborador. Isso pode duplicar execuções. Deseja criar mesmo assim?",
-        );
-        if (!ok) return;
+        setPendingDup(() => doSave);
+        return;
       }
     }
 
-    save.mutate({
-      id: form.id,
-      template_id: form.template_id, company_id: form.company_id, assigned_user_id: form.assigned_user_id,
-      frequency: form.frequency, start_date: form.start_date, end_date: form.end_date || null, notes: form.notes,
-    }, { onSuccess: () => { setShowForm(false); setForm(emptyForm()); } });
+    doSave();
   };
 
-  const handleDelete = (a: any) => {
-    const ok = window.confirm(
-      `Excluir a atribuição "${a.chk_templates?.title}" para ${a.chk_companies?.name}?\n\nATENÇÃO: execuções vinculadas também serão removidas.`,
-    );
-    if (!ok) return;
-    del.mutate(a.id);
-  };
+  const handleDelete = (a: any) => setToDelete(a);
 
   return (
     <div className="space-y-6">
@@ -160,6 +159,36 @@ export default function ChkAtribuicoes() {
           ))}
         </div>
       )}
+
+      <ConfirmDialog
+        open={!!toDelete}
+        onOpenChange={(o) => !o && setToDelete(null)}
+        title="Excluir atribuição"
+        description={
+          toDelete
+            ? `Excluir a atribuição "${toDelete.chk_templates?.title}" para ${toDelete.chk_companies?.name}?\n\nATENÇÃO: execuções vinculadas também serão removidas.`
+            : ""
+        }
+        confirmLabel="Excluir"
+        destructive
+        onConfirm={() => {
+          if (toDelete) del.mutate(toDelete.id);
+          setToDelete(null);
+        }}
+      />
+
+      <ConfirmDialog
+        open={!!pendingDup}
+        onOpenChange={(o) => !o && setPendingDup(null)}
+        title="Atribuição duplicada"
+        description="Já existe uma atribuição ativa deste modelo para esta empresa e colaborador. Isso pode duplicar execuções. Deseja criar mesmo assim?"
+        confirmLabel="Criar mesmo assim"
+        onConfirm={() => {
+          const run = pendingDup;
+          setPendingDup(null);
+          run?.();
+        }}
+      />
     </div>
   );
 }
