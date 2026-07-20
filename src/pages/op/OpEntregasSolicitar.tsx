@@ -125,6 +125,22 @@ export default function OpEntregasSolicitar() {
           <p className="text-sm text-muted-foreground">Preencha os dados. A equipe atribuirá um motorista.</p>
         </div>
 
+        {pending && (
+          <div className="mb-4 rounded-xl border border-amber-300 bg-amber-50 p-4 flex items-start gap-3">
+            <AlertTriangle className="h-5 w-5 text-amber-600 flex-shrink-0 mt-0.5" />
+            <div className="flex-1">
+              <div className="font-semibold text-amber-900 text-sm">Avaliação pendente</div>
+              <p className="text-xs text-amber-800 mt-0.5">
+                Antes de abrir uma nova solicitação, avalie a entrega anterior: <strong>{pending.address}</strong>
+              </p>
+            </div>
+            <Button size="sm" onClick={() => setRatingOpen(true)} className="cgps-btn-primary">
+              <Star className="h-4 w-4 mr-1" /> Avaliar
+            </Button>
+          </div>
+        )}
+
+
         <div className="bg-white border rounded-xl p-5 space-y-4">
           <div>
             <Label className="flex items-center gap-1.5">
