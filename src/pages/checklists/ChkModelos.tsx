@@ -163,7 +163,7 @@ export default function ChkModelos() {
                 </p>
               </div>
               <button onClick={() => setEditorId(t.id)} className="p-1.5 rounded-md hover:bg-muted text-muted-foreground"><Pencil className="h-4 w-4" /></button>
-              <button onClick={() => confirm(`Remover "${t.title}"?`) && del.mutate(t.id)} className="p-1.5 rounded-md hover:bg-muted text-destructive"><Trash2 className="h-4 w-4" /></button>
+              <button onClick={() => setToDelete({ id: t.id, title: t.title })} className="p-1.5 rounded-md hover:bg-muted text-destructive"><Trash2 className="h-4 w-4" /></button>
             </div>
           ))}
         </div>
