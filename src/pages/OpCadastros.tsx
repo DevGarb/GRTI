@@ -146,13 +146,13 @@ function VehiclesTab() {
 function MechanicsTab() {
   const { items, add, update, remove } = useMechanics();
   const orgProfiles = useOrgProfiles();
-  const [name, setName] = useState(""); const [phone, setPhone] = useState(""); const [specialty, setSpecialty] = useState(""); const [userId, setUserId] = useState<string>("");
+  const [name, setName] = useState(""); const [phone, setPhone] = useState(""); const [specialty, setSpecialty] = useState(""); const [userId, setUserId] = useState<string>(""); const [pin, setPin] = useState("");
   return (
     <div className="space-y-4">
-      <div className="bg-card border rounded-lg p-4 grid gap-3 md:grid-cols-[1fr_160px_1fr_1fr_auto]">
+      <div className="bg-card border rounded-lg p-4 grid gap-3 md:grid-cols-[1fr_160px_1fr_1fr_140px_auto]">
         <div><Label>Nome</Label><Input value={name} onChange={e => setName(e.target.value)} placeholder="Nome do mecânico" /></div>
         <div><Label>Telefone</Label><Input value={phone} onChange={e => setPhone(e.target.value)} /></div>
-        <div><Label>Especialidade</Label><Input value={specialty} onChange={e => setSpecialty(e.target.value)} placeholder="Ex.: Motor, elétrica" /></div>
+        <div><Label>Especialidade</Label><Input value={specialty} onChange={e => setSpecialty(e.target.value)} placeholder="Ex.: Elétrica, hidráulica" /></div>
         <div><Label>Usuário do sistema</Label>
           <Select value={userId || "none"} onValueChange={(v) => setUserId(v === "none" ? "" : v)}>
             <SelectTrigger><SelectValue placeholder="Nenhum" /></SelectTrigger>
@@ -162,8 +162,9 @@ function MechanicsTab() {
             </SelectContent>
           </Select>
         </div>
+        <div><Label>PIN (Manutenção)</Label><Input inputMode="numeric" maxLength={6} value={pin} onChange={e => setPin(e.target.value.replace(/\D/g, ""))} placeholder="ex.: 1234" /></div>
         <div className="flex items-end">
-          <Button onClick={() => { if (!name) return; add({ name, phone, specialty, user_id: userId || null }); setName(""); setPhone(""); setSpecialty(""); setUserId(""); }}>
+          <Button onClick={() => { if (!name) return; add({ name, phone, specialty, user_id: userId || null, pin: pin || null } as any); setName(""); setPhone(""); setSpecialty(""); setUserId(""); setPin(""); }}>
             <Plus className="h-4 w-4 mr-1" /> Adicionar
           </Button>
         </div>
@@ -173,11 +174,21 @@ function MechanicsTab() {
         {items.map(m => {
           const linkedUser = orgProfiles.find(p => p.user_id === m.user_id);
           return (
-            <div key={m.id} className="p-3 flex items-center gap-3">
-              <div className="flex-1">
-                <div className="font-medium">{m.name}</div>
+            <div key={m.id} className="p-3 flex items-center gap-3 flex-wrap">
+              <div className="flex-1 min-w-[180px]">
+                <div className="font-medium">{m.name} {m.pin && <span className="ml-1 text-[10px] font-mono px-1.5 py-0.5 bg-muted rounded">PIN {m.pin}</span>}</div>
                 <div className="text-xs text-muted-foreground">{m.phone || "—"}{m.specialty ? ` · ${m.specialty}` : ""}{linkedUser ? ` · usuário: ${linkedUser.full_name}` : ""}</div>
               </div>
+              <Input
+                className="w-28 h-8"
+                inputMode="numeric" maxLength={6}
+                defaultValue={m.pin || ""}
+                placeholder="PIN"
+                onBlur={(e) => {
+                  const v = e.target.value.replace(/\D/g, "");
+                  if ((v || null) !== (m.pin || null)) update(m.id, { pin: v || null } as any);
+                }}
+              />
               <Select value={m.user_id || "none"} onValueChange={(v) => update(m.id, { user_id: v === "none" ? null : v })}>
                 <SelectTrigger className="w-52 h-8"><SelectValue placeholder="Vincular usuário" /></SelectTrigger>
                 <SelectContent>
