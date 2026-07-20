@@ -68,6 +68,7 @@ export default function OpManutencaoMinhas() {
   const [highContrast, setHighContrast] = useState(false);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [closing, setClosing] = useState<MaintenanceOrder | null>(null);
+  const [newOMOpen, setNewOMOpen] = useState(false);
 
   const isTecnico = maintProfile.role === "tecnico";
   const isSolicitante = maintProfile.role === "solicitante";
