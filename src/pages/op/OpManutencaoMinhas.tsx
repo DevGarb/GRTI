@@ -456,11 +456,27 @@ export default function OpManutencaoMinhas() {
         </motion.button>
       )}
 
+      {isTecnico && (
+        <motion.button whileTap={{ scale: 0.95 }} onClick={() => setNewOMOpen(true)}
+          className="fixed bottom-6 right-6 z-40 rounded-full h-16 w-16 flex items-center justify-center shadow-2xl"
+          style={{ background: ORANGE, color: "#fff", boxShadow: "0 12px 32px -8px hsl(14 82% 51% / 0.65)" }}
+          aria-label="Nova OM">
+          <Plus className="h-7 w-7" />
+        </motion.button>
+      )}
+
       <OpClosureDialog
         open={!!closing}
         onOpenChange={(o) => !o && setClosing(null)}
         title="Concluir ordem de manutenção"
         onConfirm={confirmClosure}
+      />
+
+      <NewMaintOrderModal
+        open={newOMOpen}
+        onOpenChange={setNewOMOpen}
+        defaultTechnicianId={maintProfile.mechanicId || null}
+        onCreated={() => orders.refetch()}
       />
     </div>
   );
