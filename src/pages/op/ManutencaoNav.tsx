@@ -20,7 +20,10 @@ export default function ManutencaoNav() {
       ]
     : isTecnico
     ? [{ to: "/op/manutencao/minhas", label: "Minhas OMs", icon: LayoutGrid }]
-    : [];
+    : [
+        { to: "/op/manutencao", label: "Kanban", icon: LayoutGrid },
+        { to: "/op/avaliacoes", label: "Avaliações", icon: Star },
+      ];
 
   const roleColor =
     profile?.type === "admin" ? "bg-slate-800 text-white"
