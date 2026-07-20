@@ -13,23 +13,32 @@ interface Props<T extends { id: string }> {
   itemsByColumn: Record<string, T[]>;
   renderCard: (item: T) => ReactNode;
   renderHeader?: (col: KanbanColumn, count: number) => ReactNode;
-  onMove: (item: T, fromCol: string, toCol: string) => void;
+  onMove: (item: T, fromCol: string, toCol: string, toIndex?: number) => void;
+  onReorder?: (colId: string, orderedIds: string[]) => void;
   isAllowed?: (item: T, fromCol: string, toCol: string) => boolean;
   emptyText?: string;
   resolveItem: (id: string) => T | undefined;
 }
 
 export default function OpKanbanBoard<T extends { id: string }>({
-  columns, itemsByColumn, renderCard, renderHeader, onMove, isAllowed, emptyText = "Vazio", resolveItem,
+  columns, itemsByColumn, renderCard, renderHeader, onMove, onReorder, isAllowed, emptyText = "Vazio", resolveItem,
 }: Props<T>) {
   const handleEnd = (r: DropResult) => {
     const { destination, source, draggableId } = r;
     if (!destination) return;
-    if (destination.droppableId === source.droppableId) return;
     const item = resolveItem(draggableId);
     if (!item) return;
+    if (destination.droppableId === source.droppableId) {
+      if (destination.index === source.index) return;
+      if (!onReorder) return;
+      const list = (itemsByColumn[source.droppableId] || []).map(i => i.id);
+      const [moved] = list.splice(source.index, 1);
+      list.splice(destination.index, 0, moved);
+      onReorder(source.droppableId, list);
+      return;
+    }
     if (isAllowed && !isAllowed(item, source.droppableId, destination.droppableId)) return;
-    onMove(item, source.droppableId, destination.droppableId);
+    onMove(item, source.droppableId, destination.droppableId, destination.index);
   };
 
   return (
