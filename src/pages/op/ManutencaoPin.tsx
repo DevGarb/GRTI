@@ -40,7 +40,7 @@ export default function ManutencaoPin() {
     if (matches.length > 1) return toast.error("PIN duplicado. Contate o admin.");
     const m = matches[0];
     setProfile({ type: "tecnico", id: m.id, name: m.name, phone: m.phone });
-    navigate("/op/manutencao");
+    navigate("/op/manutencao/minhas");
   };
 
   const loginRequester = () => {
@@ -51,7 +51,7 @@ export default function ManutencaoPin() {
     if (matches.length > 1) return toast.error("PIN duplicado. Contate o admin.");
     const r = matches[0];
     setProfile({ type: "solicitante", id: r.id, name: r.name, phone: r.phone });
-    navigate("/op/manutencao");
+    navigate("/op/manutencao/solicitar");
   };
 
   return (
