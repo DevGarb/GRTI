@@ -19,6 +19,7 @@ export default function EntregasNav() {
         { to: "/op/entregas/motoristas", label: "Motoristas", icon: Users },
         { to: "/op/entregas/solicitantes", label: "Solicitantes", icon: UserCircle2 },
         { to: "/op/entregas/categorias", label: "Categorias", icon: Tags },
+        { to: "/op/avaliacoes", label: "Avaliações", icon: Star },
       ]
     : isSolicitante
     ? [
