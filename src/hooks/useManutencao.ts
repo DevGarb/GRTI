@@ -31,6 +31,7 @@ export interface MaintenanceOrder {
   closure_summary?: string | null;
   closed_by?: string | null;
   assigned_mechanic_id?: string | null;
+  assigned_technician_id?: string | null;
   requester_id?: string | null;
 }
 
