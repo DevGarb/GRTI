@@ -274,6 +274,7 @@ export type Database = {
           done: boolean
           execution_id: string
           id: string
+          not_applicable: boolean
           observation: string | null
           organization_id: string
           photo_path: string | null
@@ -287,6 +288,7 @@ export type Database = {
           done?: boolean
           execution_id: string
           id?: string
+          not_applicable?: boolean
           observation?: string | null
           organization_id: string
           photo_path?: string | null
@@ -300,6 +302,7 @@ export type Database = {
           done?: boolean
           execution_id?: string
           id?: string
+          not_applicable?: boolean
           observation?: string | null
           organization_id?: string
           photo_path?: string | null
