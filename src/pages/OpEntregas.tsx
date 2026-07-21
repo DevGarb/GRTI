@@ -192,8 +192,26 @@ export default function OpEntregas() {
       else if (d.driver_id && map[`driver:${d.driver_id}`]) map[`driver:${d.driver_id}`].push(d);
       else map[PENDING_COL]?.push(d);
     });
+    const periodRank = (p: string) => p === "Manhã" ? 0 : p === "Tarde" ? 1 : p === "Noite" ? 2 : 3;
+    Object.keys(map).forEach(k => {
+      map[k].sort((a, b) => {
+        const pa = a.kanban_position ?? Number.MAX_SAFE_INTEGER;
+        const pb = b.kanban_position ?? Number.MAX_SAFE_INTEGER;
+        if (pa !== pb) return pa - pb;
+        const pra = periodRank(a.period);
+        const prb = periodRank(b.period);
+        if (pra !== prb) return pra - prb;
+        return a.scheduled_date.localeCompare(b.scheduled_date);
+      });
+    });
     return map;
   }, [filtered, kanbanColumns]);
+
+  const isAdmin = !entregasProfile || entregasProfile.type === "admin";
+  const handleKanbanReorder = async (_colId: string, orderedIds: string[]) => {
+    if (!isAdmin) return;
+    await Promise.all(orderedIds.map((id, idx) => update(id, { kanban_position: idx })));
+  };
 
   const driverCounts = useMemo(() => {
     const counts: Record<string, number> = { all: monthItems.length };
