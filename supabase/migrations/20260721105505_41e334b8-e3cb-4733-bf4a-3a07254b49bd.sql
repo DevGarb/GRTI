@@ -1,0 +1,1 @@
+ALTER TABLE public.op_deliveries ADD COLUMN IF NOT EXISTS kanban_position INTEGER;
