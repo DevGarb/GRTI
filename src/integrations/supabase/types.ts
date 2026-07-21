@@ -1179,6 +1179,7 @@ export type Database = {
           created_by: string
           driver_id: string | null
           id: string
+          kanban_position: number | null
           notes: string | null
           organization_id: string
           period: string
@@ -1208,6 +1209,7 @@ export type Database = {
           created_by: string
           driver_id?: string | null
           id?: string
+          kanban_position?: number | null
           notes?: string | null
           organization_id: string
           period?: string
@@ -1237,6 +1239,7 @@ export type Database = {
           created_by?: string
           driver_id?: string | null
           id?: string
+          kanban_position?: number | null
           notes?: string | null
           organization_id?: string
           period?: string
