@@ -26,6 +26,7 @@ export interface Delivery {
   vehicle_required?: string | null;
   receiver_phone?: string | null;
   requester_name?: string | null;
+  kanban_position?: number | null;
 }
 
 export function useDeliveries() {
