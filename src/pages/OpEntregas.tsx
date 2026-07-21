@@ -478,6 +478,7 @@ export default function OpEntregas() {
           renderHeader={renderKanbanHeader}
           resolveItem={(id) => filtered.find(x => x.id === id)}
           isAllowed={() => true}
+          onReorder={isAdmin ? handleKanbanReorder : undefined}
           onMove={(item, _from, to) => {
             if (to === FINALIZED_COL) { handleStatusChange(item, "Finalizado"); return; }
             if (to === PENDING_COL) {
