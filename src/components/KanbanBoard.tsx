@@ -131,6 +131,9 @@ export default function KanbanBoard({ tickets, onSelect }: KanbanBoardProps) {
                           }`}
                         >
                           <p className="text-sm font-medium text-foreground line-clamp-2 mb-2">
+                            {formatTicketNumber(ticket.ticket_number) && (
+                              <span className="text-muted-foreground font-mono mr-1">Nº {formatTicketNumber(ticket.ticket_number)}</span>
+                            )}
                             {ticket.title}
                           </p>
                           <div className="flex items-center gap-1.5 flex-wrap">
