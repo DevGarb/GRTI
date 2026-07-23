@@ -205,6 +205,7 @@ function CloseSprintDialog({
         _backlog_ok: checks.backlog_ok,
         _standards_ok: checks.standards_ok,
         _finished_by: finishedBy,
+        _category_id: categoryId || null,
         _evidences: evidencesPayload,
       });
       if (error) throw error;
