@@ -164,7 +164,7 @@ export default function Usuarios() {
 
       const { data: profiles, error } = await supabase
         .from("profiles")
-        .select("user_id, full_name, email, phone, cpf, avatar_url, created_at, username")
+        .select("user_id, full_name, email, phone, cpf, avatar_url, created_at, username, sector_id")
         .in("user_id", memberIds)
         .order("full_name");
       if (error) throw error;
