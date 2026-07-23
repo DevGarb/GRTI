@@ -593,6 +593,42 @@ export default function Chamados() {
             Retrabalho
           </button>
         </div>
+        {(isAdmin || isTech || true) && (
+          <div className="flex flex-col lg:flex-row gap-3">
+            {(isAdmin || isTech) && (
+              <select
+                value={requesterFilter}
+                onChange={(e) => setRequesterFilter(e.target.value)}
+                className="px-3 py-2.5 rounded-lg border border-input bg-background text-sm text-foreground lg:flex-1"
+              >
+                <option value="">Todos Solicitantes</option>
+                {requesterOptions.map(([id, name]) => (
+                  <option key={id} value={id}>{name}</option>
+                ))}
+              </select>
+            )}
+            {(isAdmin || isTech) && (
+              <select
+                value={technicianFilter}
+                onChange={(e) => setTechnicianFilter(e.target.value)}
+                className="px-3 py-2.5 rounded-lg border border-input bg-background text-sm text-foreground lg:flex-1"
+              >
+                <option value="">Todos Técnicos</option>
+                {technicianProfiles.map((t: any) => (
+                  <option key={t.user_id} value={t.user_id}>{t.full_name}</option>
+                ))}
+              </select>
+            )}
+            <input
+              type="text"
+              inputMode="numeric"
+              placeholder="Nº do chamado (ex: 10 ou 00010)"
+              value={numberFilter}
+              onChange={(e) => setNumberFilter(e.target.value)}
+              className="px-3 py-2.5 rounded-lg border border-input bg-background text-sm text-foreground lg:w-64"
+            />
+          </div>
+        )}
       </div>
 
       {isLoading ? (
