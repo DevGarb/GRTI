@@ -1,80 +1,43 @@
-# Evolução do módulo Entregas — 3 fases
 
-Auth Supabase atual preservada (sem PIN). Identidade CearaGPS (teal `#0d4a56` + laranja `#e8531f`) aplicada apenas nas telas `/op/entregas` e derivadas, sem tocar tokens globais.
+## Objetivo
 
-Motoristas atuais (Carlos Daniel, Luis Gustavo, Rodrigo Cordeiro) migrados para a nova tabela na primeira migration.
+Hoje, na tela **Usuários** do GRCHECK, o admin só consegue **criar** um novo usuário. Se a pessoa já existe em outra organização (ex.: já tem conta no Helpdesk), o admin acaba criando uma conta duplicada. Vamos permitir **vincular um usuário já existente** à organização atual, ao invés de criar de novo.
 
----
+## Onde entra na tela
 
-## Fase 1 — Cadastros e campos novos
+Ao lado dos botões atuais **"Importar CSV"** e **"Novo Usuário"** no header de `src/pages/Usuarios.tsx`, adicionar um terceiro botão:
 
-**Banco (migration única):**
-- `op_delivery_categories` (nome, cor, ícone lucide, ativo, ordem, org_id) — seed com Entrega, Buscar Mercadoria, Vistoria Resolve
-- `op_deliveries`: colunas novas `category_id` (FK opcional; mantém `type` legado por compat), `vehicle_required` (`carro`/`moto`/`qualquer`), `receiver_phone`, `requester_name`
-- `op_drivers`: garantir colunas `vehicle_type`, `phone`, `active` (já existem parcialmente — verificar)
-- RLS + GRANTs padrão multi-tenant por `organization_id`
+- **"Vincular Existente"** (ícone `UserPlus2` ou `Link2` do lucide-react)
+- Visível para admin (mesma regra dos outros botões).
 
-**Frontend `/op/entregas`:**
-- Header/botões repintados com paleta CearaGPS via classes locais (sem trocar tokens globais)
-- Aba/subrota `/op/entregas/motoristas` — CRUD de motoristas (nome, telefone, veículo, ativo)
-- Aba/subrota `/op/entregas/categorias` — CRUD de categorias (nome, cor, ícone, ativo, reordenar)
-- Colunas do Kanban geradas dinamicamente a partir dos motoristas ativos (nada hardcoded)
-- Modal "Nova Entrega" com select dinâmico de categoria + campos `vehicle_required`, `receiver_phone`, `requester_name` (auto-preenchido com nome do usuário logado)
-- Card do Kanban exibe badge da categoria (cor/ícone dinâmicos), ícone do veículo exigido, telefone do recebedor com botão de ligar/WhatsApp, nome do solicitante
+## Novo modal: `LinkExistingUserModal`
 
----
+Novo arquivo `src/components/usuarios/LinkExistingUserModal.tsx`, aberto pelo botão acima.
 
-## Fase 2 — Portal do solicitante e avaliação
+Conteúdo:
 
-**Banco:**
-- `op_delivery_ratings` (delivery_id, rating 1-5, comment, rated_by, rated_at)
-- Trigger opcional pra recalcular média por motorista (ou view)
+1. **Campo de busca** (input com ícone de lupa) que filtra por nome, username, email ou CPF.
+2. **Lista de resultados** — usuários que **ainda não estão vinculados** à organização atual (`adminOrgId`). Cada linha mostra: nome, username, email, e um "chip" com as organizações às quais o usuário já pertence (para o admin ter certeza que é a pessoa certa).
+3. **Seletor de papel** na linha (Colaborador / Técnico / Desenvolvedor / Administrador) — mesmos papéis do `LinkOrgModal.tsx`.
+4. Botão **"Vincular"** por linha (ou seleção múltipla + botão único no rodapé — ver "Detalhes técnicos").
+5. Ao confirmar: insere em `user_organizations` e `user_organization_roles` para a org atual, invalida `["admin-users"]` e fecha o modal com toast de sucesso.
 
-**Frontend:**
-- Rota `/op/entregas/solicitar` — visível para role `colaborador`; formulário simplificado (categoria, endereço, data, período, veículo exigido, telefone recebedor, obs); cria como `Pendente` sem motorista
-- Lista "Minhas solicitações" no mesmo portal mostrando status em tempo real
-- Dialog de finalização (`OpClosureDialog`) ganha campo de estrelas (1-5) + comentário opcional, não bloqueia salvar
-- Card do motorista na aba Motoristas exibe média de estrelas e total de avaliações
+## Regras / edge cases
 
----
-
-## Fase 3 — Dashboard, suporte e outdoor
-
-**Banco:**
-- `op_driver_support_tickets` (motorista_id, gps_lat, gps_lng, transcript, status, created_at, resolved_at) OU reaproveita `tickets` marcando categoria "Suporte Motorista"
-- Decisão técnica: reaproveitar `tickets` existente é mais simples e cai no fluxo de chamados que admin já usa
-
-**Frontend:**
-- Rota `/op/entregas/dashboard` com:
-  - Comparativo abertos x fechados (barras, filtro dia/semana/mês)
-  - Cards: total aberto, total fechado, taxa conclusão %, tempo médio abertura→finalização
-  - Quebra por motorista (recebido x finalizado, tempo médio, média de estrelas)
-  - Quebra por categoria
-- Tela mobile do motorista: botão "Suporte" que captura GPS (Geolocation API) + Web Speech API pra ditado (fallback textarea)
-- Botão "Alto contraste outdoor" fixo no header mobile do motorista — toggle que aumenta font-size e força preto/branco puro via classe no `<html>`
-
----
+- Só lista usuários que **não** têm vínculo com a org atual (evita "vincular" quem já é).
+- Se o admin não for super_admin, ele só pode vincular à **própria organização** (`adminOrgId`) — igual à restrição já documentada no `LinkOrgModal`.
+- Não muda senha, nome ou dados do usuário; apenas cria o vínculo + papel.
+- Nada de mudança de schema — as tabelas `user_organizations` e `user_organization_roles` já suportam múltiplos vínculos por usuário.
 
 ## Detalhes técnicos
 
-**Tabelas afetadas:** `op_deliveries` (colunas novas), `op_drivers` (garantir campos), 2 novas (`op_delivery_categories`, `op_delivery_ratings`). Migrations em 3 chamadas separadas, uma por fase, todas com GRANT + RLS por org.
+- Busca inicial: `supabase.from("profiles").select("user_id, full_name, username, email, cpf")` paginada (padrão de 1000 já usado no arquivo). Depois cruzar com `user_organizations` do org atual para remover os já vinculados. Para o chip de "organizações atuais", buscar `user_organizations` + `organizations(name, slug)` dos user_ids exibidos.
+- Filtro client-side pelo termo de busca (lista de profiles não é enorme e mantém UX responsiva).
+- Inserção: reutilizar exatamente o padrão do `LinkOrgModal.tsx` (insert em `user_organizations` seguido de insert em `user_organization_roles`).
+- Sugestão de UX: **seleção múltipla** (checkbox por linha + dropdown de papel default no rodapé), para o admin conseguir vincular vários de uma vez. Se preferir simples (1 por vez), também está OK — me diga na revisão.
 
-**Escopo visual isolado:** cria `src/pages/op/entregas.css` (ou classes em `index.css` sob `.cearagps-scope`) com variáveis `--cgps-primary: 13 65 33%` (teal) e `--cgps-accent: 14 82 51%` (laranja) aplicadas via wrapper div. Nenhum token global tocado.
+## Escopo fora deste plano
 
-**Roles:** usa roles existentes. Admin/super_admin = admin. Novo role `motorista` adicionado ao enum `app_role`. `colaborador` já existe = solicitante.
-
-**Realtime:** habilita `supabase.channel` nas tabelas de entregas pra admin/motorista/solicitante verem updates entre dispositivos.
-
-**Não faz:** login por PIN, troca de tokens globais, mapas visuais.
-
----
-
-## Ordem de execução
-
-1. Aprovar plano
-2. Fase 1: migration → aprovar → CRUD motoristas → CRUD categorias → repaint + campos novos → validar
-3. Fase 2: migration → portal solicitante → avaliação → validar
-4. Fase 3: migration → dashboard → suporte → outdoor → validar
-5. `bun run build` no fim de cada fase
-
-Cada fase é entregável independente. Se algo travar, paramos numa fase estável.
+- Não altera `LinkOrgModal` (continua sendo o fluxo inverso: partindo de um usuário, escolher orgs).
+- Não mexe em permissões/menus — vínculo entra com papel padrão; os menus seguem o preset da org normalmente.
+- Não altera outras telas (Helpdesk etc.); o botão fica disponível em qualquer org, não só GRCHECK, pois o problema é o mesmo.
