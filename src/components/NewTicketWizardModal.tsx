@@ -338,7 +338,7 @@ export default function NewTicketWizardModal({ onClose }: Props) {
           {step === 2 && (
             <div className="space-y-4">
               <div className="rounded-xl border border-border bg-muted/30 divide-y divide-border">
-                <ReviewRow icon={<Building2 className="h-4 w-4" />} label="Organização" value={activeOrg?.name || "—"} />
+                <ReviewRow icon={<Phone className="h-4 w-4" />} label="Número de contato" value={activeOrg?.phone || "—"} />
                 <ReviewRow icon={<Tag className="h-4 w-4" />} label="Setor" value={sectorName} />
                 <ReviewRow icon={<User className="h-4 w-4" />} label="Solicitante" value={profile?.full_name || "—"} />
                 <ReviewRow icon={<FileText className="h-4 w-4" />} label="Título" value={title || "—"} />
