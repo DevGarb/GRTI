@@ -129,7 +129,10 @@ function CloseSprintDialog({
   });
   const [uploading, setUploading] = useState<CheckKey | null>(null);
   const [finishedBy, setFinishedBy] = useState<string>("");
+  const [categoryId, setCategoryId] = useState<string>("");
   const inputs = useRef<Record<CheckKey, HTMLInputElement | null>>({} as any);
+
+  const { data: categories = [] } = useSprintClosureCategories(profile?.organization_id ?? null, { activeOnly: true });
 
   // Técnicos/desenvolvedores/admins da organização da sprint
   const { data: staff = [] } = useQuery({
