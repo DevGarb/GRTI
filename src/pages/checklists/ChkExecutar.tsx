@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { ArrowLeft, Camera, Check, Loader2, Ban, RotateCcw } from "lucide-react";
 import { useChkExecution, useSaveChkExecutionItem, useCompleteChkExecution, useReopenChkExecution, uploadChkPhoto, getChkPhotoUrl } from "@/hooks/useChecklists";
