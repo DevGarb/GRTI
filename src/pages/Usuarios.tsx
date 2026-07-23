@@ -84,6 +84,7 @@ export default function Usuarios() {
   const isAdmin = hasRole("admin");
   const adminOrgId = profile?.organization_id ?? null;
   const { presets } = usePermissionPresets();
+  const { data: sectors = [] } = useSectors(adminOrgId);
 
   const { data: appliedPresets = [] } = useQuery({
     queryKey: ["user-applied-presets", adminOrgId],
