@@ -4,6 +4,7 @@ import { ArrowLeft, Camera, Check, Loader2, Ban, RotateCcw } from "lucide-react"
 import { useChkExecution, useSaveChkExecutionItem, useCompleteChkExecution, useReopenChkExecution, uploadChkPhoto, getChkPhotoUrl } from "@/hooks/useChecklists";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
+import { formatDateBR } from "@/lib/dateFormat";
 
 export default function ChkExecutar() {
   const { id } = useParams();
