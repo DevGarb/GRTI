@@ -7,6 +7,8 @@ import { StatusBadge, PriorityBadge } from "@/components/StatusBadge";
 import { useTickets, Ticket, useBulkDeleteTickets } from "@/hooks/useTickets";
 import { useAuth } from "@/contexts/AuthContext";
 import NewTicketModal from "@/components/NewTicketModal";
+import PendingApprovalGateDialog from "@/components/PendingApprovalGateDialog";
+import { usePendingApprovalTickets } from "@/hooks/usePendingApprovalTickets";
 import TicketDetailModal from "@/components/TicketDetailModal";
 import AssignTicketModal from "@/components/AssignTicketModal";
 import ChamadosTabs from "@/components/chamados/ChamadosTabs";
