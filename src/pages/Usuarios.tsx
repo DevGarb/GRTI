@@ -74,11 +74,11 @@ export default function Usuarios() {
   const [editingUser, setEditingUser] = useState<ProfileWithRoles | null>(null);
   const [permissionsUser, setPermissionsUser] = useState<ProfileWithRoles | null>(null);
   const [linkOrgUser, setLinkOrgUser] = useState<ProfileWithRoles | null>(null);
-  const [editForm, setEditForm] = useState({ full_name: "", role: "solicitante", password: "", phone: "", cpf: "" });
+  const [editForm, setEditForm] = useState({ full_name: "", role: "solicitante", password: "", phone: "", cpf: "", sector_id: "" });
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showImportModal, setShowImportModal] = useState(false);
   const [showLinkExistingModal, setShowLinkExistingModal] = useState(false);
-  const [createForm, setCreateForm] = useState({ full_name: "", username: "", password: "", role: "solicitante", phone: "", cpf: "" });
+  const [createForm, setCreateForm] = useState({ full_name: "", username: "", password: "", role: "solicitante", phone: "", cpf: "", sector_id: "" });
   const { hasRole, isSuperAdmin, profile } = useAuth();
   const queryClient = useQueryClient();
   const isAdmin = hasRole("admin");
