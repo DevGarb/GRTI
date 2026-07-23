@@ -141,7 +141,14 @@ export default function ChkExecutar() {
         <div className="mt-3">
           <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
             <span>Progresso</span>
-            <span className="font-medium text-foreground">{progress}%</span>
+            <div className="flex items-center gap-2">
+              {!readonly && lastSavedAt && (
+                <span className="text-[11px] text-emerald-600">
+                  Rascunho salvo {lastSavedAt.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}
+                </span>
+              )}
+              <span className="font-medium text-foreground">{progress}%</span>
+            </div>
           </div>
           <div className="h-2 w-full rounded-full bg-muted overflow-hidden">
             <div
