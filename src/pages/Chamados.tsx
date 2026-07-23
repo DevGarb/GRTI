@@ -291,6 +291,10 @@ export default function Chamados() {
   const [statusFilter, setStatusFilter] = useState("Todos Status");
   const [selectedMonth, setSelectedMonth] = useState(getCurrentMonthValue());
   const [reworkFilter, setReworkFilter] = useState(false);
+  const [requesterFilter, setRequesterFilter] = useState("");
+  const [technicianFilter, setTechnicianFilter] = useState("");
+  const [numberFilter, setNumberFilter] = useState("");
+  const { data: technicianProfiles = [] } = useTechnicianProfiles();
   const [selectionMode, setSelectionMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [confirmDelete, setConfirmDelete] = useState(false);
