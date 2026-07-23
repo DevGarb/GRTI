@@ -41,9 +41,42 @@ export default function ChkExecutar() {
   useEffect(() => {
     return () => {
       Object.values(localPreviews).forEach((u) => URL.revokeObjectURL(u));
+      Object.values(timersRef.current).forEach((t) => clearTimeout(t));
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Semeia observations locais com o que veio do servidor (sem sobrescrever edições em andamento).
+  useEffect(() => {
+    if (!exec?.items) return;
+    setObservations((prev) => {
+      const next = { ...prev };
+      for (const it of exec.items) {
+        const server = it.observation || "";
+        if (savedRef.current[it.id] === undefined) {
+          next[it.id] = server;
+          savedRef.current[it.id] = server;
+        }
+      }
+      return next;
+    });
+  }, [exec]);
+
+  const flushObservation = (itemId: string) => {
+    const val = observations[itemId] ?? "";
+    if (savedRef.current[itemId] === val) return;
+    savedRef.current[itemId] = val;
+    saveItem.mutate(
+      { id: itemId, observation: val },
+      { onSuccess: () => setLastSavedAt(new Date()) },
+    );
+  };
+
+  const handleObservationChange = (itemId: string, val: string) => {
+    setObservations((prev) => ({ ...prev, [itemId]: val }));
+    if (timersRef.current[itemId]) clearTimeout(timersRef.current[itemId]);
+    timersRef.current[itemId] = setTimeout(() => flushObservation(itemId), 800);
+  };
 
   if (isLoading || !exec) {
     return <div className="p-12 flex justify-center"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>;
