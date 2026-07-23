@@ -51,6 +51,7 @@ export default function NewTicketModal({ onClose }: Props) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const pendingFilesRef = useRef<PendingFile[]>([]);
   const createTicket = useCreateTicket();
+  const { refetch: refetchPendingApproval } = usePendingApprovalTickets();
 
   useEffect(() => {
     pendingFilesRef.current = pendingFiles;
