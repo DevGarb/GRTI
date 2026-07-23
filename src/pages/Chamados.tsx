@@ -266,6 +266,16 @@ function AvailableTicketsSection({ tickets, onSelect, onAssign, title, descripti
 
 export default function Chamados() {
   const [showModal, setShowModal] = useState(false);
+  const [showPendingGate, setShowPendingGate] = useState(false);
+  const { data: pendingApproval = [], refetch: refetchPendingApproval } = usePendingApprovalTickets();
+  const handleNewTicketClick = async () => {
+    const { data } = await refetchPendingApproval();
+    if ((data?.length ?? pendingApproval.length) > 0) {
+      setShowPendingGate(true);
+    } else {
+      setShowModal(true);
+    }
+  };
   const [viewMode, setViewMode] = useState<"list" | "kanban">("list");
   const [selectedTicket, setSelectedTicket] = useState<Ticket | null>(null);
   const [assignTicketId, setAssignTicketId] = useState<string | null>(null);
