@@ -703,7 +703,11 @@ export default function Chamados() {
         })()
       )}
 
-      {showModal && <NewTicketModal onClose={() => setShowModal(false)} />}
+      {showModal && (
+        profile?.organization_id === TI_ORG_ID
+          ? <NewTicketWizardModal onClose={() => setShowModal(false)} />
+          : <NewTicketModal onClose={() => setShowModal(false)} />
+      )}
       <PendingApprovalGateDialog
         open={showPendingGate}
         onClose={() => setShowPendingGate(false)}
