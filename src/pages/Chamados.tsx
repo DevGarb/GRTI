@@ -4,7 +4,8 @@ import { Search, Filter, ChevronDown, ChevronRight, Plus, User, RefreshCw, Inbox
 import KanbanBoard from "@/components/KanbanBoard";
 import MonthSelector, { getCurrentMonthValue, getMonthDateRange } from "@/components/MonthSelector";
 import { StatusBadge, PriorityBadge } from "@/components/StatusBadge";
-import { useTickets, Ticket, useBulkDeleteTickets } from "@/hooks/useTickets";
+import { useTickets, Ticket, useBulkDeleteTickets, useTechnicianProfiles } from "@/hooks/useTickets";
+import { formatTicketNumber, normalizeTicketNumberQuery } from "@/lib/ticketNumber";
 import { useAuth } from "@/contexts/AuthContext";
 import NewTicketModal from "@/components/NewTicketModal";
 import NewTicketWizardModal from "@/components/NewTicketWizardModal";
