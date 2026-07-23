@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { X, Upload, Trash2, Image as ImageIcon, Check, ChevronRight, ChevronLeft, User, Building2, Tag, Hash, FileText, Paperclip, ShieldCheck } from "lucide-react";
+import { X, Upload, Trash2, Image as ImageIcon, Check, ChevronRight, ChevronLeft, User, Building2, Tag, Hash, FileText, Paperclip, ShieldCheck, Phone } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { usePendingApprovalTickets } from "@/hooks/usePendingApprovalTickets";
 import { useUserOrganizations } from "@/hooks/useUserOrganizations";
