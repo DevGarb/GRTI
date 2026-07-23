@@ -12,6 +12,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import { maskPhone, maskCPF, unmask, isValidCPF } from "@/lib/masks";
 import { usePermissionPresets } from "@/hooks/usePermissionPresets";
+import { useSectors } from "@/hooks/useSectors";
 import { formatDateBR } from "@/lib/dateFormat";
 
 interface ProfileWithRoles {
@@ -23,6 +24,7 @@ interface ProfileWithRoles {
   cpf: string | null;
   avatar_url: string | null;
   created_at: string;
+  sector_id: string | null;
   roles: string[];
 }
 
