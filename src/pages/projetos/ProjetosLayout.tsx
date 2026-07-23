@@ -1,5 +1,5 @@
 import { NavLink, Outlet } from "react-router-dom";
-import { LayoutDashboard, FolderKanban, ListTodo, Zap, Calendar } from "lucide-react";
+import { LayoutDashboard, FolderKanban, ListTodo, Zap, Calendar, Tags } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -9,6 +9,7 @@ const tabs: Array<{ to: string; label: string; icon: any; end?: boolean; adminOn
   { to: "/projetos/backlog", label: "Backlog", icon: ListTodo },
   { to: "/projetos/sprints", label: "Sprints", icon: Zap },
   { to: "/projetos/calendario", label: "Calendário", icon: Calendar },
+  { to: "/projetos/categorias-encerramento", label: "Cat. Encerramento", icon: Tags, adminOnly: true },
 ];
 
 export default function ProjetosLayout() {
