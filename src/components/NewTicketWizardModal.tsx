@@ -8,6 +8,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { buildStorageFileName, createPendingFile, getAttachmentDisplayName, getClipboardImageFiles, revokePendingFiles } from "@/lib/attachments";
 import { dispatchWebhookEvent } from "@/hooks/useWebhooks";
+import { useMySector } from "@/hooks/useMySector";
 
 interface Props {
   onClose: () => void;
