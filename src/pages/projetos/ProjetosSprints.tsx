@@ -153,16 +153,18 @@ function CloseSprintDialog({
     },
   });
 
-  // Soma de pontos dos backlogs da sprint (preview do crédito)
+  // Soma de pontos de TODOS os itens da sprint (tickets + project_tasks)
   const { data: totalPoints = 0 } = useQuery({
     queryKey: ["sprint-total-points", sprint?.id],
     enabled: !!open && !!sprint?.id,
     queryFn: async () => {
-      const { data } = await supabase
-        .from("project_tasks")
-        .select("story_points")
-        .eq("sprint_id", sprint!.id);
-      return (data || []).reduce((s: number, r: any) => s + (r.story_points || 0), 0);
+      const [{ data: tasks }, { data: tks }] = await Promise.all([
+        supabase.from("project_tasks").select("story_points").eq("sprint_id", sprint!.id),
+        supabase.from("tickets").select("story_points").eq("sprint_id", sprint!.id).neq("type", "Projeto"),
+      ]);
+      const t1 = (tasks || []).reduce((s: number, r: any) => s + (r.story_points || 0), 0);
+      const t2 = (tks || []).reduce((s: number, r: any) => s + (r.story_points || 0), 0);
+      return t1 + t2;
     },
   });
 
