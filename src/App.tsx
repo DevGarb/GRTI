@@ -25,6 +25,7 @@ import ProjetosCalendario from "@/pages/projetos/ProjetosCalendario";
 import ProjetosMVP from "@/pages/projetos/ProjetosMVP";
 import ProjetosMeuMVP from "@/pages/projetos/ProjetosMeuMVP";
 import ProjetosPenalidades from "@/pages/projetos/ProjetosPenalidades";
+import ProjetosCategoriasEncerramento from "@/pages/projetos/ProjetosCategoriasEncerramento";
 import ChamadosCalendario from "@/pages/chamados/ChamadosCalendario";
 import Configuracoes from "@/pages/Configuracoes";
 import Login from "@/pages/Login";
@@ -221,6 +222,7 @@ const App = () => (
                         <Route path="backlog" element={<ProjetosBacklog />} />
                         <Route path="sprints" element={<ProjetosSprints />} />
                         <Route path="calendario" element={<ProjetosCalendario />} />
+                        <Route path="categorias-encerramento" element={<AdminRoute><ProjetosCategoriasEncerramento /></AdminRoute>} />
                       </Route>
                       <Route path="/projetos/:id" element={<MenuGuard menuKey="projetos"><ProjetoDetalhe /></MenuGuard>} />
                       <Route path="/configuracoes" element={<MenuGuard menuKey="configuracoes"><Configuracoes /></MenuGuard>} />

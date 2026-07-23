@@ -2593,6 +2593,41 @@ export type Database = {
           },
         ]
       }
+      sprint_closure_categories: {
+        Row: {
+          active: boolean
+          created_at: string
+          id: string
+          name: string
+          organization_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          id?: string
+          name: string
+          organization_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          id?: string
+          name?: string
+          organization_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sprint_closure_categories_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       sprint_history: {
         Row: {
           action: string
@@ -2646,6 +2681,7 @@ export type Database = {
       sprint_quality_checks: {
         Row: {
           backlog_ok: boolean
+          category_id: string | null
           checked_at: string
           checked_by: string | null
           doc_ok: boolean
@@ -2658,6 +2694,7 @@ export type Database = {
         }
         Insert: {
           backlog_ok?: boolean
+          category_id?: string | null
           checked_at?: string
           checked_by?: string | null
           doc_ok?: boolean
@@ -2670,6 +2707,7 @@ export type Database = {
         }
         Update: {
           backlog_ok?: boolean
+          category_id?: string | null
           checked_at?: string
           checked_by?: string | null
           doc_ok?: boolean
@@ -2681,6 +2719,13 @@ export type Database = {
           standards_ok?: boolean
         }
         Relationships: [
+          {
+            foreignKeyName: "sprint_quality_checks_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "sprint_closure_categories"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "sprint_quality_checks_sprint_id_fkey"
             columns: ["sprint_id"]
@@ -3406,6 +3451,7 @@ export type Database = {
       close_sprint_with_checklist: {
         Args: {
           _backlog_ok: boolean
+          _category_id?: string
           _doc_ok: boolean
           _evidence_ok: boolean
           _evidences?: Json
@@ -3643,6 +3689,10 @@ export type Database = {
       }
       recompute_project_progress: {
         Args: { _project_id: string }
+        Returns: undefined
+      }
+      reopen_sprint_and_clear_credit: {
+        Args: { _sprint_id: string }
         Returns: undefined
       }
       request_penalty: {

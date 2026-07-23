@@ -34,6 +34,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import SprintMetricsPanel from "@/components/projetos/SprintMetricsPanel";
+import { useSprintClosureCategories } from "@/hooks/useSprintClosureCategories";
 
 interface SprintRow {
   id: string;
@@ -129,7 +130,10 @@ function CloseSprintDialog({
   });
   const [uploading, setUploading] = useState<CheckKey | null>(null);
   const [finishedBy, setFinishedBy] = useState<string>("");
+  const [categoryId, setCategoryId] = useState<string>("");
   const inputs = useRef<Record<CheckKey, HTMLInputElement | null>>({} as any);
+
+  const { data: categories = [] } = useSprintClosureCategories(profile?.organization_id ?? null, { activeOnly: true });
 
   // Técnicos/desenvolvedores/admins da organização da sprint
   const { data: staff = [] } = useQuery({
@@ -153,16 +157,18 @@ function CloseSprintDialog({
     },
   });
 
-  // Soma de pontos dos backlogs da sprint (preview do crédito)
+  // Soma de pontos de TODOS os itens da sprint (tickets + project_tasks)
   const { data: totalPoints = 0 } = useQuery({
     queryKey: ["sprint-total-points", sprint?.id],
     enabled: !!open && !!sprint?.id,
     queryFn: async () => {
-      const { data } = await supabase
-        .from("project_tasks")
-        .select("story_points")
-        .eq("sprint_id", sprint!.id);
-      return (data || []).reduce((s: number, r: any) => s + (r.story_points || 0), 0);
+      const [{ data: tasks }, { data: tks }] = await Promise.all([
+        supabase.from("project_tasks").select("story_points").eq("sprint_id", sprint!.id),
+        supabase.from("tickets").select("story_points").eq("sprint_id", sprint!.id).neq("type", "Projeto"),
+      ]);
+      const t1 = (tasks || []).reduce((s: number, r: any) => s + (r.story_points || 0), 0);
+      const t2 = (tks || []).reduce((s: number, r: any) => s + (r.story_points || 0), 0);
+      return t1 + t2;
     },
   });
 
@@ -199,6 +205,7 @@ function CloseSprintDialog({
         _backlog_ok: checks.backlog_ok,
         _standards_ok: checks.standards_ok,
         _finished_by: finishedBy,
+        _category_id: categoryId || null,
         _evidences: evidencesPayload,
       });
       if (error) throw error;
@@ -215,7 +222,7 @@ function CloseSprintDialog({
   });
 
   const allChecked = Object.values(checks).every(Boolean);
-  const canClose = allChecked && !!finishedBy;
+  const canClose = allChecked && !!finishedBy && !!categoryId;
   const score = Object.values(checks).filter(Boolean).length * 20;
   const selectedStaff = staff.find((s: any) => s.user_id === finishedBy);
 
@@ -250,8 +257,29 @@ function CloseSprintDialog({
           <p className="text-[11px] text-muted-foreground">
             Este encerramento vai gerar 1 chamado para{" "}
             <strong>{selectedStaff ? selectedStaff.full_name || selectedStaff.email : "—"}</strong>{" "}
-            com <strong>{totalPoints}</strong> {totalPoints === 1 ? "ponto" : "pontos"} (soma dos backlogs da sprint).
+            com <strong>{totalPoints}</strong> {totalPoints === 1 ? "ponto" : "pontos"} (soma dos chamados + tarefas da sprint).
           </p>
+        </div>
+
+        <div className="space-y-1.5">
+          <Label className="text-xs">Categoria do encerramento</Label>
+          <Select value={categoryId} onValueChange={setCategoryId}>
+            <SelectTrigger className="h-9">
+              <SelectValue placeholder="Selecione a categoria..." />
+            </SelectTrigger>
+            <SelectContent>
+              {categories.map((c) => (
+                <SelectItem key={c.id} value={c.id}>
+                  {c.name}
+                </SelectItem>
+              ))}
+              {categories.length === 0 && (
+                <div className="px-2 py-1.5 text-xs text-muted-foreground">
+                  Nenhuma categoria ativa. Cadastre em Projetos → Cat. Encerramento.
+                </div>
+              )}
+            </SelectContent>
+          </Select>
         </div>
 
         <div className="space-y-2 py-1 max-h-[45vh] overflow-y-auto">
@@ -335,7 +363,11 @@ function CloseSprintDialog({
           {!canClose && (
             <div className="flex items-center gap-1 text-[11px] text-amber-700">
               <AlertTriangle className="h-3 w-3" />
-              {!finishedBy ? "Selecione o responsável" : "Confirme todos os itens"}
+              {!finishedBy
+                ? "Selecione o responsável"
+                : !categoryId
+                  ? "Selecione a categoria"
+                  : "Confirme todos os itens"}
             </div>
           )}
         </div>
