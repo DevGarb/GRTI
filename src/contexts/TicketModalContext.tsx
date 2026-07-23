@@ -73,3 +73,9 @@ export function useTicketModal() {
   if (!ctx) throw new Error("useTicketModal must be used within TicketModalProvider");
   return ctx;
 }
+
+// Force a full page reload on HMR updates so the Context identity stays in sync
+// between <TicketModalProvider> and consumers (avoids "must be used within" errors).
+if (import.meta.hot) {
+  import.meta.hot.invalidate();
+}
