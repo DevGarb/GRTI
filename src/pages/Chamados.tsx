@@ -292,7 +292,7 @@ export default function Chamados() {
   const [confirmDelete, setConfirmDelete] = useState(false);
   const bulkDelete = useBulkDeleteTickets();
   const { data: tickets = [], isLoading } = useTickets();
-  const { hasRole, roles, user } = useAuth();
+  const { hasRole, roles, user, profile } = useAuth();
   const isAdmin = roles.includes("admin") || roles.includes("super_admin");
   const isTech = roles.includes("tecnico") || roles.includes("desenvolvedor");
 
