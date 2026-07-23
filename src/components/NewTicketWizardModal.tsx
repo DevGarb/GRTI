@@ -114,7 +114,7 @@ export default function NewTicketWizardModal({ onClose }: Props) {
         description: description.trim(),
         priority: "Média",
         type: "Software",
-        sector: "TI",
+        sector: sectorName,
         status: "Aberto",
         created_by: user.id,
         organization_id: profile?.organization_id ?? null,
