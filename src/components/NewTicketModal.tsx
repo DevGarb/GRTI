@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { X, Ticket, Upload, Trash2, Image, Building2, AlertTriangle } from "lucide-react";
 import { useCreateTicket } from "@/hooks/useTickets";
+import { usePendingApprovalTickets } from "@/hooks/usePendingApprovalTickets";
 import { useSectors } from "@/hooks/useSectors";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
