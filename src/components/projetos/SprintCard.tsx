@@ -24,6 +24,7 @@ import SprintItems from "./SprintItems";
 import NewSprintModal from "./NewSprintModal";
 import AddTicketsToSprintModal from "./AddTicketsToSprintModal";
 import { formatDateBR, formatDateTimeFullBR } from "@/lib/dateFormat";
+import { toast } from "sonner";
 
 interface Props {
   sprint: SprintWithProgress;
