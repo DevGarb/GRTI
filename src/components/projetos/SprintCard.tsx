@@ -137,7 +137,29 @@ export default function SprintCard({ sprint, projectId }: Props) {
             </Button>
           )}
           {sprint.status === "concluida" && (
-            <Button size="sm" variant="outline" onClick={() => update.mutate({ id: sprint.id, status: "ativa" } as any)}>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={async () => {
+                if (
+                  !confirm(
+                    "Reabrir esta sprint irá remover o encerramento anterior: o chamado-crédito gerado e o checklist de qualidade serão apagados. Deseja continuar?"
+                  )
+                )
+                  return;
+                const { error } = await (supabase as any).rpc("reopen_sprint_and_clear_credit", {
+                  _sprint_id: sprint.id,
+                });
+                if (error) {
+                  const { toast } = await import("sonner");
+                  toast.error("Erro ao reabrir: " + error.message);
+                  return;
+                }
+                const { toast } = await import("sonner");
+                toast.success("Sprint reaberta");
+                update.mutate({ id: sprint.id, status: "ativa" } as any);
+              }}
+            >
               <RotateCcw className="h-3 w-3 mr-1" /> Reabrir
             </Button>
           )}
