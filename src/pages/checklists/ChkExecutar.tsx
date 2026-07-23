@@ -1,9 +1,10 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { ArrowLeft, Camera, Check, Loader2, Ban, RotateCcw } from "lucide-react";
 import { useChkExecution, useSaveChkExecutionItem, useCompleteChkExecution, useReopenChkExecution, uploadChkPhoto, getChkPhotoUrl } from "@/hooks/useChecklists";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
+import { formatDateBR } from "@/lib/dateFormat";
 
 export default function ChkExecutar() {
   const { id } = useParams();
@@ -19,6 +20,10 @@ export default function ChkExecutar() {
   const [localPreviews, setLocalPreviews] = useState<Record<string, string>>({});
   const [uploadingId, setUploadingId] = useState<string | null>(null);
   const [failedIds, setFailedIds] = useState<Set<string>>(new Set());
+  const [observations, setObservations] = useState<Record<string, string>>({});
+  const savedRef = useRef<Record<string, string>>({});
+  const timersRef = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
+  const [lastSavedAt, setLastSavedAt] = useState<Date | null>(null);
 
   useEffect(() => {
     if (!exec?.items) return;
@@ -37,9 +42,42 @@ export default function ChkExecutar() {
   useEffect(() => {
     return () => {
       Object.values(localPreviews).forEach((u) => URL.revokeObjectURL(u));
+      Object.values(timersRef.current).forEach((t) => clearTimeout(t));
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Semeia observations locais com o que veio do servidor (sem sobrescrever edições em andamento).
+  useEffect(() => {
+    if (!exec?.items) return;
+    setObservations((prev) => {
+      const next = { ...prev };
+      for (const it of exec.items) {
+        const server = it.observation || "";
+        if (savedRef.current[it.id] === undefined) {
+          next[it.id] = server;
+          savedRef.current[it.id] = server;
+        }
+      }
+      return next;
+    });
+  }, [exec]);
+
+  const flushObservation = (itemId: string) => {
+    const val = observations[itemId] ?? "";
+    if (savedRef.current[itemId] === val) return;
+    savedRef.current[itemId] = val;
+    saveItem.mutate(
+      { id: itemId, observation: val },
+      { onSuccess: () => setLastSavedAt(new Date()) },
+    );
+  };
+
+  const handleObservationChange = (itemId: string, val: string) => {
+    setObservations((prev) => ({ ...prev, [itemId]: val }));
+    if (timersRef.current[itemId]) clearTimeout(timersRef.current[itemId]);
+    timersRef.current[itemId] = setTimeout(() => flushObservation(itemId), 800);
+  };
 
   if (isLoading || !exec) {
     return <div className="p-12 flex justify-center"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>;
@@ -98,13 +136,20 @@ export default function ChkExecutar() {
       <div>
         <h1 className="text-2xl font-bold">{exec.chk_templates?.title}</h1>
         <p className="text-sm text-muted-foreground">
-          {exec.chk_companies?.name} · {exec.target_date} · {resolvedCount}/{total} itens
+          {exec.chk_companies?.name} · {formatDateBR(exec.target_date)} · {resolvedCount}/{total} itens
           {exec.score !== null && ` · Score: ${exec.score}%`}
         </p>
         <div className="mt-3">
           <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
             <span>Progresso</span>
-            <span className="font-medium text-foreground">{progress}%</span>
+            <div className="flex items-center gap-2">
+              {!readonly && lastSavedAt && (
+                <span className="text-[11px] text-emerald-600">
+                  Rascunho salvo {lastSavedAt.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}
+                </span>
+              )}
+              <span className="font-medium text-foreground">{progress}%</span>
+            </div>
           </div>
           <div className="h-2 w-full rounded-full bg-muted overflow-hidden">
             <div
@@ -146,8 +191,12 @@ export default function ChkExecutar() {
               <textarea
                 disabled={readonly}
                 placeholder="Observação (opcional)"
-                defaultValue={it.observation || ""}
-                onBlur={(e) => e.target.value !== (it.observation || "") && saveItem.mutate({ id: it.id, observation: e.target.value })}
+                value={observations[it.id] ?? ""}
+                onChange={(e) => handleObservationChange(it.id, e.target.value)}
+                onBlur={() => {
+                  if (timersRef.current[it.id]) clearTimeout(timersRef.current[it.id]);
+                  flushObservation(it.id);
+                }}
                 rows={2}
                 className="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm disabled:opacity-60"
               />
