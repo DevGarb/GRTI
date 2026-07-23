@@ -345,6 +345,7 @@ export default function Usuarios() {
       password: "",
       phone: user.phone ? maskPhone(user.phone) : "",
       cpf: user.cpf ? maskCPF(user.cpf) : "",
+      sector_id: user.sector_id || "",
     });
   };
 
