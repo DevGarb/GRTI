@@ -272,16 +272,18 @@ export default function NewTicketModal({ onClose }: Props) {
 
           <div>
             <label className="text-sm font-medium text-foreground">Setor</label>
-            <select
-              value={sector}
-              onChange={(e) => setSector(e.target.value)}
-              className="mt-1.5 w-full px-3 py-2.5 rounded-lg border border-input bg-background text-sm text-foreground"
-            >
-              <option value="">Selecione o setor...</option>
-              {sectors.map((s) => (
-                <option key={s.id} value={s.name}>{s.name}</option>
-              ))}
-            </select>
+            <div className="mt-1.5 flex items-start gap-2.5 px-3 py-2.5 rounded-lg border border-input bg-muted/40">
+              <Tag className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
+              <div className="flex-1 min-w-0">
+                {mySector?.name ? (
+                  <p className="text-sm text-foreground truncate">{mySector.name}</p>
+                ) : (
+                  <p className="text-xs text-muted-foreground">
+                    Setor não definido no seu perfil — contate o administrador.
+                  </p>
+                )}
+              </div>
+            </div>
           </div>
 
           {/* File upload area */}
