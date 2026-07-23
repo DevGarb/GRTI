@@ -649,6 +649,7 @@ export default function Usuarios() {
                     password: editForm.password || undefined,
                     phone: editForm.phone || undefined,
                     cpf: editForm.cpf || undefined,
+                    sectorId: editForm.sector_id || null,
                   })
                 }
                 disabled={updateRole.isPending}
