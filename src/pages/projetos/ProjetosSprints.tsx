@@ -257,8 +257,29 @@ function CloseSprintDialog({
           <p className="text-[11px] text-muted-foreground">
             Este encerramento vai gerar 1 chamado para{" "}
             <strong>{selectedStaff ? selectedStaff.full_name || selectedStaff.email : "—"}</strong>{" "}
-            com <strong>{totalPoints}</strong> {totalPoints === 1 ? "ponto" : "pontos"} (soma dos backlogs da sprint).
+            com <strong>{totalPoints}</strong> {totalPoints === 1 ? "ponto" : "pontos"} (soma dos chamados + tarefas da sprint).
           </p>
+        </div>
+
+        <div className="space-y-1.5">
+          <Label className="text-xs">Categoria do encerramento</Label>
+          <Select value={categoryId} onValueChange={setCategoryId}>
+            <SelectTrigger className="h-9">
+              <SelectValue placeholder="Selecione a categoria..." />
+            </SelectTrigger>
+            <SelectContent>
+              {categories.map((c) => (
+                <SelectItem key={c.id} value={c.id}>
+                  {c.name}
+                </SelectItem>
+              ))}
+              {categories.length === 0 && (
+                <div className="px-2 py-1.5 text-xs text-muted-foreground">
+                  Nenhuma categoria ativa. Cadastre em Projetos → Cat. Encerramento.
+                </div>
+              )}
+            </SelectContent>
+          </Select>
         </div>
 
         <div className="space-y-2 py-1 max-h-[45vh] overflow-y-auto">
