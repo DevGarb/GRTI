@@ -493,7 +493,7 @@ export default function Chamados() {
             </button>
           )}
           <button
-            onClick={() => setShowModal(true)}
+            onClick={handleNewTicketClick}
             className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 transition-opacity"
           >
             <Plus className="h-4 w-4" />
