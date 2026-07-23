@@ -135,7 +135,7 @@ export default function ChkExecutar() {
       <div>
         <h1 className="text-2xl font-bold">{exec.chk_templates?.title}</h1>
         <p className="text-sm text-muted-foreground">
-          {exec.chk_companies?.name} · {exec.target_date} · {resolvedCount}/{total} itens
+          {exec.chk_companies?.name} · {formatDateBR(exec.target_date)} · {resolvedCount}/{total} itens
           {exec.score !== null && ` · Score: ${exec.score}%`}
         </p>
         <div className="mt-3">
