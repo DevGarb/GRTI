@@ -252,8 +252,8 @@ export default function NewTicketWizardModal({ onClose }: Props) {
                   <Hash className="h-6 w-6" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-[11px] font-semibold uppercase tracking-widest text-primary">Número reservado</p>
-                  <p className="text-sm text-muted-foreground">Seu chamado será o</p>
+                  <p className="text-[11px] font-semibold uppercase tracking-widest text-primary">TICKET DE NÚMERO:</p>
+                  <p className="text-sm text-muted-foreground">{"\n"}</p>
                   <p className="text-3xl font-bold text-foreground tabular-nums">
                     Nº {reservingNumber ? "…" : numberLabel}
                   </p>
