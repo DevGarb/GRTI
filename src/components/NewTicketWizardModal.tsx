@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { X, Upload, Trash2, Image as ImageIcon, Check, ChevronRight, ChevronLeft, User, Building2, Tag, Hash, FileText, Paperclip, ShieldCheck } from "lucide-react";
+import { X, Upload, Trash2, Image as ImageIcon, Check, ChevronRight, ChevronLeft, User, Building2, Tag, Hash, FileText, Paperclip, ShieldCheck, Phone } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { usePendingApprovalTickets } from "@/hooks/usePendingApprovalTickets";
 import { useUserOrganizations } from "@/hooks/useUserOrganizations";
@@ -245,7 +245,7 @@ export default function NewTicketWizardModal({ onClose }: Props) {
             <div className="space-y-4">
               <div className="grid sm:grid-cols-2 gap-3">
                 <InfoField icon={<User className="h-4 w-4" />} label="Solicitante" value={profile?.full_name || "—"} />
-                <InfoField icon={<Building2 className="h-4 w-4" />} label="Organização" value={activeOrg?.name || "—"} />
+                <InfoField icon={<Phone className="h-4 w-4" />} label="Número de contato" value={activeOrg?.phone || "—"} />
                 <InfoField icon={<Tag className="h-4 w-4" />} label="Setor" value={sectorName} fixedBadge />
                 <InfoField icon={<User className="h-4 w-4" />} label="E-mail" value={profile?.email || user?.email || "—"} />
               </div>
@@ -338,7 +338,7 @@ export default function NewTicketWizardModal({ onClose }: Props) {
           {step === 2 && (
             <div className="space-y-4">
               <div className="rounded-xl border border-border bg-muted/30 divide-y divide-border">
-                <ReviewRow icon={<Building2 className="h-4 w-4" />} label="Organização" value={activeOrg?.name || "—"} />
+                <ReviewRow icon={<Phone className="h-4 w-4" />} label="Número de contato" value={activeOrg?.phone || "—"} />
                 <ReviewRow icon={<Tag className="h-4 w-4" />} label="Setor" value={sectorName} />
                 <ReviewRow icon={<User className="h-4 w-4" />} label="Solicitante" value={profile?.full_name || "—"} />
                 <ReviewRow icon={<FileText className="h-4 w-4" />} label="Título" value={title || "—"} />
