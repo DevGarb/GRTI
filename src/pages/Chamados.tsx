@@ -593,8 +593,8 @@ export default function Chamados() {
             Retrabalho
           </button>
         </div>
-        {(isAdmin || isTech || true) && (
-          <div className="flex flex-col lg:flex-row gap-3">
+        <div className="flex flex-col lg:flex-row gap-3">
+
             {(isAdmin || isTech) && (
               <select
                 value={requesterFilter}
