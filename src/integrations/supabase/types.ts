@@ -3061,6 +3061,7 @@ export type Database = {
           started_at: string | null
           status: string
           story_points: number | null
+          ticket_number: number | null
           title: string
           type: string
           updated_at: string
@@ -3089,6 +3090,7 @@ export type Database = {
           started_at?: string | null
           status?: string
           story_points?: number | null
+          ticket_number?: number | null
           title: string
           type?: string
           updated_at?: string
@@ -3117,6 +3119,7 @@ export type Database = {
           started_at?: string | null
           status?: string
           story_points?: number | null
+          ticket_number?: number | null
           title?: string
           type?: string
           updated_at?: string
@@ -3710,6 +3713,7 @@ export type Database = {
         }
         Returns: string
       }
+      reserve_ticket_number: { Args: never; Returns: number }
       sync_started_at: {
         Args: { _new_started_at: string; _ticket_id: string }
         Returns: undefined

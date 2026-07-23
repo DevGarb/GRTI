@@ -7,6 +7,9 @@ import { StatusBadge, PriorityBadge } from "@/components/StatusBadge";
 import { useTickets, Ticket, useBulkDeleteTickets } from "@/hooks/useTickets";
 import { useAuth } from "@/contexts/AuthContext";
 import NewTicketModal from "@/components/NewTicketModal";
+import NewTicketWizardModal from "@/components/NewTicketWizardModal";
+
+const TI_ORG_ID = "a543a17b-0def-4ceb-acf5-91017f2b0ad3";
 import PendingApprovalGateDialog from "@/components/PendingApprovalGateDialog";
 import { usePendingApprovalTickets } from "@/hooks/usePendingApprovalTickets";
 import TicketDetailModal from "@/components/TicketDetailModal";
@@ -289,7 +292,7 @@ export default function Chamados() {
   const [confirmDelete, setConfirmDelete] = useState(false);
   const bulkDelete = useBulkDeleteTickets();
   const { data: tickets = [], isLoading } = useTickets();
-  const { hasRole, roles, user } = useAuth();
+  const { hasRole, roles, user, profile } = useAuth();
   const isAdmin = roles.includes("admin") || roles.includes("super_admin");
   const isTech = roles.includes("tecnico") || roles.includes("desenvolvedor");
 
@@ -700,7 +703,11 @@ export default function Chamados() {
         })()
       )}
 
-      {showModal && <NewTicketModal onClose={() => setShowModal(false)} />}
+      {showModal && (
+        profile?.organization_id === TI_ORG_ID
+          ? <NewTicketWizardModal onClose={() => setShowModal(false)} />
+          : <NewTicketModal onClose={() => setShowModal(false)} />
+      )}
       <PendingApprovalGateDialog
         open={showPendingGate}
         onClose={() => setShowPendingGate(false)}
