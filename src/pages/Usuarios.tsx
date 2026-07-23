@@ -383,6 +383,13 @@ export default function Usuarios() {
               Importar
             </button>
             <button
+              onClick={() => setShowLinkExistingModal(true)}
+              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg border border-input bg-background text-sm font-medium text-foreground hover:bg-muted transition-colors"
+            >
+              <Link2 className="h-4 w-4" />
+              Vincular Existente
+            </button>
+            <button
               onClick={() => setShowCreateModal(true)}
               className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 transition-opacity"
             >
