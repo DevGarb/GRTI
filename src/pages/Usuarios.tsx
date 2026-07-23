@@ -616,6 +616,18 @@ export default function Usuarios() {
                 />
               </div>
               <div>
+                <label className="text-sm font-medium text-foreground">Setor</label>
+                <select
+                  value={editForm.sector_id}
+                  onChange={(e) => setEditForm({ ...editForm, sector_id: e.target.value })}
+                  className="mt-1.5 w-full px-3 py-2.5 rounded-lg border border-input bg-background text-sm text-foreground"
+                >
+                  <option value="">Sem setor</option>
+                  {sectors.map((s) => (
+                    <option key={s.id} value={s.id}>{s.name}</option>
+                  ))}
+                </select>
+              <div>
                 <label className="text-sm font-medium text-foreground">Nova Senha (deixe vazio para manter)</label>
                 <input
                   type="password"
