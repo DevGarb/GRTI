@@ -213,7 +213,7 @@ export default function Usuarios() {
       if (cpfDigits && !isValidCPF(cpfDigits)) throw new Error("CPF inválido.");
 
       const res = await supabase.functions.invoke("create-user", {
-        body: { username: form.username, password: form.password, full_name: form.full_name, role: form.role, phone: unmask(form.phone), cpf: cpfDigits || null },
+        body: { username: form.username, password: form.password, full_name: form.full_name, role: form.role, phone: unmask(form.phone), cpf: cpfDigits || null, sector_id: form.sector_id || null },
       });
       if (res.error) throw new Error(res.error.message);
       if (res.data?.error) throw new Error(res.data.error);
