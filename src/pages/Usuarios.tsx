@@ -1,6 +1,7 @@
 import { useState } from "react";
-import { Users, Shield, Search, UserPlus, ChevronDown, ChevronRight, Pencil, X, User, Crown, FileUp, Download, Code, KeyRound, Trash2, Building2 } from "lucide-react";
+import { Users, Shield, Search, UserPlus, ChevronDown, ChevronRight, Pencil, X, User, Crown, FileUp, Download, Code, KeyRound, Trash2, Building2, Link2 } from "lucide-react";
 import LinkOrgModal from "@/components/usuarios/LinkOrgModal";
+import LinkExistingUserModal from "@/components/usuarios/LinkExistingUserModal";
 import ImportUsersModal from "@/components/usuarios/ImportUsersModal";
 import UserPermissionsModal from "@/components/usuarios/UserPermissionsModal";
 import PermissionPresetsTab from "@/components/usuarios/PermissionPresetsTab";
@@ -74,6 +75,7 @@ export default function Usuarios() {
   const [editForm, setEditForm] = useState({ full_name: "", role: "solicitante", password: "", phone: "", cpf: "" });
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showImportModal, setShowImportModal] = useState(false);
+  const [showLinkExistingModal, setShowLinkExistingModal] = useState(false);
   const [createForm, setCreateForm] = useState({ full_name: "", username: "", password: "", role: "solicitante", phone: "", cpf: "" });
   const { hasRole, isSuperAdmin, profile } = useAuth();
   const queryClient = useQueryClient();
@@ -379,6 +381,13 @@ export default function Usuarios() {
             >
               <FileUp className="h-4 w-4" />
               Importar
+            </button>
+            <button
+              onClick={() => setShowLinkExistingModal(true)}
+              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg border border-input bg-background text-sm font-medium text-foreground hover:bg-muted transition-colors"
+            >
+              <Link2 className="h-4 w-4" />
+              Vincular Existente
             </button>
             <button
               onClick={() => setShowCreateModal(true)}
@@ -752,6 +761,13 @@ export default function Usuarios() {
         onClose={() => setShowImportModal(false)}
         onSuccess={() => queryClient.invalidateQueries({ queryKey: ["admin-users"] })}
       />
+
+      {showLinkExistingModal && adminOrgId && (
+        <LinkExistingUserModal
+          organizationId={adminOrgId}
+          onClose={() => setShowLinkExistingModal(false)}
+        />
+      )}
 
       {permissionsUser && (
         <UserPermissionsModal
