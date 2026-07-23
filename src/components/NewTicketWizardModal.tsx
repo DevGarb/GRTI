@@ -245,7 +245,7 @@ export default function NewTicketWizardModal({ onClose }: Props) {
             <div className="space-y-4">
               <div className="grid sm:grid-cols-2 gap-3">
                 <InfoField icon={<User className="h-4 w-4" />} label="Solicitante" value={profile?.full_name || "—"} />
-                <InfoField icon={<Building2 className="h-4 w-4" />} label="Organização" value={activeOrg?.name || "—"} />
+                <InfoField icon={<Phone className="h-4 w-4" />} label="Número de contato" value={activeOrg?.phone || "—"} />
                 <InfoField icon={<Tag className="h-4 w-4" />} label="Setor" value={sectorName} fixedBadge />
                 <InfoField icon={<User className="h-4 w-4" />} label="E-mail" value={profile?.email || user?.email || "—"} />
               </div>
