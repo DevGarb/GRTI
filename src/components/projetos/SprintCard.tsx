@@ -152,11 +152,9 @@ export default function SprintCard({ sprint, projectId }: Props) {
                   _sprint_id: sprint.id,
                 });
                 if (error) {
-                  const { toast } = await import("sonner");
                   toast.error("Erro ao reabrir: " + error.message);
                   return;
                 }
-                const { toast } = await import("sonner");
                 toast.success("Sprint reaberta");
                 update.mutate({ id: sprint.id, status: "ativa" } as any);
               }}
