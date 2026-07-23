@@ -30,6 +30,33 @@ export default defineTool({
       return { content: [{ type: "text", text: "Not authenticated" }], isError: true };
     }
     const sb = supabaseForUser(ctx);
+    const userId = ctx.getUserId()!;
+
+    // Business rule: block creation if the user already has tickets awaiting approval
+    const { data: pending, error: pendingErr } = await sb
+      .from("tickets")
+      .select("id, title, aguardando_aprovacao_at")
+      .eq("created_by", userId)
+      .eq("status", "Aguardando Aprovação");
+    if (pendingErr) {
+      return { content: [{ type: "text", text: pendingErr.message }], isError: true };
+    }
+    if (pending && pending.length > 0) {
+      const list = pending.map((p: any) => `- ${p.id} — ${p.title}`).join("\n");
+      return {
+        content: [
+          {
+            type: "text",
+            text:
+              `Cannot open a new ticket: you have ${pending.length} ticket(s) awaiting approval. ` +
+              `Approve or send them back for rework before opening another.\n\n${list}`,
+          },
+        ],
+        structuredContent: { error: "pending_approval_tickets", pending },
+        isError: true,
+      };
+    }
+
     const { data, error } = await sb
       .from("tickets")
       .insert({
@@ -39,7 +66,7 @@ export default defineTool({
         type: type ?? "Outros",
         sector: sector ?? null,
         status: "Aberto",
-        created_by: ctx.getUserId()!,
+        created_by: userId,
       })
       .select()
       .maybeSingle();

@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { X, Ticket, Upload, Trash2, Image, Building2, AlertTriangle } from "lucide-react";
 import { useCreateTicket } from "@/hooks/useTickets";
+import { usePendingApprovalTickets } from "@/hooks/usePendingApprovalTickets";
 import { useSectors } from "@/hooks/useSectors";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -50,6 +51,7 @@ export default function NewTicketModal({ onClose }: Props) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const pendingFilesRef = useRef<PendingFile[]>([]);
   const createTicket = useCreateTicket();
+  const { refetch: refetchPendingApproval } = usePendingApprovalTickets();
 
   useEffect(() => {
     pendingFilesRef.current = pendingFiles;
@@ -106,6 +108,15 @@ export default function NewTicketModal({ onClose }: Props) {
 
   const handleSubmit = async () => {
     if (!title.trim()) return;
+    // Safety gate: bloqueia se houver chamados do próprio usuário aguardando aprovação
+    const { data: pending } = await refetchPendingApproval();
+    if ((pending?.length ?? 0) > 0) {
+      toast.error(
+        `Você possui ${pending!.length} chamado(s) aguardando aprovação. Aprove ou reenvie para retrabalho antes de abrir um novo.`
+      );
+      onClose();
+      return;
+    }
     setIsSubmitting(true);
     try {
       // Create ticket first

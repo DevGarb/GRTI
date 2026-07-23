@@ -7,6 +7,8 @@ import { StatusBadge, PriorityBadge } from "@/components/StatusBadge";
 import { useTickets, Ticket, useBulkDeleteTickets } from "@/hooks/useTickets";
 import { useAuth } from "@/contexts/AuthContext";
 import NewTicketModal from "@/components/NewTicketModal";
+import PendingApprovalGateDialog from "@/components/PendingApprovalGateDialog";
+import { usePendingApprovalTickets } from "@/hooks/usePendingApprovalTickets";
 import TicketDetailModal from "@/components/TicketDetailModal";
 import AssignTicketModal from "@/components/AssignTicketModal";
 import ChamadosTabs from "@/components/chamados/ChamadosTabs";
@@ -264,6 +266,16 @@ function AvailableTicketsSection({ tickets, onSelect, onAssign, title, descripti
 
 export default function Chamados() {
   const [showModal, setShowModal] = useState(false);
+  const [showPendingGate, setShowPendingGate] = useState(false);
+  const { data: pendingApproval = [], refetch: refetchPendingApproval } = usePendingApprovalTickets();
+  const handleNewTicketClick = async () => {
+    const { data } = await refetchPendingApproval();
+    if ((data?.length ?? pendingApproval.length) > 0) {
+      setShowPendingGate(true);
+    } else {
+      setShowModal(true);
+    }
+  };
   const [viewMode, setViewMode] = useState<"list" | "kanban">("list");
   const [selectedTicket, setSelectedTicket] = useState<Ticket | null>(null);
   const [assignTicketId, setAssignTicketId] = useState<string | null>(null);
@@ -481,7 +493,7 @@ export default function Chamados() {
             </button>
           )}
           <button
-            onClick={() => setShowModal(true)}
+            onClick={handleNewTicketClick}
             className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 transition-opacity"
           >
             <Plus className="h-4 w-4" />
@@ -689,6 +701,11 @@ export default function Chamados() {
       )}
 
       {showModal && <NewTicketModal onClose={() => setShowModal(false)} />}
+      <PendingApprovalGateDialog
+        open={showPendingGate}
+        onClose={() => setShowPendingGate(false)}
+        tickets={pendingApproval}
+      />
       {selectedTicket && <TicketDetailModal ticket={selectedTicket} onClose={() => setSelectedTicket(null)} />}
       {assignTicketId && (
         <AssignTicketModal

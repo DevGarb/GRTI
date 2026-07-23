@@ -106,6 +106,26 @@ var create_ticket_default = defineTool3({
       return { content: [{ type: "text", text: "Not authenticated" }], isError: true };
     }
     const sb = supabaseForUser3(ctx);
+    const userId = ctx.getUserId();
+    const { data: pending, error: pendingErr } = await sb.from("tickets").select("id, title, aguardando_aprovacao_at").eq("created_by", userId).eq("status", "Aguardando Aprova\xE7\xE3o");
+    if (pendingErr) {
+      return { content: [{ type: "text", text: pendingErr.message }], isError: true };
+    }
+    if (pending && pending.length > 0) {
+      const list = pending.map((p) => `- ${p.id} \u2014 ${p.title}`).join("\n");
+      return {
+        content: [
+          {
+            type: "text",
+            text: `Cannot open a new ticket: you have ${pending.length} ticket(s) awaiting approval. Approve or send them back for rework before opening another.
+
+${list}`
+          }
+        ],
+        structuredContent: { error: "pending_approval_tickets", pending },
+        isError: true
+      };
+    }
     const { data, error } = await sb.from("tickets").insert({
       title,
       description: description ?? null,
@@ -113,7 +133,7 @@ var create_ticket_default = defineTool3({
       type: type ?? "Outros",
       sector: sector ?? null,
       status: "Aberto",
-      created_by: ctx.getUserId()
+      created_by: userId
     }).select().maybeSingle();
     if (error) return { content: [{ type: "text", text: error.message }], isError: true };
     return {
