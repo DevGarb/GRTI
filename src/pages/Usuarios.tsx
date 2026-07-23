@@ -475,6 +475,17 @@ export default function Usuarios() {
                           {roleLabels[role]}
                         </span>
                         {(() => {
+                          const sec = user.sector_id ? sectors.find((s) => s.id === user.sector_id) : null;
+                          return (
+                            <span
+                              className={`hidden md:inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium ${sec ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground"}`}
+                              title={sec ? `Setor: ${sec.name}` : "Sem setor"}
+                            >
+                              {sec ? sec.name : "Sem setor"}
+                            </span>
+                          );
+                        })()}
+                        {(() => {
                           const ps = !isSuperAdminUser(user) ? presetStatusFor(user.user_id) : null;
                           if (!ps) return null;
                           const toneCls =
