@@ -73,6 +73,7 @@ Deno.serve(async (req) => {
     const userRole = body.role;
     const phone = body.phone || null;
     const cpf = body.cpf || null;
+    const sector_id = body.sector_id || null;
 
     // Only super_admin can create admin users
     if (userRole === "admin" && !callerIsSuperAdmin) {
@@ -137,7 +138,7 @@ Deno.serve(async (req) => {
     await adminClient
       .from("profiles")
       .upsert(
-        { user_id: newUser.user!.id, username: usernameClean, phone, cpf, full_name, email: fakeEmail, organization_id: organizationId },
+        { user_id: newUser.user!.id, username: usernameClean, phone, cpf, full_name, email: fakeEmail, organization_id: organizationId, sector_id },
         { onConflict: "user_id" }
       );
 

@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState } from "react";
-import { X, Ticket, Upload, Trash2, Image, Building2, AlertTriangle } from "lucide-react";
+import { X, Ticket, Upload, Trash2, Image, Building2, AlertTriangle, Tag } from "lucide-react";
 import { useCreateTicket } from "@/hooks/useTickets";
 import { usePendingApprovalTickets } from "@/hooks/usePendingApprovalTickets";
-import { useSectors } from "@/hooks/useSectors";
+import { useMySector } from "@/hooks/useMySector";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -32,7 +32,7 @@ interface PendingFile {
 
 export default function NewTicketModal({ onClose }: Props) {
   const { profile } = useAuth();
-  const { data: sectors = [] } = useSectors(profile?.organization_id || null);
+  const { data: mySector } = useMySector();
   const { orgs } = useUserOrganizations();
   const activeOrg = orgs.find((o) => o.id === profile?.organization_id);
   const hasMultipleOrgs = orgs.length > 1;
@@ -41,7 +41,6 @@ export default function NewTicketModal({ onClose }: Props) {
   const [description, setDescription] = useState("");
   const [priority, setPriority] = useState("Média");
   const [type, setType] = useState("Software");
-  const [sector, setSector] = useState("");
   const [pendingFiles, setPendingFiles] = useState<PendingFile[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
@@ -122,7 +121,7 @@ export default function NewTicketModal({ onClose }: Props) {
       // Create ticket first
       const ticketData = await new Promise<any>((resolve, reject) => {
         createTicket.mutate(
-          { title, description, priority, type, sector: sector || null },
+          { title, description, priority, type, sector: mySector?.name || null },
           { onSuccess: (data) => resolve(data), onError: reject }
         );
       });
@@ -273,16 +272,18 @@ export default function NewTicketModal({ onClose }: Props) {
 
           <div>
             <label className="text-sm font-medium text-foreground">Setor</label>
-            <select
-              value={sector}
-              onChange={(e) => setSector(e.target.value)}
-              className="mt-1.5 w-full px-3 py-2.5 rounded-lg border border-input bg-background text-sm text-foreground"
-            >
-              <option value="">Selecione o setor...</option>
-              {sectors.map((s) => (
-                <option key={s.id} value={s.name}>{s.name}</option>
-              ))}
-            </select>
+            <div className="mt-1.5 flex items-start gap-2.5 px-3 py-2.5 rounded-lg border border-input bg-muted/40">
+              <Tag className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
+              <div className="flex-1 min-w-0">
+                {mySector?.name ? (
+                  <p className="text-sm text-foreground truncate">{mySector.name}</p>
+                ) : (
+                  <p className="text-xs text-muted-foreground">
+                    Setor não definido no seu perfil — contate o administrador.
+                  </p>
+                )}
+              </div>
+            </div>
           </div>
 
           {/* File upload area */}

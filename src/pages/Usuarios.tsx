@@ -12,6 +12,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import { maskPhone, maskCPF, unmask, isValidCPF } from "@/lib/masks";
 import { usePermissionPresets } from "@/hooks/usePermissionPresets";
+import { useSectors } from "@/hooks/useSectors";
 import { formatDateBR } from "@/lib/dateFormat";
 
 interface ProfileWithRoles {
@@ -23,6 +24,7 @@ interface ProfileWithRoles {
   cpf: string | null;
   avatar_url: string | null;
   created_at: string;
+  sector_id: string | null;
   roles: string[];
 }
 
@@ -72,16 +74,17 @@ export default function Usuarios() {
   const [editingUser, setEditingUser] = useState<ProfileWithRoles | null>(null);
   const [permissionsUser, setPermissionsUser] = useState<ProfileWithRoles | null>(null);
   const [linkOrgUser, setLinkOrgUser] = useState<ProfileWithRoles | null>(null);
-  const [editForm, setEditForm] = useState({ full_name: "", role: "solicitante", password: "", phone: "", cpf: "" });
+  const [editForm, setEditForm] = useState({ full_name: "", role: "solicitante", password: "", phone: "", cpf: "", sector_id: "" });
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showImportModal, setShowImportModal] = useState(false);
   const [showLinkExistingModal, setShowLinkExistingModal] = useState(false);
-  const [createForm, setCreateForm] = useState({ full_name: "", username: "", password: "", role: "solicitante", phone: "", cpf: "" });
+  const [createForm, setCreateForm] = useState({ full_name: "", username: "", password: "", role: "solicitante", phone: "", cpf: "", sector_id: "" });
   const { hasRole, isSuperAdmin, profile } = useAuth();
   const queryClient = useQueryClient();
   const isAdmin = hasRole("admin");
   const adminOrgId = profile?.organization_id ?? null;
   const { presets } = usePermissionPresets();
+  const { data: sectors = [] } = useSectors(adminOrgId);
 
   const { data: appliedPresets = [] } = useQuery({
     queryKey: ["user-applied-presets", adminOrgId],
@@ -161,7 +164,7 @@ export default function Usuarios() {
 
       const { data: profiles, error } = await supabase
         .from("profiles")
-        .select("user_id, full_name, email, phone, cpf, avatar_url, created_at, username")
+        .select("user_id, full_name, email, phone, cpf, avatar_url, created_at, username, sector_id")
         .in("user_id", memberIds)
         .order("full_name");
       if (error) throw error;
@@ -210,7 +213,7 @@ export default function Usuarios() {
       if (cpfDigits && !isValidCPF(cpfDigits)) throw new Error("CPF inválido.");
 
       const res = await supabase.functions.invoke("create-user", {
-        body: { username: form.username, password: form.password, full_name: form.full_name, role: form.role, phone: unmask(form.phone), cpf: cpfDigits || null },
+        body: { username: form.username, password: form.password, full_name: form.full_name, role: form.role, phone: unmask(form.phone), cpf: cpfDigits || null, sector_id: form.sector_id || null },
       });
       if (res.error) throw new Error(res.error.message);
       if (res.data?.error) throw new Error(res.data.error);
@@ -219,14 +222,14 @@ export default function Usuarios() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin-users"] });
       setShowCreateModal(false);
-      setCreateForm({ full_name: "", username: "", password: "", role: "solicitante", phone: "", cpf: "" });
+      setCreateForm({ full_name: "", username: "", password: "", role: "solicitante", phone: "", cpf: "", sector_id: "" });
       toast.success("Usuário criado com sucesso!");
     },
     onError: (e: Error) => toast.error("Erro ao criar: " + e.message),
   });
 
   const updateRole = useMutation({
-    mutationFn: async ({ userId, role, fullName, password, phone, cpf }: { userId: string; role: string; fullName: string; password?: string; phone?: string; cpf?: string }) => {
+    mutationFn: async ({ userId, role, fullName, password, phone, cpf, sectorId }: { userId: string; role: string; fullName: string; password?: string; phone?: string; cpf?: string; sectorId?: string | null }) => {
       if (!adminOrgId) throw new Error("Administrador sem organização ativa.");
       const cpfDigits = cpf ? unmask(cpf) : "";
       if (cpfDigits && !isValidCPF(cpfDigits)) throw new Error("CPF inválido.");
@@ -234,6 +237,7 @@ export default function Usuarios() {
         full_name: fullName,
         phone: phone ? unmask(phone) : null,
         cpf: cpfDigits || null,
+        sector_id: sectorId || null,
       } as any).eq("user_id", userId);
 
       // Replace role only for the current organization
@@ -341,6 +345,7 @@ export default function Usuarios() {
       password: "",
       phone: user.phone ? maskPhone(user.phone) : "",
       cpf: user.cpf ? maskCPF(user.cpf) : "",
+      sector_id: user.sector_id || "",
     });
   };
 
@@ -469,6 +474,17 @@ export default function Usuarios() {
                         <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-medium ${roleColors[role]}`}>
                           {roleLabels[role]}
                         </span>
+                        {(() => {
+                          const sec = user.sector_id ? sectors.find((s) => s.id === user.sector_id) : null;
+                          return (
+                            <span
+                              className={`hidden md:inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium ${sec ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground"}`}
+                              title={sec ? `Setor: ${sec.name}` : "Sem setor"}
+                            >
+                              {sec ? sec.name : "Sem setor"}
+                            </span>
+                          );
+                        })()}
                         {(() => {
                           const ps = !isSuperAdminUser(user) ? presetStatusFor(user.user_id) : null;
                           if (!ps) return null;
@@ -611,6 +627,19 @@ export default function Usuarios() {
                 />
               </div>
               <div>
+                <label className="text-sm font-medium text-foreground">Setor</label>
+                <select
+                  value={editForm.sector_id}
+                  onChange={(e) => setEditForm({ ...editForm, sector_id: e.target.value })}
+                  className="mt-1.5 w-full px-3 py-2.5 rounded-lg border border-input bg-background text-sm text-foreground"
+                >
+                  <option value="">Sem setor</option>
+                  {sectors.map((s) => (
+                    <option key={s.id} value={s.id}>{s.name}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
                 <label className="text-sm font-medium text-foreground">Nova Senha (deixe vazio para manter)</label>
                 <input
                   type="password"
@@ -644,6 +673,7 @@ export default function Usuarios() {
                     password: editForm.password || undefined,
                     phone: editForm.phone || undefined,
                     cpf: editForm.cpf || undefined,
+                    sectorId: editForm.sector_id || null,
                   })
                 }
                 disabled={updateRole.isPending}
@@ -721,6 +751,19 @@ export default function Usuarios() {
                   maxLength={14}
                   className="mt-1.5 w-full px-3 py-2.5 rounded-lg border border-input bg-background text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring/20"
                 />
+              </div>
+              <div>
+                <label className="text-sm font-medium text-foreground">Setor</label>
+                <select
+                  value={createForm.sector_id}
+                  onChange={(e) => setCreateForm({ ...createForm, sector_id: e.target.value })}
+                  className="mt-1.5 w-full px-3 py-2.5 rounded-lg border border-input bg-background text-sm text-foreground"
+                >
+                  <option value="">Sem setor</option>
+                  {sectors.map((s) => (
+                    <option key={s.id} value={s.id}>{s.name}</option>
+                  ))}
+                </select>
               </div>
               <div>
                 <label className="text-sm font-medium text-foreground">Tipo de acesso *</label>

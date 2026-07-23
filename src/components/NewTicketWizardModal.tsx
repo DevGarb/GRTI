@@ -8,6 +8,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { buildStorageFileName, createPendingFile, getAttachmentDisplayName, getClipboardImageFiles, revokePendingFiles } from "@/lib/attachments";
 import { dispatchWebhookEvent } from "@/hooks/useWebhooks";
+import { useMySector } from "@/hooks/useMySector";
 
 interface Props {
   onClose: () => void;
@@ -33,6 +34,8 @@ export default function NewTicketWizardModal({ onClose }: Props) {
   const { user, profile } = useAuth();
   const { orgs } = useUserOrganizations();
   const activeOrg = orgs.find((o) => o.id === profile?.organization_id);
+  const { data: mySector } = useMySector();
+  const sectorName = mySector?.name || "TI";
   const queryClient = useQueryClient();
   const { refetch: refetchPendingApproval } = usePendingApprovalTickets();
 
@@ -111,7 +114,7 @@ export default function NewTicketWizardModal({ onClose }: Props) {
         description: description.trim(),
         priority: "Média",
         type: "Software",
-        sector: "TI",
+        sector: sectorName,
         status: "Aberto",
         created_by: user.id,
         organization_id: profile?.organization_id ?? null,
@@ -243,7 +246,7 @@ export default function NewTicketWizardModal({ onClose }: Props) {
               <div className="grid sm:grid-cols-2 gap-3">
                 <InfoField icon={<User className="h-4 w-4" />} label="Solicitante" value={profile?.full_name || "—"} />
                 <InfoField icon={<Building2 className="h-4 w-4" />} label="Organização" value={activeOrg?.name || "—"} />
-                <InfoField icon={<Tag className="h-4 w-4" />} label="Setor" value="TI" fixedBadge />
+                <InfoField icon={<Tag className="h-4 w-4" />} label="Setor" value={sectorName} fixedBadge />
                 <InfoField icon={<User className="h-4 w-4" />} label="E-mail" value={profile?.email || user?.email || "—"} />
               </div>
 
@@ -336,7 +339,7 @@ export default function NewTicketWizardModal({ onClose }: Props) {
             <div className="space-y-4">
               <div className="rounded-xl border border-border bg-muted/30 divide-y divide-border">
                 <ReviewRow icon={<Building2 className="h-4 w-4" />} label="Organização" value={activeOrg?.name || "—"} />
-                <ReviewRow icon={<Tag className="h-4 w-4" />} label="Setor" value="TI" />
+                <ReviewRow icon={<Tag className="h-4 w-4" />} label="Setor" value={sectorName} />
                 <ReviewRow icon={<User className="h-4 w-4" />} label="Solicitante" value={profile?.full_name || "—"} />
                 <ReviewRow icon={<FileText className="h-4 w-4" />} label="Título" value={title || "—"} />
                 <ReviewRow icon={<FileText className="h-4 w-4" />} label="Descrição" value={description || "—"} multiline />

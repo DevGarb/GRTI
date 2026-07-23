@@ -2366,6 +2366,7 @@ export type Database = {
           id: string
           organization_id: string | null
           phone: string | null
+          sector_id: string | null
           updated_at: string
           user_id: string
           username: string | null
@@ -2379,6 +2380,7 @@ export type Database = {
           id?: string
           organization_id?: string | null
           phone?: string | null
+          sector_id?: string | null
           updated_at?: string
           user_id: string
           username?: string | null
@@ -2392,6 +2394,7 @@ export type Database = {
           id?: string
           organization_id?: string | null
           phone?: string | null
+          sector_id?: string | null
           updated_at?: string
           user_id?: string
           username?: string | null
@@ -2402,6 +2405,13 @@ export type Database = {
             columns: ["organization_id"]
             isOneToOne: false
             referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "profiles_sector_id_fkey"
+            columns: ["sector_id"]
+            isOneToOne: false
+            referencedRelation: "sectors"
             referencedColumns: ["id"]
           },
         ]
