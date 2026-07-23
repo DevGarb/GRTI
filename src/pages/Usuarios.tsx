@@ -762,6 +762,13 @@ export default function Usuarios() {
         onSuccess={() => queryClient.invalidateQueries({ queryKey: ["admin-users"] })}
       />
 
+      {showLinkExistingModal && adminOrgId && (
+        <LinkExistingUserModal
+          organizationId={adminOrgId}
+          onClose={() => setShowLinkExistingModal(false)}
+        />
+      )}
+
       {permissionsUser && (
         <UserPermissionsModal
           user={permissionsUser}
