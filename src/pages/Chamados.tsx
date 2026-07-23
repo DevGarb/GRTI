@@ -4,7 +4,8 @@ import { Search, Filter, ChevronDown, ChevronRight, Plus, User, RefreshCw, Inbox
 import KanbanBoard from "@/components/KanbanBoard";
 import MonthSelector, { getCurrentMonthValue, getMonthDateRange } from "@/components/MonthSelector";
 import { StatusBadge, PriorityBadge } from "@/components/StatusBadge";
-import { useTickets, Ticket, useBulkDeleteTickets } from "@/hooks/useTickets";
+import { useTickets, Ticket, useBulkDeleteTickets, useTechnicianProfiles } from "@/hooks/useTickets";
+import { formatTicketNumber, normalizeTicketNumberQuery } from "@/lib/ticketNumber";
 import { useAuth } from "@/contexts/AuthContext";
 import NewTicketModal from "@/components/NewTicketModal";
 import NewTicketWizardModal from "@/components/NewTicketWizardModal";
@@ -155,6 +156,9 @@ function TicketTable({ tickets, onSelect, scoreMap, showScore, workMinutesMap, m
               <td className="px-4 py-3">
                 <div className="flex items-center gap-2">
                   <span className="text-sm font-medium text-foreground truncate block max-w-[250px]">
+                    {formatTicketNumber(ticket.ticket_number) && (
+                      <span className="text-muted-foreground font-mono mr-1">Nº {formatTicketNumber(ticket.ticket_number)}</span>
+                    )}
                     {ticket.title}
                   </span>
                   {unreadIds?.has(ticket.id) && (
@@ -287,6 +291,10 @@ export default function Chamados() {
   const [statusFilter, setStatusFilter] = useState("Todos Status");
   const [selectedMonth, setSelectedMonth] = useState(getCurrentMonthValue());
   const [reworkFilter, setReworkFilter] = useState(false);
+  const [requesterFilter, setRequesterFilter] = useState("");
+  const [technicianFilter, setTechnicianFilter] = useState("");
+  const [numberFilter, setNumberFilter] = useState("");
+  const { data: technicianProfiles = [] } = useTechnicianProfiles();
   const [selectionMode, setSelectionMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [confirmDelete, setConfirmDelete] = useState(false);
@@ -316,9 +324,22 @@ export default function Chamados() {
       ? inRange(t.created_at)
       : inRange(t.closed_at) || (!t.closed_at && inRange(t.updated_at));
     const matchRework = !reworkFilter || (t.reworkCount || 0) > 0;
+    const matchRequester = !requesterFilter || t.created_by === requesterFilter;
+    const matchTechnician = !technicianFilter || t.assigned_to === technicianFilter;
+    const normalizedQuery = normalizeTicketNumberQuery(numberFilter);
+    const matchNumber = !normalizedQuery || (t.ticket_number != null && String(t.ticket_number).includes(normalizedQuery));
     // Mantém o comportamento anterior: pendentes sempre aparecem (badge de mês de origem).
-    return matchSearch && matchStatus && (matchPeriod || isPending) && matchRework;
+    return matchSearch && matchStatus && (matchPeriod || isPending) && matchRework && matchRequester && matchTechnician && matchNumber;
   });
+
+  // Solicitantes únicos vindos dos tickets já carregados (sem query extra)
+  const requesterOptions = Array.from(
+    new Map(
+      tickets
+        .filter((t) => t.created_by && t.creatorProfile?.full_name)
+        .map((t) => [t.created_by, t.creatorProfile!.full_name])
+    ).entries()
+  ).sort((a, b) => a[1].localeCompare(b[1]));
 
   // Pontuação do técnico: chamados FECHADOS no mês selecionado (por closed_at) atribuídos a ele.
   const closedByMe = tickets.filter((t: any) => {
@@ -572,6 +593,41 @@ export default function Chamados() {
             Retrabalho
           </button>
         </div>
+        <div className="flex flex-col lg:flex-row gap-3">
+
+            {(isAdmin || isTech) && (
+              <select
+                value={requesterFilter}
+                onChange={(e) => setRequesterFilter(e.target.value)}
+                className="px-3 py-2.5 rounded-lg border border-input bg-background text-sm text-foreground lg:flex-1"
+              >
+                <option value="">Todos Solicitantes</option>
+                {requesterOptions.map(([id, name]) => (
+                  <option key={id} value={id}>{name}</option>
+                ))}
+              </select>
+            )}
+            {(isAdmin || isTech) && (
+              <select
+                value={technicianFilter}
+                onChange={(e) => setTechnicianFilter(e.target.value)}
+                className="px-3 py-2.5 rounded-lg border border-input bg-background text-sm text-foreground lg:flex-1"
+              >
+                <option value="">Todos Técnicos</option>
+                {technicianProfiles.map((t: any) => (
+                  <option key={t.user_id} value={t.user_id}>{t.full_name}</option>
+                ))}
+              </select>
+            )}
+            <input
+              type="text"
+              inputMode="numeric"
+              placeholder="Nº do chamado (ex: 10 ou 00010)"
+              value={numberFilter}
+              onChange={(e) => setNumberFilter(e.target.value)}
+              className="px-3 py-2.5 rounded-lg border border-input bg-background text-sm text-foreground lg:w-64"
+            />
+          </div>
       </div>
 
       {isLoading ? (

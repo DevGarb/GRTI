@@ -7,6 +7,7 @@ import { dispatchWebhookEvent } from "@/hooks/useWebhooks";
 
 export interface Ticket {
   id: string;
+  ticket_number: number | null;
   title: string;
   description: string | null;
   priority: string;

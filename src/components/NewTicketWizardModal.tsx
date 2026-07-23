@@ -25,10 +25,11 @@ const STEPS = [
   { key: "confirmacao", eyebrow: "Etapa 3", title: "Revisão e confirmação" },
 ] as const;
 
+import { formatTicketNumber as formatTicketNumberRaw } from "@/lib/ticketNumber";
 function formatTicketNumber(n: number | null) {
-  if (n == null) return "—";
-  return String(n).padStart(5, "0");
+  return formatTicketNumberRaw(n) ?? "—";
 }
+
 
 export default function NewTicketWizardModal({ onClose }: Props) {
   const { user, profile } = useAuth();

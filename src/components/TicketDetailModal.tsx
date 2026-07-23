@@ -4,6 +4,7 @@ import { useUserOrganizations } from "@/hooks/useUserOrganizations";
 import { useMoveTicketOrg } from "@/hooks/useMoveTicketOrg";
 import { StatusBadge, PriorityBadge } from "@/components/StatusBadge";
 import type { Ticket } from "@/hooks/useTickets";
+import { formatTicketNumber } from "@/lib/ticketNumber";
 import { useUpdateTicket, usePickTicket, useTechnicianProfiles, useProfiles, invalidateMetricCaches } from "@/hooks/useTickets";
 import AssignTicketModal from "@/components/AssignTicketModal";
 import { useAuth } from "@/contexts/AuthContext";
@@ -624,7 +625,12 @@ export default function TicketDetailModal({ ticket, onClose }: Props) {
         {/* Header */}
         <div className="flex items-start justify-between p-6 border-b border-border">
           <div className="flex-1 min-w-0 pr-4">
-            <h2 className="text-lg font-bold text-foreground truncate">{ticket.title}</h2>
+            <h2 className="text-lg font-bold text-foreground truncate">
+              {formatTicketNumber((ticket as any).ticket_number) && (
+                <span className="text-muted-foreground font-mono mr-2">Nº {formatTicketNumber((ticket as any).ticket_number)}</span>
+              )}
+              {ticket.title}
+            </h2>
             <div className="flex items-center gap-2 mt-1.5 flex-wrap">
               <p className="text-xs text-muted-foreground">
                 {formatDateBR(ticket.created_at)}
