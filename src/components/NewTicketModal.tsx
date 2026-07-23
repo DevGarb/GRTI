@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState } from "react";
-import { X, Ticket, Upload, Trash2, Image, Building2, AlertTriangle } from "lucide-react";
+import { X, Ticket, Upload, Trash2, Image, Building2, AlertTriangle, Tag } from "lucide-react";
 import { useCreateTicket } from "@/hooks/useTickets";
 import { usePendingApprovalTickets } from "@/hooks/usePendingApprovalTickets";
-import { useSectors } from "@/hooks/useSectors";
+import { useMySector } from "@/hooks/useMySector";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
