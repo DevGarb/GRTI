@@ -324,9 +324,22 @@ export default function Chamados() {
       ? inRange(t.created_at)
       : inRange(t.closed_at) || (!t.closed_at && inRange(t.updated_at));
     const matchRework = !reworkFilter || (t.reworkCount || 0) > 0;
+    const matchRequester = !requesterFilter || t.created_by === requesterFilter;
+    const matchTechnician = !technicianFilter || t.assigned_to === technicianFilter;
+    const normalizedQuery = normalizeTicketNumberQuery(numberFilter);
+    const matchNumber = !normalizedQuery || (t.ticket_number != null && String(t.ticket_number).includes(normalizedQuery));
     // Mantém o comportamento anterior: pendentes sempre aparecem (badge de mês de origem).
-    return matchSearch && matchStatus && (matchPeriod || isPending) && matchRework;
+    return matchSearch && matchStatus && (matchPeriod || isPending) && matchRework && matchRequester && matchTechnician && matchNumber;
   });
+
+  // Solicitantes únicos vindos dos tickets já carregados (sem query extra)
+  const requesterOptions = Array.from(
+    new Map(
+      tickets
+        .filter((t) => t.created_by && t.creatorProfile?.full_name)
+        .map((t) => [t.created_by, t.creatorProfile!.full_name])
+    ).entries()
+  ).sort((a, b) => a[1].localeCompare(b[1]));
 
   // Pontuação do técnico: chamados FECHADOS no mês selecionado (por closed_at) atribuídos a ele.
   const closedByMe = tickets.filter((t: any) => {
