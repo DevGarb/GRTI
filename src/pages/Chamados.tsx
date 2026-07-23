@@ -7,6 +7,9 @@ import { StatusBadge, PriorityBadge } from "@/components/StatusBadge";
 import { useTickets, Ticket, useBulkDeleteTickets } from "@/hooks/useTickets";
 import { useAuth } from "@/contexts/AuthContext";
 import NewTicketModal from "@/components/NewTicketModal";
+import NewTicketWizardModal from "@/components/NewTicketWizardModal";
+
+const TI_ORG_ID = "a543a17b-0def-4ceb-acf5-91017f2b0ad3";
 import PendingApprovalGateDialog from "@/components/PendingApprovalGateDialog";
 import { usePendingApprovalTickets } from "@/hooks/usePendingApprovalTickets";
 import TicketDetailModal from "@/components/TicketDetailModal";
