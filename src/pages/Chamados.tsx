@@ -701,6 +701,11 @@ export default function Chamados() {
       )}
 
       {showModal && <NewTicketModal onClose={() => setShowModal(false)} />}
+      <PendingApprovalGateDialog
+        open={showPendingGate}
+        onClose={() => setShowPendingGate(false)}
+        tickets={pendingApproval}
+      />
       {selectedTicket && <TicketDetailModal ticket={selectedTicket} onClose={() => setSelectedTicket(null)} />}
       {assignTicketId && (
         <AssignTicketModal
