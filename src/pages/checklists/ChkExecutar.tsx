@@ -190,8 +190,12 @@ export default function ChkExecutar() {
               <textarea
                 disabled={readonly}
                 placeholder="Observação (opcional)"
-                defaultValue={it.observation || ""}
-                onBlur={(e) => e.target.value !== (it.observation || "") && saveItem.mutate({ id: it.id, observation: e.target.value })}
+                value={observations[it.id] ?? ""}
+                onChange={(e) => handleObservationChange(it.id, e.target.value)}
+                onBlur={() => {
+                  if (timersRef.current[it.id]) clearTimeout(timersRef.current[it.id]);
+                  flushObservation(it.id);
+                }}
                 rows={2}
                 className="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm disabled:opacity-60"
               />
