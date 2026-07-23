@@ -19,6 +19,10 @@ export default function ChkExecutar() {
   const [localPreviews, setLocalPreviews] = useState<Record<string, string>>({});
   const [uploadingId, setUploadingId] = useState<string | null>(null);
   const [failedIds, setFailedIds] = useState<Set<string>>(new Set());
+  const [observations, setObservations] = useState<Record<string, string>>({});
+  const savedRef = useRef<Record<string, string>>({});
+  const timersRef = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
+  const [lastSavedAt, setLastSavedAt] = useState<Date | null>(null);
 
   useEffect(() => {
     if (!exec?.items) return;
