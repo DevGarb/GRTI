@@ -34,6 +34,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import SprintMetricsPanel from "@/components/projetos/SprintMetricsPanel";
+import { useSprintClosureCategories } from "@/hooks/useSprintClosureCategories";
 
 interface SprintRow {
   id: string;
