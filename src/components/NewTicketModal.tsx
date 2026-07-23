@@ -121,7 +121,7 @@ export default function NewTicketModal({ onClose }: Props) {
       // Create ticket first
       const ticketData = await new Promise<any>((resolve, reject) => {
         createTicket.mutate(
-          { title, description, priority, type, sector: sector || null },
+          { title, description, priority, type, sector: mySector?.name || null },
           { onSuccess: (data) => resolve(data), onError: reject }
         );
       });
