@@ -34,6 +34,8 @@ export default function NewTicketWizardModal({ onClose }: Props) {
   const { user, profile } = useAuth();
   const { orgs } = useUserOrganizations();
   const activeOrg = orgs.find((o) => o.id === profile?.organization_id);
+  const { data: mySector } = useMySector();
+  const sectorName = mySector?.name || "TI";
   const queryClient = useQueryClient();
   const { refetch: refetchPendingApproval } = usePendingApprovalTickets();
 
