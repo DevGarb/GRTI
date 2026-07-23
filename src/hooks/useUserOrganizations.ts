@@ -7,6 +7,7 @@ export interface UserOrg {
   name: string;
   slug: string;
   logo_url: string | null;
+  phone: string | null;
 }
 
 export function useUserOrganizations() {
