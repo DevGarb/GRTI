@@ -363,7 +363,11 @@ function CloseSprintDialog({
           {!canClose && (
             <div className="flex items-center gap-1 text-[11px] text-amber-700">
               <AlertTriangle className="h-3 w-3" />
-              {!finishedBy ? "Selecione o responsável" : "Confirme todos os itens"}
+              {!finishedBy
+                ? "Selecione o responsável"
+                : !categoryId
+                  ? "Selecione a categoria"
+                  : "Confirme todos os itens"}
             </div>
           )}
         </div>
