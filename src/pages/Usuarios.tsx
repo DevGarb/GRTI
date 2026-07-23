@@ -627,6 +627,7 @@ export default function Usuarios() {
                     <option key={s.id} value={s.id}>{s.name}</option>
                   ))}
                 </select>
+              </div>
               <div>
                 <label className="text-sm font-medium text-foreground">Nova Senha (deixe vazio para manter)</label>
                 <input
