@@ -156,6 +156,9 @@ function TicketTable({ tickets, onSelect, scoreMap, showScore, workMinutesMap, m
               <td className="px-4 py-3">
                 <div className="flex items-center gap-2">
                   <span className="text-sm font-medium text-foreground truncate block max-w-[250px]">
+                    {formatTicketNumber(ticket.ticket_number) && (
+                      <span className="text-muted-foreground font-mono mr-1">Nº {formatTicketNumber(ticket.ticket_number)}</span>
+                    )}
                     {ticket.title}
                   </span>
                   {unreadIds?.has(ticket.id) && (
