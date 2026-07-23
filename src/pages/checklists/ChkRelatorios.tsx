@@ -1,13 +1,35 @@
 import { useState } from "react";
 import { BarChart3, Download } from "lucide-react";
 import { useChkReport } from "@/hooks/useChecklists";
+import { formatDateBR } from "@/lib/dateFormat";
+
+function formatDuration(startedAt: string | null, completedAt: string | null, createdAt?: string | null): string {
+  if (!completedAt) return "—";
+  const start = startedAt || createdAt;
+  if (!start) return "—";
+  const ms = new Date(completedAt).getTime() - new Date(start).getTime();
+  if (!isFinite(ms) || ms < 0) return "—";
+  const totalMin = Math.round(ms / 60000);
+  const h = Math.floor(totalMin / 60);
+  const m = totalMin % 60;
+  if (h === 0) return `${m}m`;
+  return `${h}h ${m}m`;
+}
 
 function toCSV(rows: any[]) {
   if (rows.length === 0) return "";
-  const headers = ["data", "empresa", "colaborador", "checklist", "status", "score"];
+  const headers = ["data", "empresa", "colaborador", "checklist", "status", "score", "duracao"];
   const lines = [headers.join(";")];
   for (const r of rows) {
-    lines.push([r.target_date, r.company_name, r.user_name || "", r.template_title, r.status, r.score ?? ""]
+    lines.push([
+      formatDateBR(r.target_date),
+      r.company_name,
+      r.user_name || "",
+      r.template_title,
+      r.status,
+      r.score ?? "",
+      formatDuration(r.started_at, r.completed_at, r.created_at),
+    ]
       .map((v) => `"${String(v).replace(/"/g, '""')}"`).join(";"));
   }
   return "\uFEFF" + lines.join("\n");
