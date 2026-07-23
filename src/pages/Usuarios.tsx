@@ -229,7 +229,7 @@ export default function Usuarios() {
   });
 
   const updateRole = useMutation({
-    mutationFn: async ({ userId, role, fullName, password, phone, cpf }: { userId: string; role: string; fullName: string; password?: string; phone?: string; cpf?: string }) => {
+    mutationFn: async ({ userId, role, fullName, password, phone, cpf, sectorId }: { userId: string; role: string; fullName: string; password?: string; phone?: string; cpf?: string; sectorId?: string | null }) => {
       if (!adminOrgId) throw new Error("Administrador sem organização ativa.");
       const cpfDigits = cpf ? unmask(cpf) : "";
       if (cpfDigits && !isValidCPF(cpfDigits)) throw new Error("CPF inválido.");
@@ -237,6 +237,7 @@ export default function Usuarios() {
         full_name: fullName,
         phone: phone ? unmask(phone) : null,
         cpf: cpfDigits || null,
+        sector_id: sectorId || null,
       } as any).eq("user_id", userId);
 
       // Replace role only for the current organization
