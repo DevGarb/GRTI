@@ -220,11 +220,18 @@ Deno.serve(async (req) => {
     if (!apiKey) return corsJson({ error: "IA não configurada (OPEN_AI secret ausente)." }, 500);
 
     if (action === "preview") {
-      const { data: tickets, error: tErr } = await admin
+      // Se ticket_ids for enviado, classifica exatamente esses chamados (qualquer status —
+      // usado para reavaliar chamados já fechados com o critério atualizado). Sem ticket_ids,
+      // mantém o comportamento padrão: todos os 'Aprovado' da organização.
+      const ticketIdsFilter: string[] | undefined =
+        Array.isArray(body.ticket_ids) && body.ticket_ids.length > 0 ? body.ticket_ids : undefined;
+
+      let ticketsQuery = admin
         .from("tickets")
         .select("id, title, description, assigned_to")
-        .eq("status", "Aprovado")
         .eq("organization_id", organizationId);
+      ticketsQuery = ticketIdsFilter ? ticketsQuery.in("id", ticketIdsFilter) : ticketsQuery.eq("status", "Aprovado");
+      const { data: tickets, error: tErr } = await ticketsQuery;
       if (tErr) throw tErr;
 
       const rawList = (tickets || []) as Omit<TicketRow, "tratativa">[];
@@ -292,15 +299,18 @@ Deno.serve(async (req) => {
       if (!Array.isArray(assignments) || assignments.length === 0) {
         return corsJson({ error: "assignments é obrigatório" }, 400);
       }
+      // reevaluate=true: re-pontua chamados JÁ FECHADOS (não mexe em status/closed_at,
+      // não exige 'Aprovado', atualiza a evaluation 'meta' existente em vez de inserir outra).
+      const reevaluate = body.reevaluate === true;
 
-      // Só aplica em chamados que continuam 'Aprovado' nesta org (evita duplo processamento).
       const ticketIds = assignments.map((a) => a.ticket_id);
-      const { data: liveTickets, error: liveErr } = await admin
+      let liveQuery = admin
         .from("tickets")
         .select("id, assigned_to")
         .in("id", ticketIds)
-        .eq("status", "Aprovado")
         .eq("organization_id", organizationId);
+      if (!reevaluate) liveQuery = liveQuery.eq("status", "Aprovado"); // evita duplo processamento no fluxo normal
+      const { data: liveTickets, error: liveErr } = await liveQuery;
       if (liveErr) throw liveErr;
       const liveMap = new Map((liveTickets || []).map((t: any) => [t.id, t.assigned_to as string | null]));
 
@@ -319,30 +329,64 @@ Deno.serve(async (req) => {
 
       for (const a of assignments) {
         const assignedTo = liveMap.get(a.ticket_id);
-        if (assignedTo === undefined) continue; // não está mais 'Aprovado' — pula
+        if (assignedTo === undefined) continue; // fora do escopo (não pertence à org, ou não está mais 'Aprovado')
         const score = scoreById.get(a.category_id);
         if (score == null) continue;
 
-        const { error: updErr } = await admin
-          .from("tickets")
-          .update({ status: "Fechado", closed_at: new Date().toISOString(), category_id: a.category_id })
-          .eq("id", a.ticket_id);
-        if (updErr) { console.error("update ticket failed", a.ticket_id, updErr); continue; }
+        if (reevaluate) {
+          const { error: updErr } = await admin.from("tickets").update({ category_id: a.category_id }).eq("id", a.ticket_id);
+          if (updErr) { console.error("update ticket (reevaluate) failed", a.ticket_id, updErr); continue; }
 
-        const evaluatorId = assignedTo || caller.id;
-        const { error: evalErr } = await admin.from("evaluations").insert({
-          ticket_id: a.ticket_id,
-          evaluator_id: evaluatorId,
-          score,
-          comment: "Fechamento e pontuação automáticos por IA (revisão do administrador).",
-          type: "meta",
-        });
-        if (evalErr) { console.error("insert evaluation failed", a.ticket_id, evalErr); continue; }
+          const { data: existingEval } = await admin
+            .from("evaluations")
+            .select("id, score")
+            .eq("ticket_id", a.ticket_id)
+            .eq("type", "meta")
+            .maybeSingle();
 
-        await admin.from("ticket_history").insert([
-          { ticket_id: a.ticket_id, user_id: caller.id, action: "status_change", old_value: "Aprovado", new_value: "Fechado" },
-          { ticket_id: a.ticket_id, user_id: caller.id, action: "evaluated", old_value: null, new_value: `Pontuação: ${score} pts (IA)` },
-        ]);
+          if (existingEval) {
+            const { error: evalErr } = await admin.from("evaluations").update({ score }).eq("id", existingEval.id);
+            if (evalErr) { console.error("update evaluation (reevaluate) failed", a.ticket_id, evalErr); continue; }
+          } else {
+            const { error: evalErr } = await admin.from("evaluations").insert({
+              ticket_id: a.ticket_id,
+              evaluator_id: assignedTo || caller.id,
+              score,
+              comment: "Pontuação atribuída por reavaliação de IA (título + descrição + tratativa).",
+              type: "meta",
+            });
+            if (evalErr) { console.error("insert evaluation (reevaluate) failed", a.ticket_id, evalErr); continue; }
+          }
+
+          await admin.from("ticket_history").insert({
+            ticket_id: a.ticket_id,
+            user_id: caller.id,
+            action: "evaluated",
+            old_value: existingEval ? `${existingEval.score} pts` : null,
+            new_value: `${score} pts (IA — reavaliação com tratativa)`,
+          });
+        } else {
+          const { error: updErr } = await admin
+            .from("tickets")
+            .update({ status: "Fechado", closed_at: new Date().toISOString(), category_id: a.category_id })
+            .eq("id", a.ticket_id);
+          if (updErr) { console.error("update ticket failed", a.ticket_id, updErr); continue; }
+
+          const evaluatorId = assignedTo || caller.id;
+          const { error: evalErr } = await admin.from("evaluations").insert({
+            ticket_id: a.ticket_id,
+            evaluator_id: evaluatorId,
+            score,
+            comment: "Fechamento e pontuação automáticos por IA (revisão do administrador).",
+            type: "meta",
+          });
+          if (evalErr) { console.error("insert evaluation failed", a.ticket_id, evalErr); continue; }
+
+          await admin.from("ticket_history").insert([
+            { ticket_id: a.ticket_id, user_id: caller.id, action: "status_change", old_value: "Aprovado", new_value: "Fechado" },
+            { ticket_id: a.ticket_id, user_id: caller.id, action: "evaluated", old_value: null, new_value: `Pontuação: ${score} pts (IA)` },
+          ]);
+        }
 
         closedCount += 1;
         totalPoints += score;
