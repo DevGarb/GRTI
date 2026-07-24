@@ -31,9 +31,10 @@ interface TicketRow {
   title: string;
   description: string | null;
   assigned_to: string | null;
+  tratativa: string;
 }
 
-const RUBRIC = `Rubrica de pontuação por complexidade do atendimento (escolha a categoria cujo score melhor reflete o esforço real do chamado, pelo TÍTULO e pela DESCRIÇÃO):
+const RUBRIC = `Rubrica de pontuação por complexidade do atendimento (escolha a categoria cujo score melhor reflete o esforço REAL do chamado):
 0 = chamado excluído/duplicado/improdutivo (raro; só use se for claramente isso)
 1 = trivial: pedido de suprimento/peça simples (pilha, cabo, tinta), troca básica de periférico, suporte L1 rotineiro
 2 = padrão: suporte a usuário, acesso/permissão, movimentação de item com defeito (headset/mouse/tela quebrado), erro simples em sistema (Kommo/Service/GoTo), onboarding/offboarding
@@ -41,7 +42,13 @@ const RUBRIC = `Rubrica de pontuação por complexidade do atendimento (escolha 
 4 = avançado: criação de automação (Kommo/n8n), configuração de API/VPN/DNS, parametrização de sistema
 5 = complexo: desenvolvimento/evolução de funcionalidade de software, integração crítica, refatoração de backend
 6 a 10 = estrutural: projeto grande, reestruturação de setor, implantação de nova plataforma/IA
-Escolha sempre a categoria mais específica e semanticamente mais próxima do conteúdo do chamado — nunca a mais genérica só porque é mais fácil.`;
+
+IMPORTANTE — como ponderar as fontes de informação de cada chamado:
+- O TÍTULO e a DESCRIÇÃO DE ABERTURA refletem apenas a intenção de quem abriu o chamado, no momento da abertura.
+- A TRATATIVA (comentários/notas registrados pelo técnico durante o atendimento) reflete o trabalho REALMENTE executado, e pode revelar complexidade maior (ou menor) do que a descrição de abertura sugeria — um chamado aberto como algo simples pode ter exigido diagnóstico, automação ou desenvolvimento para ser resolvido, e vice-versa.
+- Dê PESO MAIOR à tratativa do que à descrição de abertura. Se a tratativa contradiz a descrição em complexidade, confie na tratativa.
+- Se não houver tratativa registrada, classifique com base no título e na descrição de abertura.
+Escolha sempre a categoria mais específica e semanticamente mais próxima do trabalho real do chamado — nunca a mais genérica só porque é mais fácil.`;
 
 function corsJson(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
@@ -58,7 +65,9 @@ async function classifyBatch(
 ): Promise<Map<string, string>> {
   const catList = categories.map((c) => `${c.id} :: ${c.path} (score ${c.score})`).join("\n");
   const ticketList = tickets
-    .map((t) => `ID: ${t.id}\nTítulo: ${t.title}\nDescrição: ${(t.description || "(sem descrição)").slice(0, 400)}`)
+    .map((t) =>
+      `ID: ${t.id}\nTítulo: ${t.title}\nDescrição de abertura: ${(t.description || "(sem descrição)").slice(0, 300)}\nTratativa do atendimento (peso maior): ${t.tratativa}`
+    )
     .join("\n---\n");
 
   const prompt = `${RUBRIC}
@@ -108,6 +117,41 @@ Um item por chamado, na mesma ordem. category_id deve ser exatamente um dos IDs 
     console.error("Failed to parse AI response", e, content);
     return new Map();
   }
+}
+
+/** Concatena os comentários mais recentes de um chamado (limite de caracteres),
+ * priorizando o fim da conversa — é onde normalmente está o desfecho real do atendimento. */
+function buildTratativa(comments: { content: string; is_public: boolean }[]): string {
+  if (comments.length === 0) return "(sem comentários registrados durante o atendimento)";
+  const CHAR_BUDGET = 600;
+  const picked: string[] = [];
+  let total = 0;
+  for (let i = comments.length - 1; i >= 0 && total < CHAR_BUDGET; i--) {
+    const c = comments[i];
+    const line = `${c.is_public ? "[Público]" : "[Nota interna]"} ${c.content}`.slice(0, 300);
+    picked.unshift(line);
+    total += line.length;
+  }
+  return picked.join(" | ");
+}
+
+async function fetchTratativas(supabase: any, ticketIds: string[]): Promise<Map<string, string>> {
+  const map = new Map<string, string>();
+  if (ticketIds.length === 0) return map;
+  const { data, error } = await supabase
+    .from("ticket_comments")
+    .select("ticket_id, content, is_public, created_at")
+    .in("ticket_id", ticketIds)
+    .order("created_at", { ascending: true });
+  if (error) throw error;
+  const byTicket = new Map<string, { content: string; is_public: boolean }[]>();
+  (data || []).forEach((c: any) => {
+    const list = byTicket.get(c.ticket_id) || [];
+    list.push({ content: c.content, is_public: c.is_public });
+    byTicket.set(c.ticket_id, list);
+  });
+  ticketIds.forEach((id) => map.set(id, buildTratativa(byTicket.get(id) || [])));
+  return map;
 }
 
 async function buildCategoryLeaves(supabase: any, organizationId: string): Promise<CategoryLeaf[]> {
@@ -183,10 +227,13 @@ Deno.serve(async (req) => {
         .eq("organization_id", organizationId);
       if (tErr) throw tErr;
 
-      const list = (tickets || []) as TicketRow[];
-      if (list.length === 0) {
+      const rawList = (tickets || []) as Omit<TicketRow, "tratativa">[];
+      if (rawList.length === 0) {
         return corsJson({ proposals: [], totalTickets: 0, totalPoints: 0, byTechnician: [] });
       }
+
+      const tratativaMap = await fetchTratativas(admin, rawList.map((t) => t.id));
+      const list: TicketRow[] = rawList.map((t) => ({ ...t, tratativa: tratativaMap.get(t.id) || "(sem comentários registrados durante o atendimento)" }));
 
       const categories = await buildCategoryLeaves(admin, organizationId);
       if (categories.length === 0) {
@@ -200,7 +247,7 @@ Deno.serve(async (req) => {
         (profs || []).forEach((p: any) => techNames.set(p.user_id, p.full_name));
       }
 
-      const BATCH = 20;
+      const BATCH = 15;
       const assignmentMap = new Map<string, string>();
       for (let i = 0; i < list.length; i += BATCH) {
         const chunk = list.slice(i, i + BATCH);
