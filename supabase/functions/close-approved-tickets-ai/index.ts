@@ -250,9 +250,7 @@ Deno.serve(async (req) => {
       if (categories.length === 0) {
         return corsJson({ error: "Nenhuma categoria com pontuação cadastrada para esta organização." }, 400);
       }
-      const _debugBadIds = new Set(["3d348a74-5ec6-4293-bbeb-2f6faa717210", "f8b0b13f-0d17-40eb-b2a4-afafe0609a47", "8fcc88b7-5322-40e6-ad3b-75e6c613032a"]);
-      const _debugLeafCount = categories.length;
-      const _debugBadStillPresent = categories.filter((c) => _debugBadIds.has(c.id)).map((c) => c.path);
+
 
 
       const techIds = [...new Set(list.map((t) => t.assigned_to).filter(Boolean))] as string[];
@@ -299,7 +297,8 @@ Deno.serve(async (req) => {
         .map(([name, v]) => ({ name, ...v }))
         .sort((a, b) => b.points - a.points);
 
-      return corsJson({ proposals, totalTickets: proposals.length, totalPoints, byTechnician, _debugLeafCount, _debugBadStillPresent });
+      return corsJson({ proposals, totalTickets: proposals.length, totalPoints, byTechnician });
+
     }
 
     if (action === "apply") {
