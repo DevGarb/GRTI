@@ -173,8 +173,12 @@ async function buildCategoryLeaves(supabase: any, organizationId: string): Promi
     }
     return parts.join(" → ");
   };
+  // Só folhas de verdade: alguns nós intermediários (ex: "GoTo", "Service ERP") têm
+  // score=0 preenchido por engano no cadastro mesmo tendo filhos reais — sem esse filtro
+  // a IA às vezes escolhe o nó genérico em vez da categoria específica.
+  const parentIds = new Set(all.map((c) => c.parent_id).filter(Boolean));
   return all
-    .filter((c) => c.is_active && c.score != null)
+    .filter((c) => c.is_active && c.score != null && !parentIds.has(c.id))
     .map((c) => ({ id: c.id, path: pathOf(c), score: c.score! }));
 }
 
