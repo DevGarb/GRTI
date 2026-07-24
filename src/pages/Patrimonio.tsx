@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Package, Search, Monitor, Laptop, Printer, Server, Calendar, User, MapPin, Plus, Pencil, Trash2, Wifi, Battery, Phone, MonitorSpeaker, HardDrive, Download, Upload, QrCode, ScanLine } from "lucide-react";
+import { Package, Search, Monitor, Laptop, Printer, Server, Calendar, User, MapPin, Plus, Pencil, Trash2, Wifi, Battery, Phone, MonitorSpeaker, HardDrive, Download, Upload, QrCode, ScanLine, ChevronRight, ChevronLeft } from "lucide-react";
 import { usePatrimonio, useDeletePatrimonio, type PatrimonioItem } from "@/hooks/usePatrimonio";
 import { usePreventivas } from "@/hooks/usePreventivas";
 import { useAuth } from "@/contexts/AuthContext";
@@ -15,7 +15,9 @@ import ImportPatrimonioModal from "@/components/ImportPatrimonioModal";
 import PatrimonioQRCodeModal from "@/components/PatrimonioQRCodeModal";
 import QRScannerModal from "@/components/QRScannerModal";
 import { formatDateBR } from "@/lib/dateFormat";
+import PatrimonioTI from "@/pages/PatrimonioTI";
 
+const TI_ORG_ID = "a543a17b-0def-4ceb-acf5-91017f2b0ad3";
 
 const typeIcons: Record<string, React.ReactNode> = {
   Desktop: <Monitor className="h-5 w-5" />,
@@ -37,6 +39,19 @@ const statusColors: Record<string, string> = {
 };
 
 export default function Patrimonio() {
+  const { profile, loading } = useAuth();
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center p-12">
+        <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+      </div>
+    );
+  }
+  if (profile?.organization_id === TI_ORG_ID) return <PatrimonioTI />;
+  return <PatrimonioLegacy />;
+}
+
+function PatrimonioLegacy() {
   const [search, setSearch] = useState("");
   const [filterType, setFilterType] = useState("Todos");
   const [filterStatus, setFilterStatus] = useState("Todos");
@@ -86,6 +101,23 @@ export default function Patrimonio() {
     { label: "Em manutenção", value: patrimonios.filter((p) => p.status === "Em manutenção").length },
     { label: "Inativos", value: patrimonios.filter((p) => p.status === "Inativo" || p.status === "Descartado").length },
   ];
+
+  // Visão em módulos por tipo de equipamento: some quando não há busca nem tipo selecionado.
+  // Selecionar um módulo entra na lista daquele tipo (usa o filtro de tipo existente).
+  const showModules = filterType === "Todos" && !search;
+  const modules = uniqueTypes
+    .map((type) => {
+      const items = filtered.filter((p) => p.equipment_type === type);
+      return {
+        type,
+        count: items.length,
+        ativos: items.filter((p) => p.status === "Ativo").length,
+        manut: items.filter((p) => p.status === "Em manutenção").length,
+        inativos: items.filter((p) => p.status === "Inativo" || p.status === "Descartado").length,
+      };
+    })
+    .filter((m) => m.count > 0)
+    .sort((a, b) => b.count - a.count);
 
   return (
     <div className="space-y-6 max-w-7xl">
@@ -327,6 +359,54 @@ export default function Patrimonio() {
             <p className="text-sm text-muted-foreground">Carregando patrimônios...</p>
           </div>
         </div>
+      ) : showModules ? (
+        modules.length === 0 ? (
+          <div className="p-12 flex flex-col items-center justify-center rounded-xl border border-border bg-card gap-2">
+            <Package className="h-10 w-10 text-muted-foreground/30" />
+            <p className="text-sm text-muted-foreground">Nenhum patrimônio encontrado.</p>
+            {canEdit && (
+              <button onClick={() => setShowModal(true)} className="mt-2 text-sm text-primary hover:underline">
+                Cadastrar primeiro patrimônio
+              </button>
+            )}
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {modules.map((m) => (
+              <button
+                key={m.type}
+                onClick={() => { setFilterType(m.type); setExpandedId(null); }}
+                className="group text-left rounded-xl border border-border bg-card p-5 transition-all hover:-translate-y-0.5 hover:border-primary/40 hover:bg-muted/40"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="h-11 w-11 rounded-lg bg-primary/10 flex items-center justify-center text-primary shrink-0">
+                    {typeIcons[m.type] || <HardDrive className="h-5 w-5" />}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-semibold text-foreground truncate">{m.type}</p>
+                    <p className="text-xs text-muted-foreground">{m.count} equipamento{m.count !== 1 ? "s" : ""}</p>
+                  </div>
+                  <ChevronRight className="h-5 w-5 text-muted-foreground transition-colors group-hover:text-primary shrink-0" />
+                </div>
+                <div className="mt-4 flex flex-wrap items-center gap-2 text-xs">
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
+                    <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />{m.ativos} ativos
+                  </span>
+                  {m.manut > 0 && (
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400">
+                      <span className="h-1.5 w-1.5 rounded-full bg-amber-500" />{m.manut} manut.
+                    </span>
+                  )}
+                  {m.inativos > 0 && (
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-muted text-muted-foreground">
+                      {m.inativos} inativos
+                    </span>
+                  )}
+                </div>
+              </button>
+            ))}
+          </div>
+        )
       ) : filtered.length === 0 ? (
         <div className="p-12 flex flex-col items-center justify-center rounded-xl border border-border bg-card gap-2">
           <Package className="h-10 w-10 text-muted-foreground/30" />
@@ -342,6 +422,21 @@ export default function Patrimonio() {
         </div>
       ) : (
         <div className="space-y-3">
+          {filterType !== "Todos" && (
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => setFilterType("Todos")}
+                className="inline-flex items-center gap-1.5 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
+              >
+                <ChevronLeft className="h-4 w-4" />
+                Voltar aos módulos
+              </button>
+              <span className="text-sm text-muted-foreground">·</span>
+              <h2 className="text-sm font-semibold text-foreground">
+                {filterType} <span className="font-normal text-muted-foreground">({filtered.length})</span>
+              </h2>
+            </div>
+          )}
           {filtered.map((item) => {
             const history = maintenanceMap.get(item.asset_tag) || [];
             const isExpanded = expandedId === item.id;

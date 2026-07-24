@@ -11,6 +11,9 @@ import TodoRow from "@/components/todos/TodoRow";
 import TodoDetailModal from "@/components/todos/TodoDetailModal";
 import type { TodoWithAuthor } from "@/hooks/useTodos";
 import { formatDateBR } from "@/lib/dateFormat";
+import TodosTI from "@/pages/TodosTI";
+
+const TI_ORG_ID = "a543a17b-0def-4ceb-acf5-91017f2b0ad3";
 
 type ViewTab = "hoje" | "matriz" | "historico";
 
@@ -29,6 +32,19 @@ const isToday = (iso?: string | null) => {
 };
 
 export default function Todos() {
+  const { profile, loading } = useAuth();
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center p-12">
+        <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+      </div>
+    );
+  }
+  if (profile?.organization_id === TI_ORG_ID) return <TodosTI />;
+  return <TodosLegacy />;
+}
+
+function TodosLegacy() {
   const { user } = useAuth();
   const { todos, loading, createTodo, updateTodo, setCompleted, deleteTodo } = useTodos();
   const [open, setOpen] = useState(false);

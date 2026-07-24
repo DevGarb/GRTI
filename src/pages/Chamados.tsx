@@ -9,6 +9,7 @@ import { formatTicketNumber, normalizeTicketNumberQuery } from "@/lib/ticketNumb
 import { useAuth } from "@/contexts/AuthContext";
 import NewTicketModal from "@/components/NewTicketModal";
 import NewTicketWizardModal from "@/components/NewTicketWizardModal";
+import ChamadosTI from "@/pages/ChamadosTI";
 
 const TI_ORG_ID = "a543a17b-0def-4ceb-acf5-91017f2b0ad3";
 import PendingApprovalGateDialog from "@/components/PendingApprovalGateDialog";
@@ -272,6 +273,19 @@ function AvailableTicketsSection({ tickets, onSelect, onAssign, title, descripti
 }
 
 export default function Chamados() {
+  const { profile, loading } = useAuth();
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center p-12">
+        <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+      </div>
+    );
+  }
+  if (profile?.organization_id === TI_ORG_ID) return <ChamadosTI />;
+  return <ChamadosLegacy />;
+}
+
+function ChamadosLegacy() {
   const [showModal, setShowModal] = useState(false);
   const [showPendingGate, setShowPendingGate] = useState(false);
   const { data: pendingApproval = [], refetch: refetchPendingApproval } = usePendingApprovalTickets();
