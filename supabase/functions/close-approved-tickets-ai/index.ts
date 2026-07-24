@@ -297,7 +297,8 @@ Deno.serve(async (req) => {
         .map(([name, v]) => ({ name, ...v }))
         .sort((a, b) => b.points - a.points);
 
-      return corsJson({ proposals, totalTickets: proposals.length, totalPoints, byTechnician, _debugLeafCount, _debugBadStillPresent });
+      return corsJson({ proposals, totalTickets: proposals.length, totalPoints, byTechnician });
+
     }
 
     if (action === "apply") {
