@@ -38,8 +38,11 @@ export function useServiceCategoryLeaves(orgId?: string | null) {
         }
         return parts.join(" → ");
       };
+      // Só folhas de verdade: alguns nós intermediários têm score preenchido por engano
+      // no cadastro mesmo tendo filhos reais — exclui quem aparece como parent_id de outro.
+      const parentIds = new Set(all.map((c) => c.parent_id).filter(Boolean));
       return all
-        .filter((c) => c.is_active && c.score != null)
+        .filter((c) => c.is_active && c.score != null && !parentIds.has(c.id))
         .map((c): ServiceCategoryLeaf => ({ id: c.id, name: c.name, path: pathOf(c), score: c.score! }))
         .sort((a, b) => a.score - b.score || a.path.localeCompare(b.path));
     },
