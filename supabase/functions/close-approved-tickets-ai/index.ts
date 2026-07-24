@@ -251,6 +251,8 @@ Deno.serve(async (req) => {
         return corsJson({ error: "Nenhuma categoria com pontuação cadastrada para esta organização." }, 400);
       }
 
+
+
       const techIds = [...new Set(list.map((t) => t.assigned_to).filter(Boolean))] as string[];
       const techNames = new Map<string, string>();
       if (techIds.length > 0) {
@@ -296,6 +298,7 @@ Deno.serve(async (req) => {
         .sort((a, b) => b.points - a.points);
 
       return corsJson({ proposals, totalTickets: proposals.length, totalPoints, byTechnician });
+
     }
 
     if (action === "apply") {
