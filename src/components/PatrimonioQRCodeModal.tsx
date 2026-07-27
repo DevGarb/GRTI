@@ -174,6 +174,22 @@ export default function PatrimonioQRCodeModal({ patrimonio, onClose }: Props) {
                 ))}
               </div>
 
+              {/* Editable label text */}
+              {labelSize !== "12x22" && (
+                <div className="w-full">
+                  <label className="block text-xs font-medium text-muted-foreground mb-1">
+                    Nome do equipamento (etiqueta)
+                  </label>
+                  <input
+                    type="text"
+                    value={labelText}
+                    onChange={(e) => setLabelText(e.target.value)}
+                    className="w-full px-3 py-2 rounded-lg border border-border bg-background text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/40"
+                    placeholder="Ex: Notebook Dell Latitude"
+                  />
+                </div>
+              )}
+
               {/* Niimbot D110 label preview */}
               <div className="bg-muted/50 rounded-xl p-6 flex items-center justify-center">
                 <div
