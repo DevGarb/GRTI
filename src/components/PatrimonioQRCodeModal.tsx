@@ -59,7 +59,12 @@ export default function PatrimonioQRCodeModal({ patrimonio, onClose }: Props) {
   const [qrDataUrl, setQrDataUrl] = useState<string>("");
   const [activeTab, setActiveTab] = useState<"qr" | "card">("qr");
   const [labelSize, setLabelSize] = useState<LabelSize>("12x40");
+  const [labelText, setLabelText] = useState<string>(patrimonio.equipment_type || "");
   const cardRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    setLabelText(patrimonio.equipment_type || "");
+  }, [patrimonio.id, patrimonio.equipment_type]);
 
   const assetUrl = `${window.location.origin}/asset/${patrimonio.id}`;
 
