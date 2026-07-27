@@ -246,7 +246,7 @@ export default function PatrimonioQRCodeModal({ patrimonio, onClose }: Props) {
                           display: "block",
                         }}
                       >
-                        {patrimonio.equipment_type}
+                        {labelText}
                       </span>
                     )}
                   </div>
