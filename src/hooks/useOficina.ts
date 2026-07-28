@@ -101,22 +101,34 @@ export function useParts() {
 export function useServiceOrders() {
   const { profile, user } = useAuth();
   const [items, setItems] = useState<ServiceOrder[]>([]);
+  const [partsByOs, setPartsByOs] = useState<Record<string, ServiceOrderPart[]>>({});
   const [partsCountByOs, setPartsCountByOs] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(true);
   const fetch = useCallback(async () => {
     if (!profile?.organization_id) return;
     setLoading(true);
-    const { data } = await supabase.from("op_service_orders").select("*").eq("organization_id", profile.organization_id).order("opened_at", { ascending: false });
+    const { data } = await supabase
+      .from("op_service_orders")
+      .select("*")
+      .eq("organization_id", profile.organization_id)
+      .order("kanban_position", { ascending: true })
+      .order("opened_at", { ascending: false });
     const list = (data || []) as ServiceOrder[];
     setItems(list);
     const ids = list.map(o => o.id);
     if (ids.length) {
-      const { data: pData } = await supabase.from("op_service_order_parts").select("service_order_id").in("service_order_id", ids);
+      const { data: pData } = await supabase.from("op_service_order_parts").select("*").in("service_order_id", ids);
       const counts: Record<string, number> = {};
-      (pData || []).forEach((r: any) => { counts[r.service_order_id] = (counts[r.service_order_id] || 0) + 1; });
+      const byOs: Record<string, ServiceOrderPart[]> = {};
+      ((pData || []) as ServiceOrderPart[]).forEach((r) => {
+        counts[r.service_order_id] = (counts[r.service_order_id] || 0) + 1;
+        (byOs[r.service_order_id] ||= []).push(r);
+      });
       setPartsCountByOs(counts);
+      setPartsByOs(byOs);
     } else {
       setPartsCountByOs({});
+      setPartsByOs({});
     }
     setLoading(false);
   }, [profile?.organization_id]);
@@ -135,6 +147,8 @@ export function useServiceOrders() {
       description: input.description || null,
       diagnosis: input.diagnosis || null,
       status: input.status || "Aberta",
+      stage: input.stage || "analise",
+      deadline: input.deadline || null,
       opened_at: input.opened_at || new Date().toISOString().slice(0, 10),
       notes: input.notes || null,
     }).select().single();
@@ -143,6 +157,32 @@ export function useServiceOrders() {
     fetch();
     return data;
   };
+  const setPartStatusForOs = async (serviceOrderId: string, part_status: string) => {
+    const { error } = await supabase.from("op_service_order_parts").update({ part_status }).eq("service_order_id", serviceOrderId);
+    if (error) toast.error(error.message); else fetch();
+  };
+  const setPartStatus = async (partId: string, part_status: string) => {
+    const { error } = await supabase.from("op_service_order_parts").update({ part_status }).eq("id", partId);
+    if (error) toast.error(error.message); else fetch();
+  };
+  const movePriority = async (order: ServiceOrder, dir: -1 | 1) => {
+    const queue = items
+      .filter(o => o.stage === order.stage)
+      .sort((a, b) => (a.kanban_position - b.kanban_position) || a.os_number - b.os_number);
+    const i = queue.findIndex(o => o.id === order.id);
+    const j = i + dir;
+    if (i < 0 || j < 0 || j >= queue.length) return;
+    const a = queue[i], b = queue[j];
+    const posA = a.kanban_position ?? 0, posB = b.kanban_position ?? 0;
+    const newA = posA === posB ? posB + dir : posB;
+    const newB = posA === posB ? posA : posA;
+    await Promise.all([
+      supabase.from("op_service_orders").update({ kanban_position: newA }).eq("id", a.id),
+      supabase.from("op_service_orders").update({ kanban_position: newB }).eq("id", b.id),
+    ]);
+    fetch();
+  };
+
   const update = async (id: string, patch: Partial<ServiceOrder>) => {
     const { error } = await supabase.from("op_service_orders").update(patch).eq("id", id);
     if (error) toast.error(error.message); else fetch();
