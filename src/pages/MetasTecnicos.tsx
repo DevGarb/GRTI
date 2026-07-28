@@ -177,14 +177,18 @@ export default function MetasTecnicos() {
 
   const hasGoals = (userId: string) => goals.some((g) => g.target_type === "individual" && g.target_id === userId);
 
-  const globalAvgScore = stats.length > 0
-    ? (stats.reduce((a, s) => a + s.avgScore, 0) / stats.filter(s => s.evaluations > 0).length || 0)
+  const visibleStats = stats.filter((s) => hasGoals(s.userId));
+
+  const evaluatedCount = visibleStats.filter(s => s.evaluations > 0).length;
+  const globalAvgScore = evaluatedCount > 0
+    ? visibleStats.reduce((a, s) => a + s.avgScore, 0) / evaluatedCount
     : 0;
-  const globalAvgHours = stats.length > 0
-    ? stats.reduce((a, s) => a + s.avgResolutionHours, 0) / stats.length
+  const globalAvgHours = visibleStats.length > 0
+    ? visibleStats.reduce((a, s) => a + s.avgResolutionHours, 0) / visibleStats.length
     : 0;
-  const totalClosed = stats.reduce((a, s) => a + s.totalClosed, 0);
-  const totalPoints = stats.reduce((a, s) => a + s.totalPoints, 0);
+  const totalClosed = visibleStats.reduce((a, s) => a + s.totalClosed, 0);
+  const totalPoints = visibleStats.reduce((a, s) => a + s.totalPoints, 0);
+
 
   const formatHours = (h: number) => {
     if (h < 1) return `${Math.floor(h * 60)}min`;
