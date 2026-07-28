@@ -13,6 +13,8 @@ export interface ServiceOrder {
   company_id: string | null;
   vehicle_id: string | null;
   mechanic_id: string | null;
+  customer_name?: string | null;
+
   vehicle_plate: string | null;
   vehicle_model: string | null;
   vehicle_color: string | null;
