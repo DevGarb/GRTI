@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { Wrench, Package, CheckCircle2, ClipboardList, ShoppingCart, AlertTriangle, Plus } from "lucide-react";
+import { Wrench, Package, CheckCircle2, ClipboardList, ShoppingCart, AlertTriangle, Plus, ChevronDown, ChevronUp } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -25,10 +25,13 @@ export default function OpOficinaMinhas() {
   const { items, partsByOs, update, add } = useServiceOrders();
   const { items: companies } = useCompanies();
   const [tab, setTab] = useState("servicos");
+  const [expanded, setExpanded] = useState<string | null>(null);
 
   const [openNew, setOpenNew] = useState(false);
   const [plate, setPlate] = useState("");
   const [model, setModel] = useState("");
+  const [color, setColor] = useState("");
+  const [year, setYear] = useState("");
   const [companyId, setCompanyId] = useState("none");
   const [desc, setDesc] = useState("");
   const [saving, setSaving] = useState(false);
@@ -51,6 +54,8 @@ export default function OpOficinaMinhas() {
     const res = await add({
       vehicle_plate: plate.trim().toUpperCase(),
       vehicle_model: model.trim() || null,
+      vehicle_color: color.trim() || null,
+      vehicle_year: year.trim() || null,
       company_id: companyId === "none" ? null : companyId,
       description: desc.trim() || null,
       mechanic_id: profile?.id || null,
@@ -59,7 +64,7 @@ export default function OpOficinaMinhas() {
     setSaving(false);
     if (res) {
       setOpenNew(false);
-      setPlate(""); setModel(""); setCompanyId("none"); setDesc("");
+      setPlate(""); setModel(""); setColor(""); setYear(""); setCompanyId("none"); setDesc("");
     }
   };
 
@@ -101,6 +106,16 @@ export default function OpOficinaMinhas() {
                   <div>
                     <Label>Modelo</Label>
                     <Input value={model} onChange={e => setModel(e.target.value)} placeholder="ex.: Honda CG 160" />
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <Label>Cor</Label>
+                      <Input value={color} onChange={e => setColor(e.target.value)} placeholder="ex.: Vermelha" />
+                    </div>
+                    <div>
+                      <Label>Ano</Label>
+                      <Input value={year} onChange={e => setYear(e.target.value)} placeholder="ex.: 2022" />
+                    </div>
                   </div>
                   <div>
                     <Label>Empresa</Label>
