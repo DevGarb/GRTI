@@ -66,7 +66,7 @@ async function classifyBatch(
   const catList = categories.map((c) => `${c.id} :: ${c.path} (score ${c.score})`).join("\n");
   const ticketList = tickets
     .map((t) =>
-      `ID: ${t.id}\nTítulo: ${t.title}\nDescrição de abertura: ${(t.description || "(sem descrição)").slice(0, 300)}\nTratativa do atendimento (peso maior): ${t.tratativa}`
+      `ID: ${t.id}\nTítulo: ${t.title}\nDescrição de abertura: ${(t.description || "(sem descrição)").slice(0, 200)}\nTratativa do atendimento (peso maior): ${t.tratativa}`
     )
     .join("\n---\n");
 
@@ -81,19 +81,26 @@ ${ticketList}
 Responda APENAS um JSON no formato: {"assignments":[{"ticket_id":"...","category_id":"..."}]}
 Um item por chamado, na mesma ordem. category_id deve ser exatamente um dos IDs listados acima.`;
 
-  const res = await fetch("https://api.openai.com/v1/chat/completions", {
-    method: "POST",
-    headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
-    body: JSON.stringify({
-      model: "gpt-4o-mini",
-      messages: [
-        { role: "system", content: "Você é um classificador de chamados de helpdesk de TI. Responda apenas com o JSON pedido, sem texto extra." },
-        { role: "user", content: prompt },
-      ],
-      response_format: { type: "json_object" },
-      temperature: 0.1,
-    }),
-  });
+  let res: Response;
+  try {
+    res = await fetch("https://api.openai.com/v1/chat/completions", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
+      body: JSON.stringify({
+        model: "gpt-4o-mini",
+        messages: [
+          { role: "system", content: "Você é um classificador de chamados de helpdesk de TI. Responda apenas com o JSON pedido, sem texto extra." },
+          { role: "user", content: prompt },
+        ],
+        response_format: { type: "json_object" },
+        temperature: 0.1,
+      }),
+      signal: AbortSignal.timeout(45_000),
+    });
+  } catch (e) {
+    console.error("OpenAI fetch failed (timeout/network)", e);
+    return new Map();
+  }
 
   if (!res.ok) {
     console.error("OpenAI error", res.status, await res.text());
@@ -123,7 +130,7 @@ Um item por chamado, na mesma ordem. category_id deve ser exatamente um dos IDs 
  * priorizando o fim da conversa — é onde normalmente está o desfecho real do atendimento. */
 function buildTratativa(comments: { content: string; is_public: boolean }[]): string {
   if (comments.length === 0) return "(sem comentários registrados durante o atendimento)";
-  const CHAR_BUDGET = 600;
+  const CHAR_BUDGET = 400;
   const picked: string[] = [];
   let total = 0;
   for (let i = comments.length - 1; i >= 0 && total < CHAR_BUDGET; i--) {
@@ -260,12 +267,18 @@ Deno.serve(async (req) => {
         (profs || []).forEach((p: any) => techNames.set(p.user_id, p.full_name));
       }
 
-      const BATCH = 15;
+      const BATCH = 8;
+      const CONCURRENCY = 5;
+      const chunks: TicketRow[][] = [];
+      for (let i = 0; i < list.length; i += BATCH) chunks.push(list.slice(i, i + BATCH));
+
       const assignmentMap = new Map<string, string>();
-      for (let i = 0; i < list.length; i += BATCH) {
-        const chunk = list.slice(i, i + BATCH);
-        const chunkMap = await classifyBatch(chunk, categories, techNames, apiKey);
-        chunkMap.forEach((v, k) => assignmentMap.set(k, v));
+      for (let i = 0; i < chunks.length; i += CONCURRENCY) {
+        const round = chunks.slice(i, i + CONCURRENCY);
+        const results = await Promise.all(
+          round.map((chunk) => classifyBatch(chunk, categories, techNames, apiKey))
+        );
+        results.forEach((chunkMap) => chunkMap.forEach((v, k) => assignmentMap.set(k, v)));
       }
 
       const catById = new Map(categories.map((c) => [c.id, c]));
