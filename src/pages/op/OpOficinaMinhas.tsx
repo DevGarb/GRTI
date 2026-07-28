@@ -1,12 +1,19 @@
 import { useMemo, useState } from "react";
-import { Wrench, Package, CheckCircle2, ClipboardList, ShoppingCart, AlertTriangle } from "lucide-react";
+import { Wrench, Package, CheckCircle2, ClipboardList, ShoppingCart, AlertTriangle, Plus } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useServiceOrders, type ServiceOrder } from "@/hooks/useOficina";
+import { useCompanies } from "@/hooks/useOperacional";
 import { useOficinaProfile } from "@/contexts/OficinaProfileContext";
 import OficinaNav from "./OficinaNav";
 import { cn } from "@/lib/utils";
+import { toast } from "sonner";
 import {
   stageInfo, PART_STATUS_INFO, daysInWorkshop, partsSlaRemaining, DIAS_ALERTA, SLA_PECAS,
 } from "@/lib/oficinaStages";
@@ -15,8 +22,16 @@ const MY_STAGES = ["analise", "desempeno", "pintura", "execucao"];
 
 export default function OpOficinaMinhas() {
   const { profile } = useOficinaProfile();
-  const { items, partsByOs, update } = useServiceOrders();
+  const { items, partsByOs, update, add } = useServiceOrders();
+  const { items: companies } = useCompanies();
   const [tab, setTab] = useState("servicos");
+
+  const [openNew, setOpenNew] = useState(false);
+  const [plate, setPlate] = useState("");
+  const [model, setModel] = useState("");
+  const [companyId, setCompanyId] = useState("none");
+  const [desc, setDesc] = useState("");
+  const [saving, setSaving] = useState(false);
 
   const mine = useMemo(
     () => items.filter(o => o.mechanic_id === profile?.id && MY_STAGES.includes(o.stage)),
@@ -29,6 +44,25 @@ export default function OpOficinaMinhas() {
   );
 
   const finish = (o: ServiceOrder) => update(o.id, { stage: "pronto" });
+
+  const createEntry = async () => {
+    if (!plate.trim()) return toast.error("Informe a placa da moto");
+    setSaving(true);
+    const res = await add({
+      vehicle_plate: plate.trim().toUpperCase(),
+      vehicle_model: model.trim() || null,
+      company_id: companyId === "none" ? null : companyId,
+      description: desc.trim() || null,
+      mechanic_id: profile?.id || null,
+      stage: "analise",
+    });
+    setSaving(false);
+    if (res) {
+      setOpenNew(false);
+      setPlate(""); setModel(""); setCompanyId("none"); setDesc("");
+    }
+  };
+
 
   return (
     <div className="min-h-screen bg-muted/30">
@@ -48,8 +82,47 @@ export default function OpOficinaMinhas() {
                   Apenas motos em análise, desempeno, pintura e execução sob sua responsabilidade.
                 </p>
               </div>
-              <Badge variant="outline">{mine.length} serviço(s) ativo(s)</Badge>
+              <div className="flex items-center gap-2">
+                <Badge variant="outline">{mine.length} serviço(s) ativo(s)</Badge>
+                <Button size="sm" onClick={() => setOpenNew(true)}>
+                  <Plus className="h-4 w-4 mr-1" /> Entrada de moto
+                </Button>
+              </div>
             </div>
+
+            <Dialog open={openNew} onOpenChange={setOpenNew}>
+              <DialogContent className="max-w-md">
+                <DialogHeader><DialogTitle>Nova entrada de moto na oficina</DialogTitle></DialogHeader>
+                <div className="space-y-3">
+                  <div>
+                    <Label>Placa *</Label>
+                    <Input value={plate} onChange={e => setPlate(e.target.value.toUpperCase())} placeholder="ABC1D23" />
+                  </div>
+                  <div>
+                    <Label>Modelo</Label>
+                    <Input value={model} onChange={e => setModel(e.target.value)} placeholder="ex.: Honda CG 160" />
+                  </div>
+                  <div>
+                    <Label>Empresa</Label>
+                    <Select value={companyId} onValueChange={setCompanyId}>
+                      <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="none">Nenhuma</SelectItem>
+                        {companies.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label>Serviço solicitado</Label>
+                    <Textarea value={desc} onChange={e => setDesc(e.target.value)} rows={3} placeholder="Descreva o problema relatado" />
+                  </div>
+                </div>
+                <DialogFooter>
+                  <Button variant="outline" onClick={() => setOpenNew(false)}>Cancelar</Button>
+                  <Button onClick={createEntry} disabled={saving}>Registrar entrada</Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
 
             {mine.length === 0 && (
               <div className="bg-card border rounded-lg p-12 text-center text-muted-foreground">
