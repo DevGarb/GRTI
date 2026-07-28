@@ -155,6 +155,8 @@ export default function OpOficinaMinhas() {
       vehicle_plate: plate.trim().toUpperCase(),
       vehicle_model: model.trim() || null,
       company_id: companyId === "none" ? null : companyId,
+      customer_name: customerName.trim() || null,
+
       description: desc.trim() || null,
       mechanic_id: profile?.id || null,
       stage: "analise",
