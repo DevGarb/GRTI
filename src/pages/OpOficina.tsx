@@ -519,6 +519,8 @@ function OsDetailDialog({ os, onClose, onUpdate, onDelete, onRequestClose, compa
   const [deadline, setDeadline] = useState(os.deadline || "");
   const openedAt = os.opened_at || "";
   const [companyId, setCompanyId] = useState<string>(os.company_id || "");
+  const [customerName, setCustomerName] = useState<string>(os.customer_name || "");
+
   const [mechanicId, setMechanicId] = useState<string>(os.mechanic_id || "");
   const [vehiclePlate, setVehiclePlate] = useState<string>(os.vehicle_plate || "");
   const [vehicleModel, setVehicleModel] = useState<string>(os.vehicle_model || "");
