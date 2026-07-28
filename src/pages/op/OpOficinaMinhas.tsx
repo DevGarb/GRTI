@@ -1,12 +1,19 @@
 import { useMemo, useState } from "react";
-import { Wrench, Package, CheckCircle2, ClipboardList, ShoppingCart, AlertTriangle } from "lucide-react";
+import { Wrench, Package, CheckCircle2, ClipboardList, ShoppingCart, AlertTriangle, Plus } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useServiceOrders, type ServiceOrder } from "@/hooks/useOficina";
+import { useCompanies } from "@/hooks/useOperacional";
 import { useOficinaProfile } from "@/contexts/OficinaProfileContext";
 import OficinaNav from "./OficinaNav";
 import { cn } from "@/lib/utils";
+import { toast } from "sonner";
 import {
   stageInfo, PART_STATUS_INFO, daysInWorkshop, partsSlaRemaining, DIAS_ALERTA, SLA_PECAS,
 } from "@/lib/oficinaStages";
@@ -15,8 +22,16 @@ const MY_STAGES = ["analise", "desempeno", "pintura", "execucao"];
 
 export default function OpOficinaMinhas() {
   const { profile } = useOficinaProfile();
-  const { items, partsByOs, update } = useServiceOrders();
+  const { items, partsByOs, update, add } = useServiceOrders();
+  const { items: companies } = useCompanies();
   const [tab, setTab] = useState("servicos");
+
+  const [openNew, setOpenNew] = useState(false);
+  const [plate, setPlate] = useState("");
+  const [model, setModel] = useState("");
+  const [companyId, setCompanyId] = useState("none");
+  const [desc, setDesc] = useState("");
+  const [saving, setSaving] = useState(false);
 
   const mine = useMemo(
     () => items.filter(o => o.mechanic_id === profile?.id && MY_STAGES.includes(o.stage)),
@@ -29,6 +44,25 @@ export default function OpOficinaMinhas() {
   );
 
   const finish = (o: ServiceOrder) => update(o.id, { stage: "pronto" });
+
+  const createEntry = async () => {
+    if (!plate.trim()) return toast.error("Informe a placa da moto");
+    setSaving(true);
+    const res = await add({
+      vehicle_plate: plate.trim().toUpperCase(),
+      vehicle_model: model.trim() || null,
+      company_id: companyId === "none" ? null : companyId,
+      description: desc.trim() || null,
+      mechanic_id: profile?.id || null,
+      stage: "analise",
+    });
+    setSaving(false);
+    if (res) {
+      setOpenNew(false);
+      setPlate(""); setModel(""); setCompanyId("none"); setDesc("");
+    }
+  };
+
 
   return (
     <div className="min-h-screen bg-muted/30">
