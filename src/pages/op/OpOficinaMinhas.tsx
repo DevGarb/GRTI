@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { Wrench, Package, CheckCircle2, ClipboardList, ShoppingCart, AlertTriangle, Plus } from "lucide-react";
+import { Wrench, Package, CheckCircle2, ClipboardList, ShoppingCart, AlertTriangle, Plus, ChevronDown, ChevronUp } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -25,10 +25,13 @@ export default function OpOficinaMinhas() {
   const { items, partsByOs, update, add } = useServiceOrders();
   const { items: companies } = useCompanies();
   const [tab, setTab] = useState("servicos");
+  const [expanded, setExpanded] = useState<string | null>(null);
 
   const [openNew, setOpenNew] = useState(false);
   const [plate, setPlate] = useState("");
   const [model, setModel] = useState("");
+  const [color, setColor] = useState("");
+  const [year, setYear] = useState("");
   const [companyId, setCompanyId] = useState("none");
   const [desc, setDesc] = useState("");
   const [saving, setSaving] = useState(false);
@@ -51,6 +54,8 @@ export default function OpOficinaMinhas() {
     const res = await add({
       vehicle_plate: plate.trim().toUpperCase(),
       vehicle_model: model.trim() || null,
+      vehicle_color: color.trim() || null,
+      vehicle_year: year.trim() || null,
       company_id: companyId === "none" ? null : companyId,
       description: desc.trim() || null,
       mechanic_id: profile?.id || null,
@@ -59,7 +64,7 @@ export default function OpOficinaMinhas() {
     setSaving(false);
     if (res) {
       setOpenNew(false);
-      setPlate(""); setModel(""); setCompanyId("none"); setDesc("");
+      setPlate(""); setModel(""); setColor(""); setYear(""); setCompanyId("none"); setDesc("");
     }
   };
 
@@ -102,6 +107,16 @@ export default function OpOficinaMinhas() {
                     <Label>Modelo</Label>
                     <Input value={model} onChange={e => setModel(e.target.value)} placeholder="ex.: Honda CG 160" />
                   </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <Label>Cor</Label>
+                      <Input value={color} onChange={e => setColor(e.target.value)} placeholder="ex.: Vermelha" />
+                    </div>
+                    <div>
+                      <Label>Ano</Label>
+                      <Input value={year} onChange={e => setYear(e.target.value)} placeholder="ex.: 2022" />
+                    </div>
+                  </div>
                   <div>
                     <Label>Empresa</Label>
                     <Select value={companyId} onValueChange={setCompanyId}>
@@ -135,56 +150,78 @@ export default function OpOficinaMinhas() {
               const parts = partsByOs[o.id] || [];
               const days = daysInWorkshop(o.opened_at);
               const sla = partsSlaRemaining(o.parts_arrived_at);
+              const open = expanded === o.id;
               return (
-                <div key={o.id} className="bg-card border rounded-lg p-4 space-y-3">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <span className="text-lg font-bold tracking-wide">{o.vehicle_plate || `OS #${o.os_number}`}</span>
-                    <span className="text-sm text-muted-foreground">{o.vehicle_model || "—"}</span>
-                    <Badge variant="secondary" className={st.chip}>{st.label}</Badge>
-                    <Badge variant="secondary" className={cn(days >= DIAS_ALERTA && "bg-rose-500/15 text-rose-700")}>
-                      {days}d na oficina
-                    </Badge>
-                    {sla != null && sla < 0 && (
-                      <Badge variant="destructive"><AlertTriangle className="h-3 w-3 mr-0.5" />SLA peças estourado</Badge>
-                    )}
-                    <div className="ml-auto">
-                      <Button size="sm" onClick={() => finish(o)}>
-                        <CheckCircle2 className="h-4 w-4 mr-1" /> Finalizar Serviço
-                      </Button>
+                <div key={o.id} className="bg-card border rounded-lg overflow-hidden">
+                  <button
+                    type="button"
+                    onClick={() => setExpanded(open ? null : o.id)}
+                    className="w-full text-left p-4 flex items-center gap-3 flex-wrap hover:bg-muted/40 transition-colors"
+                  >
+                    <div className="flex-1 min-w-[200px]">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="text-lg font-bold tracking-wide">{o.vehicle_plate || `OS #${o.os_number}`}</span>
+                        <Badge variant="secondary" className={st.chip}>{st.label}</Badge>
+                      </div>
+                      <div className="text-sm text-muted-foreground mt-0.5">
+                        {[o.vehicle_model, (o as any).vehicle_color, (o as any).vehicle_year].filter(Boolean).join(" · ") || "—"}
+                      </div>
                     </div>
-                  </div>
+                    {open ? <ChevronUp className="h-5 w-5 text-muted-foreground" /> : <ChevronDown className="h-5 w-5 text-muted-foreground" />}
+                  </button>
 
-                  <div className="text-sm">
-                    <span className="font-medium">Serviço Solicitado:</span>{" "}
-                    <span className="text-muted-foreground">{o.description || "—"}</span>
-                  </div>
-                  {o.diagnosis && (
-                    <div className="text-sm">
-                      <span className="font-medium">Diagnóstico:</span>{" "}
-                      <span className="text-muted-foreground">{o.diagnosis}</span>
+                  {open && (
+                    <div className="px-4 pb-4 space-y-3 border-t pt-3">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <Badge variant="secondary" className={cn(days >= DIAS_ALERTA && "bg-rose-500/15 text-rose-700")}>
+                          {days}d na oficina
+                        </Badge>
+                        {sla != null && sla < 0 && (
+                          <Badge variant="destructive"><AlertTriangle className="h-3 w-3 mr-0.5" />SLA peças estourado</Badge>
+                        )}
+                        <div className="ml-auto flex items-center gap-2">
+                          <Button size="sm" variant="outline" onClick={() => setExpanded(null)}>
+                            <ChevronUp className="h-4 w-4 mr-1" /> Recolher
+                          </Button>
+                          <Button size="sm" onClick={() => finish(o)}>
+                            <CheckCircle2 className="h-4 w-4 mr-1" /> Finalizar Serviço
+                          </Button>
+                        </div>
+                      </div>
+
+                      <div className="text-sm">
+                        <span className="font-medium">Serviço Solicitado:</span>{" "}
+                        <span className="text-muted-foreground">{o.description || "—"}</span>
+                      </div>
+                      {o.diagnosis && (
+                        <div className="text-sm">
+                          <span className="font-medium">Diagnóstico:</span>{" "}
+                          <span className="text-muted-foreground">{o.diagnosis}</span>
+                        </div>
+                      )}
+
+                      <div className="border rounded-md p-3 bg-muted/30">
+                        <div className="text-sm font-medium flex items-center gap-1 mb-2">
+                          <Package className="h-4 w-4" /> Peças Solicitadas ({parts.length})
+                        </div>
+                        {parts.length === 0 ? (
+                          <div className="text-xs text-muted-foreground">Nenhuma peça solicitada.</div>
+                        ) : (
+                          <div className="grid sm:grid-cols-2 gap-2">
+                            {parts.map(p => {
+                              const info = PART_STATUS_INFO[p.part_status] || { label: p.part_status, chip: "" };
+                              return (
+                                <div key={p.id} className="bg-card border rounded-md px-3 py-2 flex items-center justify-between gap-2">
+                                  <span className="text-sm truncate">{p.part_name} (x{p.quantity})</span>
+                                  <Badge variant="secondary" className={info.chip}>{info.label}</Badge>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        )}
+                      </div>
                     </div>
                   )}
-
-                  <div className="border rounded-md p-3 bg-muted/30">
-                    <div className="text-sm font-medium flex items-center gap-1 mb-2">
-                      <Package className="h-4 w-4" /> Peças da Moto ({parts.length})
-                    </div>
-                    {parts.length === 0 ? (
-                      <div className="text-xs text-muted-foreground">Nenhuma peça solicitada.</div>
-                    ) : (
-                      <div className="grid sm:grid-cols-2 gap-2">
-                        {parts.map(p => {
-                          const info = PART_STATUS_INFO[p.part_status] || { label: p.part_status, chip: "" };
-                          return (
-                            <div key={p.id} className="bg-card border rounded-md px-3 py-2 flex items-center justify-between gap-2">
-                              <span className="text-sm truncate">{p.part_name} (x{p.quantity})</span>
-                              <Badge variant="secondary" className={info.chip}>{info.label}</Badge>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    )}
-                  </div>
                 </div>
               );
             })}
