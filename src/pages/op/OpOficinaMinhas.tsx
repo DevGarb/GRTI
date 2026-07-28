@@ -1,3 +1,4 @@
+import { filterOficinaCompanies } from "@/lib/oficinaCompanies";
 import { useEffect, useMemo, useState } from "react";
 import { Wrench, Package, CheckCircle2, ClipboardList, ShoppingCart, AlertTriangle, Plus, ChevronDown, ChevronUp, Camera, X } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
@@ -231,7 +232,7 @@ export default function OpOficinaMinhas() {
                       <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
                       <SelectContent>
                         <SelectItem value="none">Nenhuma</SelectItem>
-                        {companies.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
+                        {filterOficinaCompanies(companies).map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
                       </SelectContent>
                     </Select>
                   </div>

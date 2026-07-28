@@ -1,3 +1,4 @@
+import { filterOficinaCompanies } from "@/lib/oficinaCompanies";
 import { useMemo, useState } from "react";
 import { Wrench, Plus, Search, Trash2, Upload, FileText, X, LayoutGrid, List, Eye, EyeOff, AlertTriangle, ShoppingCart, Package, Gauge, ChevronUp, ChevronDown, Truck, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -443,7 +444,7 @@ function NewOsDialog({ onClose, onCreate }: { onClose: () => void; onCreate: (in
             <Label>Empresa</Label>
             <Select value={form.company_id || ""} onValueChange={v => setF({ company_id: v })}>
               <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
-              <SelectContent>{companies.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}</SelectContent>
+              <SelectContent>{filterOficinaCompanies(companies).map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}</SelectContent>
             </Select>
           </div>
           <div>
@@ -652,7 +653,7 @@ function OsDetailDialog({ os, onClose, onUpdate, onDelete, onRequestClose, compa
             <Label>Empresa</Label>
             <Select value={companyId} onValueChange={setCompanyId}>
               <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
-              <SelectContent>{companies.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}</SelectContent>
+              <SelectContent>{filterOficinaCompanies(companies).map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}</SelectContent>
             </Select>
           </div>
           <div>
