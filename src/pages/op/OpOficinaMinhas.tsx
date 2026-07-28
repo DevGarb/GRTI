@@ -251,7 +251,7 @@ export default function OpOficinaMinhas() {
                           <Button size="sm" variant="outline" onClick={() => setExpanded(null)}>
                             <ChevronUp className="h-4 w-4 mr-1" /> Recolher
                           </Button>
-                          <Button size="sm" onClick={() => finish(o)}>
+                          <Button size="sm" onClick={() => openFinish(o)}>
                             <CheckCircle2 className="h-4 w-4 mr-1" /> Finalizar Serviço
                           </Button>
                         </div>
