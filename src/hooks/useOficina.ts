@@ -249,5 +249,5 @@ export function useServiceOrderDetails(serviceOrderId: string | null) {
     if (error) toast.error(error.message); else fetch();
   };
 
-  return { parts, photos, addPart, removePart, uploadPhoto, removePhoto, refetch: fetch };
+  return { parts, photos, addPart, updatePart, removePart, uploadPhoto, removePhoto, refetch: fetch };
 }
