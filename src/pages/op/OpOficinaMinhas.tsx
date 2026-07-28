@@ -34,11 +34,33 @@ export default function OpOficinaMinhas() {
   const [openNew, setOpenNew] = useState(false);
   const [plate, setPlate] = useState("");
   const [model, setModel] = useState("");
-  const [color, setColor] = useState("");
-  const [year, setYear] = useState("");
   const [companyId, setCompanyId] = useState("none");
   const [desc, setDesc] = useState("");
   const [saving, setSaving] = useState(false);
+  const [newParts, setNewParts] = useState<{ name: string; qty: number }[]>([]);
+  const [partName, setPartName] = useState("");
+  const [partQty, setPartQty] = useState(1);
+
+  // Adicionar peça em OS existente
+  const [addPartFor, setAddPartFor] = useState<string | null>(null);
+  const [rowPart, setRowPart] = useState("");
+  const [rowQty, setRowQty] = useState(1);
+
+  const addPartToOs = async (osId: string) => {
+    if (!rowPart.trim()) return toast.error("Informe o nome da peça");
+    const { error } = await supabase.from("op_service_order_parts").insert({
+      service_order_id: osId,
+      part_name: rowPart.trim(),
+      quantity: rowQty || 1,
+      unit_price: 0,
+      part_status: "solicitada",
+    });
+    if (error) return toast.error(error.message);
+    toast.success("Peça solicitada");
+    setRowPart(""); setRowQty(1); setAddPartFor(null);
+    refetch();
+  };
+
 
   // Finalização
   const [finishOs, setFinishOs] = useState<ServiceOrder | null>(null);
