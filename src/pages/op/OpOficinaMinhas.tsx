@@ -82,8 +82,47 @@ export default function OpOficinaMinhas() {
                   Apenas motos em análise, desempeno, pintura e execução sob sua responsabilidade.
                 </p>
               </div>
-              <Badge variant="outline">{mine.length} serviço(s) ativo(s)</Badge>
+              <div className="flex items-center gap-2">
+                <Badge variant="outline">{mine.length} serviço(s) ativo(s)</Badge>
+                <Button size="sm" onClick={() => setOpenNew(true)}>
+                  <Plus className="h-4 w-4 mr-1" /> Entrada de moto
+                </Button>
+              </div>
             </div>
+
+            <Dialog open={openNew} onOpenChange={setOpenNew}>
+              <DialogContent className="max-w-md">
+                <DialogHeader><DialogTitle>Nova entrada de moto na oficina</DialogTitle></DialogHeader>
+                <div className="space-y-3">
+                  <div>
+                    <Label>Placa *</Label>
+                    <Input value={plate} onChange={e => setPlate(e.target.value.toUpperCase())} placeholder="ABC1D23" />
+                  </div>
+                  <div>
+                    <Label>Modelo</Label>
+                    <Input value={model} onChange={e => setModel(e.target.value)} placeholder="ex.: Honda CG 160" />
+                  </div>
+                  <div>
+                    <Label>Empresa</Label>
+                    <Select value={companyId} onValueChange={setCompanyId}>
+                      <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="none">Nenhuma</SelectItem>
+                        {companies.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label>Serviço solicitado</Label>
+                    <Textarea value={desc} onChange={e => setDesc(e.target.value)} rows={3} placeholder="Descreva o problema relatado" />
+                  </div>
+                </div>
+                <DialogFooter>
+                  <Button variant="outline" onClick={() => setOpenNew(false)}>Cancelar</Button>
+                  <Button onClick={createEntry} disabled={saving}>Registrar entrada</Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
 
             {mine.length === 0 && (
               <div className="bg-card border rounded-lg p-12 text-center text-muted-foreground">
