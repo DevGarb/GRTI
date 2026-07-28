@@ -18,6 +18,9 @@ export interface ServiceOrder {
   description: string | null;
   diagnosis: string | null;
   status: string;
+  stage: string;
+  parts_arrived_at: string | null;
+  kanban_position: number;
   opened_at: string;
   finished_at: string | null;
   deadline?: string | null;
@@ -36,7 +39,10 @@ export interface ServiceOrderPart {
   part_name: string;
   quantity: number;
   unit_price: number;
+  part_status: string;
+  notes: string | null;
 }
+
 
 export interface ServiceOrderPhoto {
   id: string;
