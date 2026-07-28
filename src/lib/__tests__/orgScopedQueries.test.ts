@@ -59,21 +59,23 @@ describe("multi-tenancy: query keys incluem organization_id", () => {
     if (!/useQuery|useInfiniteQuery/.test(src)) continue;
 
     it(`${file.split("/hooks/")[1]} usa orgId na queryKey (tabelas: ${touchedTables.join(", ")})`, () => {
-      const usesActiveOrg =
-        /useActiveOrgId\(/.test(src) ||
-        /profile\?\.organization_id/.test(src) ||
-        /organization_id\s*:\s*orgId/.test(src);
+      // "Escopado por org" = o hook usa organization_id como filtro de LEITURA
+      // (não apenas como valor default em INSERT). Hooks scopados por projectId
+      // são indiretamente escopados por org e ficam fora desta regra.
+      const filtersByOrgOnRead =
+        /\.eq\(\s*["'`]organization_id["'`]\s*,\s*\w+/.test(src) ||
+        /\.in\(\s*["'`]organization_id["'`]/.test(src) ||
+        /useActiveOrgId\(/.test(src);
 
       const queryKeyRefsOrg =
         /queryKey:\s*\[[^\]]*\borgId\b/.test(src) ||
         /queryKey:\s*\[[^\]]*organization_id/.test(src) ||
         /queryKey:\s*\[[^\]]*activeOrg/i.test(src);
 
-      // A regra: OU o hook não é escopado por org (super_admin cross-org),
-      // OU precisa referenciar orgId tanto no filtro quanto na queryKey.
-      if (usesActiveOrg) {
+      if (filtersByOrgOnRead) {
         expect(queryKeyRefsOrg, `queryKey precisa conter orgId em ${file}`).toBe(true);
       }
     });
+
   }
 });
