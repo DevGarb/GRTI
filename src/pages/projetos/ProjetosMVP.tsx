@@ -188,7 +188,7 @@ export default function ProjetosMVP() {
                   {columns === "chamados" ? (
                     <>
                       <TableHead className="text-right">Fechados</TableHead>
-                      <TableHead className="text-right">No prazo</TableHead>
+                      <TableHead className="text-right">Metas atingidas</TableHead>
                       <TableHead className="text-right">CSAT</TableHead>
                       <TableHead className="text-right">Retrabalho</TableHead>
                       <TableHead className="text-right">Pontos cat.</TableHead>
