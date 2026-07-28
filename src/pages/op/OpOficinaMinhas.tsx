@@ -208,25 +208,17 @@ export default function OpOficinaMinhas() {
             </div>
 
             <Dialog open={openNew} onOpenChange={setOpenNew}>
-              <DialogContent className="max-w-md">
-                <DialogHeader><DialogTitle>Nova entrada de moto na oficina</DialogTitle></DialogHeader>
+              <DialogContent className="max-w-md max-h-[85vh] overflow-y-auto">
+                <DialogHeader><DialogTitle>Entrada de moto na oficina</DialogTitle></DialogHeader>
                 <div className="space-y-3">
-                  <div>
-                    <Label>Placa *</Label>
-                    <Input value={plate} onChange={e => setPlate(e.target.value.toUpperCase())} placeholder="ABC1D23" />
-                  </div>
-                  <div>
-                    <Label>Modelo</Label>
-                    <Input value={model} onChange={e => setModel(e.target.value)} placeholder="ex.: Honda CG 160" />
-                  </div>
                   <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <Label>Cor</Label>
-                      <Input value={color} onChange={e => setColor(e.target.value)} placeholder="ex.: Vermelha" />
+                      <Label>Placa *</Label>
+                      <Input value={plate} onChange={e => setPlate(e.target.value.toUpperCase())} placeholder="ABC1D23" />
                     </div>
                     <div>
-                      <Label>Ano</Label>
-                      <Input value={year} onChange={e => setYear(e.target.value)} placeholder="ex.: 2022" />
+                      <Label>Modelo</Label>
+                      <Input value={model} onChange={e => setModel(e.target.value)} placeholder="ex.: CG 160" />
                     </div>
                   </div>
                   <div>
@@ -240,8 +232,38 @@ export default function OpOficinaMinhas() {
                     </Select>
                   </div>
                   <div>
-                    <Label>Serviço solicitado</Label>
-                    <Textarea value={desc} onChange={e => setDesc(e.target.value)} rows={3} placeholder="Descreva o problema relatado" />
+                    <Label>Problema relatado</Label>
+                    <Textarea value={desc} onChange={e => setDesc(e.target.value)} rows={2} placeholder="Descreva o problema relatado" />
+                  </div>
+
+                  <div className="border rounded-md p-3 bg-muted/30 space-y-2">
+                    <div className="text-sm font-medium flex items-center gap-1">
+                      <Package className="h-4 w-4" /> Peças necessárias ({newParts.length})
+                    </div>
+                    <div className="flex gap-2">
+                      <Input value={partName} onChange={e => setPartName(e.target.value)} placeholder="Peça / serviço"
+                        onKeyDown={e => {
+                          if (e.key === "Enter" && partName.trim()) {
+                            e.preventDefault();
+                            setNewParts(p => [...p, { name: partName.trim(), qty: partQty || 1 }]);
+                            setPartName(""); setPartQty(1);
+                          }
+                        }} />
+                      <Input type="number" min={1} value={partQty} onChange={e => setPartQty(Number(e.target.value))} className="w-16" />
+                      <Button type="button" size="icon" onClick={() => {
+                        if (!partName.trim()) return;
+                        setNewParts(p => [...p, { name: partName.trim(), qty: partQty || 1 }]);
+                        setPartName(""); setPartQty(1);
+                      }}><Plus className="h-4 w-4" /></Button>
+                    </div>
+                    {newParts.map((p, i) => (
+                      <div key={i} className="flex items-center justify-between bg-card border rounded px-2 py-1 text-sm">
+                        <span className="truncate">{p.name} <span className="text-muted-foreground">x{p.qty}</span></span>
+                        <button type="button" className="text-destructive" onClick={() => setNewParts(list => list.filter((_, j) => j !== i))}>
+                          <X className="h-4 w-4" />
+                        </button>
+                      </div>
+                    ))}
                   </div>
                 </div>
                 <DialogFooter>
@@ -250,6 +272,7 @@ export default function OpOficinaMinhas() {
                 </DialogFooter>
               </DialogContent>
             </Dialog>
+
 
             {mine.length === 0 && (
               <div className="bg-card border rounded-lg p-12 text-center text-muted-foreground">
