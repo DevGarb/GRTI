@@ -152,19 +152,31 @@ export default function OpOficinaMinhas() {
     const res = await add({
       vehicle_plate: plate.trim().toUpperCase(),
       vehicle_model: model.trim() || null,
-      vehicle_color: color.trim() || null,
-      vehicle_year: year.trim() || null,
       company_id: companyId === "none" ? null : companyId,
       description: desc.trim() || null,
       mechanic_id: profile?.id || null,
       stage: "analise",
     });
+    if (res && newParts.length) {
+      await supabase.from("op_service_order_parts").insert(
+        newParts.map(p => ({
+          service_order_id: (res as any).id,
+          part_name: p.name,
+          quantity: p.qty,
+          unit_price: 0,
+          part_status: "solicitada",
+        })),
+      );
+      refetch();
+    }
     setSaving(false);
     if (res) {
       setOpenNew(false);
-      setPlate(""); setModel(""); setColor(""); setYear(""); setCompanyId("none"); setDesc("");
+      setPlate(""); setModel(""); setCompanyId("none"); setDesc("");
+      setNewParts([]); setPartName(""); setPartQty(1);
     }
   };
+
 
 
   return (
