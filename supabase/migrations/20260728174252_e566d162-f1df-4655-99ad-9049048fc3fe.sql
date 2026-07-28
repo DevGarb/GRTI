@@ -1,0 +1,1 @@
+ALTER TABLE public.op_service_orders ADD COLUMN IF NOT EXISTS customer_name text;
