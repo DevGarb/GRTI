@@ -81,19 +81,26 @@ ${ticketList}
 Responda APENAS um JSON no formato: {"assignments":[{"ticket_id":"...","category_id":"..."}]}
 Um item por chamado, na mesma ordem. category_id deve ser exatamente um dos IDs listados acima.`;
 
-  const res = await fetch("https://api.openai.com/v1/chat/completions", {
-    method: "POST",
-    headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
-    body: JSON.stringify({
-      model: "gpt-4o-mini",
-      messages: [
-        { role: "system", content: "Você é um classificador de chamados de helpdesk de TI. Responda apenas com o JSON pedido, sem texto extra." },
-        { role: "user", content: prompt },
-      ],
-      response_format: { type: "json_object" },
-      temperature: 0.1,
-    }),
-  });
+  let res: Response;
+  try {
+    res = await fetch("https://api.openai.com/v1/chat/completions", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
+      body: JSON.stringify({
+        model: "gpt-4o-mini",
+        messages: [
+          { role: "system", content: "Você é um classificador de chamados de helpdesk de TI. Responda apenas com o JSON pedido, sem texto extra." },
+          { role: "user", content: prompt },
+        ],
+        response_format: { type: "json_object" },
+        temperature: 0.1,
+      }),
+      signal: AbortSignal.timeout(45_000),
+    });
+  } catch (e) {
+    console.error("OpenAI fetch failed (timeout/network)", e);
+    return new Map();
+  }
 
   if (!res.ok) {
     console.error("OpenAI error", res.status, await res.text());
