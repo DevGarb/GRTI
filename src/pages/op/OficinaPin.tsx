@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Wrench, ArrowRight, HardHat, Star, Shield, ShoppingCart } from "lucide-react";
+import { Wrench, ArrowRight, HardHat, Shield, ShoppingCart } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -14,9 +14,8 @@ import "./cearagps.css";
 
 const TABS: { id: OficinaRole; label: string; icon: any }[] = [
   { id: "mecanico", label: "Mecânico", icon: HardHat },
-  { id: "lider", label: "Líder", icon: Star },
-  { id: "supervisor", label: "Supervisor", icon: Shield },
   { id: "compras", label: "Compras", icon: ShoppingCart },
+  { id: "admin", label: "Admin", icon: Shield },
 ];
 
 export default function OficinaPin() {
@@ -35,10 +34,10 @@ export default function OficinaPin() {
     const pin = (pins[role] || "").trim();
     if (!pin) return toast.error("Informe o PIN");
 
-    // Acesso administrativo de supervisão
-    if ((role === "supervisor" || role === "lider") && pin === "0000" && isAdmin) {
-      setProfile({ type: role, name: authProfile?.full_name || "Supervisor" });
-      return navigate(oficinaRoleHome(role));
+    // Acesso administrativo
+    if (role === "admin" && pin === "0000" && isAdmin) {
+      setProfile({ type: "admin", name: authProfile?.full_name || "Administrador" });
+      return navigate(oficinaRoleHome("admin"));
     }
 
     const matches = staff.filter(
