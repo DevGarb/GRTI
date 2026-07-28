@@ -1,5 +1,5 @@
-import { useMemo, useState } from "react";
-import { Wrench, Package, CheckCircle2, ClipboardList, ShoppingCart, AlertTriangle, Plus, ChevronDown, ChevronUp } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { Wrench, Package, CheckCircle2, ClipboardList, ShoppingCart, AlertTriangle, Plus, ChevronDown, ChevronUp, Camera, X } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -8,9 +8,11 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useServiceOrders, type ServiceOrder } from "@/hooks/useOficina";
+import { useServiceOrders, type ServiceOrder, type ServiceOrderPhoto } from "@/hooks/useOficina";
 import { useCompanies } from "@/hooks/useOperacional";
 import { useOficinaProfile } from "@/contexts/OficinaProfileContext";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 import OficinaNav from "./OficinaNav";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
@@ -19,10 +21,12 @@ import {
 } from "@/lib/oficinaStages";
 
 const MY_STAGES = ["analise", "desempeno", "pintura", "execucao"];
+const DONE_STAGES = ["pronto", "entregue"];
 
 export default function OpOficinaMinhas() {
   const { profile } = useOficinaProfile();
-  const { items, partsByOs, update, add } = useServiceOrders();
+  const { user } = useAuth();
+  const { items, partsByOs, update, add, refetch } = useServiceOrders();
   const { items: companies } = useCompanies();
   const [tab, setTab] = useState("servicos");
   const [expanded, setExpanded] = useState<string | null>(null);
@@ -36,17 +40,81 @@ export default function OpOficinaMinhas() {
   const [desc, setDesc] = useState("");
   const [saving, setSaving] = useState(false);
 
+  // Finalização
+  const [finishOs, setFinishOs] = useState<ServiceOrder | null>(null);
+  const [summary, setSummary] = useState("");
+  const [files, setFiles] = useState<File[]>([]);
+  const [finishing, setFinishing] = useState(false);
+
   const mine = useMemo(
     () => items.filter(o => o.mechanic_id === profile?.id && MY_STAGES.includes(o.stage)),
     [items, profile?.id],
   );
+
+  const done = useMemo(
+    () => items.filter(o => o.mechanic_id === profile?.id && DONE_STAGES.includes(o.stage)),
+    [items, profile?.id],
+  );
+
+  const [donePhotos, setDonePhotos] = useState<Record<string, ServiceOrderPhoto[]>>({});
+  const doneIds = done.map(o => o.id).join(",");
+  useEffect(() => {
+    const ids = doneIds ? doneIds.split(",") : [];
+    if (!ids.length) { setDonePhotos({}); return; }
+    let active = true;
+    supabase.from("op_service_order_photos").select("*").in("service_order_id", ids).order("created_at")
+      .then(({ data }) => {
+        if (!active) return;
+        const byOs: Record<string, ServiceOrderPhoto[]> = {};
+        ((data || []) as ServiceOrderPhoto[]).forEach(p => { (byOs[p.service_order_id] ||= []).push(p); });
+        setDonePhotos(byOs);
+      });
+    return () => { active = false; };
+  }, [doneIds]);
 
   const myParts = useMemo(
     () => mine.flatMap(o => (partsByOs[o.id] || []).map(p => ({ ...p, os: o }))),
     [mine, partsByOs],
   );
 
-  const finish = (o: ServiceOrder) => update(o.id, { stage: "pronto" });
+  const openFinish = (o: ServiceOrder) => {
+    setFinishOs(o);
+    setSummary("");
+    setFiles([]);
+  };
+
+  const confirmFinish = async () => {
+    if (!finishOs) return;
+    if (!summary.trim()) return toast.error("Descreva o que foi feito no serviço");
+    setFinishing(true);
+    try {
+      for (const file of files) {
+        const path = `${finishOs.id}/${Date.now()}-${file.name.replace(/[^\w.\-]/g, "_")}`;
+        const { error: upErr } = await supabase.storage.from("op-service-orders").upload(path, file);
+        if (upErr) { toast.error(upErr.message); continue; }
+        const { data: { publicUrl } } = supabase.storage.from("op-service-orders").getPublicUrl(path);
+        await supabase.from("op_service_order_photos").insert({
+          service_order_id: finishOs.id,
+          photo_url: publicUrl,
+          photo_type: "depois",
+          uploaded_by: user?.id || null,
+        });
+      }
+      await update(finishOs.id, {
+        stage: "pronto",
+        closure_summary: summary.trim(),
+        finished_at: new Date().toISOString(),
+      });
+      toast.success("Serviço finalizado");
+      setFinishOs(null);
+      setExpanded(null);
+      setTab("finalizadas");
+      refetch();
+    } finally {
+      setFinishing(false);
+    }
+  };
+
 
   const createEntry = async () => {
     if (!plate.trim()) return toast.error("Informe a placa da moto");
@@ -77,6 +145,8 @@ export default function OpOficinaMinhas() {
           <TabsList>
             <TabsTrigger value="servicos"><ClipboardList className="h-4 w-4 mr-1" />Meus Serviços</TabsTrigger>
             <TabsTrigger value="pecas"><ShoppingCart className="h-4 w-4 mr-1" />Minhas Peças</TabsTrigger>
+            <TabsTrigger value="finalizadas"><CheckCircle2 className="h-4 w-4 mr-1" />Finalizadas ({done.length})</TabsTrigger>
+
           </TabsList>
 
           <TabsContent value="servicos" className="space-y-3 mt-4">
@@ -183,7 +253,7 @@ export default function OpOficinaMinhas() {
                           <Button size="sm" variant="outline" onClick={() => setExpanded(null)}>
                             <ChevronUp className="h-4 w-4 mr-1" /> Recolher
                           </Button>
-                          <Button size="sm" onClick={() => finish(o)}>
+                          <Button size="sm" onClick={() => openFinish(o)}>
                             <CheckCircle2 className="h-4 w-4 mr-1" /> Finalizar Serviço
                           </Button>
                         </div>
@@ -248,7 +318,92 @@ export default function OpOficinaMinhas() {
               );
             })}
           </TabsContent>
+
+          <TabsContent value="finalizadas" className="space-y-3 mt-4">
+            {done.length === 0 && (
+              <div className="bg-card border rounded-lg p-12 text-center text-muted-foreground">
+                Nenhuma moto finalizada por você ainda.
+              </div>
+            )}
+            {done.map(o => {
+              const st = stageInfo(o.stage);
+              const photos = donePhotos[o.id] || [];
+              return (
+                <div key={o.id} className="bg-card border rounded-lg p-4 space-y-2">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="text-lg font-bold tracking-wide">{o.vehicle_plate || `OS #${o.os_number}`}</span>
+                    <Badge variant="secondary" className={st.chip}>{st.label}</Badge>
+                    {o.finished_at && (
+                      <span className="ml-auto text-xs text-muted-foreground">
+                        Finalizado em {new Date(o.finished_at).toLocaleDateString("pt-BR")}
+                      </span>
+                    )}
+                  </div>
+                  <div className="text-sm text-muted-foreground">
+                    {[o.vehicle_model, o.vehicle_color, o.vehicle_year].filter(Boolean).join(" · ") || "—"}
+                  </div>
+                  <div className="text-sm">
+                    <span className="font-medium">O que foi feito:</span>{" "}
+                    <span className="text-muted-foreground">{o.closure_summary || "—"}</span>
+                  </div>
+                  {photos.length > 0 && (
+                    <div className="flex gap-2 flex-wrap pt-1">
+                      {photos.map(p => (
+                        <a key={p.id} href={p.photo_url} target="_blank" rel="noreferrer">
+                          <img src={p.photo_url} alt={`Foto do serviço ${o.vehicle_plate || o.os_number}`} loading="lazy"
+                            className="h-20 w-20 object-cover rounded-md border" />
+                        </a>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </TabsContent>
         </Tabs>
+
+        <Dialog open={!!finishOs} onOpenChange={v => !v && setFinishOs(null)}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle>Finalizar serviço · {finishOs?.vehicle_plate || `OS #${finishOs?.os_number}`}</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-3">
+              <div>
+                <Label>O que foi feito? *</Label>
+                <Textarea value={summary} onChange={e => setSummary(e.target.value)} rows={4}
+                  placeholder="Descreva os serviços executados, peças trocadas, observações..." />
+              </div>
+              <div>
+                <Label>Fotos do serviço</Label>
+                <Input type="file" accept="image/*" multiple capture="environment"
+                  onChange={e => setFiles(prev => [...prev, ...Array.from(e.target.files || [])])} />
+                {files.length > 0 && (
+                  <div className="flex gap-2 flex-wrap mt-2">
+                    {files.map((f, i) => (
+                      <div key={i} className="relative">
+                        <img src={URL.createObjectURL(f)} alt={f.name} className="h-16 w-16 object-cover rounded-md border" />
+                        <button type="button" onClick={() => setFiles(files.filter((_, j) => j !== i))}
+                          className="absolute -top-1.5 -right-1.5 bg-destructive text-destructive-foreground rounded-full p-0.5">
+                          <X className="h-3 w-3" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
+                  <Camera className="h-3 w-3" /> Você pode tirar a foto na hora pelo celular.
+                </p>
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setFinishOs(null)} disabled={finishing}>Cancelar</Button>
+              <Button onClick={confirmFinish} disabled={finishing}>
+                <CheckCircle2 className="h-4 w-4 mr-1" /> {finishing ? "Salvando..." : "Confirmar finalização"}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
 
         <div className="text-center text-xs text-muted-foreground py-4 flex items-center justify-center gap-1">
           <Wrench className="h-3 w-3" />
