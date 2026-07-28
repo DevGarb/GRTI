@@ -638,12 +638,17 @@ function OsDetailDialog({ os, onClose, onUpdate, onDelete, onRequestClose, compa
             </div>
           </div>
           <div>
-            <Label>Cliente</Label>
+            <Label>Empresa</Label>
             <Select value={companyId} onValueChange={setCompanyId}>
               <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
               <SelectContent>{companies.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}</SelectContent>
             </Select>
           </div>
+          <div>
+            <Label>Cliente / Associado</Label>
+            <Input value={customerName} onChange={e => setCustomerName(e.target.value)} placeholder="Nome do cliente/associado" />
+          </div>
+
           <div>
             <Label>Mecânico</Label>
             <Select value={mechanicId} onValueChange={setMechanicId}>
