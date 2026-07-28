@@ -1,0 +1,2 @@
+ALTER TABLE public.op_companies ADD COLUMN IF NOT EXISTS is_workshop boolean NOT NULL DEFAULT false;
+UPDATE public.op_companies SET is_workshop = true WHERE trim(name) IN ('Resolve','CearaGPS','Motoloc');

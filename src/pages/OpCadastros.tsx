@@ -34,6 +34,7 @@ export default function OpCadastros() {
           <TabsTrigger value="requesters"><UserCheck className="h-4 w-4 mr-1" /> Solicitantes</TabsTrigger>
           <TabsTrigger value="sectors"><Layers className="h-4 w-4 mr-1" /> Setores</TabsTrigger>
           <TabsTrigger value="companies"><Building2 className="h-4 w-4 mr-1" /> Empresas</TabsTrigger>
+          <TabsTrigger value="workshop_companies"><Building2 className="h-4 w-4 mr-1" /> Empresas (Oficina)</TabsTrigger>
           <TabsTrigger value="vehicles"><Car className="h-4 w-4 mr-1" /> Veículos</TabsTrigger>
           <TabsTrigger value="mechanics"><Wrench className="h-4 w-4 mr-1" /> Mecânicos (Oficina)</TabsTrigger>
           <TabsTrigger value="maint_tech"><HardHat className="h-4 w-4 mr-1" /> Técnicos Manutenção</TabsTrigger>
@@ -43,6 +44,7 @@ export default function OpCadastros() {
         <TabsContent value="requesters"><RequestersTab /></TabsContent>
         <TabsContent value="sectors"><SectorsTab /></TabsContent>
         <TabsContent value="companies"><CompaniesTab /></TabsContent>
+        <TabsContent value="workshop_companies"><CompaniesTab workshop /></TabsContent>
         <TabsContent value="vehicles"><VehiclesTab /></TabsContent>
         <TabsContent value="mechanics"><MechanicsTab /></TabsContent>
         <TabsContent value="maint_tech"><MaintTechniciansTab /></TabsContent>
@@ -211,29 +213,41 @@ function DriversTab() {
   );
 }
 
-function CompaniesTab() {
-  const { items, add, remove } = useCompanies();
+function CompaniesTab({ workshop = false }: { workshop?: boolean }) {
+  const { items, add, update, remove } = useCompanies();
   const [name, setName] = useState(""); const [contact, setContact] = useState(""); const [phone, setPhone] = useState("");
+  const list = workshop ? items.filter(c => c.is_workshop) : items;
   return (
     <div className="space-y-4">
+      <div className="rounded-md border bg-sky-50 text-sky-900 px-3 py-2 text-xs">
+        {workshop
+          ? <>Empresas cadastradas aqui aparecem <strong>somente</strong> nas ordens de serviço da <strong>Oficina</strong>.</>
+          : <>Empresas cadastradas aqui aparecem em <strong>Entregas</strong> e <strong>Manutenção Predial</strong>. Para a Oficina, use a aba <strong>Empresas (Oficina)</strong>.</>}
+      </div>
       <div className="bg-card border rounded-lg p-4 grid gap-3 md:grid-cols-[1fr_1fr_180px_auto]">
         <div><Label>Empresa</Label><Input value={name} onChange={e => setName(e.target.value)} placeholder="Nome" /></div>
         <div><Label>Contato</Label><Input value={contact} onChange={e => setContact(e.target.value)} placeholder="Pessoa de contato" /></div>
         <div><Label>Telefone</Label><Input value={phone} onChange={e => setPhone(e.target.value)} placeholder="(00) 00000-0000" /></div>
         <div className="flex items-end">
-          <Button onClick={() => { if (!name) return; add({ name, contact_name: contact, contact_phone: phone }); setName(""); setContact(""); setPhone(""); }}>
+          <Button onClick={() => { if (!name) return; add({ name, contact_name: contact, contact_phone: phone, is_workshop: workshop }); setName(""); setContact(""); setPhone(""); }}>
             <Plus className="h-4 w-4 mr-1" /> Adicionar
           </Button>
         </div>
       </div>
       <div className="bg-card border rounded-lg divide-y">
-        {items.length === 0 && <div className="p-8 text-center text-muted-foreground">Nenhuma empresa cadastrada</div>}
-        {items.map(c => (
+        {list.length === 0 && <div className="p-8 text-center text-muted-foreground">Nenhuma empresa cadastrada</div>}
+        {list.map(c => (
           <div key={c.id} className="p-3 flex items-center gap-3">
             <div className="flex-1">
               <div className="font-medium">{c.name}</div>
               <div className="text-xs text-muted-foreground">{c.contact_name || "—"} · {c.contact_phone || "—"}</div>
             </div>
+            {!workshop && (
+              <div className="flex items-center gap-2">
+                <Switch checked={!!c.is_workshop} onCheckedChange={(v) => update(c.id, { is_workshop: v })} />
+                <span className="text-xs text-muted-foreground">Oficina</span>
+              </div>
+            )}
             <Button variant="ghost" size="icon" onClick={() => remove(c.id)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
           </div>
         ))}
