@@ -267,12 +267,18 @@ Deno.serve(async (req) => {
         (profs || []).forEach((p: any) => techNames.set(p.user_id, p.full_name));
       }
 
-      const BATCH = 15;
+      const BATCH = 8;
+      const CONCURRENCY = 5;
+      const chunks: TicketRow[][] = [];
+      for (let i = 0; i < list.length; i += BATCH) chunks.push(list.slice(i, i + BATCH));
+
       const assignmentMap = new Map<string, string>();
-      for (let i = 0; i < list.length; i += BATCH) {
-        const chunk = list.slice(i, i + BATCH);
-        const chunkMap = await classifyBatch(chunk, categories, techNames, apiKey);
-        chunkMap.forEach((v, k) => assignmentMap.set(k, v));
+      for (let i = 0; i < chunks.length; i += CONCURRENCY) {
+        const round = chunks.slice(i, i + CONCURRENCY);
+        const results = await Promise.all(
+          round.map((chunk) => classifyBatch(chunk, categories, techNames, apiKey))
+        );
+        results.forEach((chunkMap) => chunkMap.forEach((v, k) => assignmentMap.set(k, v)));
       }
 
       const catById = new Map(categories.map((c) => [c.id, c]));
