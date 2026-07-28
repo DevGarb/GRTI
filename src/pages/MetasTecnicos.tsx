@@ -177,14 +177,18 @@ export default function MetasTecnicos() {
 
   const hasGoals = (userId: string) => goals.some((g) => g.target_type === "individual" && g.target_id === userId);
 
-  const globalAvgScore = stats.length > 0
-    ? (stats.reduce((a, s) => a + s.avgScore, 0) / stats.filter(s => s.evaluations > 0).length || 0)
+  const visibleStats = stats.filter((s) => hasGoals(s.userId));
+
+  const evaluatedCount = visibleStats.filter(s => s.evaluations > 0).length;
+  const globalAvgScore = evaluatedCount > 0
+    ? visibleStats.reduce((a, s) => a + s.avgScore, 0) / evaluatedCount
     : 0;
-  const globalAvgHours = stats.length > 0
-    ? stats.reduce((a, s) => a + s.avgResolutionHours, 0) / stats.length
+  const globalAvgHours = visibleStats.length > 0
+    ? visibleStats.reduce((a, s) => a + s.avgResolutionHours, 0) / visibleStats.length
     : 0;
-  const totalClosed = stats.reduce((a, s) => a + s.totalClosed, 0);
-  const totalPoints = stats.reduce((a, s) => a + s.totalPoints, 0);
+  const totalClosed = visibleStats.reduce((a, s) => a + s.totalClosed, 0);
+  const totalPoints = visibleStats.reduce((a, s) => a + s.totalPoints, 0);
+
 
   const formatHours = (h: number) => {
     if (h < 1) return `${Math.floor(h * 60)}min`;
@@ -321,7 +325,7 @@ export default function MetasTecnicos() {
               <div className="flex items-center justify-center gap-2 mb-1">
                 <User className="h-4 w-4 text-muted-foreground" />
               </div>
-              <span className="text-2xl font-bold text-foreground">{stats.length}</span>
+              <span className="text-2xl font-bold text-foreground">{visibleStats.length}</span>
               <p className="text-[11px] text-muted-foreground mt-1">Técnicos Ativos</p>
             </div>
             <div className="card-elevated p-4 text-center">
@@ -359,7 +363,7 @@ export default function MetasTecnicos() {
           </div>
 
           {/* Goals Summary Cards */}
-          <GoalsSummaryCards stats={stats} goals={goals} formatHours={formatHours} />
+          <GoalsSummaryCards stats={visibleStats} goals={goals} formatHours={formatHours} />
 
           {/* Technician list */}
           {error ? (
@@ -368,13 +372,14 @@ export default function MetasTecnicos() {
             <div className="card-elevated p-12 flex items-center justify-center">
               <div className="h-6 w-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
             </div>
-          ) : stats.length === 0 ? (
+          ) : visibleStats.length === 0 ? (
             <div className="card-elevated p-12 text-center text-sm text-muted-foreground">
-              Nenhum chamado fechado com técnico atribuído.
+              Nenhuma meta individual definida para este mês.
             </div>
           ) : (
             <div className="space-y-3">
-              {stats.map((tech, i) => {
+              {visibleStats.map((tech, i) => {
+
                 const isExpanded = expandedTech === tech.userId;
                 const techHasGoals = hasGoals(tech.userId);
                 return (
