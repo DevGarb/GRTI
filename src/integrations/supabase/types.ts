@@ -1757,8 +1757,10 @@ export type Database = {
         Row: {
           created_at: string
           id: string
+          notes: string | null
           part_id: string | null
           part_name: string
+          part_status: string
           quantity: number
           service_order_id: string
           unit_price: number
@@ -1766,8 +1768,10 @@ export type Database = {
         Insert: {
           created_at?: string
           id?: string
+          notes?: string | null
           part_id?: string | null
           part_name: string
+          part_status?: string
           quantity?: number
           service_order_id: string
           unit_price?: number
@@ -1775,8 +1779,10 @@ export type Database = {
         Update: {
           created_at?: string
           id?: string
+          notes?: string | null
           part_id?: string | null
           part_name?: string
+          part_status?: string
           quantity?: number
           service_order_id?: string
           unit_price?: number
@@ -1838,11 +1844,14 @@ export type Database = {
           diagnosis: string | null
           finished_at: string | null
           id: string
+          kanban_position: number
           mechanic_id: string | null
           notes: string | null
           opened_at: string
           organization_id: string
           os_number: number
+          parts_arrived_at: string | null
+          stage: string
           status: string
           total_cost: number
           updated_at: string
@@ -1861,11 +1870,14 @@ export type Database = {
           diagnosis?: string | null
           finished_at?: string | null
           id?: string
+          kanban_position?: number
           mechanic_id?: string | null
           notes?: string | null
           opened_at?: string
           organization_id: string
           os_number?: number
+          parts_arrived_at?: string | null
+          stage?: string
           status?: string
           total_cost?: number
           updated_at?: string
@@ -1884,11 +1896,14 @@ export type Database = {
           diagnosis?: string | null
           finished_at?: string | null
           id?: string
+          kanban_position?: number
           mechanic_id?: string | null
           notes?: string | null
           opened_at?: string
           organization_id?: string
           os_number?: number
+          parts_arrived_at?: string | null
+          stage?: string
           status?: string
           total_cost?: number
           updated_at?: string
