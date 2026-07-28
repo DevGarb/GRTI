@@ -336,9 +336,21 @@ export default function OpOficinaMinhas() {
                       )}
 
                       <div className="border rounded-md p-3 bg-muted/30">
-                        <div className="text-sm font-medium flex items-center gap-1 mb-2">
-                          <Package className="h-4 w-4" /> Peças Solicitadas ({parts.length})
+                        <div className="text-sm font-medium flex items-center justify-between gap-2 mb-2">
+                          <span className="flex items-center gap-1"><Package className="h-4 w-4" /> Peças Solicitadas ({parts.length})</span>
+                          <Button size="sm" variant="outline" onClick={() => { setAddPartFor(addPartFor === o.id ? null : o.id); setRowPart(""); setRowQty(1); }}>
+                            <Plus className="h-4 w-4 mr-1" /> Incluir peça
+                          </Button>
                         </div>
+                        {addPartFor === o.id && (
+                          <div className="flex gap-2 mb-2">
+                            <Input value={rowPart} onChange={e => setRowPart(e.target.value)} placeholder="Peça / serviço"
+                              onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); addPartToOs(o.id); } }} />
+                            <Input type="number" min={1} value={rowQty} onChange={e => setRowQty(Number(e.target.value))} className="w-16" />
+                            <Button size="sm" onClick={() => addPartToOs(o.id)}>Solicitar</Button>
+                          </div>
+                        )}
+
                         {parts.length === 0 ? (
                           <div className="text-xs text-muted-foreground">Nenhuma peça solicitada.</div>
                         ) : (
