@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { Wrench, Plus, Search, Trash2, Upload, FileText, X, LayoutGrid, List, Eye, EyeOff, AlertTriangle } from "lucide-react";
+import { Wrench, Plus, Search, Trash2, Upload, FileText, X, LayoutGrid, List, Eye, EyeOff, AlertTriangle, ShoppingCart, Package, Gauge, ChevronUp, ChevronDown, Truck, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -17,26 +17,12 @@ import OpQuickActions from "@/components/operacional/OpQuickActions";
 import OpNotesPanel from "@/components/operacional/OpNotesPanel";
 import { cn } from "@/lib/utils";
 import { formatDateBR } from "@/lib/dateFormat";
+import {
+  STAGES, STAGE_ENTREGUE, stageInfo, DIAS_ALERTA, SLA_PECAS,
+  PART_STATUS_FLOW, PART_STATUS_INFO, daysInWorkshop, partsSlaRemaining,
+} from "@/lib/oficinaStages";
 
-const STATUS_LIST = ["Pendente", "Aguardando peças", "Em andamento", "Finalizado", "Cancelada"];
 const TERMINAL = "Finalizado";
-
-const statusColor: Record<string, string> = {
-  "Pendente": "bg-blue-500/10 text-blue-700 dark:text-blue-300",
-  "Aguardando peças": "bg-purple-500/10 text-purple-700 dark:text-purple-300",
-  "Em andamento": "bg-amber-500/10 text-amber-700 dark:text-amber-300",
-  "Finalizado": "bg-green-500/10 text-green-700 dark:text-green-300",
-  "Cancelada": "bg-red-500/10 text-red-700 dark:text-red-300",
-};
-
-// Kanban includes a derived "Em atraso" column (computed from deadline)
-const KANBAN_COLUMNS: KanbanColumn[] = [
-  { id: "Pendente", label: "Pendente", color: "bg-blue-500" },
-  { id: "Aguardando peças", label: "Aguardando peças", color: "bg-purple-500" },
-  { id: "Em andamento", label: "Em andamento", color: "bg-amber-500" },
-  { id: "Em atraso", label: "Em atraso", color: "bg-rose-600" },
-  { id: "Finalizado", label: "Finalizado", color: "bg-emerald-600" },
-];
 
 function fmtMoney(v: number) {
   return v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
@@ -44,23 +30,33 @@ function fmtMoney(v: number) {
 
 function todayISO() { return new Date().toISOString().slice(0, 10); }
 
-function isOverdue(o: ServiceOrder): boolean {
-  return !!o.deadline && o.deadline < todayISO() && o.status !== "Finalizado" && o.status !== "Cancelada";
+function isDelivered(o: ServiceOrder) {
+  return o.stage === STAGE_ENTREGUE || o.status === TERMINAL;
 }
+
+function isOverdue(o: ServiceOrder): boolean {
+  if (isDelivered(o) || o.status === "Cancelada") return false;
+  if (o.deadline && o.deadline < todayISO()) return true;
+  if (daysInWorkshop(o.opened_at) >= DIAS_ALERTA) return true;
+  const rest = partsSlaRemaining(o.parts_arrived_at);
+  return rest != null && rest < 0;
+}
+
+const KANBAN_COLUMNS: KanbanColumn[] = STAGES.map(s => ({ id: s.id, label: s.label, color: s.bar }));
+const DELIVERED_COLUMN: KanbanColumn = { id: STAGE_ENTREGUE, label: "Entregue", color: "bg-emerald-700" };
 
 export default function OpOficina() {
   const { user } = useAuth();
-  const { items, partsCountByOs, add, update, remove } = useServiceOrders();
+  const { items, partsByOs, partsCountByOs, add, update, remove, setPartStatus, movePriority } = useServiceOrders();
   const { items: mechanics } = useMechanics();
   const { items: companies } = useCompanies();
-  const { items: vehicles } = useVehicles();
 
-  const [view, setView] = useState<"lista" | "kanban">("kanban");
-  const [hideFinalized, setHideFinalized] = useState(true);
+  const [view, setView] = useState<"kanban" | "lista" | "compras">("kanban");
+  const [hideDelivered, setHideDelivered] = useState(true);
   const [month, setMonth] = useState(new Date().toISOString().slice(0, 7));
   const [mechFilter, setMechFilter] = useState<string>("all");
   const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState<"all" | "Pendente" | "exec" | "atraso" | "Finalizado">("all");
+  const [onlyLate, setOnlyLate] = useState(false);
   const [openNew, setOpenNew] = useState(false);
   const [selected, setSelected] = useState<ServiceOrder | null>(null);
   const [closing, setClosing] = useState<ServiceOrder | null>(null);
@@ -73,60 +69,66 @@ export default function OpOficina() {
         const s = search.toLowerCase();
         if (!(`${o.os_number}`.includes(s) ||
               (o.vehicle_plate || "").toLowerCase().includes(s) ||
+              (o.vehicle_model || "").toLowerCase().includes(s) ||
               (o.description || "").toLowerCase().includes(s))) return false;
       }
       return true;
     });
   }, [items, month, mechFilter, search]);
 
-  const filtered = useMemo(() => {
-    return baseFiltered.filter(o => {
-      if (statusFilter === "Pendente" && o.status !== "Pendente") return false;
-      if (statusFilter === "exec" && !(o.status === "Em andamento" || o.status === "Aguardando peças")) return false;
-      if (statusFilter === "atraso" && !isOverdue(o)) return false;
-      if (statusFilter === "Finalizado" && o.status !== "Finalizado") return false;
-      return true;
-    });
-  }, [baseFiltered, statusFilter]);
+  const filtered = useMemo(
+    () => baseFiltered.filter(o => (onlyLate ? isOverdue(o) : true)),
+    [baseFiltered, onlyLate],
+  );
 
   const kpis = useMemo(() => {
-    const pendentes = baseFiltered.filter(o => o.status === "Pendente").length;
-    const exec = baseFiltered.filter(o => o.status === "Em andamento" || o.status === "Aguardando peças").length;
-    const finalizadas = baseFiltered.filter(o => o.status === "Finalizado").length;
-    const atrasadas = baseFiltered.filter(isOverdue).length;
-    const total = baseFiltered.length;
-    const custo = baseFiltered.filter(o => o.status === "Finalizado").reduce((s, o) => s + Number(o.total_cost || 0), 0);
-    return { pendentes, exec, finalizadas, atrasadas, total, custo };
+    const ativas = baseFiltered.filter(o => !isDelivered(o));
+    const media = ativas.length
+      ? Math.round(ativas.reduce((s, o) => s + daysInWorkshop(o.opened_at), 0) / ativas.length)
+      : 0;
+    return {
+      total: ativas.length,
+      media,
+      atrasadas: baseFiltered.filter(isOverdue).length,
+      aguardPeca: ativas.filter(o => o.stage === "aguardando_peca").length,
+      entregues: baseFiltered.filter(isDelivered).length,
+      custo: baseFiltered.filter(isDelivered).reduce((s, o) => s + Number(o.total_cost || 0), 0),
+    };
   }, [baseFiltered]);
 
-  const toggleStatus = (s: typeof statusFilter) => {
-    setStatusFilter(prev => prev === s ? "all" : s);
-    if (s === "Finalizado") setHideFinalized(false);
-  };
+  const columns = hideDelivered ? KANBAN_COLUMNS : [...KANBAN_COLUMNS, DELIVERED_COLUMN];
 
   const itemsByCol = useMemo(() => {
     const map: Record<string, ServiceOrder[]> = {};
-    KANBAN_COLUMNS.forEach(c => { map[c.id] = []; });
+    columns.forEach(c => { map[c.id] = []; });
     filtered.forEach(o => {
-      if (isOverdue(o)) map["Em atraso"].push(o);
-      else if (map[o.status]) map[o.status].push(o);
+      const key = isDelivered(o) ? STAGE_ENTREGUE : o.stage;
+      if (map[key]) map[key].push(o);
     });
+    Object.values(map).forEach(list =>
+      list.sort((a, b) => (a.kanban_position - b.kanban_position) || a.os_number - b.os_number));
     return map;
-  }, [filtered]);
+  }, [filtered, columns]);
 
-  const mechName = (id: string | null) => mechanics.find(m => m.id === id)?.name || "—";
+  const mechName = (id: string | null) => mechanics.find(m => m.id === id)?.name || "A definir";
   const companyName = (id: string | null) => companies.find(c => c.id === id)?.name || "—";
   const companyPhone = (id: string | null) => companies.find(c => c.id === id)?.contact_phone || null;
 
-  const handleStatusChange = (o: ServiceOrder, newStatus: string) => {
-    if (newStatus === o.status) return;
-    if (newStatus === TERMINAL) { setClosing(o); return; }
-    update(o.id, { status: newStatus });
+  const handleStageChange = (o: ServiceOrder, newStage: string) => {
+    if (newStage === o.stage) return;
+    if (newStage === STAGE_ENTREGUE) { setClosing(o); return; }
+    const patch: Partial<ServiceOrder> = { stage: newStage };
+    // Regra: ao sair da análise para orçamento/aguardando peça, desvincula o mecânico
+    if (o.stage === "analise" && (newStage === "orcamento" || newStage === "aguardando_peca")) {
+      patch.mechanic_id = null;
+    }
+    update(o.id, patch);
   };
 
   const confirmClosure = async (payload: { closure_summary: string; closed_at: string; total_cost?: number }) => {
     if (!closing) return;
     await update(closing.id, {
+      stage: STAGE_ENTREGUE,
       status: TERMINAL,
       finished_at: payload.closed_at,
       closure_summary: payload.closure_summary,
@@ -138,36 +140,57 @@ export default function OpOficina() {
 
   const renderCard = (o: ServiceOrder) => {
     const overdue = isOverdue(o);
+    const days = daysInWorkshop(o.opened_at, o.finished_at);
     const partsCount = partsCountByOs[o.id] || 0;
+    const slaParts = partsSlaRemaining(o.parts_arrived_at);
     return (
-      <div onClick={() => setSelected(o)}>
-        <div className="flex items-start gap-2 mb-1 flex-wrap">
+      <div>
+        <div className="flex items-start gap-2 mb-1 flex-wrap" onClick={() => setSelected(o)}>
           <span className="font-mono text-[11px] bg-muted px-1.5 py-0.5 rounded">#{o.os_number}</span>
+          <Badge variant="secondary" className={cn("text-[10px] h-5", days >= DIAS_ALERTA && "bg-rose-500/15 text-rose-700 dark:text-rose-300")}>
+            {days}d na oficina
+          </Badge>
           {partsCount > 0 && (
-            <Badge variant="secondary" className="text-[10px] h-5">🔧 {partsCount} {partsCount === 1 ? "peça" : "peças"}</Badge>
+            <Badge variant="outline" className="text-[10px] h-5"><Package className="h-3 w-3 mr-0.5" />{partsCount}</Badge>
           )}
-          <span className="text-xs text-muted-foreground truncate flex-1">{companyName(o.company_id)}</span>
-          {overdue && <Badge variant="destructive" className="text-[10px]"><AlertTriangle className="h-3 w-3 mr-0.5" />Atraso</Badge>}
+          {overdue && <Badge variant="destructive" className="text-[10px]"><AlertTriangle className="h-3 w-3 mr-0.5" />Alerta</Badge>}
         </div>
-        <div className="text-sm font-medium line-clamp-2">{o.description || "Sem descrição"}</div>
-        <div className="text-[11px] text-muted-foreground mt-1 truncate">
-          {o.vehicle_plate || "—"} · Mec.: {mechName(o.mechanic_id)}
+        <div className="text-sm font-medium line-clamp-2" onClick={() => setSelected(o)}>
+          {o.description || "Sem descrição"}
         </div>
+        <div className="text-[11px] text-muted-foreground mt-1 truncate" onClick={() => setSelected(o)}>
+          {o.vehicle_plate || "—"} · {companyName(o.company_id)} · Mec.: {mechName(o.mechanic_id)}
+        </div>
+        {slaParts != null && !isDelivered(o) && (
+          <div className={cn("text-[11px] mt-1", slaParts < 0 ? "text-rose-600 font-medium" : "text-muted-foreground")}>
+            SLA peças: {slaParts < 0 ? `${Math.abs(slaParts)}d em atraso` : `${slaParts}d restantes`}
+          </div>
+        )}
         {o.deadline && (
-          <div className={cn("text-[11px] mt-1", overdue ? "text-rose-600 font-medium" : "text-muted-foreground")}>
+          <div className={cn("text-[11px] mt-0.5", o.deadline < todayISO() && !isDelivered(o) ? "text-rose-600 font-medium" : "text-muted-foreground")}>
             Prazo: {formatDateBR(o.deadline)}
           </div>
         )}
         <div className="flex items-center justify-between mt-2">
           <span className="text-xs font-semibold">{fmtMoney(Number(o.total_cost || 0))}</span>
-          <OpQuickActions phone={companyPhone(o.company_id)} size="icon" />
+          <div className="flex items-center gap-1">
+            <Button variant="ghost" size="icon" className="h-6 w-6" title="Subir prioridade"
+              onClick={(e) => { e.stopPropagation(); movePriority(o, -1); }}>
+              <ChevronUp className="h-3.5 w-3.5" />
+            </Button>
+            <Button variant="ghost" size="icon" className="h-6 w-6" title="Descer prioridade"
+              onClick={(e) => { e.stopPropagation(); movePriority(o, 1); }}>
+              <ChevronDown className="h-3.5 w-3.5" />
+            </Button>
+            <OpQuickActions phone={companyPhone(o.company_id)} size="icon" />
+          </div>
         </div>
       </div>
     );
   };
 
   return (
-    <div className="p-6 max-w-7xl mx-auto space-y-4">
+    <div className="p-6 max-w-[1400px] mx-auto space-y-4">
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div className="flex items-center gap-3">
           <div className="h-10 w-10 rounded-lg bg-primary text-primary-foreground flex items-center justify-center">
@@ -175,27 +198,30 @@ export default function OpOficina() {
           </div>
           <div>
             <h1 className="text-2xl font-bold">Oficina</h1>
-            <p className="text-sm text-muted-foreground">Ordens de serviço, peças e fotos</p>
+            <p className="text-sm text-muted-foreground">
+              Fluxo por etapas · alerta em {DIAS_ALERTA} dias na oficina · SLA de {SLA_PECAS} dias após a chegada das peças
+            </p>
           </div>
         </div>
         <div className="flex items-center gap-2">
           <Tabs value={view} onValueChange={(v) => setView(v as any)}>
             <TabsList>
-              <TabsTrigger value="kanban"><LayoutGrid className="h-4 w-4 mr-1" />Kanban</TabsTrigger>
+              <TabsTrigger value="kanban"><LayoutGrid className="h-4 w-4 mr-1" />Etapas</TabsTrigger>
               <TabsTrigger value="lista"><List className="h-4 w-4 mr-1" />Lista</TabsTrigger>
+              <TabsTrigger value="compras"><ShoppingCart className="h-4 w-4 mr-1" />Compras</TabsTrigger>
             </TabsList>
           </Tabs>
-          <Button onClick={() => setOpenNew(true)}><Plus className="h-4 w-4 mr-1" /> Nova OS</Button>
+          <Button onClick={() => setOpenNew(true)}><Plus className="h-4 w-4 mr-1" /> Nova entrada</Button>
         </div>
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-6 gap-3">
-        <Kpi label="Pendentes" value={kpis.pendentes} active={statusFilter === "Pendente"} onClick={() => toggleStatus("Pendente")} />
-        <Kpi label="Em execução" value={kpis.exec} active={statusFilter === "exec"} onClick={() => toggleStatus("exec")} />
-        <Kpi label="Em atraso" value={kpis.atrasadas} active={statusFilter === "atraso"} onClick={() => toggleStatus("atraso")} />
-        <Kpi label="Finalizadas" value={kpis.finalizadas} active={statusFilter === "Finalizado"} onClick={() => toggleStatus("Finalizado")} />
-        <Kpi label="Total no mês" value={kpis.total} active={statusFilter === "all"} onClick={() => setStatusFilter("all")} />
-        <Kpi label="Custo finalizadas" value={fmtMoney(kpis.custo)} />
+        <Kpi label="Motos ativas" value={kpis.total} icon={Wrench} />
+        <Kpi label="Média dias na oficina" value={`${kpis.media}d`} icon={Gauge} />
+        <Kpi label="Em alerta / atrasadas" value={kpis.atrasadas} icon={AlertTriangle} active={onlyLate} onClick={() => setOnlyLate(v => !v)} />
+        <Kpi label="Aguardando peça" value={kpis.aguardPeca} icon={Package} />
+        <Kpi label="Entregues no mês" value={kpis.entregues} icon={Truck} />
+        <Kpi label="Custo entregues" value={fmtMoney(kpis.custo)} />
       </div>
 
       <div className="bg-card border rounded-lg p-3 flex flex-wrap gap-3 items-end">
@@ -207,12 +233,15 @@ export default function OpOficina() {
           <Label className="text-xs">Buscar</Label>
           <div className="relative">
             <Search className="h-4 w-4 absolute left-2 top-2.5 text-muted-foreground" />
-            <Input value={search} onChange={e => setSearch(e.target.value)} placeholder="OS, placa, descrição" className="pl-8" />
+            <Input value={search} onChange={e => setSearch(e.target.value)} placeholder="OS, placa, modelo, descrição" className="pl-8" />
           </div>
         </div>
+        <Button size="sm" variant={onlyLate ? "destructive" : "outline"} onClick={() => setOnlyLate(v => !v)}>
+          <AlertTriangle className="h-3 w-3 mr-1" /> Só atrasadas
+        </Button>
         {view === "kanban" && (
-          <Button size="sm" variant="outline" onClick={() => setHideFinalized(v => !v)}>
-            {hideFinalized ? <><EyeOff className="h-3 w-3 mr-1" />Ocultando finalizadas</> : <><Eye className="h-3 w-3 mr-1" />Mostrando todas</>}
+          <Button size="sm" variant="outline" onClick={() => setHideDelivered(v => !v)}>
+            {hideDelivered ? <><EyeOff className="h-3 w-3 mr-1" />Ocultando entregues</> : <><Eye className="h-3 w-3 mr-1" />Mostrando todas</>}
           </Button>
         )}
       </div>
@@ -226,38 +255,39 @@ export default function OpOficina() {
         </TabsList>
       </Tabs>
 
-      {view === "kanban" ? (
+      {view === "kanban" && (
         <OpKanbanBoard<ServiceOrder>
-          columns={hideFinalized ? KANBAN_COLUMNS.filter(c => c.id !== "Finalizado") : KANBAN_COLUMNS}
+          columns={columns}
           itemsByColumn={itemsByCol}
           renderCard={renderCard}
           resolveItem={(id) => filtered.find(o => o.id === id)}
-          // "Em atraso" is derived; dropping there is not allowed
-          isAllowed={(_item, _from, to) => to !== "Em atraso"}
-          onMove={(item, _from, to) => handleStatusChange(item, to)}
-          emptyText="Sem OS"
+          onMove={(item, _from, to) => handleStageChange(item, to)}
+          emptyText="— sem motos —"
         />
-      ) : (
+      )}
+
+      {view === "lista" && (
         <div className="bg-card border rounded-lg divide-y">
           {filtered.length === 0 && (
             <div className="p-12 text-center text-muted-foreground">Nenhuma OS no período</div>
           )}
           {filtered.map(o => {
             const overdue = isOverdue(o);
+            const st = stageInfo(isDelivered(o) ? STAGE_ENTREGUE : o.stage);
             return (
               <button key={o.id} onClick={() => setSelected(o)} className="w-full text-left p-4 hover:bg-muted/40 transition flex items-center gap-4">
                 <div className="font-mono text-sm bg-muted px-2 py-1 rounded">#{o.os_number}</div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
                     <span className="font-medium truncate">{o.description || "Sem descrição"}</span>
-                    <Badge className={statusColor[o.status] || ""} variant="secondary">{o.status}</Badge>
+                    <Badge className={st.chip} variant="secondary">{st.label}</Badge>
                     {(partsCountByOs[o.id] || 0) > 0 && (
-                      <Badge variant="outline" className="text-[10px]">🔧 {partsCountByOs[o.id]} {partsCountByOs[o.id] === 1 ? "peça" : "peças"}</Badge>
+                      <Badge variant="outline" className="text-[10px]"><Package className="h-3 w-3 mr-0.5" />{partsCountByOs[o.id]}</Badge>
                     )}
-                    {overdue && <Badge variant="destructive"><AlertTriangle className="h-3 w-3 mr-0.5" />Em atraso</Badge>}
+                    {overdue && <Badge variant="destructive"><AlertTriangle className="h-3 w-3 mr-0.5" />Em alerta</Badge>}
                   </div>
                   <div className="text-xs text-muted-foreground mt-0.5">
-                    {o.vehicle_plate || "—"} · {companyName(o.company_id)} · Mec.: {mechName(o.mechanic_id)} · {formatDateBR(o.opened_at)}
+                    {o.vehicle_plate || "—"} · {companyName(o.company_id)} · Mec.: {mechName(o.mechanic_id)} · {daysInWorkshop(o.opened_at, o.finished_at)}d na oficina
                     {o.deadline && <> · Prazo: {formatDateBR(o.deadline)}</>}
                   </div>
                 </div>
@@ -268,6 +298,17 @@ export default function OpOficina() {
             );
           })}
         </div>
+      )}
+
+      {view === "compras" && (
+        <ComprasView
+          orders={filtered.filter(o => !isDelivered(o))}
+          partsByOs={partsByOs}
+          companyName={companyName}
+          onOpen={setSelected}
+          onPartStatus={setPartStatus}
+          onPartsArrived={(o) => update(o.id, { parts_arrived_at: todayISO(), stage: o.stage === "aguardando_peca" ? "execucao" : o.stage })}
+        />
       )}
 
       {openNew && <NewOsDialog onClose={() => setOpenNew(false)} onCreate={async (input) => { const r = await add(input); if (r) { setOpenNew(false); setSelected(r as ServiceOrder); } }} />}
@@ -285,7 +326,7 @@ export default function OpOficina() {
       <OpClosureDialog
         open={!!closing}
         onOpenChange={(o) => !o && setClosing(null)}
-        title={closing ? `Finalizar OS #${closing.os_number}` : "Finalizar"}
+        title={closing ? `Entregar OS #${closing.os_number}` : "Entregar"}
         showCost
         initialCost={closing?.total_cost}
         onConfirm={confirmClosure}
@@ -294,7 +335,7 @@ export default function OpOficina() {
   );
 }
 
-function Kpi({ label, value, active, onClick }: { label: string; value: any; active?: boolean; onClick?: () => void }) {
+function Kpi({ label, value, active, onClick, icon: Icon }: { label: string; value: any; active?: boolean; onClick?: () => void; icon?: any }) {
   const Cmp: any = onClick ? "button" : "div";
   return (
     <Cmp
@@ -305,9 +346,71 @@ function Kpi({ label, value, active, onClick }: { label: string; value: any; act
         active && "border-primary ring-2 ring-primary/30 bg-primary/5"
       )}
     >
-      <div className="text-xs text-muted-foreground">{label}</div>
+      <div className="text-xs text-muted-foreground flex items-center gap-1">
+        {Icon && <Icon className="h-3.5 w-3.5" />} {label}
+      </div>
       <div className="text-xl font-bold mt-1">{value}</div>
     </Cmp>
+  );
+}
+
+function ComprasView({ orders, partsByOs, companyName, onOpen, onPartStatus, onPartsArrived }: {
+  orders: ServiceOrder[];
+  partsByOs: Record<string, any[]>;
+  companyName: (id: string | null) => string;
+  onOpen: (o: ServiceOrder) => void;
+  onPartStatus: (partId: string, status: string) => void;
+  onPartsArrived: (o: ServiceOrder) => void;
+}) {
+  const withParts = orders.filter(o => (partsByOs[o.id] || []).length > 0);
+  if (withParts.length === 0) {
+    return <div className="bg-card border rounded-lg p-12 text-center text-muted-foreground">Nenhuma peça na fila de compras</div>;
+  }
+  return (
+    <div className="space-y-3">
+      {withParts.map(o => {
+        const parts = partsByOs[o.id] || [];
+        const allReceived = parts.every(p => p.part_status === "recebida");
+        return (
+          <div key={o.id} className="bg-card border rounded-lg p-3">
+            <div className="flex items-center gap-2 flex-wrap mb-2">
+              <button className="font-mono text-xs bg-muted px-2 py-1 rounded" onClick={() => onOpen(o)}>#{o.os_number}</button>
+              <span className="font-medium text-sm">{o.vehicle_plate || "—"} · {o.vehicle_model || "—"}</span>
+              <span className="text-xs text-muted-foreground">{companyName(o.company_id)}</span>
+              <Badge variant="secondary" className={stageInfo(o.stage).chip}>{stageInfo(o.stage).label}</Badge>
+              <div className="ml-auto flex items-center gap-2">
+                {o.parts_arrived_at ? (
+                  <span className="text-xs text-muted-foreground">Peças chegaram em {formatDateBR(o.parts_arrived_at)}</span>
+                ) : (
+                  <Button size="sm" variant={allReceived ? "default" : "outline"} onClick={() => onPartsArrived(o)}>
+                    <Check className="h-3.5 w-3.5 mr-1" /> Registrar chegada das peças
+                  </Button>
+                )}
+              </div>
+            </div>
+            <div className="border rounded divide-y text-sm">
+              {parts.map(p => {
+                const info = PART_STATUS_INFO[p.part_status] || PART_STATUS_INFO.solicitada;
+                const idx = PART_STATUS_FLOW.indexOf(p.part_status);
+                const next = idx >= 0 && idx < PART_STATUS_FLOW.length - 1 ? PART_STATUS_FLOW[idx + 1] : null;
+                return (
+                  <div key={p.id} className="p-2 flex items-center gap-2 flex-wrap">
+                    <div className="flex-1 min-w-[140px]">{p.part_name}</div>
+                    <div className="text-xs w-12 text-center">{p.quantity}x</div>
+                    <Badge variant="secondary" className={info.chip}>{info.label}</Badge>
+                    {next && (
+                      <Button size="sm" variant="outline" onClick={() => onPartStatus(p.id, next)}>
+                        Marcar como {PART_STATUS_INFO[next].label}
+                      </Button>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        );
+      })}
+    </div>
   );
 }
 
@@ -317,6 +420,7 @@ function NewOsDialog({ onClose, onCreate }: { onClose: () => void; onCreate: (in
   const { items: mechanics } = useMechanics();
   const [form, setForm] = useState<Partial<ServiceOrder>>({
     status: "Pendente",
+    stage: "analise",
     opened_at: new Date().toISOString().slice(0, 10),
   });
   const setF = (p: Partial<ServiceOrder>) => setForm(prev => ({ ...prev, ...p }));
@@ -324,7 +428,7 @@ function NewOsDialog({ onClose, onCreate }: { onClose: () => void; onCreate: (in
   return (
     <Dialog open onOpenChange={onClose}>
       <DialogContent className="max-w-2xl">
-        <DialogHeader><DialogTitle>Nova Ordem de Serviço</DialogTitle></DialogHeader>
+        <DialogHeader><DialogTitle>Nova entrada na oficina</DialogTitle></DialogHeader>
         <div className="grid gap-3 md:grid-cols-2">
           <div>
             <Label>Cliente / Empresa</Label>
@@ -338,6 +442,13 @@ function NewOsDialog({ onClose, onCreate }: { onClose: () => void; onCreate: (in
             <Select value={form.mechanic_id || ""} onValueChange={v => setF({ mechanic_id: v })}>
               <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
               <SelectContent>{mechanics.map(m => <SelectItem key={m.id} value={m.id}>{m.name}</SelectItem>)}</SelectContent>
+            </Select>
+          </div>
+          <div>
+            <Label>Etapa inicial</Label>
+            <Select value={form.stage || "analise"} onValueChange={v => setF({ stage: v })}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>{STAGES.map(s => <SelectItem key={s.id} value={s.id}>{s.label}</SelectItem>)}</SelectContent>
             </Select>
           </div>
           <div>
@@ -359,7 +470,7 @@ function NewOsDialog({ onClose, onCreate }: { onClose: () => void; onCreate: (in
             <Input value={form.vehicle_model || ""} onChange={e => setF({ vehicle_model: e.target.value })} />
           </div>
           <div>
-            <Label>Data abertura</Label>
+            <Label>Data entrada</Label>
             <Input type="date" value={form.opened_at || ""} onChange={e => setF({ opened_at: e.target.value })} />
           </div>
           <div>
@@ -367,7 +478,7 @@ function NewOsDialog({ onClose, onCreate }: { onClose: () => void; onCreate: (in
             <Input type="date" value={form.deadline || ""} onChange={e => setF({ deadline: e.target.value })} />
           </div>
           <div className="md:col-span-2">
-            <Label>Descrição do problema</Label>
+            <Label>Tipo de serviço / problema</Label>
             <Textarea value={form.description || ""} onChange={e => setF({ description: e.target.value })} rows={3} />
           </div>
         </div>
@@ -388,17 +499,18 @@ function OsDetailDialog({ os, onClose, onUpdate, onDelete, onRequestClose, compa
   onRequestClose: (o: ServiceOrder) => void;
   companyPhone: string | null;
 }) {
-  const { parts, photos, addPart, removePart, uploadPhoto, removePhoto } = useServiceOrderDetails(os.id);
+  const { parts, photos, addPart, updatePart, removePart, uploadPhoto, removePhoto } = useServiceOrderDetails(os.id);
   const { items: partsCatalog } = useParts();
   const { items: mechanics } = useMechanics();
   const { items: companies } = useCompanies();
   const { items: vehicles } = useVehicles();
 
-  const [status, setStatus] = useState(os.status);
+  const [stage, setStage] = useState(os.stage || "analise");
   const [diagnosis, setDiagnosis] = useState(os.diagnosis || "");
   const [notes, setNotes] = useState(os.notes || "");
   const [deadline, setDeadline] = useState(os.deadline || "");
   const [openedAt, setOpenedAt] = useState(os.opened_at || "");
+  const [partsArrivedAt, setPartsArrivedAt] = useState(os.parts_arrived_at || "");
   const [companyId, setCompanyId] = useState<string>(os.company_id || "");
   const [mechanicId, setMechanicId] = useState<string>(os.mechanic_id || "");
   const [vehicleId, setVehicleId] = useState<string>(os.vehicle_id || "");
@@ -414,14 +526,17 @@ function OsDetailDialog({ os, onClose, onUpdate, onDelete, onRequestClose, compa
   };
 
   const total = parts.reduce((s, p) => s + Number(p.quantity) * Number(p.unit_price), 0);
+  const days = daysInWorkshop(openedAt || os.opened_at, os.finished_at);
+  const slaParts = partsSlaRemaining(partsArrivedAt || null);
 
   const saveHeader = () => {
     onUpdate({
-      status,
+      stage,
       diagnosis,
       notes,
       deadline: deadline || null,
       opened_at: openedAt || os.opened_at,
+      parts_arrived_at: partsArrivedAt || null,
       company_id: companyId || null,
       mechanic_id: mechanicId || null,
       vehicle_id: vehicleId || null,
@@ -430,12 +545,10 @@ function OsDetailDialog({ os, onClose, onUpdate, onDelete, onRequestClose, compa
     });
   };
 
-  const handleStatusSelect = (v: string) => {
-    if (v === TERMINAL && os.status !== TERMINAL) {
-      onRequestClose(os);
-      return;
-    }
-    setStatus(v);
+  const handleStageSelect = (v: string) => {
+    if (v === STAGE_ENTREGUE) { onRequestClose(os); return; }
+    setStage(v);
+    if (os.stage === "analise" && (v === "orcamento" || v === "aguardando_peca")) setMechanicId("");
   };
 
   const handlePhoto = async (e: React.ChangeEvent<HTMLInputElement>, type: "antes" | "depois") => {
@@ -448,12 +561,12 @@ function OsDetailDialog({ os, onClose, onUpdate, onDelete, onRequestClose, compa
     const w = window.open("", "_blank"); if (!w) return;
     const mech = mechanics.find(m => m.id === os.mechanic_id)?.name || "—";
     const comp = companies.find(c => c.id === os.company_id)?.name || "—";
-    const partsRows = parts.map(p => `<tr><td>${p.part_name}</td><td style="text-align:center">${p.quantity}</td><td style="text-align:right">${fmtMoney(Number(p.unit_price))}</td><td style="text-align:right">${fmtMoney(Number(p.quantity) * Number(p.unit_price))}</td></tr>`).join("");
+    const partsRows = parts.map(p => `<tr><td>${p.part_name}</td><td style="text-align:center">${p.quantity}</td><td style="text-align:center">${(PART_STATUS_INFO[p.part_status] || PART_STATUS_INFO.solicitada).label}</td><td style="text-align:right">${fmtMoney(Number(p.unit_price))}</td><td style="text-align:right">${fmtMoney(Number(p.quantity) * Number(p.unit_price))}</td></tr>`).join("");
     const photosHtml = photos.map(p => `<div style="display:inline-block;margin:4px;text-align:center"><img src="${p.photo_url}" style="max-width:200px;max-height:160px;border:1px solid #ccc"/><div style="font-size:11px">${p.photo_type}</div></div>`).join("");
     w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>OS #${os.os_number}</title>
       <style>body{font-family:Arial,sans-serif;padding:24px;color:#222}h1{margin:0 0 4px}h2{font-size:14px;margin:16px 0 6px;border-bottom:1px solid #ddd;padding-bottom:4px}table{width:100%;border-collapse:collapse;font-size:12px}th,td{border:1px solid #ccc;padding:6px}th{background:#f2f2f2;text-align:left}.grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:12px}.f{padding:6px;background:#f7f7f7;border-radius:4px}</style></head><body>
       <h1>Ordem de Serviço #${os.os_number}</h1>
-      <div style="font-size:12px;color:#666">Aberta em ${formatDateBR(openedAt || os.opened_at)} · Status: <b>${status}</b></div>
+      <div style="font-size:12px;color:#666">Entrada em ${formatDateBR(openedAt || os.opened_at)} · Etapa: <b>${stageInfo(stage).label}</b> · ${days} dias na oficina</div>
       <h2>Dados</h2>
       <div class="grid">
         <div class="f"><b>Cliente:</b> ${comp}</div>
@@ -464,8 +577,8 @@ function OsDetailDialog({ os, onClose, onUpdate, onDelete, onRequestClose, compa
       <h2>Descrição</h2><div>${(os.description || "—").replace(/\n/g, "<br>")}</div>
       <h2>Diagnóstico</h2><div>${(diagnosis || "—").replace(/\n/g, "<br>")}</div>
       <h2>Peças / Itens</h2>
-      <table><thead><tr><th>Item</th><th>Qtd</th><th>Unit.</th><th>Total</th></tr></thead><tbody>${partsRows || '<tr><td colspan="4" style="text-align:center">Sem itens</td></tr>'}</tbody>
-      <tfoot><tr><th colspan="3" style="text-align:right">Total</th><th style="text-align:right">${fmtMoney(total)}</th></tr></tfoot></table>
+      <table><thead><tr><th>Item</th><th>Qtd</th><th>Situação</th><th>Unit.</th><th>Total</th></tr></thead><tbody>${partsRows || '<tr><td colspan="5" style="text-align:center">Sem itens</td></tr>'}</tbody>
+      <tfoot><tr><th colspan="4" style="text-align:right">Total</th><th style="text-align:right">${fmtMoney(total)}</th></tr></tfoot></table>
       ${photos.length ? `<h2>Fotos</h2><div>${photosHtml}</div>` : ""}
       ${notes ? `<h2>Observações</h2><div>${notes.replace(/\n/g, "<br>")}</div>` : ""}
       <script>window.onload=()=>setTimeout(()=>window.print(),300)</script>
@@ -477,32 +590,48 @@ function OsDetailDialog({ os, onClose, onUpdate, onDelete, onRequestClose, compa
     <Dialog open onOpenChange={onClose}>
       <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
+          <DialogTitle className="flex items-center gap-2 flex-wrap">
             <span className="font-mono bg-muted px-2 py-1 rounded text-sm">#{os.os_number}</span>
             Ordem de Serviço
+            <Badge variant="secondary" className={cn(days >= DIAS_ALERTA && "bg-rose-500/15 text-rose-700 dark:text-rose-300")}>{days}d na oficina</Badge>
             <div className="ml-auto"><OpQuickActions phone={companyPhone} /></div>
           </DialogTitle>
         </DialogHeader>
 
         {os.closure_summary && (
           <div className="bg-emerald-500/10 border border-emerald-500/30 rounded-md p-3 text-sm">
-            <div className="font-medium mb-1">Resumo de conclusão</div>
+            <div className="font-medium mb-1">Resumo de entrega</div>
             <div className="whitespace-pre-wrap text-muted-foreground">{os.closure_summary}</div>
-            {os.finished_at && <div className="text-xs text-muted-foreground mt-1">Finalizada em {formatDateBR(os.finished_at)}</div>}
+            {os.finished_at && <div className="text-xs text-muted-foreground mt-1">Entregue em {formatDateBR(os.finished_at)}</div>}
           </div>
         )}
 
         <div className="grid gap-3 md:grid-cols-2">
           <div>
-            <Label>Status</Label>
-            <Select value={status} onValueChange={handleStatusSelect}>
+            <Label>Etapa</Label>
+            <Select value={stage} onValueChange={handleStageSelect}>
               <SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent>{STATUS_LIST.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
+              <SelectContent>
+                {STAGES.map(s => <SelectItem key={s.id} value={s.id}>{s.label}</SelectItem>)}
+                <SelectItem value={STAGE_ENTREGUE}>Entregue</SelectItem>
+              </SelectContent>
             </Select>
           </div>
           <div>
-            <Label>Data de criação</Label>
+            <Label>Data de entrada</Label>
             <Input type="date" value={openedAt} onChange={e => setOpenedAt(e.target.value)} />
+          </div>
+          <div>
+            <Label>Chegada das peças</Label>
+            <div className="flex gap-2">
+              <Input type="date" value={partsArrivedAt} onChange={e => setPartsArrivedAt(e.target.value)} />
+              <Button variant="outline" onClick={() => setPartsArrivedAt(todayISO())}>Hoje</Button>
+            </div>
+            {slaParts != null && (
+              <div className={cn("text-[11px] mt-1", slaParts < 0 ? "text-rose-600 font-medium" : "text-muted-foreground")}>
+                SLA de {SLA_PECAS} dias: {slaParts < 0 ? `${Math.abs(slaParts)}d em atraso` : `${slaParts}d restantes`}
+              </div>
+            )}
           </div>
           <div>
             <Label>Prazo</Label>
@@ -518,7 +647,7 @@ function OsDetailDialog({ os, onClose, onUpdate, onDelete, onRequestClose, compa
           <div>
             <Label>Mecânico</Label>
             <Select value={mechanicId} onValueChange={setMechanicId}>
-              <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
+              <SelectTrigger><SelectValue placeholder="A definir" /></SelectTrigger>
               <SelectContent>{mechanics.map(m => <SelectItem key={m.id} value={m.id}>{m.name}</SelectItem>)}</SelectContent>
             </Select>
           </div>
@@ -597,9 +726,15 @@ function OsDetailDialog({ os, onClose, onUpdate, onDelete, onRequestClose, compa
           <div className="border rounded divide-y text-sm">
             {parts.length === 0 && <div className="p-3 text-center text-muted-foreground text-xs">Nenhum item</div>}
             {parts.map(p => (
-              <div key={p.id} className="p-2 flex items-center gap-2">
-                <div className="flex-1">{p.part_name}</div>
+              <div key={p.id} className="p-2 flex items-center gap-2 flex-wrap">
+                <div className="flex-1 min-w-[120px]">{p.part_name}</div>
                 <div className="w-12 text-center text-xs">{p.quantity}x</div>
+                <Select value={p.part_status} onValueChange={(v) => updatePart(p.id, { part_status: v })}>
+                  <SelectTrigger className="w-[150px] h-8 text-xs"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {PART_STATUS_FLOW.map(s => <SelectItem key={s} value={s}>{PART_STATUS_INFO[s].label}</SelectItem>)}
+                  </SelectContent>
+                </Select>
                 <div className="w-24 text-right text-xs">{fmtMoney(Number(p.unit_price))}</div>
                 <div className="w-24 text-right font-medium">{fmtMoney(Number(p.quantity) * Number(p.unit_price))}</div>
                 <Button variant="ghost" size="icon" onClick={() => removePart(p.id)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
@@ -644,6 +779,7 @@ function OsDetailDialog({ os, onClose, onUpdate, onDelete, onRequestClose, compa
         <DialogFooter className="flex-wrap gap-2">
           <Button variant="outline" onClick={exportPdf}><FileText className="h-4 w-4 mr-1" /> Exportar PDF</Button>
           <Button variant="destructive" onClick={() => { if (confirm("Excluir esta OS?")) onDelete(); }}>Excluir</Button>
+          <Button variant="secondary" onClick={() => onRequestClose(os)}><Truck className="h-4 w-4 mr-1" /> Entregar</Button>
           <Button onClick={() => { saveHeader(); onClose(); }}>Salvar</Button>
         </DialogFooter>
       </DialogContent>
