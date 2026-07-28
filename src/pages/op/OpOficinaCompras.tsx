@@ -75,7 +75,15 @@ export default function OpOficinaCompras() {
                   </div>
                   <div className="text-xs text-muted-foreground mt-1">
                     {parts.length} peça(s) solicitada(s)
-                    {o.parts_arrived_at && ` · chegada registrada em ${o.parts_arrived_at.split("-").reverse().join("/")}`}
+                  </div>
+                  <div className="flex items-center gap-2 mt-2">
+                    <span className="text-xs text-muted-foreground">Chegada das peças:</span>
+                    <Input
+                      type="date"
+                      className="h-8 w-40"
+                      value={o.parts_arrived_at || ""}
+                      onChange={e => update(o.id, { parts_arrived_at: e.target.value || null })}
+                    />
                   </div>
                 </div>
                 {!allReceived && (
@@ -86,6 +94,7 @@ export default function OpOficinaCompras() {
                 {allReceived && (
                   <Badge className="bg-emerald-600 text-white border-0"><Check className="h-3 w-3 mr-1" />Peças recebidas</Badge>
                 )}
+
                 <Button size="sm" variant="secondary" onClick={() => setOpenOs(expanded ? null : o.id)}>
                   <Package className="h-4 w-4 mr-1" /> Gerenciar Peças
                 </Button>
