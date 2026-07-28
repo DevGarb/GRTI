@@ -145,6 +145,8 @@ export default function OpOficinaMinhas() {
           <TabsList>
             <TabsTrigger value="servicos"><ClipboardList className="h-4 w-4 mr-1" />Meus Serviços</TabsTrigger>
             <TabsTrigger value="pecas"><ShoppingCart className="h-4 w-4 mr-1" />Minhas Peças</TabsTrigger>
+            <TabsTrigger value="finalizadas"><CheckCircle2 className="h-4 w-4 mr-1" />Finalizadas ({done.length})</TabsTrigger>
+
           </TabsList>
 
           <TabsContent value="servicos" className="space-y-3 mt-4">
