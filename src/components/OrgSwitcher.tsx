@@ -18,17 +18,46 @@ export default function OrgSwitcher() {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    if (!isSuperAdmin) return;
-    supabase
-      .from("organizations")
-      .select("id, name, logo_url")
-      .order("name")
-      .then(({ data }) => {
-        if (data) setOrgs(data);
-      });
-  }, [isSuperAdmin]);
+    if (!profile?.user_id) return;
 
-  if (!isSuperAdmin || orgs.length === 0) return null;
+    // Super admin vê todas as organizações; demais usuários veem apenas
+    // as organizações em que possuem role ativa (user_organization_roles).
+    const load = async () => {
+      if (isSuperAdmin) {
+        const { data } = await supabase
+          .from("organizations")
+          .select("id, name, logo_url")
+          .order("name");
+        if (data) setOrgs(data);
+        return;
+      }
+
+      const { data: rolesData } = await supabase
+        .from("user_organization_roles")
+        .select("organization_id")
+        .eq("user_id", profile.user_id);
+
+      const orgIds = Array.from(new Set((rolesData || []).map((r: { organization_id: string }) => r.organization_id).filter(Boolean)));
+      if (orgIds.length === 0) {
+        setOrgs([]);
+        return;
+      }
+
+      const { data } = await supabase
+        .from("organizations")
+        .select("id, name, logo_url")
+        .in("id", orgIds)
+        .order("name");
+      if (data) setOrgs(data);
+    };
+
+    load();
+  }, [profile?.user_id, isSuperAdmin]);
+
+  // Só mostra o seletor se o usuário tiver acesso a mais de uma organização
+  // (super admin sempre vê para poder alternar/visualizar todas).
+  if (orgs.length === 0) return null;
+  if (!isSuperAdmin && orgs.length < 2) return null;
 
   const currentOrgId = profile?.organization_id;
   const currentOrg = orgs.find((o) => o.id === currentOrgId);
