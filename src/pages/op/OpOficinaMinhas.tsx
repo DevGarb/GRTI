@@ -1,5 +1,5 @@
-import { useMemo, useState } from "react";
-import { Wrench, Package, CheckCircle2, ClipboardList, ShoppingCart, AlertTriangle, Plus, ChevronDown, ChevronUp } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { Wrench, Package, CheckCircle2, ClipboardList, ShoppingCart, AlertTriangle, Plus, ChevronDown, ChevronUp, Camera, X } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -8,9 +8,11 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useServiceOrders, type ServiceOrder } from "@/hooks/useOficina";
+import { useServiceOrders, type ServiceOrder, type ServiceOrderPhoto } from "@/hooks/useOficina";
 import { useCompanies } from "@/hooks/useOperacional";
 import { useOficinaProfile } from "@/contexts/OficinaProfileContext";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 import OficinaNav from "./OficinaNav";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
@@ -19,10 +21,12 @@ import {
 } from "@/lib/oficinaStages";
 
 const MY_STAGES = ["analise", "desempeno", "pintura", "execucao"];
+const DONE_STAGES = ["pronto", "entregue"];
 
 export default function OpOficinaMinhas() {
   const { profile } = useOficinaProfile();
-  const { items, partsByOs, update, add } = useServiceOrders();
+  const { user } = useAuth();
+  const { items, partsByOs, update, add, refetch } = useServiceOrders();
   const { items: companies } = useCompanies();
   const [tab, setTab] = useState("servicos");
   const [expanded, setExpanded] = useState<string | null>(null);
@@ -36,17 +40,81 @@ export default function OpOficinaMinhas() {
   const [desc, setDesc] = useState("");
   const [saving, setSaving] = useState(false);
 
+  // Finalização
+  const [finishOs, setFinishOs] = useState<ServiceOrder | null>(null);
+  const [summary, setSummary] = useState("");
+  const [files, setFiles] = useState<File[]>([]);
+  const [finishing, setFinishing] = useState(false);
+
   const mine = useMemo(
     () => items.filter(o => o.mechanic_id === profile?.id && MY_STAGES.includes(o.stage)),
     [items, profile?.id],
   );
+
+  const done = useMemo(
+    () => items.filter(o => o.mechanic_id === profile?.id && DONE_STAGES.includes(o.stage)),
+    [items, profile?.id],
+  );
+
+  const [donePhotos, setDonePhotos] = useState<Record<string, ServiceOrderPhoto[]>>({});
+  const doneIds = done.map(o => o.id).join(",");
+  useEffect(() => {
+    const ids = doneIds ? doneIds.split(",") : [];
+    if (!ids.length) { setDonePhotos({}); return; }
+    let active = true;
+    supabase.from("op_service_order_photos").select("*").in("service_order_id", ids).order("created_at")
+      .then(({ data }) => {
+        if (!active) return;
+        const byOs: Record<string, ServiceOrderPhoto[]> = {};
+        ((data || []) as ServiceOrderPhoto[]).forEach(p => { (byOs[p.service_order_id] ||= []).push(p); });
+        setDonePhotos(byOs);
+      });
+    return () => { active = false; };
+  }, [doneIds]);
 
   const myParts = useMemo(
     () => mine.flatMap(o => (partsByOs[o.id] || []).map(p => ({ ...p, os: o }))),
     [mine, partsByOs],
   );
 
-  const finish = (o: ServiceOrder) => update(o.id, { stage: "pronto" });
+  const openFinish = (o: ServiceOrder) => {
+    setFinishOs(o);
+    setSummary("");
+    setFiles([]);
+  };
+
+  const confirmFinish = async () => {
+    if (!finishOs) return;
+    if (!summary.trim()) return toast.error("Descreva o que foi feito no serviço");
+    setFinishing(true);
+    try {
+      for (const file of files) {
+        const path = `${finishOs.id}/${Date.now()}-${file.name.replace(/[^\w.\-]/g, "_")}`;
+        const { error: upErr } = await supabase.storage.from("op-service-orders").upload(path, file);
+        if (upErr) { toast.error(upErr.message); continue; }
+        const { data: { publicUrl } } = supabase.storage.from("op-service-orders").getPublicUrl(path);
+        await supabase.from("op_service_order_photos").insert({
+          service_order_id: finishOs.id,
+          photo_url: publicUrl,
+          photo_type: "depois",
+          uploaded_by: user?.id || null,
+        });
+      }
+      await update(finishOs.id, {
+        stage: "pronto",
+        closure_summary: summary.trim(),
+        finished_at: new Date().toISOString(),
+      });
+      toast.success("Serviço finalizado");
+      setFinishOs(null);
+      setExpanded(null);
+      setTab("finalizadas");
+      refetch();
+    } finally {
+      setFinishing(false);
+    }
+  };
+
 
   const createEntry = async () => {
     if (!plate.trim()) return toast.error("Informe a placa da moto");
