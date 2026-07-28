@@ -15,6 +15,7 @@ import OpKanbanBoard, { type KanbanColumn } from "@/components/operacional/OpKan
 import OpClosureDialog from "@/components/operacional/OpClosureDialog";
 import OpQuickActions from "@/components/operacional/OpQuickActions";
 import OpNotesPanel from "@/components/operacional/OpNotesPanel";
+import OficinaNav from "@/pages/op/OficinaNav";
 import { cn } from "@/lib/utils";
 import { formatDateBR } from "@/lib/dateFormat";
 import {
@@ -190,6 +191,8 @@ export default function OpOficina() {
   };
 
   return (
+    <>
+    <OficinaNav />
     <div className="p-6 max-w-[1400px] mx-auto space-y-4">
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div className="flex items-center gap-3">
@@ -332,6 +335,7 @@ export default function OpOficina() {
         onConfirm={confirmClosure}
       />
     </div>
+    </>
   );
 }
 

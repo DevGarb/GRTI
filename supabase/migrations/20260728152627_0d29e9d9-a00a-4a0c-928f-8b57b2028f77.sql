@@ -1,0 +1,1 @@
+ALTER TABLE public.op_mechanics ADD COLUMN IF NOT EXISTS role text NOT NULL DEFAULT 'mecanico';
