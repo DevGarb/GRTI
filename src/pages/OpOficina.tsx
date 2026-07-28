@@ -440,13 +440,18 @@ function NewOsDialog({ onClose, onCreate }: { onClose: () => void; onCreate: (in
         <DialogHeader><DialogTitle>Nova entrada na oficina</DialogTitle></DialogHeader>
         <div className="grid gap-3 md:grid-cols-2">
           <div>
-            <Label>Cliente / Empresa</Label>
+            <Label>Empresa</Label>
             <Select value={form.company_id || ""} onValueChange={v => setF({ company_id: v })}>
               <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
               <SelectContent>{companies.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}</SelectContent>
             </Select>
           </div>
           <div>
+            <Label>Cliente / Associado</Label>
+            <Input value={form.customer_name || ""} onChange={e => setF({ customer_name: e.target.value })} placeholder="Nome do cliente/associado" />
+          </div>
+          <div>
+
             <Label>Mecânico</Label>
             <Select value={form.mechanic_id || ""} onValueChange={v => setF({ mechanic_id: v })}>
               <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
@@ -519,6 +524,8 @@ function OsDetailDialog({ os, onClose, onUpdate, onDelete, onRequestClose, compa
   const [deadline, setDeadline] = useState(os.deadline || "");
   const openedAt = os.opened_at || "";
   const [companyId, setCompanyId] = useState<string>(os.company_id || "");
+  const [customerName, setCustomerName] = useState<string>(os.customer_name || "");
+
   const [mechanicId, setMechanicId] = useState<string>(os.mechanic_id || "");
   const [vehiclePlate, setVehiclePlate] = useState<string>(os.vehicle_plate || "");
   const [vehicleModel, setVehicleModel] = useState<string>(os.vehicle_model || "");
@@ -540,6 +547,8 @@ function OsDetailDialog({ os, onClose, onUpdate, onDelete, onRequestClose, compa
       diagnosis,
       deadline: deadline || null,
       company_id: companyId || null,
+      customer_name: customerName || null,
+
       mechanic_id: mechanicId || null,
       vehicle_plate: vehiclePlate || null,
       vehicle_model: vehicleModel || null,
@@ -571,7 +580,9 @@ function OsDetailDialog({ os, onClose, onUpdate, onDelete, onRequestClose, compa
       <div style="font-size:12px;color:#666">Entrada em ${formatDateBR(openedAt || os.opened_at)} · Etapa: <b>${stageInfo(stage).label}</b> · ${days} dias na oficina</div>
       <h2>Dados</h2>
       <div class="grid">
-        <div class="f"><b>Cliente:</b> ${comp}</div>
+        <div class="f"><b>Empresa:</b> ${comp}</div>
+        <div class="f"><b>Cliente/Associado:</b> ${os.customer_name || "—"}</div>
+
         <div class="f"><b>Mecânico:</b> ${mech}</div>
         <div class="f"><b>Placa:</b> ${os.vehicle_plate || "—"}</div>
         <div class="f"><b>Modelo:</b> ${os.vehicle_model || "—"}</div>
@@ -638,12 +649,17 @@ function OsDetailDialog({ os, onClose, onUpdate, onDelete, onRequestClose, compa
             </div>
           </div>
           <div>
-            <Label>Cliente</Label>
+            <Label>Empresa</Label>
             <Select value={companyId} onValueChange={setCompanyId}>
               <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
               <SelectContent>{companies.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}</SelectContent>
             </Select>
           </div>
+          <div>
+            <Label>Cliente / Associado</Label>
+            <Input value={customerName} onChange={e => setCustomerName(e.target.value)} placeholder="Nome do cliente/associado" />
+          </div>
+
           <div>
             <Label>Mecânico</Label>
             <Select value={mechanicId} onValueChange={setMechanicId}>

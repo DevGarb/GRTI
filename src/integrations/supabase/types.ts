@@ -1842,6 +1842,7 @@ export type Database = {
           company_id: string | null
           created_at: string
           created_by: string
+          customer_name: string | null
           deadline: string | null
           description: string | null
           diagnosis: string | null
@@ -1870,6 +1871,7 @@ export type Database = {
           company_id?: string | null
           created_at?: string
           created_by: string
+          customer_name?: string | null
           deadline?: string | null
           description?: string | null
           diagnosis?: string | null
@@ -1898,6 +1900,7 @@ export type Database = {
           company_id?: string | null
           created_at?: string
           created_by?: string
+          customer_name?: string | null
           deadline?: string | null
           description?: string | null
           diagnosis?: string | null

@@ -13,6 +13,8 @@ export interface ServiceOrder {
   company_id: string | null;
   vehicle_id: string | null;
   mechanic_id: string | null;
+  customer_name?: string | null;
+
   vehicle_plate: string | null;
   vehicle_model: string | null;
   vehicle_color: string | null;
@@ -144,6 +146,8 @@ export function useServiceOrders() {
       company_id: input.company_id || null,
       vehicle_id: input.vehicle_id || null,
       mechanic_id: input.mechanic_id || null,
+      customer_name: input.customer_name || null,
+
       vehicle_plate: input.vehicle_plate || null,
       vehicle_model: input.vehicle_model || null,
       vehicle_color: input.vehicle_color || null,

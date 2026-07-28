@@ -35,6 +35,8 @@ export default function OpOficinaMinhas() {
   const [plate, setPlate] = useState("");
   const [model, setModel] = useState("");
   const [companyId, setCompanyId] = useState("none");
+  const [customerName, setCustomerName] = useState("");
+
   const [desc, setDesc] = useState("");
   const [saving, setSaving] = useState(false);
   const [newParts, setNewParts] = useState<{ name: string; qty: number }[]>([]);
@@ -153,6 +155,8 @@ export default function OpOficinaMinhas() {
       vehicle_plate: plate.trim().toUpperCase(),
       vehicle_model: model.trim() || null,
       company_id: companyId === "none" ? null : companyId,
+      customer_name: customerName.trim() || null,
+
       description: desc.trim() || null,
       mechanic_id: profile?.id || null,
       stage: "analise",
@@ -231,6 +235,11 @@ export default function OpOficinaMinhas() {
                       </SelectContent>
                     </Select>
                   </div>
+                  <div>
+                    <Label>Cliente / Associado</Label>
+                    <Input value={customerName} onChange={e => setCustomerName(e.target.value)} placeholder="Nome do cliente/associado" />
+                  </div>
+
                   <div>
                     <Label>Problema relatado</Label>
                     <Textarea value={desc} onChange={e => setDesc(e.target.value)} rows={2} placeholder="Descreva o problema relatado" />
