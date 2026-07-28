@@ -44,6 +44,7 @@ export default function OpCadastros() {
         <TabsContent value="requesters"><RequestersTab /></TabsContent>
         <TabsContent value="sectors"><SectorsTab /></TabsContent>
         <TabsContent value="companies"><CompaniesTab /></TabsContent>
+        <TabsContent value="workshop_companies"><CompaniesTab workshop /></TabsContent>
         <TabsContent value="vehicles"><VehiclesTab /></TabsContent>
         <TabsContent value="mechanics"><MechanicsTab /></TabsContent>
         <TabsContent value="maint_tech"><MaintTechniciansTab /></TabsContent>
