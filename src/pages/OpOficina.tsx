@@ -156,22 +156,27 @@ export default function OpOficina() {
           )}
           {overdue && <Badge variant="destructive" className="text-[10px]"><AlertTriangle className="h-3 w-3 mr-0.5" />Alerta</Badge>}
         </div>
-        <div className="text-sm font-medium line-clamp-2" onClick={() => setSelected(o)}>
-          {o.description || "Sem descrição"}
+        <div className="text-sm font-semibold truncate" onClick={() => setSelected(o)}>
+          {[o.vehicle_plate, o.vehicle_model, o.vehicle_color, o.vehicle_year].filter(Boolean).join(" · ") || "Sem veículo"}
         </div>
         <div className="text-[11px] text-muted-foreground mt-1 truncate" onClick={() => setSelected(o)}>
-          {o.vehicle_plate || "—"} · {companyName(o.company_id)} · Mec.: {mechName(o.mechanic_id)}
+          Empresa: {companyName(o.company_id)}
+        </div>
+        <div className="text-[11px] text-muted-foreground truncate" onClick={() => setSelected(o)}>
+          Mecânico: {mechName(o.mechanic_id)}
+        </div>
+        <div className="text-[11px] text-muted-foreground line-clamp-2 mt-1" onClick={() => setSelected(o)}>
+          {o.description || "Sem descrição"}
         </div>
         {slaParts != null && !isDelivered(o) && (
           <div className={cn("text-[11px] mt-1", slaParts < 0 ? "text-rose-600 font-medium" : "text-muted-foreground")}>
             SLA peças: {slaParts < 0 ? `${Math.abs(slaParts)}d em atraso` : `${slaParts}d restantes`}
           </div>
         )}
-        {o.deadline && (
-          <div className={cn("text-[11px] mt-0.5", o.deadline < todayISO() && !isDelivered(o) ? "text-rose-600 font-medium" : "text-muted-foreground")}>
-            Prazo: {formatDateBR(o.deadline)}
-          </div>
-        )}
+        <div className={cn("text-[11px] mt-0.5", o.deadline && o.deadline < todayISO() && !isDelivered(o) ? "text-rose-600 font-medium" : "text-muted-foreground")}>
+          Prazo de entrega: {o.deadline ? formatDateBR(o.deadline) : "—"}
+        </div>
+
         <div className="flex items-center justify-between mt-2">
           <span className="text-xs font-semibold">{fmtMoney(Number(o.total_cost || 0))}</span>
           <div className="flex items-center gap-1">
