@@ -223,11 +223,17 @@ export function useServiceOrderDetails(serviceOrderId: string | null) {
     if (error) { toast.error(error.message); return; }
     await recalcTotal(); fetch();
   };
+  const updatePart = async (id: string, patch: Partial<ServiceOrderPart>) => {
+    const { error } = await supabase.from("op_service_order_parts").update(patch).eq("id", id);
+    if (error) { toast.error(error.message); return; }
+    await recalcTotal(); fetch();
+  };
   const removePart = async (id: string) => {
     const { error } = await supabase.from("op_service_order_parts").delete().eq("id", id);
     if (error) { toast.error(error.message); return; }
     await recalcTotal(); fetch();
   };
+
 
   const uploadPhoto = async (file: File, photo_type: "antes" | "depois") => {
     if (!serviceOrderId || !user) return;
