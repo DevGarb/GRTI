@@ -98,7 +98,7 @@ export default function OficinaPin() {
               <Button onClick={() => login(t.id)} className="w-full cgps-btn-primary">
                 Entrar como {t.label.toLowerCase()} <ArrowRight className="h-4 w-4 ml-1" />
               </Button>
-              {(t.id === "supervisor" || t.id === "lider") && isAdmin && (
+              {t.id === "admin" && isAdmin && (
                 <p className="text-xs text-muted-foreground text-center">
                   Administradores podem usar o PIN 0000.
                 </p>

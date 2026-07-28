@@ -250,8 +250,8 @@ const App = () => (
 
                       <Route path="/op/oficina/pin" element={<MenuGuard menuKey="op-oficina"><OficinaProfileProvider><OficinaPin /></OficinaProfileProvider></MenuGuard>} />
                       <Route path="/op/oficina/minhas" element={<MenuGuard menuKey="op-oficina"><OficinaProfileProvider><OficinaGuard allow={["mecanico"]}><OpOficinaMinhas /></OficinaGuard></OficinaProfileProvider></MenuGuard>} />
-                      <Route path="/op/oficina/compras" element={<MenuGuard menuKey="op-oficina"><OficinaProfileProvider><OficinaGuard allow={["compras","lider","supervisor"]}><OpOficinaCompras /></OficinaGuard></OficinaProfileProvider></MenuGuard>} />
-                      <Route path="/op/oficina" element={<MenuGuard menuKey="op-oficina"><OficinaProfileProvider><OficinaGuard allow={["lider","supervisor"]}><OpOficina /></OficinaGuard></OficinaProfileProvider></MenuGuard>} />
+                      <Route path="/op/oficina/compras" element={<MenuGuard menuKey="op-oficina"><OficinaProfileProvider><OficinaGuard allow={["compras","admin"]}><OpOficinaCompras /></OficinaGuard></OficinaProfileProvider></MenuGuard>} />
+                      <Route path="/op/oficina" element={<MenuGuard menuKey="op-oficina"><OficinaProfileProvider><OficinaGuard allow={["admin"]}><OpOficina /></OficinaGuard></OficinaProfileProvider></MenuGuard>} />
                       <Route path="/op/manutencao/pin" element={<MenuGuard menuKey="op-manutencao"><ManutencaoProfileProvider><ManutencaoPin /></ManutencaoProfileProvider></MenuGuard>} />
                       <Route path="/op/manutencao/minhas" element={<MenuGuard menuKey="op-manutencao"><ManutencaoProfileProvider><ManutencaoGuard><OpManutencaoMinhas /></ManutencaoGuard></ManutencaoProfileProvider></MenuGuard>} />
                       <Route path="/op/manutencao/solicitar" element={<MenuGuard menuKey="op-manutencao"><ManutencaoProfileProvider><ManutencaoGuard><OpManutencaoSolicitar /></ManutencaoGuard></ManutencaoProfileProvider></MenuGuard>} />
