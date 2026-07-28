@@ -628,23 +628,21 @@ function OsDetailDialog({ os, onClose, onUpdate, onDelete, onRequestClose, compa
           </div>
           <div>
             <Label>Data de entrada</Label>
-            <Input type="date" value={openedAt} onChange={e => setOpenedAt(e.target.value)} />
+            <Input value={formatDateBR(os.created_at || os.opened_at)} readOnly disabled />
           </div>
           <div>
-            <Label>Chegada das peças</Label>
-            <div className="flex gap-2">
-              <Input type="date" value={partsArrivedAt} onChange={e => setPartsArrivedAt(e.target.value)} />
-              <Button variant="outline" onClick={() => setPartsArrivedAt(todayISO())}>Hoje</Button>
+            <Label>Prazo de entrega</Label>
+            <Input
+              type="date"
+              value={deadline}
+              onChange={e => setDeadline(e.target.value)}
+              disabled={!os.parts_arrived_at}
+            />
+            <div className="text-[11px] mt-1 text-muted-foreground">
+              {os.parts_arrived_at
+                ? `Peças recebidas em ${formatDateBR(os.parts_arrived_at)}`
+                : "Definido pelo supervisor após a chegada das peças"}
             </div>
-            {slaParts != null && (
-              <div className={cn("text-[11px] mt-1", slaParts < 0 ? "text-rose-600 font-medium" : "text-muted-foreground")}>
-                SLA de {SLA_PECAS} dias: {slaParts < 0 ? `${Math.abs(slaParts)}d em atraso` : `${slaParts}d restantes`}
-              </div>
-            )}
-          </div>
-          <div>
-            <Label>Prazo</Label>
-            <Input type="date" value={deadline} onChange={e => setDeadline(e.target.value)} />
           </div>
           <div>
             <Label>Cliente</Label>
@@ -661,21 +659,10 @@ function OsDetailDialog({ os, onClose, onUpdate, onDelete, onRequestClose, compa
             </Select>
           </div>
           <div>
-            <Label>Veículo (frota)</Label>
-            <Select value={vehicleId} onValueChange={v => {
-              setVehicleId(v);
-              const veh = vehicles.find(x => x.id === v);
-              if (veh) { setVehiclePlate(veh.plate || ""); setVehicleModel(veh.model || ""); }
-            }}>
-              <SelectTrigger><SelectValue placeholder="Opcional" /></SelectTrigger>
-              <SelectContent>{vehicles.map(v => <SelectItem key={v.id} value={v.id}>{v.plate} · {v.model}</SelectItem>)}</SelectContent>
-            </Select>
-          </div>
-          <div>
             <Label>Placa</Label>
             <Input value={vehiclePlate} onChange={e => setVehiclePlate(e.target.value.toUpperCase())} />
           </div>
-          <div className="md:col-span-2">
+          <div>
             <Label>Modelo</Label>
             <Input value={vehicleModel} onChange={e => setVehicleModel(e.target.value)} />
           </div>
@@ -684,13 +671,10 @@ function OsDetailDialog({ os, onClose, onUpdate, onDelete, onRequestClose, compa
             <div className="text-sm bg-muted/40 rounded p-2">{os.description || "—"}</div>
           </div>
           <div className="md:col-span-2">
-            <Label>Diagnóstico / Serviço executado</Label>
-            <Textarea rows={3} value={diagnosis} onChange={e => setDiagnosis(e.target.value)} />
+            <Label>Diagnóstico / Observações</Label>
+            <Textarea rows={4} value={diagnosis} onChange={e => setDiagnosis(e.target.value)} />
           </div>
-          <div className="md:col-span-2">
-            <Label>Observações iniciais</Label>
-            <Textarea rows={2} value={notes} onChange={e => setNotes(e.target.value)} />
-          </div>
+
         </div>
 
         <div className="border-t pt-3">
