@@ -316,7 +316,92 @@ export default function OpOficinaMinhas() {
               );
             })}
           </TabsContent>
+
+          <TabsContent value="finalizadas" className="space-y-3 mt-4">
+            {done.length === 0 && (
+              <div className="bg-card border rounded-lg p-12 text-center text-muted-foreground">
+                Nenhuma moto finalizada por você ainda.
+              </div>
+            )}
+            {done.map(o => {
+              const st = stageInfo(o.stage);
+              const photos = donePhotos[o.id] || [];
+              return (
+                <div key={o.id} className="bg-card border rounded-lg p-4 space-y-2">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="text-lg font-bold tracking-wide">{o.vehicle_plate || `OS #${o.os_number}`}</span>
+                    <Badge variant="secondary" className={st.chip}>{st.label}</Badge>
+                    {o.finished_at && (
+                      <span className="ml-auto text-xs text-muted-foreground">
+                        Finalizado em {new Date(o.finished_at).toLocaleDateString("pt-BR")}
+                      </span>
+                    )}
+                  </div>
+                  <div className="text-sm text-muted-foreground">
+                    {[o.vehicle_model, o.vehicle_color, o.vehicle_year].filter(Boolean).join(" · ") || "—"}
+                  </div>
+                  <div className="text-sm">
+                    <span className="font-medium">O que foi feito:</span>{" "}
+                    <span className="text-muted-foreground">{o.closure_summary || "—"}</span>
+                  </div>
+                  {photos.length > 0 && (
+                    <div className="flex gap-2 flex-wrap pt-1">
+                      {photos.map(p => (
+                        <a key={p.id} href={p.photo_url} target="_blank" rel="noreferrer">
+                          <img src={p.photo_url} alt={`Foto do serviço ${o.vehicle_plate || o.os_number}`} loading="lazy"
+                            className="h-20 w-20 object-cover rounded-md border" />
+                        </a>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </TabsContent>
         </Tabs>
+
+        <Dialog open={!!finishOs} onOpenChange={v => !v && setFinishOs(null)}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle>Finalizar serviço · {finishOs?.vehicle_plate || `OS #${finishOs?.os_number}`}</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-3">
+              <div>
+                <Label>O que foi feito? *</Label>
+                <Textarea value={summary} onChange={e => setSummary(e.target.value)} rows={4}
+                  placeholder="Descreva os serviços executados, peças trocadas, observações..." />
+              </div>
+              <div>
+                <Label>Fotos do serviço</Label>
+                <Input type="file" accept="image/*" multiple capture="environment"
+                  onChange={e => setFiles(prev => [...prev, ...Array.from(e.target.files || [])])} />
+                {files.length > 0 && (
+                  <div className="flex gap-2 flex-wrap mt-2">
+                    {files.map((f, i) => (
+                      <div key={i} className="relative">
+                        <img src={URL.createObjectURL(f)} alt={f.name} className="h-16 w-16 object-cover rounded-md border" />
+                        <button type="button" onClick={() => setFiles(files.filter((_, j) => j !== i))}
+                          className="absolute -top-1.5 -right-1.5 bg-destructive text-destructive-foreground rounded-full p-0.5">
+                          <X className="h-3 w-3" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
+                  <Camera className="h-3 w-3" /> Você pode tirar a foto na hora pelo celular.
+                </p>
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setFinishOs(null)} disabled={finishing}>Cancelar</Button>
+              <Button onClick={confirmFinish} disabled={finishing}>
+                <CheckCircle2 className="h-4 w-4 mr-1" /> {finishing ? "Salvando..." : "Confirmar finalização"}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
 
         <div className="text-center text-xs text-muted-foreground py-4 flex items-center justify-center gap-1">
           <Wrench className="h-3 w-3" />
