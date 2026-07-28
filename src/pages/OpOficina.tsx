@@ -542,6 +542,8 @@ function OsDetailDialog({ os, onClose, onUpdate, onDelete, onRequestClose, compa
       diagnosis,
       deadline: deadline || null,
       company_id: companyId || null,
+      customer_name: customerName || null,
+
       mechanic_id: mechanicId || null,
       vehicle_plate: vehiclePlate || null,
       vehicle_model: vehicleModel || null,
