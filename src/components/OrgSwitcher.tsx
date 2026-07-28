@@ -178,6 +178,9 @@ export default function OrgSwitcher() {
 
   return (
     <div className="relative px-3 mb-2">
+      <div className="px-3 pb-1 text-[10px] font-semibold uppercase tracking-wider text-sidebar-foreground/50">
+        Selecione a organização
+      </div>
       <button
         onClick={() => setOpen(!open)}
         disabled={loading}
