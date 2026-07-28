@@ -363,7 +363,7 @@ export default function MetasTecnicos() {
           </div>
 
           {/* Goals Summary Cards */}
-          <GoalsSummaryCards stats={stats} goals={goals} formatHours={formatHours} />
+          <GoalsSummaryCards stats={visibleStats} goals={goals} formatHours={formatHours} />
 
           {/* Technician list */}
           {error ? (
@@ -372,13 +372,14 @@ export default function MetasTecnicos() {
             <div className="card-elevated p-12 flex items-center justify-center">
               <div className="h-6 w-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
             </div>
-          ) : stats.length === 0 ? (
+          ) : visibleStats.length === 0 ? (
             <div className="card-elevated p-12 text-center text-sm text-muted-foreground">
-              Nenhum chamado fechado com técnico atribuído.
+              Nenhuma meta individual definida para este mês.
             </div>
           ) : (
             <div className="space-y-3">
-              {stats.map((tech, i) => {
+              {visibleStats.map((tech, i) => {
+
                 const isExpanded = expandedTech === tech.userId;
                 const techHasGoals = hasGoals(tech.userId);
                 return (
