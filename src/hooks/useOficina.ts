@@ -146,6 +146,8 @@ export function useServiceOrders() {
       company_id: input.company_id || null,
       vehicle_id: input.vehicle_id || null,
       mechanic_id: input.mechanic_id || null,
+      customer_name: input.customer_name || null,
+
       vehicle_plate: input.vehicle_plate || null,
       vehicle_model: input.vehicle_model || null,
       vehicle_color: input.vehicle_color || null,
