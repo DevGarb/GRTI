@@ -512,17 +512,14 @@ function OsDetailDialog({ os, onClose, onUpdate, onDelete, onRequestClose, compa
   const { items: partsCatalog } = useParts();
   const { items: mechanics } = useMechanics();
   const { items: companies } = useCompanies();
-  const { items: vehicles } = useVehicles();
 
   const [stage, setStage] = useState(os.stage || "analise");
   const [diagnosis, setDiagnosis] = useState(os.diagnosis || "");
-  const [notes, setNotes] = useState(os.notes || "");
+  const [notes] = useState(os.notes || "");
   const [deadline, setDeadline] = useState(os.deadline || "");
-  const [openedAt, setOpenedAt] = useState(os.opened_at || "");
-  const [partsArrivedAt, setPartsArrivedAt] = useState(os.parts_arrived_at || "");
+  const openedAt = os.opened_at || "";
   const [companyId, setCompanyId] = useState<string>(os.company_id || "");
   const [mechanicId, setMechanicId] = useState<string>(os.mechanic_id || "");
-  const [vehicleId, setVehicleId] = useState<string>(os.vehicle_id || "");
   const [vehiclePlate, setVehiclePlate] = useState<string>(os.vehicle_plate || "");
   const [vehicleModel, setVehicleModel] = useState<string>(os.vehicle_model || "");
 
@@ -536,23 +533,19 @@ function OsDetailDialog({ os, onClose, onUpdate, onDelete, onRequestClose, compa
 
   const total = parts.reduce((s, p) => s + Number(p.quantity) * Number(p.unit_price), 0);
   const days = daysInWorkshop(openedAt || os.opened_at, os.finished_at);
-  const slaParts = partsSlaRemaining(partsArrivedAt || null);
 
   const saveHeader = () => {
     onUpdate({
       stage,
       diagnosis,
-      notes,
       deadline: deadline || null,
-      opened_at: openedAt || os.opened_at,
-      parts_arrived_at: partsArrivedAt || null,
       company_id: companyId || null,
       mechanic_id: mechanicId || null,
-      vehicle_id: vehicleId || null,
       vehicle_plate: vehiclePlate || null,
       vehicle_model: vehicleModel || null,
     });
   };
+
 
   const handleStageSelect = (v: string) => {
     if (v === STAGE_ENTREGUE) { onRequestClose(os); return; }
