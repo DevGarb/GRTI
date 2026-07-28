@@ -9,6 +9,7 @@ import PreventivasMonthlyTarget from "@/components/metas/PreventivasMonthlyTarge
 import GoalsSummaryCards from "@/components/metas/GoalsSummaryCards";
 import { BUSINESS_HOURS_PER_DAY } from "@/lib/businessHours";
 import { formatDateBR } from "@/lib/dateFormat";
+import PeriodFilter from "@/components/shared/PeriodFilter";
 
 interface TechnicianStats {
   userId: string;
@@ -204,8 +205,6 @@ export default function MetasTecnicos() {
     return "text-red-600 dark:text-red-400";
   };
 
-  const months = ["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
-
   // Visão do técnico: apenas seu próprio card
   if (!isAdmin) {
     const myStats = stats.filter((s) => s.userId === user?.id);
@@ -220,22 +219,12 @@ export default function MetasTecnicos() {
               <p className="text-sm text-muted-foreground">Acompanhe seu desempenho e metas do mês</p>
             </div>
           </div>
-          <div className="flex items-center gap-2">
-            <select
-              value={selectedMonth}
-              onChange={(e) => setSelectedMonth(Number(e.target.value))}
-              className="px-3 py-2 rounded-lg border border-input bg-background text-sm text-foreground"
-            >
-              {months.map((m, i) => <option key={m} value={i + 1}>{m}</option>)}
-            </select>
-            <select
-              value={selectedYear}
-              onChange={(e) => setSelectedYear(Number(e.target.value))}
-              className="px-3 py-2 rounded-lg border border-input bg-background text-sm text-foreground"
-            >
-              {[2024, 2025, 2026, 2027].map((y) => <option key={y} value={y}>{y}</option>)}
-            </select>
-          </div>
+          <PeriodFilter
+            year={selectedYear}
+            month={selectedMonth}
+            onYearChange={setSelectedYear}
+            onMonthChange={setSelectedMonth}
+          />
         </div>
         {error ? (
           <ErrorBanner error={error} onRetry={refetch} />
@@ -273,20 +262,12 @@ export default function MetasTecnicos() {
               <Loader2 className="h-3 w-3 animate-spin" /> Atualizando…
             </span>
           )}
-          <select
-            value={selectedMonth}
-            onChange={(e) => setSelectedMonth(Number(e.target.value))}
-            className="px-3 py-2 rounded-lg border border-input bg-background text-sm text-foreground"
-          >
-            {months.map((m, i) => <option key={m} value={i + 1}>{m}</option>)}
-          </select>
-          <select
-            value={selectedYear}
-            onChange={(e) => setSelectedYear(Number(e.target.value))}
-            className="px-3 py-2 rounded-lg border border-input bg-background text-sm text-foreground"
-          >
-            {[2024, 2025, 2026, 2027].map((y) => <option key={y} value={y}>{y}</option>)}
-          </select>
+          <PeriodFilter
+            year={selectedYear}
+            month={selectedMonth}
+            onYearChange={setSelectedYear}
+            onMonthChange={setSelectedMonth}
+          />
         </div>
       </div>
 

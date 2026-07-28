@@ -5,7 +5,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import PeriodFilter from "@/components/shared/PeriodFilter";
 import {
   Table,
   TableBody,
@@ -45,11 +45,6 @@ interface AwardRow {
   approved_at: string | null;
 }
 
-const months = Array.from({ length: 12 }, (_, i) => i + 1);
-const years = (() => {
-  const y = new Date().getFullYear();
-  return [y - 1, y, y + 1];
-})();
 
 export default function ProjetosMVP() {
   const { profile, hasRole } = useAuth();
@@ -299,22 +294,7 @@ export default function ProjetosMVP() {
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <Select value={String(year)} onValueChange={(v) => setYear(Number(v))}>
-            <SelectTrigger className="w-28"><SelectValue /></SelectTrigger>
-            <SelectContent>
-              {years.map((y) => <SelectItem key={y} value={String(y)}>{y}</SelectItem>)}
-            </SelectContent>
-          </Select>
-          <Select value={String(month)} onValueChange={(v) => setMonth(Number(v))}>
-            <SelectTrigger className="w-36"><SelectValue /></SelectTrigger>
-            <SelectContent>
-              {months.map((m) => (
-                <SelectItem key={m} value={String(m)}>
-                  {new Date(2000, m - 1, 1).toLocaleString("pt-BR", { month: "long" })}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <PeriodFilter year={year} month={month} onYearChange={setYear} onMonthChange={setMonth} />
           {isAdmin && (
             <Button onClick={() => compute.mutate()} disabled={compute.isPending}>
               <RefreshCw className="h-4 w-4 mr-1" /> Recalcular mês
