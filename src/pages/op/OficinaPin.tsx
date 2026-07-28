@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Wrench, ArrowRight, HardHat, Shield, ShoppingCart } from "lucide-react";
+import { Wrench, HardHat, ShoppingCart, Shield, ArrowRight } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,12 +12,6 @@ import { oficinaRoleHome, type OficinaRole } from "@/lib/oficinaRoles";
 import { toast } from "sonner";
 import "./cearagps.css";
 
-const TABS: { id: OficinaRole; label: string; icon: any }[] = [
-  { id: "mecanico", label: "Mecânico", icon: HardHat },
-  { id: "compras", label: "Compras", icon: ShoppingCart },
-  { id: "admin", label: "Admin", icon: Shield },
-];
-
 export default function OficinaPin() {
   const navigate = useNavigate();
   const { profile: authProfile, hasRole, isSuperAdmin } = useAuth();
@@ -25,40 +19,36 @@ export default function OficinaPin() {
   const { items: staff } = useMechanics();
   const { setProfile } = useOficinaProfile();
 
-  const [pins, setPins] = useState<Record<string, string>>({});
+  const [mecPin, setMecPin] = useState("");
+  const [compPin, setCompPin] = useState("");
+  const [adminPin, setAdminPin] = useState("");
 
-  const setPin = (role: string, v: string) =>
-    setPins((p) => ({ ...p, [role]: v.replace(/\D/g, "") }));
-
-  const login = (role: OficinaRole) => {
-    const pin = (pins[role] || "").trim();
-    if (!pin) return toast.error("Informe o PIN");
-
-    // Acesso administrativo
-    if (role === "admin" && pin === "0000" && isAdmin) {
-      setProfile({ type: "admin", name: authProfile?.full_name || "Administrador" });
-      return navigate(oficinaRoleHome("admin"));
+  const loginAdmin = () => {
+    if (!isAdmin && adminPin.trim() !== "0000") {
+      toast.error("Você não tem permissão de administrador");
+      return;
     }
+    setProfile({ type: "admin", name: authProfile?.full_name || "Administrador" });
+    navigate(oficinaRoleHome("admin"));
+  };
 
+  const loginByPin = (role: OficinaRole, pinValue: string) => {
+    const pin = pinValue.trim();
+    if (!pin) return toast.error("Informe o PIN");
     const matches = staff.filter(
       (m) => m.is_active !== false && (m as any).pin && (m as any).pin === pin,
     );
     if (matches.length === 0) return toast.error("PIN inválido");
-    if (matches.length > 1) return toast.error("PIN duplicado. Contate o supervisor.");
+    if (matches.length > 1) return toast.error("PIN duplicado. Contate o admin.");
     const m = matches[0];
     const mRole = ((m as any).role || "mecanico") as OficinaRole;
-    if (mRole !== role) {
-      return toast.error(`Este PIN pertence a um perfil de ${mRole}. Selecione a aba correta.`);
-    }
+    if (mRole !== role) return toast.error("Este PIN pertence a outro perfil. Selecione a aba correta.");
     setProfile({ type: mRole, id: m.id, name: m.name, phone: m.phone });
     navigate(oficinaRoleHome(mRole));
   };
 
   return (
-    <div
-      className="cgps-scope min-h-screen flex items-center justify-center p-4"
-      style={{ background: "linear-gradient(135deg, hsl(191 74% 20%), hsl(191 74% 12%))" }}
-    >
+    <div className="cgps-scope min-h-screen flex items-center justify-center p-4" style={{ background: "linear-gradient(135deg, hsl(191 74% 20%), hsl(191 74% 12%))" }}>
       <div className="w-full max-w-md bg-white rounded-2xl shadow-2xl overflow-hidden">
         <div className="p-6 text-center" style={{ background: "hsl(191 74% 20%)" }}>
           <div className="inline-flex items-center gap-2 mb-2">
@@ -70,41 +60,77 @@ export default function OficinaPin() {
           <p className="text-white/80 text-sm">Acesso por PIN</p>
         </div>
 
-        <Tabs defaultValue="mecanico" className="p-6">
-          <TabsList className="grid grid-cols-4 mb-6">
-            {TABS.map((t) => (
-              <TabsTrigger key={t.id} value={t.id} className="text-xs px-1">
-                <t.icon className="h-3.5 w-3.5 mr-1" />
-                {t.label}
-              </TabsTrigger>
-            ))}
+        <Tabs defaultValue={isAdmin ? "admin" : "mecanico"} className="p-6">
+          <TabsList className="grid grid-cols-3 mb-6">
+            <TabsTrigger value="mecanico"><HardHat className="h-3.5 w-3.5 mr-1" />Mecânico</TabsTrigger>
+            <TabsTrigger value="compras"><ShoppingCart className="h-3.5 w-3.5 mr-1" />Compras</TabsTrigger>
+            <TabsTrigger value="admin"><Shield className="h-3.5 w-3.5 mr-1" />Admin</TabsTrigger>
           </TabsList>
 
-          {TABS.map((t) => (
-            <TabsContent key={t.id} value={t.id} className="space-y-3">
+          <TabsContent value="mecanico" className="space-y-3">
+            <div>
+              <Label>PIN do mecânico</Label>
+              <Input
+                type="password"
+                inputMode="numeric"
+                maxLength={6}
+                value={mecPin}
+                onChange={(e) => setMecPin(e.target.value.replace(/\D/g, ""))}
+                onKeyDown={(e) => e.key === "Enter" && loginByPin("mecanico", mecPin)}
+                placeholder="••••"
+                className="text-center text-2xl tracking-[0.5em] h-14"
+                autoFocus
+              />
+            </div>
+            <Button onClick={() => loginByPin("mecanico", mecPin)} className="w-full cgps-btn-primary">
+              Entrar como mecânico <ArrowRight className="h-4 w-4 ml-1" />
+            </Button>
+          </TabsContent>
+
+          <TabsContent value="compras" className="space-y-3">
+            <div>
+              <Label>PIN de compras</Label>
+              <Input
+                type="password"
+                inputMode="numeric"
+                maxLength={6}
+                value={compPin}
+                onChange={(e) => setCompPin(e.target.value.replace(/\D/g, ""))}
+                onKeyDown={(e) => e.key === "Enter" && loginByPin("compras", compPin)}
+                placeholder="••••"
+                className="text-center text-2xl tracking-[0.5em] h-14"
+              />
+            </div>
+            <Button onClick={() => loginByPin("compras", compPin)} className="w-full cgps-btn-primary">
+              Entrar como compras <ArrowRight className="h-4 w-4 ml-1" />
+            </Button>
+          </TabsContent>
+
+          <TabsContent value="admin" className="space-y-3">
+            <div className="text-sm text-muted-foreground bg-slate-50 rounded-md p-3 border">
+              Acesso liberado por perfil administrador ou PIN de administrador.
+              <div className="mt-2 text-xs">Usuário atual: <strong>{authProfile?.full_name || "—"}</strong></div>
+            </div>
+            {!isAdmin && (
               <div>
-                <Label>PIN de {t.label.toLowerCase()}</Label>
+                <Label>PIN de administrador</Label>
                 <Input
                   type="password"
                   inputMode="numeric"
                   maxLength={6}
-                  value={pins[t.id] || ""}
-                  onChange={(e) => setPin(t.id, e.target.value)}
-                  onKeyDown={(e) => e.key === "Enter" && login(t.id)}
+                  value={adminPin}
+                  onChange={(e) => setAdminPin(e.target.value.replace(/\D/g, ""))}
+                  onKeyDown={(e) => e.key === "Enter" && loginAdmin()}
                   placeholder="••••"
                   className="text-center text-2xl tracking-[0.5em] h-14"
                 />
               </div>
-              <Button onClick={() => login(t.id)} className="w-full cgps-btn-primary">
-                Entrar como {t.label.toLowerCase()} <ArrowRight className="h-4 w-4 ml-1" />
-              </Button>
-              {t.id === "admin" && isAdmin && (
-                <p className="text-xs text-muted-foreground text-center">
-                  Administradores podem usar o PIN 0000.
-                </p>
-              )}
-            </TabsContent>
-          ))}
+            )}
+            <Button onClick={loginAdmin} className="w-full cgps-btn-primary">
+              Entrar como administrador <ArrowRight className="h-4 w-4 ml-1" />
+            </Button>
+            {!isAdmin && <p className="text-xs text-muted-foreground text-center">Use o PIN 0000 para acesso administrativo do módulo.</p>}
+          </TabsContent>
         </Tabs>
       </div>
     </div>
