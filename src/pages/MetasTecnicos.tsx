@@ -325,7 +325,7 @@ export default function MetasTecnicos() {
               <div className="flex items-center justify-center gap-2 mb-1">
                 <User className="h-4 w-4 text-muted-foreground" />
               </div>
-              <span className="text-2xl font-bold text-foreground">{stats.length}</span>
+              <span className="text-2xl font-bold text-foreground">{visibleStats.length}</span>
               <p className="text-[11px] text-muted-foreground mt-1">Técnicos Ativos</p>
             </div>
             <div className="card-elevated p-4 text-center">
