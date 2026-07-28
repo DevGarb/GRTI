@@ -328,9 +328,21 @@ export default function OpOficinaMinhas() {
           </TabsContent>
 
           <TabsContent value="finalizadas" className="space-y-3 mt-4">
+            <div className="bg-card border rounded-lg p-3 flex items-center gap-2 flex-wrap">
+              <Input
+                value={doneSearch}
+                onChange={e => setDoneSearch(e.target.value)}
+                placeholder="Buscar por placa, modelo ou nº da OS"
+                className="max-w-xs"
+              />
+              <Button size="sm" variant={onlyMine ? "default" : "outline"} onClick={() => setOnlyMine(v => !v)}>
+                {onlyMine ? "Somente minhas" : "Todas da oficina"}
+              </Button>
+              <Badge variant="outline" className="ml-auto">{done.length} finalizada(s)</Badge>
+            </div>
             {done.length === 0 && (
               <div className="bg-card border rounded-lg p-12 text-center text-muted-foreground">
-                Nenhuma moto finalizada por você ainda.
+                Nenhuma moto finalizada encontrada.
               </div>
             )}
             {done.map(o => {
@@ -341,6 +353,8 @@ export default function OpOficinaMinhas() {
                   <div className="flex items-center gap-2 flex-wrap">
                     <span className="text-lg font-bold tracking-wide">{o.vehicle_plate || `OS #${o.os_number}`}</span>
                     <Badge variant="secondary" className={st.chip}>{st.label}</Badge>
+                    {o.mechanic_id === profile?.id && <Badge variant="outline">Minha</Badge>}
+
                     {o.finished_at && (
                       <span className="ml-auto text-xs text-muted-foreground">
                         Finalizado em {new Date(o.finished_at).toLocaleDateString("pt-BR")}
