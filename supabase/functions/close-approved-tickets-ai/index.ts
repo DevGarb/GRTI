@@ -130,7 +130,7 @@ Um item por chamado, na mesma ordem. category_id deve ser exatamente um dos IDs 
  * priorizando o fim da conversa — é onde normalmente está o desfecho real do atendimento. */
 function buildTratativa(comments: { content: string; is_public: boolean }[]): string {
   if (comments.length === 0) return "(sem comentários registrados durante o atendimento)";
-  const CHAR_BUDGET = 600;
+  const CHAR_BUDGET = 400;
   const picked: string[] = [];
   let total = 0;
   for (let i = comments.length - 1; i >= 0 && total < CHAR_BUDGET; i--) {
