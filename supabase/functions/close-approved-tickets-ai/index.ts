@@ -66,7 +66,7 @@ async function classifyBatch(
   const catList = categories.map((c) => `${c.id} :: ${c.path} (score ${c.score})`).join("\n");
   const ticketList = tickets
     .map((t) =>
-      `ID: ${t.id}\nTítulo: ${t.title}\nDescrição de abertura: ${(t.description || "(sem descrição)").slice(0, 300)}\nTratativa do atendimento (peso maior): ${t.tratativa}`
+      `ID: ${t.id}\nTítulo: ${t.title}\nDescrição de abertura: ${(t.description || "(sem descrição)").slice(0, 200)}\nTratativa do atendimento (peso maior): ${t.tratativa}`
     )
     .join("\n---\n");
 
