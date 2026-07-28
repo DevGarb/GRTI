@@ -1,9 +1,6 @@
-// Empresas permitidas apenas no módulo Oficina.
-// Entregas e Manutenção Predial continuam usando todas as empresas cadastradas.
-export const OFICINA_COMPANY_NAMES = ["Resolve", "CearaGPS", "Motoloc"];
-
-export function filterOficinaCompanies<T extends { name: string }>(companies: T[]): T[] {
-  return companies.filter(c =>
-    OFICINA_COMPANY_NAMES.some(n => n.toLowerCase() === (c.name || "").trim().toLowerCase())
-  );
+// Empresas do módulo Oficina.
+// Entregas e Manutenção Predial usam todas as empresas cadastradas;
+// a Oficina usa apenas as marcadas como empresa da oficina (is_workshop).
+export function filterOficinaCompanies<T extends { is_workshop?: boolean | null }>(companies: T[]): T[] {
+  return companies.filter(c => !!c.is_workshop);
 }
