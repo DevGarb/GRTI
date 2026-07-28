@@ -99,17 +99,19 @@ export default function OrgSwitcher() {
         <>
           <div className="fixed inset-0 z-50 animate-fade-in" onClick={() => setOpen(false)} />
           <div className="absolute left-3 right-3 top-full mt-1 z-50 bg-popover border border-border rounded-lg shadow-lg max-h-[200px] overflow-y-auto animate-scale-in origin-top">
-            <button
-              onClick={() => switchOrg(null)}
-              className={cn(
-                "w-full flex items-center gap-2 px-3 py-2 text-[12px] hover:bg-muted transition-colors",
-                !currentOrgId && "font-semibold text-primary"
-              )}
-            >
-              <Building2 className="h-3.5 w-3.5" />
-              <span className="flex-1 text-left">Todas organizações</span>
-              {!currentOrgId && <Check className="h-3 w-3" />}
-            </button>
+            {isSuperAdmin && (
+              <button
+                onClick={() => switchOrg(null)}
+                className={cn(
+                  "w-full flex items-center gap-2 px-3 py-2 text-[12px] hover:bg-muted transition-colors",
+                  !currentOrgId && "font-semibold text-primary"
+                )}
+              >
+                <Building2 className="h-3.5 w-3.5" />
+                <span className="flex-1 text-left">Todas organizações</span>
+                {!currentOrgId && <Check className="h-3 w-3" />}
+              </button>
+            )}
             {orgs.map((org) => (
               <button
                 key={org.id}
