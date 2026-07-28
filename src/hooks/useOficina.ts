@@ -15,6 +15,8 @@ export interface ServiceOrder {
   mechanic_id: string | null;
   vehicle_plate: string | null;
   vehicle_model: string | null;
+  vehicle_color: string | null;
+  vehicle_year: string | null;
   description: string | null;
   diagnosis: string | null;
   status: string;
@@ -144,6 +146,8 @@ export function useServiceOrders() {
       mechanic_id: input.mechanic_id || null,
       vehicle_plate: input.vehicle_plate || null,
       vehicle_model: input.vehicle_model || null,
+      vehicle_color: input.vehicle_color || null,
+      vehicle_year: input.vehicle_year || null,
       description: input.description || null,
       diagnosis: input.diagnosis || null,
       status: input.status || "Aberta",
