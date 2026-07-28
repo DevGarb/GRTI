@@ -51,10 +51,18 @@ export default function OpOficinaMinhas() {
     [items, profile?.id],
   );
 
-  const done = useMemo(
-    () => items.filter(o => o.mechanic_id === profile?.id && DONE_STAGES.includes(o.stage)),
-    [items, profile?.id],
-  );
+  const [onlyMine, setOnlyMine] = useState(false);
+  const [doneSearch, setDoneSearch] = useState("");
+
+  const done = useMemo(() => {
+    const q = doneSearch.trim().toLowerCase();
+    return items
+      .filter(o => DONE_STAGES.includes(o.stage))
+      .filter(o => (onlyMine ? o.mechanic_id === profile?.id : true))
+      .filter(o => !q || `${o.vehicle_plate || ""} ${o.vehicle_model || ""} ${o.os_number}`.toLowerCase().includes(q))
+      .sort((a, b) => String(b.finished_at || b.opened_at).localeCompare(String(a.finished_at || a.opened_at)));
+  }, [items, profile?.id, onlyMine, doneSearch]);
+
 
   const [donePhotos, setDonePhotos] = useState<Record<string, ServiceOrderPhoto[]>>({});
   const doneIds = done.map(o => o.id).join(",");
