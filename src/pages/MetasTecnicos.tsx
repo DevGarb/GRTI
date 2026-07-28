@@ -205,8 +205,6 @@ export default function MetasTecnicos() {
     return "text-red-600 dark:text-red-400";
   };
 
-  const months = ["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
-
   // Visão do técnico: apenas seu próprio card
   if (!isAdmin) {
     const myStats = stats.filter((s) => s.userId === user?.id);
