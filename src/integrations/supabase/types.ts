@@ -1858,9 +1858,11 @@ export type Database = {
           status: string
           total_cost: number
           updated_at: string
+          vehicle_color: string | null
           vehicle_id: string | null
           vehicle_model: string | null
           vehicle_plate: string | null
+          vehicle_year: string | null
         }
         Insert: {
           closed_by?: string | null
@@ -1884,9 +1886,11 @@ export type Database = {
           status?: string
           total_cost?: number
           updated_at?: string
+          vehicle_color?: string | null
           vehicle_id?: string | null
           vehicle_model?: string | null
           vehicle_plate?: string | null
+          vehicle_year?: string | null
         }
         Update: {
           closed_by?: string | null
@@ -1910,9 +1914,11 @@ export type Database = {
           status?: string
           total_cost?: number
           updated_at?: string
+          vehicle_color?: string | null
           vehicle_id?: string | null
           vehicle_model?: string | null
           vehicle_plate?: string | null
+          vehicle_year?: string | null
         }
         Relationships: []
       }
