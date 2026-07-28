@@ -440,13 +440,18 @@ function NewOsDialog({ onClose, onCreate }: { onClose: () => void; onCreate: (in
         <DialogHeader><DialogTitle>Nova entrada na oficina</DialogTitle></DialogHeader>
         <div className="grid gap-3 md:grid-cols-2">
           <div>
-            <Label>Cliente / Empresa</Label>
+            <Label>Empresa</Label>
             <Select value={form.company_id || ""} onValueChange={v => setF({ company_id: v })}>
               <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
               <SelectContent>{companies.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}</SelectContent>
             </Select>
           </div>
           <div>
+            <Label>Cliente / Associado</Label>
+            <Input value={form.customer_name || ""} onChange={e => setF({ customer_name: e.target.value })} placeholder="Nome do cliente/associado" />
+          </div>
+          <div>
+
             <Label>Mecânico</Label>
             <Select value={form.mechanic_id || ""} onValueChange={v => setF({ mechanic_id: v })}>
               <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
@@ -575,7 +580,9 @@ function OsDetailDialog({ os, onClose, onUpdate, onDelete, onRequestClose, compa
       <div style="font-size:12px;color:#666">Entrada em ${formatDateBR(openedAt || os.opened_at)} · Etapa: <b>${stageInfo(stage).label}</b> · ${days} dias na oficina</div>
       <h2>Dados</h2>
       <div class="grid">
-        <div class="f"><b>Cliente:</b> ${comp}</div>
+        <div class="f"><b>Empresa:</b> ${comp}</div>
+        <div class="f"><b>Cliente/Associado:</b> ${os.customer_name || "—"}</div>
+
         <div class="f"><b>Mecânico:</b> ${mech}</div>
         <div class="f"><b>Placa:</b> ${os.vehicle_plate || "—"}</div>
         <div class="f"><b>Modelo:</b> ${os.vehicle_model || "—"}</div>
