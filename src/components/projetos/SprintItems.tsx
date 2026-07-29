@@ -172,7 +172,7 @@ export default function SprintItems({ projectId, sprintId }: Props) {
               size="icon"
               variant="ghost"
               className="h-7 w-7"
-              title="Converter em chamado (vincula à mesma sprint)"
+              title="Criar chamado a partir desta tarefa (a tarefa permanece na sprint)"
               disabled={convertTask.isPending}
               onClick={() => setConfirmTask(task)}
             >

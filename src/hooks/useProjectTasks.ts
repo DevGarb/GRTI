@@ -111,26 +111,20 @@ export function useConvertTaskToTicket() {
           type: "Software",
           status: "Aberto",
           organization_id: task.organization_id,
-          project_id: task.project_id,
-          sprint_id: task.sprint_id,
           story_points: task.story_points ?? 1,
           created_by: user!.id,
         })
         .select()
         .single();
       if (insErr) throw insErr;
-      const { error: delErr } = await supabase.from("project_tasks").delete().eq("id", task.id);
-      if (delErr) throw delErr;
       return ticket;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["project-tasks"] });
       queryClient.invalidateQueries({ queryKey: ["project-tickets"] });
-      queryClient.invalidateQueries({ queryKey: ["sprints"] });
-      queryClient.invalidateQueries({ queryKey: ["projects"] });
       queryClient.invalidateQueries({ queryKey: ["tickets"] });
-      toast.success("Tarefa convertida em chamado!");
+      toast.success("Chamado criado a partir da tarefa");
     },
     onError: (e: Error) => toast.error("Erro ao converter: " + e.message),
+
   });
 }
