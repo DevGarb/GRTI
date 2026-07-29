@@ -214,9 +214,9 @@ export default function SprintItems({ projectId, sprintId }: Props) {
       <Dialog open={!!confirmTask} onOpenChange={(v) => !v && setConfirmTask(null)}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Converter tarefa em chamado</DialogTitle>
+            <DialogTitle>Aplicar flags de chamado à tarefa</DialogTitle>
             <DialogDescription>
-              Confirme os dados antes de transformar esta tarefa em um chamado vinculado ao projeto.
+              As flags Projeto, Prioridade e Status passarão a aparecer neste card. Nenhum chamado será criado e o card continua no mesmo lugar.
             </DialogDescription>
           </DialogHeader>
           {confirmTask && (
@@ -247,10 +247,10 @@ export default function SprintItems({ projectId, sprintId }: Props) {
               {convertTask.isPending ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Convertendo...
+                  Aplicando...
                 </>
               ) : (
-                "Confirmar conversão"
+                "Aplicar flags"
               )}
             </Button>
           </DialogFooter>
