@@ -1,37 +1,40 @@
+## Objetivo
 
-## Contexto
+Hoje o botão `ArrowRightCircle` em `SprintItems.tsx` chama `useConvertTaskToTicket`, que insere uma linha em `tickets`. Como a tarefa continua no projeto e o novo ticket também aparece vinculado à sprint (via `useProjectTickets`), o card acaba duplicado na tela.
 
-Três pontos apontados em `Métricas Gerenciais` + Painel de TV:
-
-1. **Filtro sem estado visual** — todos os botões (`Hoje`/`Ontem`/`7 dias`/`Mês`) usam `variant="outline"`, então nada destaca o período ativo.
-2. **"Hoje" divergente entre Métricas Gerenciais e TV** — confirmado por consulta: chamados finalizados diretamente por fechamento de sprint (ex.: sprint do Danilo hoje) têm `status='Fechado'` e `closed_at=hoje`, mas **não** têm `aguardando_aprovacao_at`. A RPC `get_management_metrics` conta por `status='Fechado' AND closed_at`, então esses 7 tickets aparecem no "Finalizados = 34" da tela. Já a edge `tv-dashboard` conta `closed_today` só quando `aguardando_aprovacao_at >= startToday`, então ignora os fechados via sprint.
-3. **Fechamento de sprint precisa contar no TV** — mesma causa raiz do item 2: qualquer contador do painel que hoje se baseia em `aguardando_aprovacao_at` (fechados/mês, TMA, ranking, técnicos ativos) precisa considerar também tickets fechados direto (Fechado/Aprovado com `closed_at` no período e sem `aguardando_aprovacao_at`).
+A nova regra: o botão **não cria mais chamado**. Ele apenas marca a tarefa como "convertida" e passa a exibir as mesmas flags visuais que um ticket de projeto tem hoje (badges `Projeto` · `<Prioridade>` · `<Status>`), mantendo o card único dentro da sprint.
 
 ## Mudanças
 
-### `src/pages/MetricasGerenciais.tsx`
-- Adicionar estado `activePreset: RangePreset | "custom" | null` (inicial `"today"`).
-- Ao clicar num preset, setar `activePreset` junto com `range`. Ao aplicar intervalo pelo popover, setar `"custom"`.
-- No `.map(...)` dos botões, passar `variant={activePreset === p ? "default" : "outline"}` para destacar o ativo.
+### 1. Banco — `project_tasks`
+Adicionar duas colunas opcionais para armazenar as flags que hoje só existiam em `tickets`:
 
-### `supabase/functions/tv-dashboard/index.ts`
-Definir, para cada ticket, um `finishedAtEffective`:
-- se houver `aguardando_aprovacao_at`, usar ele (comportamento atual — preserva a semântica de "quando o técnico entregou");
-- senão, se `status` ∈ (`Fechado`,`Aprovado`) e houver `closed_at`, usar `closed_at` (cobre fechamentos via sprint que pulam a aprovação).
+- `converted_to_ticket boolean not null default false` — controla se a badge "Projeto" aparece.
+- `priority text` — armazena prioridade escolhida no momento da conversão (default "Média" quando a flag é ligada).
 
-Usar esse `finishedAtEffective` nos contadores existentes:
-- `closed_today` / `closed_month`
-- `activeTechsToday` (quando finaliza no dia)
-- `ranking_today` (map de fechados por técnico)
-- TMA hoje/mês/geral — quando não houver `aguardando_aprovacao_at`, cair para `closed_at` como fim do atendimento (mantendo o critério de exigir `started_at`).
+Sem RLS nova (a tabela já tem policies). Sem migração de dados: registros antigos ficam `false`/`null`.
 
-Nenhuma outra métrica muda; o objetivo é apenas cobrir a via "sprint → Fechado direto" para que TV = Métricas Gerenciais.
+### 2. Hook `useConvertTaskToTicket` (`src/hooks/useProjectTasks.ts`)
+Trocar a implementação: em vez de `insert` em `tickets`, faz `update` em `project_tasks` setando `converted_to_ticket = true` e `priority = 'Média'` (se ainda estiver nulo). Invalida `["project-tasks"]` e `["sprints"]`. Toast: "Flags aplicadas à tarefa".
 
-### Validação
+Também expor a coluna nova em `ProjectTask` (interface TS) — `converted_to_ticket: boolean`, `priority: string | null`.
+
+### 3. Renderização em `SprintItems.tsx`
+No bloco `tasks.map(...)`:
+- Quando `task.converted_to_ticket === true`, exibir ao lado do título as mesmas 3 badges usadas hoje para tickets:
+  - `Projeto` (badge roxa)
+  - `task.priority ?? "Média"` (badge outline)
+  - `task.status` (badge — verde quando estiver em `Concluído`/`Fechado`/`Aprovado`/`Aguardando Aprovação`, seguindo a paleta atual dos tickets)
+- Manter o ícone `ListTodo` (não virar `TicketIcon`) para deixar claro que ainda é tarefa.
+- Botão `ArrowRightCircle`: mantém o mesmo lugar/estilo. Se `converted_to_ticket` já for `true`, esconde o botão (ou desabilita com tooltip "Flags já aplicadas") para não repetir a ação.
+- Diálogo de confirmação: reaproveitar, mudar textos para "Aplicar flags de chamado à tarefa" / "As flags Projeto, Prioridade e Status passarão a aparecer neste card. Nenhum chamado será criado."
+
+Nada muda no bloco `tickets.map` — chamados de verdade (vinculados via `useProjectTickets`) continuam sendo mostrados normalmente.
+
+### 4. Sem efeitos colaterais
+- Nenhuma alteração em `useProjectTickets`, RPCs de fechamento de sprint, cálculo de pontos ou métricas.
+- Chamados criados por conversões antigas continuam existindo; se quiser limpar depois, é ação manual separada.
+
+## Validação
 - `bun run build`.
-- Conferir na UI: botão do preset selecionado fica destacado; ao trocar de preset o destaque muda.
-- Não é necessário deploy real da edge — só garantir que o TypeScript da function compila (o build já valida via `tsgo`).
-
-## Fora de escopo
-- Não mexer na RPC `get_management_metrics` (já cobre sprints corretamente).
-- Não alterar o fluxo de fechamento de sprint nem semântica de `closed_at`/`aguardando_aprovacao_at`.
+- Conferir visualmente: aplicar flag em uma tarefa mostra as 3 badges e não cria linha em `tickets`; segundo clique fica bloqueado.
