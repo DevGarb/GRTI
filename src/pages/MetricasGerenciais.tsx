@@ -208,11 +208,11 @@ export default function MetricasGerenciais() {
           {(["today", "yesterday", "last7", "thisMonth"] as const as RangePreset[]).map((p) => (
             <Button
               key={p}
-              variant="outline"
+              variant={activePreset === p ? "default" : "outline"}
               size="sm"
               onClick={() => {
                 const r = presetRangeInTz(p, orgTz);
-                setRange(r); setEditFrom(r.from); setEditTo(r.to);
+                setRange(r); setEditFrom(r.from); setEditTo(r.to); setActivePreset(p);
               }}
             >
               {p === "yesterday" ? "Ontem" : p === "today" ? "Hoje" : p === "last7" ? "7 dias" : "Mês"}
