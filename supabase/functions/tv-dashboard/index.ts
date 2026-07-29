@@ -295,10 +295,13 @@ Deno.serve(async (req) => {
       .sort((a, b) => b.elapsed_min - a.elapsed_min)
       .slice(0, 20);
 
-    // Ranking today
+    // Ranking today (usa finalização efetiva: aguardando_aprovacao_at OU closed_at para fechados diretos)
     const rankMap = new Map<string, { fechados: number }>();
     for (const t of list) {
-      if (t.aguardando_aprovacao_at && new Date(t.aguardando_aprovacao_at) >= startToday && t.assigned_to) {
+      const aad = t.aguardando_aprovacao_at ? new Date(t.aguardando_aprovacao_at) : null;
+      const isFinal = t.status === "Fechado" || t.status === "Aprovado";
+      const eff = aad ?? (isFinal && t.closed_at ? new Date(t.closed_at) : null);
+      if (eff && eff >= startToday && t.assigned_to) {
         const r = rankMap.get(t.assigned_to) ?? { fechados: 0 };
         r.fechados++;
         rankMap.set(t.assigned_to, r);
