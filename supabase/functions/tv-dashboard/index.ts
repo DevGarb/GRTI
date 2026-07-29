@@ -177,18 +177,24 @@ Deno.serve(async (req) => {
       const isCreatedToday = createdAt >= startToday;
       if (isCreatedToday) opened_today++;
 
-      if (t.aguardando_aprovacao_at) {
-        const aad = new Date(t.aguardando_aprovacao_at);
-        if (aad >= startToday) {
+      // Momento efetivo de finalização pelo técnico:
+      // 1) Aguardando Aprovação (fluxo normal), OU
+      // 2) closed_at quando o ticket foi Fechado/Aprovado direto (ex.: fechamento de sprint)
+      const aad = t.aguardando_aprovacao_at ? new Date(t.aguardando_aprovacao_at) : null;
+      const closedAt = t.closed_at ? new Date(t.closed_at) : null;
+      const isFinal = t.status === "Fechado" || t.status === "Aprovado";
+      const effectiveFinish = aad ?? (isFinal ? closedAt : null);
+
+      if (effectiveFinish) {
+        if (effectiveFinish >= startToday) {
           closed_today++;
           if (t.assigned_to) activeTechsToday.add(t.assigned_to);
         }
-        if (aad >= startMonth && aad < endMonth) closed_month++;
+        if (effectiveFinish >= startMonth && effectiveFinish < endMonth) closed_month++;
       }
 
-      // TMA = tempo corrido entre started_at e 1ª "Aguardando Aprovação".
-      // Sem fallback: tickets fechados sem essa transição não entram na média.
-      const finished = finishedAt.get(t.id);
+      // TMA = tempo corrido entre started_at e a finalização efetiva.
+      const finished = finishedAt.get(t.id) ?? effectiveFinish;
       if (t.started_at && finished) {
         const m = (finished.getTime() - new Date(t.started_at).getTime()) / 60000;
         if (m > 0) {
@@ -289,10 +295,13 @@ Deno.serve(async (req) => {
       .sort((a, b) => b.elapsed_min - a.elapsed_min)
       .slice(0, 20);
 
-    // Ranking today
+    // Ranking today (usa finalização efetiva: aguardando_aprovacao_at OU closed_at para fechados diretos)
     const rankMap = new Map<string, { fechados: number }>();
     for (const t of list) {
-      if (t.aguardando_aprovacao_at && new Date(t.aguardando_aprovacao_at) >= startToday && t.assigned_to) {
+      const aad = t.aguardando_aprovacao_at ? new Date(t.aguardando_aprovacao_at) : null;
+      const isFinal = t.status === "Fechado" || t.status === "Aprovado";
+      const eff = aad ?? (isFinal && t.closed_at ? new Date(t.closed_at) : null);
+      if (eff && eff >= startToday && t.assigned_to) {
         const r = rankMap.get(t.assigned_to) ?? { fechados: 0 };
         r.fechados++;
         rankMap.set(t.assigned_to, r);

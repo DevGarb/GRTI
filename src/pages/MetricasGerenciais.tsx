@@ -95,10 +95,11 @@ export default function MetricasGerenciais() {
   const [range, setRange] = useState(() => presetRangeInTz("today", DEFAULT_TZ));
   const [editFrom, setEditFrom] = useState<Date | undefined>(range.from);
   const [editTo, setEditTo] = useState<Date | undefined>(range.to);
+  const [activePreset, setActivePreset] = useState<RangePreset | "custom">("today");
 
   useEffect(() => {
     const r = presetRangeInTz("today", orgTz);
-    setRange(r); setEditFrom(r.from); setEditTo(r.to);
+    setRange(r); setEditFrom(r.from); setEditTo(r.to); setActivePreset("today");
   }, [orgTz]);
 
   const { data: rows = [], isLoading, refetch } = useManagementMetrics(range.from, range.to, orgId);
@@ -207,11 +208,11 @@ export default function MetricasGerenciais() {
           {(["today", "yesterday", "last7", "thisMonth"] as const as RangePreset[]).map((p) => (
             <Button
               key={p}
-              variant="outline"
+              variant={activePreset === p ? "default" : "outline"}
               size="sm"
               onClick={() => {
                 const r = presetRangeInTz(p, orgTz);
-                setRange(r); setEditFrom(r.from); setEditTo(r.to);
+                setRange(r); setEditFrom(r.from); setEditTo(r.to); setActivePreset(p);
               }}
             >
               {p === "yesterday" ? "Ontem" : p === "today" ? "Hoje" : p === "last7" ? "7 dias" : "Mês"}
@@ -237,7 +238,7 @@ export default function MetricasGerenciais() {
               </div>
               <div className="flex justify-end mt-2">
                 <Button size="sm" onClick={() => {
-                  if (editFrom && editTo) setRange({ from: startOfDayInTz(editFrom, orgTz), to: endOfDayInTz(editTo, orgTz) });
+                  if (editFrom && editTo) { setRange({ from: startOfDayInTz(editFrom, orgTz), to: endOfDayInTz(editTo, orgTz) }); setActivePreset("custom"); }
                 }}>Aplicar</Button>
               </div>
             </PopoverContent>
