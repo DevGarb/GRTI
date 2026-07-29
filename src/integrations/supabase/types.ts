@@ -2453,6 +2453,7 @@ export type Database = {
         Row: {
           assignee_id: string | null
           co_assignee_id: string | null
+          converted_to_ticket: boolean
           created_at: string
           created_by: string
           delivered_date: string | null
@@ -2477,6 +2478,7 @@ export type Database = {
         Insert: {
           assignee_id?: string | null
           co_assignee_id?: string | null
+          converted_to_ticket?: boolean
           created_at?: string
           created_by: string
           delivered_date?: string | null
@@ -2501,6 +2503,7 @@ export type Database = {
         Update: {
           assignee_id?: string | null
           co_assignee_id?: string | null
+          converted_to_ticket?: boolean
           created_at?: string
           created_by?: string
           delivered_date?: string | null
