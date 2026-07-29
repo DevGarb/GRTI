@@ -130,8 +130,22 @@ export default function SprintItems({ projectId, sprintId }: Props) {
             onClick={() => setDetailTask(task)}
             className="flex-1 min-w-0 text-left hover:bg-muted/40 -mx-2 px-2 py-1 rounded transition-colors"
           >
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-wrap">
               <span className="font-medium truncate">{task.title}</span>
+              {task.converted_to_ticket && (
+                <>
+                  <Badge className="text-[10px] bg-purple-500/15 text-purple-700 dark:text-purple-300 border-purple-500/30" variant="outline">
+                    Projeto
+                  </Badge>
+                  <Badge variant="outline" className="text-[10px]">{task.priority ?? "Média"}</Badge>
+                  <Badge
+                    variant="outline"
+                    className={`text-[10px] ${RESOLVED.includes(task.status) ? "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300" : ""}`}
+                  >
+                    {task.status}
+                  </Badge>
+                </>
+              )}
             </div>
             {task.description && (
               <div className="text-[11px] text-muted-foreground line-clamp-1">{task.description}</div>
@@ -167,12 +181,12 @@ export default function SprintItems({ projectId, sprintId }: Props) {
               {sprints.map((s) => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}
             </SelectContent>
           </Select>
-          {isAdmin && (
+          {isAdmin && !task.converted_to_ticket && (
             <Button
               size="icon"
               variant="ghost"
               className="h-7 w-7"
-              title="Criar chamado a partir desta tarefa (a tarefa permanece na sprint)"
+              title="Aplicar flags de chamado à tarefa (sem duplicar card)"
               disabled={convertTask.isPending}
               onClick={() => setConfirmTask(task)}
             >
