@@ -417,29 +417,9 @@ Deno.serve(async (req) => {
       risks.unshift(`${overview.awaiting_approval_count} chamados aguardando aprovação no backlog.`);
     }
 
-    const dateLabel = body.from.slice(0, 10).split("-").reverse().join("/");
+    const period = detectPeriodLabel(body.from, body.to);
 
-    const totalsForMsg = {
-      closed: totals.closed,
-      in_progress: overview?.in_progress_count ?? totals.inProg,
-      awaiting_approval: overview?.awaiting_approval_count ?? totals.await,
-      backlog: backlogTotal,
-      csat: avgCsat,
-      tma_minutes: avgHandle,
-      points: totals.points,
-      rework_percent: reworkPct,
-    };
-
-    const whatsappMessage = buildWhatsappMessage({
-      date: dateLabel,
-      totals: totalsForMsg,
-      highlights,
-      risks,
-      opStatus,
-      organizationName: org?.name ?? null,
-    });
-
-    // Extra dimensions for richer AI insights: type/priority mix, top categories, story points
+    // Extra dimensions: type/priority mix, top categories, story points, opened count
     const { data: periodTickets } = await supabase
       .from("tickets")
       .select("id, type, priority, story_points, category_id, status, closed_at, created_at")
@@ -447,6 +427,7 @@ Deno.serve(async (req) => {
       .gte("created_at", body.from)
       .lt("created_at", body.to);
 
+    const openedInPeriod = (periodTickets ?? []).length;
     const typeMix: Record<string, number> = {};
     (periodTickets ?? []).forEach((t: any) => {
       const k = (t.type as string) || "Outro";
@@ -472,7 +453,6 @@ Deno.serve(async (req) => {
     });
     const avgStoryPoints = spCount > 0 ? spSum / spCount : 0;
 
-    // Top categories
     const catCount: Record<string, number> = {};
     (closedPeriod ?? []).forEach((t: any) => {
       if (t.category_id) catCount[t.category_id] = (catCount[t.category_id] ?? 0) + 1;
@@ -490,18 +470,50 @@ Deno.serve(async (req) => {
         .slice(0, 5);
     }
 
+    const saldoBacklog = openedInPeriod - totals.closed;
+
+    const totalsForMsg = {
+      closed: totals.closed,
+      in_progress: overview?.in_progress_count ?? totals.inProg,
+      awaiting_approval: overview?.awaiting_approval_count ?? totals.await,
+      backlog: backlogTotal,
+      csat: avgCsat,
+      tma_minutes: avgHandle,
+      points: totals.points,
+      rework_percent: reworkPct,
+    };
+
+    const whatsappMessage = buildWhatsappMessage({
+      periodLabel: period.label,
+      range: period.range,
+      totals: totalsForMsg,
+      highlights,
+      risks,
+      opStatus,
+      organizationName: org?.name ?? null,
+    });
+
     // AI insights (best-effort)
     const aiInsights = await generateAiInsights({
       totals: totalsForMsg,
       highlights,
       risks,
       technicians: list,
-      date: dateLabel,
+      periodLabel: period.label,
+      range: period.range,
+      periodKind: period.kind,
+      organizationName: org?.name ?? null,
+      openedInPeriod,
+      saldoBacklog,
+      backlogNow: backlogTotal,
+      awaitingNow: overview?.awaiting_approval_count ?? totals.await,
+      inProgressNow: overview?.in_progress_count ?? totals.inProg,
       typeMix,
       priorityMix,
       topCategories,
       avgStoryPoints,
     });
+
 
 
     // Cache
