@@ -103,35 +103,25 @@ const TI_COORDENADOR_USER_ID = "8c2a1788-ec3b-4575-a90c-2d804fa0577e";
 
 export function useConvertTaskToTicket() {
   const queryClient = useQueryClient();
-  const { user } = useAuth();
   return useMutation({
     mutationFn: async (task: ProjectTask) => {
-      const nowIso = new Date().toISOString();
-      const { data: ticket, error: insErr } = await supabase
-        .from("tickets")
-        .insert({
-          title: task.title,
-          description: task.description,
-          priority: "Média",
-          type: "Software",
-          status: "Aberto",
-          organization_id: task.organization_id,
-          story_points: task.story_points ?? 1,
-          created_by: user!.id,
-          assigned_to: TI_COORDENADOR_USER_ID,
-          picked_at: nowIso,
+      const { data, error } = await supabase
+        .from("project_tasks")
+        .update({
+          converted_to_ticket: true,
+          priority: task.priority ?? "Média",
         })
+        .eq("id", task.id)
         .select()
         .single();
-      if (insErr) throw insErr;
-      return ticket;
+      if (error) throw error;
+      return data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["project-tickets"] });
-      queryClient.invalidateQueries({ queryKey: ["tickets"] });
-      toast.success("Chamado criado a partir da tarefa");
+      queryClient.invalidateQueries({ queryKey: ["project-tasks"] });
+      queryClient.invalidateQueries({ queryKey: ["sprints"] });
+      toast.success("Flags aplicadas à tarefa");
     },
-    onError: (e: Error) => toast.error("Erro ao converter: " + e.message),
-
+    onError: (e: Error) => toast.error("Erro ao aplicar flags: " + e.message),
   });
 }
