@@ -99,7 +99,7 @@ export function useDeleteProjectTask() {
   });
 }
 
-const TI_COORDENADOR_USER_ID = "8c2a1788-ec3b-4575-a90c-2d804fa0577e";
+
 
 export function useConvertTaskToTicket() {
   const queryClient = useQueryClient();
