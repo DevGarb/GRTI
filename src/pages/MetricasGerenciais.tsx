@@ -238,7 +238,7 @@ export default function MetricasGerenciais() {
               </div>
               <div className="flex justify-end mt-2">
                 <Button size="sm" onClick={() => {
-                  if (editFrom && editTo) setRange({ from: startOfDayInTz(editFrom, orgTz), to: endOfDayInTz(editTo, orgTz) });
+                  if (editFrom && editTo) { setRange({ from: startOfDayInTz(editFrom, orgTz), to: endOfDayInTz(editTo, orgTz) }); setActivePreset("custom"); }
                 }}>Aplicar</Button>
               </div>
             </PopoverContent>
