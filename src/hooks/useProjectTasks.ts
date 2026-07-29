@@ -97,11 +97,14 @@ export function useDeleteProjectTask() {
   });
 }
 
+const TI_COORDENADOR_USER_ID = "8c2a1788-ec3b-4575-a90c-2d804fa0577e";
+
 export function useConvertTaskToTicket() {
   const queryClient = useQueryClient();
   const { user } = useAuth();
   return useMutation({
     mutationFn: async (task: ProjectTask) => {
+      const nowIso = new Date().toISOString();
       const { data: ticket, error: insErr } = await supabase
         .from("tickets")
         .insert({
@@ -113,6 +116,8 @@ export function useConvertTaskToTicket() {
           organization_id: task.organization_id,
           story_points: task.story_points ?? 1,
           created_by: user!.id,
+          assigned_to: TI_COORDENADOR_USER_ID,
+          picked_at: nowIso,
         })
         .select()
         .single();
