@@ -119,8 +119,54 @@ function buildHighlights(rows: MetricRow[]): { highlights: string[]; risks: stri
   return { highlights, risks, techSummaries };
 }
 
+function partsInTz(d: Date, tz = "America/Sao_Paulo") {
+  const fmt = new Intl.DateTimeFormat("en-CA", {
+    timeZone: tz, year: "numeric", month: "2-digit", day: "2-digit",
+  }).formatToParts(d);
+  const get = (t: string) => fmt.find((p) => p.type === t)?.value ?? "";
+  return { y: get("year"), m: get("month"), d: get("day") };
+}
+
+function ymdInTz(d: Date, tz = "America/Sao_Paulo") {
+  const p = partsInTz(d, tz);
+  return `${p.y}-${p.m}-${p.d}`;
+}
+
+function brDate(d: Date, tz = "America/Sao_Paulo") {
+  const p = partsInTz(d, tz);
+  return `${p.d}/${p.m}/${p.y}`;
+}
+
+function detectPeriodLabel(fromISO: string, toISO: string): { label: string; range: string; kind: "hoje" | "ontem" | "7dias" | "mes" | "custom" } {
+  const tz = "America/Sao_Paulo";
+  const from = new Date(fromISO);
+  const to = new Date(toISO);
+  const now = new Date();
+  const todayYmd = ymdInTz(now, tz);
+  const yesterday = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+  const yesterdayYmd = ymdInTz(yesterday, tz);
+  const fromYmd = ymdInTz(from, tz);
+  const toYmd = ymdInTz(to, tz);
+  const range = `${brDate(from, tz)} → ${brDate(to, tz)}`;
+
+  if (fromYmd === todayYmd && toYmd === todayYmd) return { label: "Hoje", range, kind: "hoje" };
+  if (fromYmd === yesterdayYmd && toYmd === yesterdayYmd) return { label: "Ontem", range, kind: "ontem" };
+
+  const diffDays = Math.round((to.getTime() - from.getTime()) / (24 * 60 * 60 * 1000));
+  if (diffDays >= 6 && diffDays <= 8 && toYmd === todayYmd) return { label: "Últimos 7 dias", range, kind: "7dias" };
+
+  const fromP = partsInTz(from, tz);
+  const toP = partsInTz(to, tz);
+  if (fromP.y === toP.y && fromP.m === toP.m && fromP.d === "01" && Number(toP.d) >= 27) {
+    return { label: `Mês ${fromP.m}/${fromP.y}`, range, kind: "mes" };
+  }
+
+  return { label: `Período ${range}`, range, kind: "custom" };
+}
+
 function buildWhatsappMessage(opts: {
-  date: string;
+  periodLabel: string;
+  range: string;
   totals: {
     closed: number;
     in_progress: number;
@@ -136,13 +182,14 @@ function buildWhatsappMessage(opts: {
   opStatus: "normal" | "attention" | "critical";
   organizationName: string | null;
 }): string {
-  const { date, totals, highlights, risks, opStatus, organizationName } = opts;
-  const statusLine = opStatus === "normal" ? "Operação segue estável."
-    : opStatus === "attention" ? "⚠️ Operação requer atenção."
-    : "🔴 Operação em estado crítico.";
+  const { periodLabel, range, totals, highlights, risks, opStatus, organizationName } = opts;
+  const statusLine = opStatus === "normal" ? "Operação segue estável no período."
+    : opStatus === "attention" ? "⚠️ Operação requer atenção no período."
+    : "🔴 Operação em estado crítico no período.";
 
   const lines: string[] = [];
-  lines.push(`📊 RESUMO OPERACIONAL${organizationName ? ` — ${organizationName}` : ""} — ${date}`);
+  lines.push(`📊 RESUMO OPERACIONAL${organizationName ? ` — ${organizationName}` : ""} — ${periodLabel}`);
+  lines.push(`🗓️ ${range}`);
   lines.push("");
   lines.push(`✅ Chamados Finalizados: ${totals.closed}`);
   lines.push(`🔄 Em Andamento: ${totals.in_progress}`);
@@ -177,7 +224,15 @@ async function generateAiInsights(opts: {
   highlights: string[];
   risks: string[];
   technicians: MetricRow[];
-  date: string;
+  periodLabel: string;
+  range: string;
+  periodKind: "hoje" | "ontem" | "7dias" | "mes" | "custom";
+  organizationName: string | null;
+  openedInPeriod: number;
+  saldoBacklog: number;
+  backlogNow: number;
+  awaitingNow: number;
+  inProgressNow: number;
   typeMix: Record<string, number>;
   priorityMix: Record<string, number>;
   topCategories: { name: string; count: number }[];
@@ -192,35 +247,51 @@ async function generateAiInsights(opts: {
   const techSummary = opts.technicians
     .filter((t) => t.closed_in_period > 0 || t.in_progress_now > 0 || t.awaiting_approval > 0)
     .slice(0, 15)
-    .map((t) => `- ${t.full_name}: ${t.closed_in_period} fechados, ${t.in_progress_now} em andamento, ${t.awaiting_approval} aguardando, ${t.total_assigned} atribuídos no período, CSAT ${Number(t.avg_csat).toFixed(1)} (${t.csat_count} aval.), retrabalho ${t.rework_percent.toFixed(0)}% (${t.rework_count}), TMA ${Math.round(Number(t.avg_handle_minutes))}min, ${Number(t.points).toFixed(0)} pts`)
+    .map((t) => `- ${t.full_name}: ${t.closed_in_period} fechados, ${t.in_progress_now} em andamento, ${t.awaiting_approval} aguardando, ${t.total_assigned} atribuídos, CSAT ${Number(t.avg_csat).toFixed(1)} (${t.csat_count} aval.), retrabalho ${t.rework_percent.toFixed(0)}% (${t.rework_count}), TMA ${Math.round(Number(t.avg_handle_minutes))}min, ${Number(t.points).toFixed(0)} pts`)
     .join("\n");
 
   const typeMixStr = Object.entries(opts.typeMix).map(([k, v]) => `${k}: ${v}`).join(", ") || "sem dados";
   const prioMixStr = Object.entries(opts.priorityMix).map(([k, v]) => `${k}: ${v}`).join(", ") || "sem dados";
   const catsStr = opts.topCategories.map((c) => `${c.name} (${c.count})`).join(", ") || "sem dados";
+  const awaitPct = opts.backlogNow > 0 ? (opts.awaitingNow / opts.backlogNow) * 100 : 0;
 
-  const prompt = `Você é um analista executivo de operações de TI (helpdesk). Analise os dados do dia ${opts.date} e gere 5 a 8 insights gerenciais curtos, específicos e acionáveis, em português.
+  const nextActionHint =
+    opts.periodKind === "hoje" ? "ação específica até o fim do expediente de hoje"
+    : opts.periodKind === "ontem" ? "ação corretiva a executar hoje com base no que ocorreu ontem"
+    : opts.periodKind === "7dias" ? "ação para a próxima semana operacional"
+    : opts.periodKind === "mes" ? "ação estratégica para o próximo ciclo mensal"
+    : "próxima ação prática no período seguinte";
 
-OBRIGATÓRIO cobrir:
-1. Análise individual dos técnicos ativos (cite nomes, destaque produtividade/qualidade/risco — uma frase por técnico relevante).
-2. Mix Hardware vs Software vs outros tipos — o que indica (demanda recorrente, sobrecarga em uma frente etc).
-3. Complexidade dos chamados (distribuição de prioridade + média de story points) — chamados leves ou pesados?
-4. Categorias top — onde está concentrada a demanda.
-5. 1 a 2 riscos operacionais concretos (retrabalho alto, CSAT baixo, backlog crescente, técnico sobrecarregado).
-6. 1 recomendação prática para o próximo dia útil.
+  const prompt = `Você é analista executivo de operações de TI (helpdesk). Analise o desempenho da operação${opts.organizationName ? ` da ${opts.organizationName}` : ""} no período **${opts.periodLabel}** (${opts.range}). Os números abaixo vêm do mesmo pipeline do Painel de TV.
 
-Evite frases genéricas. Não repita literalmente números já mostrados nos cards.
+Gere de 5 a 7 insights, em português, cada um com 1 a 2 frases. SEMPRE combine número + interpretação — não apenas repita o número. Cite nomes reais de técnicos e categorias. Proibido: "continue assim", "bom trabalho", "manter o ritmo", "parabéns à equipe" ou qualquer elogio vazio.
+
+ROTEIRO OBRIGATÓRIO (na ordem):
+1. VOLUME E RITMO — comparar abertos (${opts.openedInPeriod}) vs fechados (${opts.totals.closed}) no período. Saldo do backlog no período: ${opts.saldoBacklog >= 0 ? "+" : ""}${opts.saldoBacklog}. Interpretar se o time está drenando ou acumulando fila.
+2. QUALIDADE — cruzar CSAT (${opts.totals.csat > 0 ? opts.totals.csat.toFixed(2) : "sem avaliações"}${opts.totals.csat > 0 ? `, base ${opts.technicians.reduce((s, t) => s + Number(t.csat_count || 0), 0)} avaliações` : ""}) com retrabalho (${opts.totals.rework_percent.toFixed(1)}%). Se um dos dois estiver zerado/insuficiente, diga explicitamente.
+3. PRODUTIVIDADE INDIVIDUAL — destaque os 2 técnicos com mais fechamentos e QUALQUER técnico em risco (retrabalho >15%, CSAT <3.5 com ≥2 avaliações, ou pendentes ≥ 5).
+4. COMPOSIÇÃO DA DEMANDA — mix por tipo (${typeMixStr}), top categorias (${catsStr}) e complexidade média (story points ${opts.avgStoryPoints.toFixed(2)} — leve <3, médio 3-5, pesado >5).
+5. PRIORIDADES — distribuição nos fechados (${prioMixStr}). Sinalizar se Alta/Crítica dominar.
+6. BACKLOG E APROVAÇÃO — backlog atual ${opts.backlogNow}, com ${opts.awaitingNow} aguardando aprovação (${awaitPct.toFixed(0)}% do backlog) e ${opts.inProgressNow} em andamento.${awaitPct > 30 ? " Como aguardando aprovação passa de 30%, tratar como gargalo de aprovação." : ""}
+7. RECOMENDAÇÃO — uma ${nextActionHint}, concreta e nominal (quem, o quê, quando).
+
+REGRAS:
+- Não invente números.
+- Se um campo estiver zerado, diga que está zerado; não fabrique tendências.
+- Não repita as mesmas frases já detectadas nos destaques/riscos abaixo; use-os como base.
 
 DADOS:
-Totais: ${JSON.stringify(opts.totals)}
-Mix por tipo (criados no período): ${typeMixStr}
-Mix por prioridade (fechados no período): ${prioMixStr}
-Média de story points: ${opts.avgStoryPoints.toFixed(2)}
+Totais no período: ${JSON.stringify(opts.totals)}
+Abertos no período: ${opts.openedInPeriod} | Fechados no período: ${opts.totals.closed} | Saldo backlog: ${opts.saldoBacklog >= 0 ? "+" : ""}${opts.saldoBacklog}
+Backlog atual: ${opts.backlogNow} (${opts.awaitingNow} aguardando aprovação, ${opts.inProgressNow} em andamento)
+Mix por tipo (abertos): ${typeMixStr}
+Mix por prioridade (fechados): ${prioMixStr}
+Média de story points (fechados): ${opts.avgStoryPoints.toFixed(2)}
 Top categorias: ${catsStr}
 Destaques pré-detectados: ${opts.highlights.join("; ") || "nenhum"}
 Riscos pré-detectados: ${opts.risks.join("; ") || "nenhum"}
 
-Técnicos:
+Técnicos ativos:
 ${techSummary || "sem atividade"}
 
 Responda APENAS um JSON: {"insights": ["frase 1", "frase 2", ...]}`;
@@ -232,11 +303,11 @@ Responda APENAS um JSON: {"insights": ["frase 1", "frase 2", ...]}`;
       body: JSON.stringify({
         model: "gpt-4o-mini",
         messages: [
-          { role: "system", content: "Você é um analista executivo de operações de TI. Seja direto, específico, profissional. Cite nomes e padrões reais, não generalidades." },
+          { role: "system", content: "Você é um analista executivo sênior de operações de TI. Escreva em português, tom executivo, direto e específico. Combine sempre número com interpretação. Nunca elogios vazios." },
           { role: "user", content: prompt },
         ],
         response_format: { type: "json_object" },
-        temperature: 0.5,
+        temperature: 0.4,
       }),
     });
     if (!res.ok) {
@@ -346,29 +417,9 @@ Deno.serve(async (req) => {
       risks.unshift(`${overview.awaiting_approval_count} chamados aguardando aprovação no backlog.`);
     }
 
-    const dateLabel = body.from.slice(0, 10).split("-").reverse().join("/");
+    const period = detectPeriodLabel(body.from, body.to);
 
-    const totalsForMsg = {
-      closed: totals.closed,
-      in_progress: overview?.in_progress_count ?? totals.inProg,
-      awaiting_approval: overview?.awaiting_approval_count ?? totals.await,
-      backlog: backlogTotal,
-      csat: avgCsat,
-      tma_minutes: avgHandle,
-      points: totals.points,
-      rework_percent: reworkPct,
-    };
-
-    const whatsappMessage = buildWhatsappMessage({
-      date: dateLabel,
-      totals: totalsForMsg,
-      highlights,
-      risks,
-      opStatus,
-      organizationName: org?.name ?? null,
-    });
-
-    // Extra dimensions for richer AI insights: type/priority mix, top categories, story points
+    // Extra dimensions: type/priority mix, top categories, story points, opened count
     const { data: periodTickets } = await supabase
       .from("tickets")
       .select("id, type, priority, story_points, category_id, status, closed_at, created_at")
@@ -376,6 +427,7 @@ Deno.serve(async (req) => {
       .gte("created_at", body.from)
       .lt("created_at", body.to);
 
+    const openedInPeriod = (periodTickets ?? []).length;
     const typeMix: Record<string, number> = {};
     (periodTickets ?? []).forEach((t: any) => {
       const k = (t.type as string) || "Outro";
@@ -401,7 +453,6 @@ Deno.serve(async (req) => {
     });
     const avgStoryPoints = spCount > 0 ? spSum / spCount : 0;
 
-    // Top categories
     const catCount: Record<string, number> = {};
     (closedPeriod ?? []).forEach((t: any) => {
       if (t.category_id) catCount[t.category_id] = (catCount[t.category_id] ?? 0) + 1;
@@ -419,18 +470,50 @@ Deno.serve(async (req) => {
         .slice(0, 5);
     }
 
+    const saldoBacklog = openedInPeriod - totals.closed;
+
+    const totalsForMsg = {
+      closed: totals.closed,
+      in_progress: overview?.in_progress_count ?? totals.inProg,
+      awaiting_approval: overview?.awaiting_approval_count ?? totals.await,
+      backlog: backlogTotal,
+      csat: avgCsat,
+      tma_minutes: avgHandle,
+      points: totals.points,
+      rework_percent: reworkPct,
+    };
+
+    const whatsappMessage = buildWhatsappMessage({
+      periodLabel: period.label,
+      range: period.range,
+      totals: totalsForMsg,
+      highlights,
+      risks,
+      opStatus,
+      organizationName: org?.name ?? null,
+    });
+
     // AI insights (best-effort)
     const aiInsights = await generateAiInsights({
       totals: totalsForMsg,
       highlights,
       risks,
       technicians: list,
-      date: dateLabel,
+      periodLabel: period.label,
+      range: period.range,
+      periodKind: period.kind,
+      organizationName: org?.name ?? null,
+      openedInPeriod,
+      saldoBacklog,
+      backlogNow: backlogTotal,
+      awaitingNow: overview?.awaiting_approval_count ?? totals.await,
+      inProgressNow: overview?.in_progress_count ?? totals.inProg,
       typeMix,
       priorityMix,
       topCategories,
       avgStoryPoints,
     });
+
 
 
     // Cache
