@@ -16,6 +16,8 @@ export interface ProjectTask {
   created_by: string;
   created_at: string;
   updated_at: string;
+  converted_to_ticket: boolean;
+  priority: string | null;
 }
 
 export function useProjectTasks(projectId: string | undefined, sprintId?: string | null) {
