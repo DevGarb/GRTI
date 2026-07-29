@@ -1,32 +1,16 @@
-## Problema
-
-Na aba Sprints, o botão "Converter em chamado" hoje faz duas coisas:
-1. Cria um chamado já vinculado ao projeto e à sprint (`project_id` + `sprint_id` preenchidos).
-2. Apaga a tarefa original (`project_tasks.delete`).
-
-Como o chamado criado herda a sprint, ele reaparece na lista da sprint como um novo card — parecendo "duplicação" — e a tarefa desaparece.
-
 ## Objetivo
-
-Ao converter, manter o card da tarefa na sprint **intacto** e criar um chamado **normal** (não vinculado ao projeto/sprint), que vai para o helpdesk como qualquer outro chamado.
+Ao converter uma tarefa de sprint em chamado, o chamado deve ser sempre atribuído ao **Coordenador TI** (`ti.coordenador@grti.local`), independente de quem executou a ação.
 
 ## Alteração
+Arquivo: `src/hooks/useProjectTasks.ts` — mutation `useConvertTaskToTicket`.
 
-Arquivo: `src/hooks/useProjectTasks.ts` → `useConvertTaskToTicket`
+No insert em `tickets`, adicionar:
+- `assigned_to`: `8c2a1788-ec3b-4575-a90c-2d804fa0577e` (Coordenador TI)
+- `picked_at`: `new Date().toISOString()` (para consistência com o fluxo de atribuição)
 
-- No `insert` em `tickets`, remover `project_id` e `sprint_id` (chamado nasce solto no helpdesk).
-- Remover o `delete` em `project_tasks` (a tarefa continua viva na sprint).
-- Ajustar toast: "Chamado criado a partir da tarefa".
-- Manter invalidação de `tickets` / `project-tickets`; a de `project-tasks` deixa de ser necessária mas não atrapalha — mantida por segurança.
+O status permanece `Aberto` (padrão do sistema — técnico inicia o atendimento manualmente).
 
-Opcional (UX): atualizar o `title` do botão em `SprintItems.tsx` de "Converter em chamado (vincula à mesma sprint)" para "Criar chamado a partir desta tarefa" e o texto do diálogo de confirmação, já que a semântica muda.
+## Detalhes técnicos
+Para evitar hard-code espalhado, o UUID será definido como constante no topo do arquivo (`TI_COORDENADOR_USER_ID`). Se no futuro quisermos parametrizar por organização, migra-se para uma coluna em `organizations` ou uma configuração — fora do escopo agora.
 
-## Fora de escopo
-
-- Não altera schema do banco.
-- Não cria vínculo reverso task↔ticket.
-- Não mexe em nenhum outro fluxo de Projetos.
-
-## Validação
-
-`bun run build` ao final.
+Nada de mudanças no banco, RLS ou outros fluxos de criação de chamado.
