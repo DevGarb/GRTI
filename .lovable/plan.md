@@ -1,40 +1,47 @@
-## Objetivo
+## Diagnóstico (confirmado no banco)
 
-Hoje o botão `ArrowRightCircle` em `SprintItems.tsx` chama `useConvertTaskToTicket`, que insere uma linha em `tickets`. Como a tarefa continua no projeto e o novo ticket também aparece vinculado à sprint (via `useProjectTickets`), o card acaba duplicado na tela.
+Para o Danilo, hoje:
+- RPC `get_management_metrics` (usada em Métricas Gerenciais): **21**
+- Painel de TV (`tv-dashboard`): **7**
 
-A nova regra: o botão **não cria mais chamado**. Ele apenas marca a tarefa como "convertida" e passa a exibir as mesmas flags visuais que um ticket de projeto tem hoje (badges `Projeto` · `<Prioridade>` · `<Status>`), mantendo o card único dentro da sprint.
+A diferença **não é bug de fuso** — é definição diferente de "quando o chamado foi fechado":
 
-## Mudanças
+| Fonte | Regra usada |
+|---|---|
+| RPC Métricas | `status = 'Fechado' AND closed_at ∈ [hoje]` |
+| TV | `COALESCE(aguardando_aprovacao_at, closed_at) ∈ [hoje]` para tickets em `Fechado`/`Aprovado` |
 
-### 1. Banco — `project_tasks`
-Adicionar duas colunas opcionais para armazenar as flags que hoje só existiam em `tickets`:
+O que aconteceu: 14 chamados que o Danilo finalizou em dias anteriores foram **aprovados hoje** em lote pelo administrador. Como o RPC olha só `closed_at`, esses 14 caem no "hoje" e inflam o número — mas a produtividade real do técnico hoje foram os 7 que o TV mostra (finalização efetiva pelo técnico = `aguardando_aprovacao_at`, com fallback em `closed_at` só quando o ticket pula "Aguardando Aprovação", ex.: fechamento de sprint).
 
-- `converted_to_ticket boolean not null default false` — controla se a badge "Projeto" aparece.
-- `priority text` — armazena prioridade escolhida no momento da conversão (default "Média" quando a flag é ligada).
+Query de verificação retornou exatamente: RPC=21, efetivo=7 → bate com o TV.
 
-Sem RLS nova (a tabela já tem policies). Sem migração de dados: registros antigos ficam `false`/`null`.
+## Correção proposta
 
-### 2. Hook `useConvertTaskToTicket` (`src/hooks/useProjectTasks.ts`)
-Trocar a implementação: em vez de `insert` em `tickets`, faz `update` em `project_tasks` setando `converted_to_ticket = true` e `priority = 'Média'` (se ainda estiver nulo). Invalida `["project-tasks"]` e `["sprints"]`. Toast: "Flags aplicadas à tarefa".
+Recriar `public.get_management_metrics` para usar **finalização efetiva do técnico** como conceito único, alinhando com o TV. Sem mudanças no frontend.
 
-Também expor a coluna nova em `ProjectTask` (interface TS) — `converted_to_ticket: boolean`, `priority: string | null`.
+Alterações na função:
+1. CTE `closed` passa a filtrar por:
+   - `status IN ('Fechado','Aprovado')` (hoje só considera `Fechado`, ignorando aprovados)
+   - `effective_finish := COALESCE(aguardando_aprovacao_at, closed_at)` dentro de `[_from, _to)` (em vez de só `closed_at`)
+2. Nas CTEs derivadas (`meta_pts`, `csat`, `rework`, `handle`, `cnt_closed`), continuar usando esse mesmo conjunto — muda apenas a definição de "período".
+3. `initial_min`/`rework_min` já derivam de `ticket_history`; permanecem como estão.
+4. Manter assinatura, tipos de retorno, `SECURITY DEFINER`, `search_path` e GRANTs atuais (função só é substituída via `CREATE OR REPLACE`).
 
-### 3. Renderização em `SprintItems.tsx`
-No bloco `tasks.map(...)`:
-- Quando `task.converted_to_ticket === true`, exibir ao lado do título as mesmas 3 badges usadas hoje para tickets:
-  - `Projeto` (badge roxa)
-  - `task.priority ?? "Média"` (badge outline)
-  - `task.status` (badge — verde quando estiver em `Concluído`/`Fechado`/`Aprovado`/`Aguardando Aprovação`, seguindo a paleta atual dos tickets)
-- Manter o ícone `ListTodo` (não virar `TicketIcon`) para deixar claro que ainda é tarefa.
-- Botão `ArrowRightCircle`: mantém o mesmo lugar/estilo. Se `converted_to_ticket` já for `true`, esconde o botão (ou desabilita com tooltip "Flags já aplicadas") para não repetir a ação.
-- Diálogo de confirmação: reaproveitar, mudar textos para "Aplicar flags de chamado à tarefa" / "As flags Projeto, Prioridade e Status passarão a aparecer neste card. Nenhum chamado será criado."
-
-Nada muda no bloco `tickets.map` — chamados de verdade (vinculados via `useProjectTickets`) continuam sendo mostrados normalmente.
-
-### 4. Sem efeitos colaterais
-- Nenhuma alteração em `useProjectTickets`, RPCs de fechamento de sprint, cálculo de pontos ou métricas.
-- Chamados criados por conversões antigas continuam existindo; se quiser limpar depois, é ação manual separada.
+Não altera:
+- Frontend (`MetricasGerenciais.tsx`, `useManagementMetrics.ts`) — mesmos campos.
+- `get_management_metrics_admin` (fora do escopo; se quiser posso replicar em seguida).
+- `get_executive_overview`, `tv-dashboard` — já corretos.
 
 ## Validação
-- `bun run build`.
-- Conferir visualmente: aplicar flag em uma tarefa mostra as 3 badges e não cria linha em `tickets`; segundo clique fica bloqueado.
+
+Após a migration, rodar:
+```sql
+SELECT full_name, closed_in_period
+FROM get_management_metrics(<início_hoje_SP>, <fim_hoje_SP>, '<org_ti>')
+WHERE full_name ILIKE '%danilo%';
+```
+Esperado: **7**, igual ao TV.
+
+## Detalhes técnicos
+
+Uma única migration `CREATE OR REPLACE FUNCTION public.get_management_metrics(...)` reescrevendo o corpo. Sem DDL em tabelas, sem RLS, sem mudança de contrato.
