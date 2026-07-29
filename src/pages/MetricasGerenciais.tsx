@@ -95,10 +95,11 @@ export default function MetricasGerenciais() {
   const [range, setRange] = useState(() => presetRangeInTz("today", DEFAULT_TZ));
   const [editFrom, setEditFrom] = useState<Date | undefined>(range.from);
   const [editTo, setEditTo] = useState<Date | undefined>(range.to);
+  const [activePreset, setActivePreset] = useState<RangePreset | "custom">("today");
 
   useEffect(() => {
     const r = presetRangeInTz("today", orgTz);
-    setRange(r); setEditFrom(r.from); setEditTo(r.to);
+    setRange(r); setEditFrom(r.from); setEditTo(r.to); setActivePreset("today");
   }, [orgTz]);
 
   const { data: rows = [], isLoading, refetch } = useManagementMetrics(range.from, range.to, orgId);
