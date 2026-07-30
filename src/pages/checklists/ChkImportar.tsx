@@ -100,7 +100,7 @@ export default function ChkImportar() {
       const text = await f.text();
       const json = JSON.parse(text);
       const res = validate(json);
-      if (!res.ok) {
+      if (res.ok === false) {
         setParsed(null);
         toast({ title: "Arquivo inválido", description: res.error, variant: "destructive" });
         return;
