@@ -124,9 +124,18 @@ export default function ChkImportar() {
       const items: any[] = [];
       const options: any[] = [];
 
+      // O JSON pode trazer referências como objeto ({id, name, ...}) ou como número.
+      const toId = (v: any): number | null => {
+        if (v === null || v === undefined || v === "") return null;
+        if (typeof v === "object") return toId((v as any).id);
+        const n = Number(v);
+        return Number.isFinite(n) ? n : null;
+      };
+
       parsed.forEach((c) => {
+        const checklistId = toId(c.id);
         checklists.push({
-          id: c.id,
+          id: checklistId,
           organization_id: orgId,
           name: c.name,
           type: c.type ?? 1,
@@ -134,20 +143,23 @@ export default function ChkImportar() {
           active: c.active ?? true,
         });
         (c.categories || []).forEach((cat, ci) => {
+          const catId = toId(cat.id);
+          const parentId = toId((cat as any).parent);
           const row = {
-            id: cat.id,
-            checklist_id: c.id,
+            id: catId,
+            checklist_id: checklistId,
             organization_id: orgId,
             name: cat.name,
             description: cat.description ?? null,
-            parent_id: cat.parent ?? null,
+            parent_id: parentId,
             sort_order: ci,
           };
-          (cat.parent ? catsChild : catsRoot).push(row);
+          (parentId ? catsChild : catsRoot).push(row);
           (cat.items || []).forEach((it, ii) => {
+            const itemId = toId(it.id);
             items.push({
-              id: it.id,
-              category_id: cat.id,
+              id: itemId,
+              category_id: catId,
               organization_id: orgId,
               name: it.name,
               required: it.required ?? false,
@@ -157,8 +169,8 @@ export default function ChkImportar() {
             });
             (it.options || []).forEach((op, oi) => {
               options.push({
-                id: op.id,
-                item_id: it.id,
+                id: toId(op.id),
+                item_id: itemId,
                 organization_id: orgId,
                 text: op.text,
                 value: op.value ?? null,
@@ -167,6 +179,12 @@ export default function ChkImportar() {
             });
           });
         });
+      });
+
+      // Evita violação de FK quando o "parent" aponta para uma categoria fora do arquivo.
+      const knownCatIds = new Set([...catsRoot, ...catsChild].map((r) => r.id));
+      catsChild.forEach((r) => {
+        if (!knownCatIds.has(r.parent_id)) r.parent_id = null;
       });
 
       const total = checklists.length + catsRoot.length + catsChild.length + items.length + options.length;
