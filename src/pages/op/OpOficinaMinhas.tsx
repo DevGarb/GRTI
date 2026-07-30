@@ -40,9 +40,11 @@ export default function OpOficinaMinhas() {
 
   const [desc, setDesc] = useState("");
   const [saving, setSaving] = useState(false);
-  const [newParts, setNewParts] = useState<{ name: string; qty: number }[]>([]);
-  const [partName, setPartName] = useState("");
-  const [partQty, setPartQty] = useState(1);
+  const [newItems, setNewItems] = useState<{ name: string; qty: number }[]>([]);
+  const [itemName, setItemName] = useState("");
+  const [itemQty, setItemQty] = useState(1);
+  const [entryFiles, setEntryFiles] = useState<File[]>([]);
+
 
   // Adicionar peça em OS existente
   const [addPartFor, setAddPartFor] = useState<string | null>(null);
@@ -152,6 +154,9 @@ export default function OpOficinaMinhas() {
   const createEntry = async () => {
     if (!plate.trim()) return toast.error("Informe a placa da moto");
     setSaving(true);
+    const receivedText = newItems.length
+      ? `Itens recebidos na entrada:\n${newItems.map(i => `- ${i.name} (x${i.qty})`).join("\n")}`
+      : null;
     const res = await add({
       vehicle_plate: plate.trim().toUpperCase(),
       vehicle_model: model.trim() || null,
@@ -159,28 +164,34 @@ export default function OpOficinaMinhas() {
       customer_name: customerName.trim() || null,
 
       description: desc.trim() || null,
+      notes: receivedText,
       mechanic_id: profile?.id || null,
       stage: "analise",
     });
-    if (res && newParts.length) {
-      await supabase.from("op_service_order_parts").insert(
-        newParts.map(p => ({
-          service_order_id: (res as any).id,
-          part_name: p.name,
-          quantity: p.qty,
-          unit_price: 0,
-          part_status: "solicitada",
-        })),
-      );
+    if (res && entryFiles.length) {
+      const osId = (res as any).id as string;
+      for (const file of entryFiles) {
+        const path = `${osId}/${Date.now()}-${file.name.replace(/[^\w.\-]/g, "_")}`;
+        const { error: upErr } = await supabase.storage.from("op-service-orders").upload(path, file);
+        if (upErr) { toast.error(upErr.message); continue; }
+        const { data: { publicUrl } } = supabase.storage.from("op-service-orders").getPublicUrl(path);
+        await supabase.from("op_service_order_photos").insert({
+          service_order_id: osId,
+          photo_url: publicUrl,
+          photo_type: "antes",
+          uploaded_by: user?.id || null,
+        });
+      }
       refetch();
     }
     setSaving(false);
     if (res) {
       setOpenNew(false);
-      setPlate(""); setModel(""); setCompanyId("none"); setDesc("");
-      setNewParts([]); setPartName(""); setPartQty(1);
+      setPlate(""); setModel(""); setCompanyId("none"); setDesc(""); setCustomerName("");
+      setNewItems([]); setItemName(""); setItemQty(1); setEntryFiles([]);
     }
   };
+
 
 
 
@@ -248,33 +259,58 @@ export default function OpOficinaMinhas() {
 
                   <div className="border rounded-md p-3 bg-muted/30 space-y-2">
                     <div className="text-sm font-medium flex items-center gap-1">
-                      <Package className="h-4 w-4" /> Peças necessárias ({newParts.length})
+                      <Package className="h-4 w-4" /> O que veio na moto ({newItems.length})
                     </div>
+                    <p className="text-xs text-muted-foreground">
+                      Registre itens entregues junto com a moto (podem vir separados).
+                    </p>
                     <div className="flex gap-2">
-                      <Input value={partName} onChange={e => setPartName(e.target.value)} placeholder="Peça / serviço"
+                      <Input value={itemName} onChange={e => setItemName(e.target.value)} placeholder="Ex.: retrovisor, capacete, bagageiro"
                         onKeyDown={e => {
-                          if (e.key === "Enter" && partName.trim()) {
+                          if (e.key === "Enter" && itemName.trim()) {
                             e.preventDefault();
-                            setNewParts(p => [...p, { name: partName.trim(), qty: partQty || 1 }]);
-                            setPartName(""); setPartQty(1);
+                            setNewItems(p => [...p, { name: itemName.trim(), qty: itemQty || 1 }]);
+                            setItemName(""); setItemQty(1);
                           }
                         }} />
-                      <Input type="number" min={1} value={partQty} onChange={e => setPartQty(Number(e.target.value))} className="w-16" />
+                      <Input type="number" min={1} value={itemQty} onChange={e => setItemQty(Number(e.target.value))} className="w-16" />
                       <Button type="button" size="icon" onClick={() => {
-                        if (!partName.trim()) return;
-                        setNewParts(p => [...p, { name: partName.trim(), qty: partQty || 1 }]);
-                        setPartName(""); setPartQty(1);
+                        if (!itemName.trim()) return;
+                        setNewItems(p => [...p, { name: itemName.trim(), qty: itemQty || 1 }]);
+                        setItemName(""); setItemQty(1);
                       }}><Plus className="h-4 w-4" /></Button>
                     </div>
-                    {newParts.map((p, i) => (
+                    {newItems.map((p, i) => (
                       <div key={i} className="flex items-center justify-between bg-card border rounded px-2 py-1 text-sm">
                         <span className="truncate">{p.name} <span className="text-muted-foreground">x{p.qty}</span></span>
-                        <button type="button" className="text-destructive" onClick={() => setNewParts(list => list.filter((_, j) => j !== i))}>
+                        <button type="button" className="text-destructive" onClick={() => setNewItems(list => list.filter((_, j) => j !== i))}>
                           <X className="h-4 w-4" />
                         </button>
                       </div>
                     ))}
                   </div>
+
+                  <div className="border rounded-md p-3 bg-muted/30 space-y-2">
+                    <div className="text-sm font-medium flex items-center gap-1">
+                      <Camera className="h-4 w-4" /> Fotos da entrada ({entryFiles.length})
+                    </div>
+                    <Input type="file" accept="image/*" multiple
+                      onChange={e => setEntryFiles(Array.from(e.target.files || []))} />
+                    {entryFiles.length > 0 && (
+                      <div className="grid grid-cols-3 gap-2">
+                        {entryFiles.map((f, i) => (
+                          <div key={i} className="relative">
+                            <img src={URL.createObjectURL(f)} alt={f.name} className="h-20 w-full object-cover rounded border" />
+                            <button type="button" className="absolute top-1 right-1 bg-background/90 rounded-full p-0.5 text-destructive"
+                              onClick={() => setEntryFiles(list => list.filter((_, j) => j !== i))}>
+                              <X className="h-3 w-3" />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
                 </div>
                 <DialogFooter>
                   <Button variant="outline" onClick={() => setOpenNew(false)}>Cancelar</Button>
