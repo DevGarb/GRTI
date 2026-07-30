@@ -223,12 +223,11 @@ export default function ChkImportar() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-semibold">Importar Checklists</h1>
-        <p className="text-sm text-muted-foreground">
-          Envie o arquivo JSON exportado para carregar checklists, categorias, itens e opções.
-        </p>
-      </div>
+      <ChkPageHeader
+        icon={FileJson}
+        title="Importar Checklists"
+        subtitle="Envie o arquivo JSON exportado para carregar checklists, categorias, itens e opções."
+      />
 
       <Card>
         <CardHeader>
