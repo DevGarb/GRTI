@@ -7,7 +7,7 @@ import { toast } from "sonner";
 import {
   persistActiveOrgSlug,
   readOrgSlugFromUrl,
-  resolveActiveOrgSlug,
+
 } from "@/lib/activeOrg";
 
 interface Org {
@@ -85,17 +85,17 @@ export default function OrgSwitcher() {
   const currentOrgId = profile?.organization_id ?? null;
   const currentOrg = useMemo(() => orgs.find((o) => o.id === currentOrgId) ?? null, [orgs, currentOrgId]);
 
-  // Sincronia inicial: se veio ?org=slug (ou localStorage) diferente do que está no
-  // profile, força o switch. Também mantém a URL/storage alinhados com a org atual.
+  // Sincronia inicial: apenas um `?org=slug` explícito na URL (link compartilhado)
+  // pode forçar a troca. O profile é a fonte da verdade — resíduo em localStorage
+  // nunca sobrepõe a org escolhida no login.
   useEffect(() => {
     if (fetching || orgs.length === 0 || syncedFromUrl) return;
     setSyncedFromUrl(true);
 
-    const desiredSlug = resolveActiveOrgSlug();
-    if (desiredSlug) {
-      const target = orgs.find((o) => o.slug === desiredSlug);
+    const urlSlug = readOrgSlugFromUrl();
+    if (urlSlug) {
+      const target = orgs.find((o) => o.slug === urlSlug);
       if (target && target.id !== currentOrgId) {
-        // O usuário abriu um link compartilhado apontando para outra org à qual ele tem acesso.
         void switchOrg(target.id, { silent: true });
         return;
       }
