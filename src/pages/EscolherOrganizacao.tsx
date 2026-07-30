@@ -32,8 +32,12 @@ export default function EscolherOrganizacao() {
   useEffect(() => {
     if (loading) return;
     if (orgs.length === 1 && profile && profile.organization_id !== orgs[0].id) {
-      switchToOrg(orgs[0].id).then(() => window.location.replace("/"));
+      switchToOrg(orgs[0].id).then(() => {
+        persistActiveOrgSlug(orgs[0].slug ?? null);
+        window.location.replace("/");
+      });
     } else if (orgs.length === 1) {
+      persistActiveOrgSlug(orgs[0].slug ?? null);
       navigate("/", { replace: true });
     }
   }, [loading, orgs, profile?.organization_id]);
@@ -41,6 +45,8 @@ export default function EscolherOrganizacao() {
   const choose = async (orgId: string) => {
     const { error } = await switchToOrg(orgId);
     if (error) { toast.error("Erro ao selecionar organização"); return; }
+    const target = orgs.find((o) => o.id === orgId);
+    persistActiveOrgSlug(target?.slug ?? null);
     window.location.replace("/");
   };
 
