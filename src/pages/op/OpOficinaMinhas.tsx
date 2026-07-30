@@ -23,6 +23,14 @@ import {
 
 const MY_STAGES = ["analise", "desempeno", "pintura", "execucao"];
 const DONE_STAGES = ["pronto", "entregue"];
+const ALERT_REASONS = [
+  "Falta de peça",
+  "Peça errada / avariada",
+  "Aguardando autorização do cliente",
+  "Serviço externo / terceirizada",
+  "Intercorrência técnica",
+  "Outro",
+];
 
 export default function OpOficinaMinhas() {
   const { profile } = useOficinaProfile();
