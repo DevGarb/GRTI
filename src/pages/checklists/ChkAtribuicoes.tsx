@@ -198,7 +198,7 @@ export default function ChkAtribuicoes() {
                   {a.chk_companies?.name} · {a.profiles?.full_name} · {a.frequency} · desde {formatDateBR(a.start_date)}
                 </p>
               </div>
-              <ChkBadge tone={a.is_active ? "success" : "neutral"}>{a.is_active ? "Ativa" : "Pausada"}</ChkBadge>
+              <ChkBadge tone={a.is_active ? "ok" : "neutral"}>{a.is_active ? "Ativa" : "Pausada"}</ChkBadge>
               <div className="flex shrink-0 items-center gap-0.5">
                 <button onClick={() => toggle.mutate({ id: a.id, is_active: !a.is_active })} title={a.is_active ? "Pausar" : "Ativar"} className="p-2 rounded-lg hover:bg-[hsl(var(--chk-surface-3))] text-[hsl(var(--chk-text-dim))]">
                   {a.is_active ? <ToggleRight className="h-5 w-5 text-[hsl(var(--chk-primary))]" /> : <ToggleLeft className="h-5 w-5" />}
