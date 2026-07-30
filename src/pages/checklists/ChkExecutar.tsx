@@ -28,9 +28,7 @@ export default function ChkExecutar() {
   const timersRef = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
   const [lastSavedAt, setLastSavedAt] = useState<Date | null>(null);
   useEffect(() => {
-    Fancybox.bind("[data-fancybox='chk-fotos']", {
-      Thumbs: { type: "classic" },
-    });
+    Fancybox.bind(document.body, "[data-fancybox='chk-fotos']", {});
     return () => Fancybox.destroy();
   }, []);
 
