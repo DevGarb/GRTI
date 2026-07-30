@@ -413,6 +413,200 @@ export type Database = {
           },
         ]
       }
+      chk_imp_categories: {
+        Row: {
+          checklist_id: number
+          created_at: string
+          description: string | null
+          id: number
+          name: string
+          organization_id: string
+          parent_id: number | null
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          checklist_id: number
+          created_at?: string
+          description?: string | null
+          id: number
+          name: string
+          organization_id: string
+          parent_id?: number | null
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          checklist_id?: number
+          created_at?: string
+          description?: string | null
+          id?: number
+          name?: string
+          organization_id?: string
+          parent_id?: number | null
+          sort_order?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chk_imp_categories_checklist_id_fkey"
+            columns: ["checklist_id"]
+            isOneToOne: false
+            referencedRelation: "chk_imp_checklists"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "chk_imp_categories_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      chk_imp_checklists: {
+        Row: {
+          active: boolean
+          created_at: string
+          description: string | null
+          id: number
+          name: string
+          organization_id: string
+          type: number
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          description?: string | null
+          id: number
+          name: string
+          organization_id: string
+          type?: number
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          description?: string | null
+          id?: number
+          name?: string
+          organization_id?: string
+          type?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chk_imp_checklists_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      chk_imp_item_options: {
+        Row: {
+          created_at: string
+          id: number
+          item_id: number
+          organization_id: string
+          sort_order: number
+          text: string
+          updated_at: string
+          value: number | null
+        }
+        Insert: {
+          created_at?: string
+          id: number
+          item_id: number
+          organization_id: string
+          sort_order?: number
+          text: string
+          updated_at?: string
+          value?: number | null
+        }
+        Update: {
+          created_at?: string
+          id?: number
+          item_id?: number
+          organization_id?: string
+          sort_order?: number
+          text?: string
+          updated_at?: string
+          value?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chk_imp_item_options_item_id_fkey"
+            columns: ["item_id"]
+            isOneToOne: false
+            referencedRelation: "chk_imp_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "chk_imp_item_options_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      chk_imp_items: {
+        Row: {
+          category_id: number
+          created_at: string
+          id: number
+          name: string
+          organization_id: string
+          required: boolean
+          scale: number | null
+          sort_order: number
+          updated_at: string
+          weight: number
+        }
+        Insert: {
+          category_id: number
+          created_at?: string
+          id: number
+          name: string
+          organization_id: string
+          required?: boolean
+          scale?: number | null
+          sort_order?: number
+          updated_at?: string
+          weight?: number
+        }
+        Update: {
+          category_id?: number
+          created_at?: string
+          id?: number
+          name?: string
+          organization_id?: string
+          required?: boolean
+          scale?: number | null
+          sort_order?: number
+          updated_at?: string
+          weight?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chk_imp_items_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "chk_imp_categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "chk_imp_items_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       chk_sectors: {
         Row: {
           created_at: string
@@ -515,6 +709,7 @@ export type Database = {
           description: string | null
           frequency: Database["public"]["Enums"]["chk_frequency"]
           id: string
+          import_checklist_id: number | null
           is_active: boolean
           organization_id: string
           sector_id: string | null
@@ -527,6 +722,7 @@ export type Database = {
           description?: string | null
           frequency?: Database["public"]["Enums"]["chk_frequency"]
           id?: string
+          import_checklist_id?: number | null
           is_active?: boolean
           organization_id: string
           sector_id?: string | null
@@ -539,6 +735,7 @@ export type Database = {
           description?: string | null
           frequency?: Database["public"]["Enums"]["chk_frequency"]
           id?: string
+          import_checklist_id?: number | null
           is_active?: boolean
           organization_id?: string
           sector_id?: string | null
@@ -3495,6 +3692,10 @@ export type Database = {
       }
       business_minutes_between: {
         Args: { _end: string; _start: string }
+        Returns: number
+      }
+      chk_import_generate_templates: {
+        Args: { _organization_id: string }
         Returns: number
       }
       close_sprint_with_checklist: {
