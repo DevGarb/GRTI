@@ -32,6 +32,12 @@ export interface ServiceOrder {
   notes: string | null;
   closure_summary?: string | null;
   closed_by?: string | null;
+  award_amount?: number | null;
+  award_status?: string | null;
+  award_notes?: string | null;
+  award_validated_by?: string | null;
+  award_validated_at?: string | null;
+  award_sent_at?: string | null;
   created_by: string;
   created_at: string;
 }
