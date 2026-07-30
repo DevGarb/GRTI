@@ -13,7 +13,7 @@ const BATCH = 500;
 
 type RawOption = { id: number; text: string; value: number | null };
 type RawItem = { id: number; name: string; required?: boolean; scale?: number | null; weight?: number | null; options?: RawOption[] };
-type RawCategory = { id: number; name: string; description?: string | null; parent?: number | null; items?: RawItem[] };
+type RawCategory = { id: number; name: string; description?: string | null; parent?: number | { id: number } | null; items?: RawItem[] };
 type RawChecklist = { id: number; name: string; type?: number; description?: string | null; active?: boolean; categories?: RawCategory[] };
 
 type Counts = { checklists: number; categories: number; items: number; options: number };
