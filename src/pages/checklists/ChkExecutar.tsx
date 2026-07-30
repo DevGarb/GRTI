@@ -130,63 +130,76 @@ export default function ChkExecutar() {
   const pending = total - resolvedCount;
 
   return (
-    <div className="space-y-6 max-w-3xl">
-      <button onClick={() => navigate(-1)} className="text-sm text-muted-foreground hover:text-foreground flex items-center gap-1"><ArrowLeft className="h-4 w-4" /> Voltar</button>
+    <div className="space-y-5 max-w-3xl">
+      <button onClick={() => navigate(-1)} className="text-sm text-[hsl(var(--chk-text-dim))] hover:text-foreground flex items-center gap-1.5 font-medium transition-colors"><ArrowLeft className="h-4 w-4" /> Voltar</button>
 
-      <div>
-        <h1 className="text-2xl font-bold">{exec.chk_templates?.title}</h1>
-        <p className="text-sm text-muted-foreground">
-          {exec.chk_companies?.name} · {formatDateBR(exec.target_date)} · {resolvedCount}/{total} itens
-          {exec.score !== null && ` · Score: ${exec.score}%`}
-        </p>
-        <div className="mt-3">
-          <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
-            <span>Progresso</span>
-            <div className="flex items-center gap-2">
-              {!readonly && lastSavedAt && (
-                <span className="text-[11px] text-emerald-600">
-                  Rascunho salvo {lastSavedAt.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}
-                </span>
-              )}
-              <span className="font-medium text-foreground">{progress}%</span>
+      <div className="sticky top-12 z-20 -mx-1 px-1 pt-1 pb-2 bg-[hsl(var(--chk-bg))]/92 backdrop-blur-sm">
+        <div className="card-elevated p-4 sm:p-5">
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div className="min-w-0">
+              <h1 className="text-xl sm:text-2xl font-bold tracking-tight leading-tight">{exec.chk_templates?.title}</h1>
+              <p className="text-sm text-[hsl(var(--chk-text-dim))] mt-1">
+                {exec.chk_companies?.name} · {formatDateBR(exec.target_date)} · {resolvedCount}/{total} itens
+                {exec.score !== null && ` · Score: ${exec.score}%`}
+              </p>
             </div>
+            <ChkBadge tone={readonly ? "ok" : "info"}>{readonly ? "Concluída" : "Em execução"}</ChkBadge>
           </div>
-          <div className="h-2 w-full rounded-full bg-muted overflow-hidden">
-            <div
-              className="h-full bg-primary transition-all duration-300"
-              style={{ width: `${progress}%` }}
-            />
+          <div className="mt-4">
+            <div className="flex items-center justify-between text-xs text-[hsl(var(--chk-text-dim))] mb-1.5">
+              <span className="font-semibold uppercase tracking-wider text-[10px]">Progresso</span>
+              <div className="flex items-center gap-2">
+                {!readonly && lastSavedAt && (
+                  <span className="text-[11px] text-[hsl(var(--chk-ok))]">
+                    Rascunho salvo {lastSavedAt.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}
+                  </span>
+                )}
+                <span className="font-bold text-foreground tabular-nums">{progress}%</span>
+              </div>
+            </div>
+            <div className="h-2 w-full rounded-full bg-[hsl(var(--chk-surface-3))] overflow-hidden">
+              <div
+                className="h-full rounded-full bg-[hsl(var(--chk-primary))] transition-all duration-500"
+                style={{ width: `${progress}%` }}
+              />
+            </div>
           </div>
         </div>
       </div>
 
       {exec.chk_templates?.description && (
-        <div className="card-elevated p-3 text-sm text-muted-foreground">{exec.chk_templates.description}</div>
+        <div className="card-elevated p-4 text-sm text-[hsl(var(--chk-text-dim))] leading-relaxed">{exec.chk_templates.description}</div>
       )}
 
       <div className="space-y-3">
         {exec.items.map((it: any, idx: number) => {
           const ti = it.chk_template_items;
           const weightLabel = ti?.weight === 3 ? "Imprescindível" : ti?.weight === 2 ? "Importante" : "Comum";
-          const weightColor = ti?.weight === 3 ? "bg-red-100 text-red-700" : ti?.weight === 2 ? "bg-amber-100 text-amber-700" : "bg-muted text-muted-foreground";
+          const weightTone = ti?.weight === 3 ? "danger" : ti?.weight === 2 ? "warn" : "neutral";
           const na = it.not_applicable;
-          const cardBorder = na ? "border-muted-foreground/30 bg-muted/30" : it.done ? "border-primary/30" : "";
+          const cardBorder = na
+            ? "opacity-70 bg-[hsl(var(--chk-surface-2))]"
+            : it.done
+            ? "ring-1 ring-[hsl(var(--chk-primary)/0.28)]"
+            : "";
           return (
-            <div key={it.id} className={`card-elevated p-4 space-y-3 ${cardBorder}`}>
+            <div key={it.id} className={`card-elevated p-4 space-y-3 transition-all duration-200 ${cardBorder}`}>
               <div className="flex items-start gap-3">
                 <button
                   disabled={readonly || na}
                   onClick={() => saveItem.mutate({ id: it.id, done: !it.done })}
-                  className={`h-6 w-6 rounded-md border-2 shrink-0 flex items-center justify-center transition-colors disabled:opacity-40 disabled:cursor-not-allowed ${it.done && !na ? "bg-primary border-primary text-primary-foreground" : "border-input hover:border-primary"}`}
+                  aria-label={it.done ? "Desmarcar item" : "Marcar item como feito"}
+                  className={`h-6 w-6 rounded-md border-2 shrink-0 flex items-center justify-center transition-all disabled:opacity-40 disabled:cursor-not-allowed ${it.done && !na ? "bg-[hsl(var(--chk-primary))] border-[hsl(var(--chk-primary))] text-primary-foreground scale-105" : "border-input hover:border-[hsl(var(--chk-primary))]"}`}
                 >
                   {it.done && !na && <Check className="h-4 w-4" />}
                 </button>
-                <div className="flex-1">
-                  <p className={`font-medium ${na ? "line-through text-muted-foreground" : ""}`}>{idx + 1}. {ti?.title}</p>
-                  {ti?.observation && <p className="text-xs text-muted-foreground mt-0.5">{ti.observation}</p>}
+                <div className="flex-1 min-w-0">
+                  <p className={`font-semibold text-sm leading-snug ${na ? "line-through text-[hsl(var(--chk-text-dim))]" : ""}`}>{idx + 1}. {ti?.title}</p>
+                  {ti?.observation && <p className="text-xs text-[hsl(var(--chk-text-dim))] mt-1 leading-relaxed">{ti.observation}</p>}
                 </div>
-                <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${weightColor}`}>{weightLabel}</span>
+                <ChkBadge tone={weightTone as any}>{weightLabel}</ChkBadge>
               </div>
+
 
               <textarea
                 disabled={readonly}
