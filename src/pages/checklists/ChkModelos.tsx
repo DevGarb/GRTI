@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { FileText, Plus, Pencil, Trash2, Camera, X, GripVertical } from "lucide-react";
 import { useChkTemplates, useChkTemplate, useSaveChkTemplate, useDeleteChkTemplate, useChkSectors, type ChkFrequency } from "@/hooks/useChecklists";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { ChkPageHeader, ChkEmptyState, ChkListSkeleton, ChkBadge } from "@/components/checklists/ChkUI";
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, type DragEndEvent } from "@dnd-kit/core";
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
