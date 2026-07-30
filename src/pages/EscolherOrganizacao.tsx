@@ -7,6 +7,7 @@ import { useUserOrganizations } from "@/hooks/useUserOrganizations";
 import { toast } from "sonner";
 import AuroraBackground from "@/components/login/AuroraBackground";
 import ParticleField from "@/components/login/ParticleField";
+import { persistActiveOrgSlug } from "@/lib/activeOrg";
 
 const ORG_DESCRIPTIONS: Record<string, { subtitle: string; sector: string }> = {
   "grupo-ramos": { subtitle: "Suporte e Help Desk", sector: "Setor de T.I" },
