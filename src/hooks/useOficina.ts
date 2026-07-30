@@ -44,6 +44,10 @@ export interface ServiceOrder {
   supervisor_alert_at?: string | null;
   supervisor_alert_by?: string | null;
   supervisor_alert_resolved_at?: string | null;
+  supervisor_action_plan?: string | null;
+  supervisor_action_due?: string | null;
+  supervisor_action_by?: string | null;
+  supervisor_action_at?: string | null;
   created_by: string;
   created_at: string;
 }
