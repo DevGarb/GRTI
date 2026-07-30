@@ -6,6 +6,8 @@ import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import { formatDateBR } from "@/lib/dateFormat";
 import { ChkBadge } from "@/components/checklists/ChkUI";
+import { Fancybox } from "@fancyapps/ui/dist/fancybox/fancybox.esm.js";
+import "@fancyapps/ui/dist/fancybox/fancybox.css";
 
 export default function ChkExecutar() {
   const { id } = useParams();
