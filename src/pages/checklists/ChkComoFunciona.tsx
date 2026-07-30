@@ -73,7 +73,7 @@ const steps: Step[] = [
 
 export default function ChkComoFunciona() {
   return (
-    <div className="space-y-8 max-w-4xl mx-auto">
+    <div className="space-y-8">
       <ChkPageHeader
         icon={HelpCircle}
         title="Como funciona o Checklist"

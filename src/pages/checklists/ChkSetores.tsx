@@ -14,7 +14,7 @@ export default function ChkSetores() {
   const [toDelete, setToDelete] = useState<{ id: string; name: string } | null>(null);
 
   return (
-    <div className="space-y-6 max-w-2xl">
+    <div className="space-y-6">
       <ChkPageHeader
         icon={Building2}
         title="Setores"
