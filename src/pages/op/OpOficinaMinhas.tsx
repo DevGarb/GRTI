@@ -73,6 +73,48 @@ export default function OpOficinaMinhas() {
   const [files, setFiles] = useState<File[]>([]);
   const [finishing, setFinishing] = useState(false);
 
+  // Acionar supervisor (observação / intercorrência)
+  const [alertOs, setAlertOs] = useState<ServiceOrder | null>(null);
+  const [alertReason, setAlertReason] = useState(ALERT_REASONS[0]);
+  const [alertNote, setAlertNote] = useState("");
+  const [alerting, setAlerting] = useState(false);
+
+  const openAlert = (o: ServiceOrder) => {
+    setAlertOs(o);
+    setAlertReason(o.supervisor_alert_reason || ALERT_REASONS[0]);
+    setAlertNote(o.supervisor_alert_note || "");
+  };
+
+  const confirmAlert = async () => {
+    if (!alertOs) return;
+    if (!alertNote.trim()) return toast.error("Descreva a observação para o supervisor");
+    setAlerting(true);
+    try {
+      await update(alertOs.id, {
+        supervisor_alert: true,
+        supervisor_alert_reason: alertReason,
+        supervisor_alert_note: alertNote.trim(),
+        supervisor_alert_at: new Date().toISOString(),
+        supervisor_alert_by: user?.id || null,
+        supervisor_alert_resolved_at: null,
+      } as any);
+      toast.success("Supervisor acionado");
+      setAlertOs(null);
+      refetch();
+    } finally {
+      setAlerting(false);
+    }
+  };
+
+  const cancelAlert = async (o: ServiceOrder) => {
+    await update(o.id, {
+      supervisor_alert: false,
+      supervisor_alert_resolved_at: new Date().toISOString(),
+    } as any);
+    toast.success("Acionamento encerrado");
+    refetch();
+  };
+
   const mine = useMemo(
     () => items.filter(o => o.mechanic_id === profile?.id && MY_STAGES.includes(o.stage)),
     [items, profile?.id],
