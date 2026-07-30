@@ -7,7 +7,7 @@ import { toast } from "sonner";
 import {
   persistActiveOrgSlug,
   readOrgSlugFromUrl,
-  resolveActiveOrgSlug,
+
 } from "@/lib/activeOrg";
 
 interface Org {
