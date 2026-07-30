@@ -128,6 +128,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const signOut = async () => {
+    persistActiveOrgSlug(null);
     await supabase.auth.signOut();
   };
 
