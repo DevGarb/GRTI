@@ -40,9 +40,11 @@ export default function OpOficinaMinhas() {
 
   const [desc, setDesc] = useState("");
   const [saving, setSaving] = useState(false);
-  const [newParts, setNewParts] = useState<{ name: string; qty: number }[]>([]);
-  const [partName, setPartName] = useState("");
-  const [partQty, setPartQty] = useState(1);
+  const [newItems, setNewItems] = useState<{ name: string; qty: number }[]>([]);
+  const [itemName, setItemName] = useState("");
+  const [itemQty, setItemQty] = useState(1);
+  const [entryFiles, setEntryFiles] = useState<File[]>([]);
+
 
   // Adicionar peça em OS existente
   const [addPartFor, setAddPartFor] = useState<string | null>(null);
