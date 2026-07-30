@@ -5,6 +5,7 @@ import { useChkExecution, useSaveChkExecutionItem, useCompleteChkExecution, useR
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import { formatDateBR } from "@/lib/dateFormat";
+import { ChkBadge } from "@/components/checklists/ChkUI";
 
 export default function ChkExecutar() {
   const { id } = useParams();
