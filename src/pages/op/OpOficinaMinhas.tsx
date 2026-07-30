@@ -154,6 +154,9 @@ export default function OpOficinaMinhas() {
   const createEntry = async () => {
     if (!plate.trim()) return toast.error("Informe a placa da moto");
     setSaving(true);
+    const receivedText = newItems.length
+      ? `Itens recebidos na entrada:\n${newItems.map(i => `- ${i.name} (x${i.qty})`).join("\n")}`
+      : null;
     const res = await add({
       vehicle_plate: plate.trim().toUpperCase(),
       vehicle_model: model.trim() || null,
@@ -161,28 +164,34 @@ export default function OpOficinaMinhas() {
       customer_name: customerName.trim() || null,
 
       description: desc.trim() || null,
+      notes: receivedText,
       mechanic_id: profile?.id || null,
       stage: "analise",
     });
-    if (res && newParts.length) {
-      await supabase.from("op_service_order_parts").insert(
-        newParts.map(p => ({
-          service_order_id: (res as any).id,
-          part_name: p.name,
-          quantity: p.qty,
-          unit_price: 0,
-          part_status: "solicitada",
-        })),
-      );
+    if (res && entryFiles.length) {
+      const osId = (res as any).id as string;
+      for (const file of entryFiles) {
+        const path = `${osId}/${Date.now()}-${file.name.replace(/[^\w.\-]/g, "_")}`;
+        const { error: upErr } = await supabase.storage.from("op-service-orders").upload(path, file);
+        if (upErr) { toast.error(upErr.message); continue; }
+        const { data: { publicUrl } } = supabase.storage.from("op-service-orders").getPublicUrl(path);
+        await supabase.from("op_service_order_photos").insert({
+          service_order_id: osId,
+          photo_url: publicUrl,
+          photo_type: "antes",
+          uploaded_by: user?.id || null,
+        });
+      }
       refetch();
     }
     setSaving(false);
     if (res) {
       setOpenNew(false);
-      setPlate(""); setModel(""); setCompanyId("none"); setDesc("");
-      setNewParts([]); setPartName(""); setPartQty(1);
+      setPlate(""); setModel(""); setCompanyId("none"); setDesc(""); setCustomerName("");
+      setNewItems([]); setItemName(""); setItemQty(1); setEntryFiles([]);
     }
   };
+
 
 
 
