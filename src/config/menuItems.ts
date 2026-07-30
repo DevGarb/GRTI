@@ -27,6 +27,7 @@ import {
   ListChecks,
   BarChart3,
   HelpCircle,
+  Upload,
 } from "lucide-react";
 
 export interface MenuItem {
@@ -83,6 +84,7 @@ export const menuItems: MenuItem[] = [
   { key: "chk-atribuicoes", label: "Atribuições", icon: UserCheck, path: "/checklists/atribuicoes", orgSlugs: ["grcheck"], adminOnly: true, tooltip: "Atribuir checklists a colaboradores" },
   { key: "chk-empresas", label: "Empresas", icon: Building2, path: "/checklists/empresas", orgSlugs: ["grcheck"], adminOnly: true, tooltip: "Empresas parceiras" },
   { key: "chk-setores", label: "Setores", icon: Building2, path: "/checklists/setores", orgSlugs: ["grcheck"], adminOnly: true, tooltip: "Setores da organização de checklists" },
+  { key: "chk-importar", label: "Importar", icon: Upload, path: "/checklists/importar", orgSlugs: ["grcheck"], adminOnly: true, tooltip: "Importar checklists a partir de arquivo JSON" },
   { key: "chk-relatorios", label: "Relatórios", icon: BarChart3, path: "/checklists/relatorios", orgSlugs: ["grcheck"], adminOnly: true, tooltip: "Relatório de acompanhamento" },
 ];
 
