@@ -6,6 +6,8 @@ import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import { formatDateBR } from "@/lib/dateFormat";
 import { ChkBadge } from "@/components/checklists/ChkUI";
+import { Fancybox } from "@fancyapps/ui/dist/fancybox/fancybox.js";
+import "@fancyapps/ui/dist/fancybox/fancybox.css";
 
 export default function ChkExecutar() {
   const { id } = useParams();
@@ -25,6 +27,11 @@ export default function ChkExecutar() {
   const savedRef = useRef<Record<string, string>>({});
   const timersRef = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
   const [lastSavedAt, setLastSavedAt] = useState<Date | null>(null);
+  useEffect(() => {
+    Fancybox.bind(document.body, "[data-fancybox='chk-fotos']", {});
+    return () => Fancybox.destroy();
+  }, []);
+
 
   useEffect(() => {
     if (!exec?.items) return;
@@ -220,7 +227,12 @@ export default function ChkExecutar() {
                   const displayUrl = localPreviews[it.id] || photoUrls[it.id];
                   if (displayUrl) {
                     return (
-                      <a href={displayUrl} target="_blank" rel="noreferrer" className="relative">
+                      <a
+                        href={displayUrl}
+                        data-fancybox="chk-fotos"
+                        data-caption={ti?.label || ti?.question || ""}
+                        className="relative"
+                      >
                         <img src={displayUrl} alt="" className="h-16 w-16 object-cover rounded-xl border border-[hsl(var(--chk-border))]" />
                         {uploadingId === it.id && (
                           <div className="absolute inset-0 flex items-center justify-center bg-black/40 rounded-lg">
