@@ -410,15 +410,44 @@ export default function OpOficinaMinhas() {
                         {sla != null && sla < 0 && (
                           <Badge variant="destructive"><AlertTriangle className="h-3 w-3 mr-0.5" />SLA peças estourado</Badge>
                         )}
+                        {o.supervisor_alert && (
+                          <Badge variant="secondary" className="bg-amber-500/15 text-amber-700">
+                            <AlertTriangle className="h-3 w-3 mr-0.5" />Supervisor acionado
+                          </Badge>
+                        )}
                         <div className="ml-auto flex items-center gap-2">
                           <Button size="sm" variant="outline" onClick={() => setExpanded(null)}>
                             <ChevronUp className="h-4 w-4 mr-1" /> Recolher
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="border-amber-500/60 text-amber-700 hover:bg-amber-500/10"
+                            onClick={() => openAlert(o)}
+                          >
+                            <MessageSquareWarning className="h-4 w-4 mr-1" />
+                            {o.supervisor_alert ? "Editar observação" : "Acionar supervisor"}
                           </Button>
                           <Button size="sm" onClick={() => openFinish(o)}>
                             <CheckCircle2 className="h-4 w-4 mr-1" /> Finalizar Serviço
                           </Button>
                         </div>
                       </div>
+
+                      {o.supervisor_alert && (
+                        <div className="border border-amber-500/40 bg-amber-500/10 rounded-md p-3 space-y-1">
+                          <div className="text-sm font-medium text-amber-800">
+                            {o.supervisor_alert_reason || "Observação para o supervisor"}
+                          </div>
+                          <p className="text-sm text-amber-900/80 whitespace-pre-wrap">{o.supervisor_alert_note}</p>
+                          <div className="flex items-center justify-between gap-2 pt-1">
+                            <span className="text-xs text-muted-foreground">
+                              Acionado em {o.supervisor_alert_at ? new Date(o.supervisor_alert_at).toLocaleString("pt-BR") : "—"}
+                            </span>
+                            <Button size="sm" variant="ghost" onClick={() => cancelAlert(o)}>Encerrar acionamento</Button>
+                          </div>
+                        </div>
+                      )}
 
                       <div className="text-sm">
                         <span className="font-medium">Serviço Solicitado:</span>{" "}
