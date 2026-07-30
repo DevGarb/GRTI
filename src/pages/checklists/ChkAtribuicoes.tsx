@@ -113,24 +113,23 @@ export default function ChkAtribuicoes() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between gap-3">
-        <div className="flex items-center gap-3">
-          <UserCheck className="h-6 w-6 text-primary" />
-          <div>
-            <h1 className="text-2xl font-bold">Atribuições</h1>
-            <p className="text-sm text-muted-foreground">Vincule um modelo a uma empresa e a um colaborador responsável</p>
-          </div>
-        </div>
-        <button onClick={openNew} className="px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-medium flex items-center gap-1.5 hover:opacity-90">
-          <Plus className="h-4 w-4" /> Nova atribuição
-        </button>
-      </div>
+      <ChkPageHeader
+        icon={UserCheck}
+        title="Atribuições"
+        subtitle="Vincule um modelo a uma empresa e a um colaborador responsável"
+        actions={
+          <button onClick={openNew} className="px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-semibold flex items-center gap-1.5 shadow-sm hover:brightness-110">
+            <Plus className="h-4 w-4" /> Nova atribuição
+          </button>
+        }
+      />
 
       {showForm && (
-        <div className="card-elevated p-4 space-y-3">
-          <p className="text-sm font-medium">{form.id ? "Editar atribuição" : "Nova atribuição"}</p>
+        <div className="card-elevated p-5 space-y-3 animate-fade-in">
+          <p className="chk-eyebrow">{form.id ? "Editar atribuição" : "Nova atribuição"}</p>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-            <select value={form.template_id} onChange={(e) => setForm({ ...form, template_id: e.target.value })} className="px-3 py-2 rounded-lg border border-input bg-background text-sm">
+            <select value={form.template_id} onChange={(e) => setForm({ ...form, template_id: e.target.value })} className="px-3 py-2.5 rounded-lg border border-input bg-background text-sm">
+
               <option value="">— Modelo —</option>
               {templates.map((t: any) => <option key={t.id} value={t.id}>{t.title}</option>)}
             </select>
