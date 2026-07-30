@@ -183,31 +183,31 @@ export default function ChkAtribuicoes() {
       )}
 
       {isLoading ? (
-        <div className="card-elevated p-12 flex justify-center"><div className="h-6 w-6 border-2 border-primary border-t-transparent rounded-full animate-spin" /></div>
+        <ChkListSkeleton rows={5} />
       ) : assigns.length === 0 ? (
-        <div className="card-elevated p-12 text-center text-sm text-muted-foreground">Nenhuma atribuição criada.</div>
+        <ChkEmptyState icon={UserCheck} title="Nenhuma atribuição criada" hint="Vincule um modelo a uma empresa e a um colaborador para gerar execuções." />
       ) : (
-        <div className="card-elevated divide-y divide-border">
+        <div className="card-elevated divide-y divide-[hsl(var(--chk-border))] overflow-hidden">
           {assigns.map((a: any) => (
-            <div key={a.id} className="flex items-center gap-3 px-4 py-3">
-              <div className="flex-1">
-                <p className="text-sm font-medium">{a.chk_templates?.title}</p>
-                <p className="text-xs text-muted-foreground">
-                  {a.chk_companies?.name} · {a.profiles?.full_name} · {a.frequency} · desde {a.start_date}
+            <div key={a.id} className="chk-row flex items-center gap-3 px-4 py-3.5 min-h-[60px]">
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-semibold truncate">{a.chk_templates?.title}</p>
+                <p className="text-xs text-[hsl(var(--chk-text-dim))] truncate mt-0.5">
+                  {a.chk_companies?.name} · {a.profiles?.full_name} · {a.frequency} · desde {formatDateBR(a.start_date)}
                 </p>
               </div>
-              <span className={`text-xs px-2 py-0.5 rounded-full ${a.is_active ? "bg-emerald-100 text-emerald-700" : "bg-muted text-muted-foreground"}`}>
-                {a.is_active ? "Ativa" : "Pausada"}
-              </span>
-              <button onClick={() => toggle.mutate({ id: a.id, is_active: !a.is_active })} title={a.is_active ? "Pausar" : "Ativar"} className="p-1.5 rounded-md hover:bg-muted text-muted-foreground">
-                {a.is_active ? <ToggleRight className="h-5 w-5 text-primary" /> : <ToggleLeft className="h-5 w-5" />}
-              </button>
-              <button onClick={() => openEdit(a)} title="Editar" className="p-1.5 rounded-md hover:bg-muted text-muted-foreground">
-                <Pencil className="h-4 w-4" />
-              </button>
-              <button onClick={() => handleDelete(a)} title="Excluir" disabled={del.isPending} className="p-1.5 rounded-md hover:bg-muted text-destructive disabled:opacity-50">
-                <Trash2 className="h-4 w-4" />
-              </button>
+              <ChkBadge tone={a.is_active ? "success" : "neutral"}>{a.is_active ? "Ativa" : "Pausada"}</ChkBadge>
+              <div className="flex shrink-0 items-center gap-0.5">
+                <button onClick={() => toggle.mutate({ id: a.id, is_active: !a.is_active })} title={a.is_active ? "Pausar" : "Ativar"} className="p-2 rounded-lg hover:bg-[hsl(var(--chk-surface-3))] text-[hsl(var(--chk-text-dim))]">
+                  {a.is_active ? <ToggleRight className="h-5 w-5 text-[hsl(var(--chk-primary))]" /> : <ToggleLeft className="h-5 w-5" />}
+                </button>
+                <button onClick={() => openEdit(a)} title="Editar" className="p-2 rounded-lg hover:bg-[hsl(var(--chk-surface-3))] text-[hsl(var(--chk-text-dim))]">
+                  <Pencil className="h-4 w-4" />
+                </button>
+                <button onClick={() => handleDelete(a)} title="Excluir" disabled={del.isPending} className="p-2 rounded-lg hover:bg-destructive/10 text-destructive disabled:opacity-50">
+                  <Trash2 className="h-4 w-4" />
+                </button>
+              </div>
             </div>
           ))}
         </div>
