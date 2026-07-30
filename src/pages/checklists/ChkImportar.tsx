@@ -172,7 +172,7 @@ export default function ChkImportar() {
                 id: toId(op.id),
                 item_id: itemId,
                 organization_id: orgId,
-                text: op.text,
+                text: op.text == null || String(op.text).trim() === "" ? "(sem texto)" : String(op.text),
                 value: op.value ?? null,
                 sort_order: oi,
               });
