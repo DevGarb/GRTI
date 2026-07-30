@@ -2063,6 +2063,10 @@ export type Database = {
           parts_arrived_at: string | null
           stage: string
           status: string
+          supervisor_action_at: string | null
+          supervisor_action_by: string | null
+          supervisor_action_due: string | null
+          supervisor_action_plan: string | null
           supervisor_alert: boolean
           supervisor_alert_at: string | null
           supervisor_alert_by: string | null
@@ -2104,6 +2108,10 @@ export type Database = {
           parts_arrived_at?: string | null
           stage?: string
           status?: string
+          supervisor_action_at?: string | null
+          supervisor_action_by?: string | null
+          supervisor_action_due?: string | null
+          supervisor_action_plan?: string | null
           supervisor_alert?: boolean
           supervisor_alert_at?: string | null
           supervisor_alert_by?: string | null
@@ -2145,6 +2153,10 @@ export type Database = {
           parts_arrived_at?: string | null
           stage?: string
           status?: string
+          supervisor_action_at?: string | null
+          supervisor_action_by?: string | null
+          supervisor_action_due?: string | null
+          supervisor_action_plan?: string | null
           supervisor_alert?: boolean
           supervisor_alert_at?: string | null
           supervisor_alert_by?: string | null
