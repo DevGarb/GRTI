@@ -1,6 +1,6 @@
 import { filterOficinaCompanies } from "@/lib/oficinaCompanies";
 import { useEffect, useMemo, useState } from "react";
-import { Wrench, Package, CheckCircle2, ClipboardList, ShoppingCart, AlertTriangle, Plus, ChevronDown, ChevronUp, Camera, X } from "lucide-react";
+import { Wrench, Package, CheckCircle2, ClipboardList, ShoppingCart, AlertTriangle, Plus, ChevronDown, ChevronUp, Camera, X, MessageSquareWarning } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -23,6 +23,14 @@ import {
 
 const MY_STAGES = ["analise", "desempeno", "pintura", "execucao"];
 const DONE_STAGES = ["pronto", "entregue"];
+const ALERT_REASONS = [
+  "Falta de peça",
+  "Peça errada / avariada",
+  "Aguardando autorização do cliente",
+  "Serviço externo / terceirizada",
+  "Intercorrência técnica",
+  "Outro",
+];
 
 export default function OpOficinaMinhas() {
   const { profile } = useOficinaProfile();
@@ -72,6 +80,48 @@ export default function OpOficinaMinhas() {
   const [summary, setSummary] = useState("");
   const [files, setFiles] = useState<File[]>([]);
   const [finishing, setFinishing] = useState(false);
+
+  // Acionar supervisor (observação / intercorrência)
+  const [alertOs, setAlertOs] = useState<ServiceOrder | null>(null);
+  const [alertReason, setAlertReason] = useState(ALERT_REASONS[0]);
+  const [alertNote, setAlertNote] = useState("");
+  const [alerting, setAlerting] = useState(false);
+
+  const openAlert = (o: ServiceOrder) => {
+    setAlertOs(o);
+    setAlertReason(o.supervisor_alert_reason || ALERT_REASONS[0]);
+    setAlertNote(o.supervisor_alert_note || "");
+  };
+
+  const confirmAlert = async () => {
+    if (!alertOs) return;
+    if (!alertNote.trim()) return toast.error("Descreva a observação para o supervisor");
+    setAlerting(true);
+    try {
+      await update(alertOs.id, {
+        supervisor_alert: true,
+        supervisor_alert_reason: alertReason,
+        supervisor_alert_note: alertNote.trim(),
+        supervisor_alert_at: new Date().toISOString(),
+        supervisor_alert_by: user?.id || null,
+        supervisor_alert_resolved_at: null,
+      } as any);
+      toast.success("Supervisor acionado");
+      setAlertOs(null);
+      refetch();
+    } finally {
+      setAlerting(false);
+    }
+  };
+
+  const cancelAlert = async (o: ServiceOrder) => {
+    await update(o.id, {
+      supervisor_alert: false,
+      supervisor_alert_resolved_at: new Date().toISOString(),
+    } as any);
+    toast.success("Acionamento encerrado");
+    refetch();
+  };
 
   const mine = useMemo(
     () => items.filter(o => o.mechanic_id === profile?.id && MY_STAGES.includes(o.stage)),
@@ -360,15 +410,44 @@ export default function OpOficinaMinhas() {
                         {sla != null && sla < 0 && (
                           <Badge variant="destructive"><AlertTriangle className="h-3 w-3 mr-0.5" />SLA peças estourado</Badge>
                         )}
+                        {o.supervisor_alert && (
+                          <Badge variant="secondary" className="bg-amber-500/15 text-amber-700">
+                            <AlertTriangle className="h-3 w-3 mr-0.5" />Supervisor acionado
+                          </Badge>
+                        )}
                         <div className="ml-auto flex items-center gap-2">
                           <Button size="sm" variant="outline" onClick={() => setExpanded(null)}>
                             <ChevronUp className="h-4 w-4 mr-1" /> Recolher
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="border-amber-500/60 text-amber-700 hover:bg-amber-500/10"
+                            onClick={() => openAlert(o)}
+                          >
+                            <MessageSquareWarning className="h-4 w-4 mr-1" />
+                            {o.supervisor_alert ? "Editar observação" : "Acionar supervisor"}
                           </Button>
                           <Button size="sm" onClick={() => openFinish(o)}>
                             <CheckCircle2 className="h-4 w-4 mr-1" /> Finalizar Serviço
                           </Button>
                         </div>
                       </div>
+
+                      {o.supervisor_alert && (
+                        <div className="border border-amber-500/40 bg-amber-500/10 rounded-md p-3 space-y-1">
+                          <div className="text-sm font-medium text-amber-800">
+                            {o.supervisor_alert_reason || "Observação para o supervisor"}
+                          </div>
+                          <p className="text-sm text-amber-900/80 whitespace-pre-wrap">{o.supervisor_alert_note}</p>
+                          <div className="flex items-center justify-between gap-2 pt-1">
+                            <span className="text-xs text-muted-foreground">
+                              Acionado em {o.supervisor_alert_at ? new Date(o.supervisor_alert_at).toLocaleString("pt-BR") : "—"}
+                            </span>
+                            <Button size="sm" variant="ghost" onClick={() => cancelAlert(o)}>Encerrar acionamento</Button>
+                          </div>
+                        </div>
+                      )}
 
                       <div className="text-sm">
                         <span className="font-medium">Serviço Solicitado:</span>{" "}
@@ -546,6 +625,41 @@ export default function OpOficinaMinhas() {
           <Wrench className="h-3 w-3" />
           Gestão de Oficina · Regras de alerta em {DIAS_ALERTA} dias · SLA de {SLA_PECAS} dias para montagem após chegada de peças
         </div>
+
+        {/* Acionar supervisor */}
+        <Dialog open={!!alertOs} onOpenChange={v => !v && setAlertOs(null)}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle>Acionar supervisor</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-3">
+              <p className="text-sm text-muted-foreground">
+                Use quando não for possível finalizar o serviço agora (falta de peça, intercorrência etc.).
+                O supervisor verá a observação no acompanhamento.
+              </p>
+              <div>
+                <Label>Motivo</Label>
+                <Select value={alertReason} onValueChange={setAlertReason}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {ALERT_REASONS.map(r => <SelectItem key={r} value={r}>{r}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label>Observação *</Label>
+                <Textarea rows={4} value={alertNote} onChange={e => setAlertNote(e.target.value)}
+                  placeholder="Descreva o que está impedindo a conclusão do serviço" />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setAlertOs(null)}>Cancelar</Button>
+              <Button onClick={confirmAlert} disabled={alerting}>
+                {alerting ? "Enviando..." : "Acionar supervisor"}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
     </div>
   );

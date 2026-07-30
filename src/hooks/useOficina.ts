@@ -38,6 +38,12 @@ export interface ServiceOrder {
   award_validated_by?: string | null;
   award_validated_at?: string | null;
   award_sent_at?: string | null;
+  supervisor_alert?: boolean | null;
+  supervisor_alert_reason?: string | null;
+  supervisor_alert_note?: string | null;
+  supervisor_alert_at?: string | null;
+  supervisor_alert_by?: string | null;
+  supervisor_alert_resolved_at?: string | null;
   created_by: string;
   created_at: string;
 }
