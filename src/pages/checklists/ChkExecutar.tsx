@@ -227,7 +227,12 @@ export default function ChkExecutar() {
                   const displayUrl = localPreviews[it.id] || photoUrls[it.id];
                   if (displayUrl) {
                     return (
-                      <a href={displayUrl} target="_blank" rel="noreferrer" className="relative">
+                      <a
+                        href={displayUrl}
+                        data-fancybox="chk-fotos"
+                        data-caption={ti?.label || ti?.question || ""}
+                        className="relative"
+                      >
                         <img src={displayUrl} alt="" className="h-16 w-16 object-cover rounded-xl border border-[hsl(var(--chk-border))]" />
                         {uploadingId === it.id && (
                           <div className="absolute inset-0 flex items-center justify-center bg-black/40 rounded-lg">
