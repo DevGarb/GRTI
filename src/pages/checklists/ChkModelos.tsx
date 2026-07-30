@@ -68,7 +68,7 @@ export default function ChkModelos() {
 
   if (editorId) {
     return (
-      <div className="space-y-4 max-w-4xl">
+      <div className="space-y-4">
         <div className="flex items-center justify-between">
           <h1 className="text-2xl font-bold">{editorId === "new" ? "Novo modelo" : "Editar modelo"}</h1>
           <button onClick={() => setEditorId(null)} className="text-sm text-muted-foreground hover:text-foreground flex items-center gap-1"><X className="h-4 w-4" /> Fechar</button>

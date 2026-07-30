@@ -131,7 +131,7 @@ export default function ChkExecutar() {
   const pending = total - resolvedCount;
 
   return (
-    <div className="space-y-5 max-w-3xl">
+    <div className="space-y-5">
       <button onClick={() => navigate(-1)} className="text-sm text-[hsl(var(--chk-text-dim))] hover:text-foreground flex items-center gap-1.5 font-medium transition-colors"><ArrowLeft className="h-4 w-4" /> Voltar</button>
 
       <div className="sticky top-12 z-20 -mx-1 px-1 pt-1 pb-2 bg-[hsl(var(--chk-surface-2))]/92 backdrop-blur-sm">
