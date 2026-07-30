@@ -2037,6 +2037,12 @@ export type Database = {
       }
       op_service_orders: {
         Row: {
+          award_amount: number
+          award_notes: string | null
+          award_sent_at: string | null
+          award_status: string
+          award_validated_at: string | null
+          award_validated_by: string | null
           closed_by: string | null
           closure_summary: string | null
           company_id: string | null
@@ -2066,6 +2072,12 @@ export type Database = {
           vehicle_year: string | null
         }
         Insert: {
+          award_amount?: number
+          award_notes?: string | null
+          award_sent_at?: string | null
+          award_status?: string
+          award_validated_at?: string | null
+          award_validated_by?: string | null
           closed_by?: string | null
           closure_summary?: string | null
           company_id?: string | null
@@ -2095,6 +2107,12 @@ export type Database = {
           vehicle_year?: string | null
         }
         Update: {
+          award_amount?: number
+          award_notes?: string | null
+          award_sent_at?: string | null
+          award_status?: string
+          award_validated_at?: string | null
+          award_validated_by?: string | null
           closed_by?: string | null
           closure_summary?: string | null
           company_id?: string | null

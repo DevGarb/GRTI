@@ -66,6 +66,7 @@ import OficinaGuard from "@/pages/op/OficinaGuard";
 import OpOficinaMinhas from "@/pages/op/OpOficinaMinhas";
 import OpOficinaCompras from "@/pages/op/OpOficinaCompras";
 import OpOficinaAcompanhamento from "@/pages/op/OpOficinaAcompanhamento";
+import OpOficinaPremiacoes from "@/pages/op/OpOficinaPremiacoes";
 import { OficinaProfileProvider } from "@/contexts/OficinaProfileContext";
 import OpManutencao from "@/pages/OpManutencao";
 import ManutencaoPin from "@/pages/op/ManutencaoPin";
@@ -253,6 +254,7 @@ const App = () => (
                       <Route path="/op/oficina/pin" element={<MenuGuard menuKey="op-oficina"><OficinaProfileProvider><OficinaPin /></OficinaProfileProvider></MenuGuard>} />
                       <Route path="/op/oficina/minhas" element={<MenuGuard menuKey="op-oficina"><OficinaProfileProvider><OficinaGuard allow={["mecanico"]}><OpOficinaMinhas /></OficinaGuard></OficinaProfileProvider></MenuGuard>} />
                       <Route path="/op/oficina/compras" element={<MenuGuard menuKey="op-oficina"><OficinaProfileProvider><OficinaGuard allow={["compras","admin"]}><OpOficinaCompras /></OficinaGuard></OficinaProfileProvider></MenuGuard>} />
+                      <Route path="/op/oficina/premiacoes" element={<MenuGuard menuKey="op-oficina"><OficinaProfileProvider><OficinaGuard allow={["admin"]}><OpOficinaPremiacoes /></OficinaGuard></OficinaProfileProvider></MenuGuard>} />
                       <Route path="/op/oficina/acompanhamento" element={<MenuGuard menuKey="op-oficina"><OficinaProfileProvider><OficinaGuard allow={["admin"]}><OpOficinaAcompanhamento /></OficinaGuard></OficinaProfileProvider></MenuGuard>} />
                       <Route path="/op/oficina" element={<MenuGuard menuKey="op-oficina"><OficinaProfileProvider><OficinaGuard allow={["admin"]}><OpOficina /></OficinaGuard></OficinaProfileProvider></MenuGuard>} />
                       <Route path="/op/manutencao/pin" element={<MenuGuard menuKey="op-manutencao"><ManutencaoProfileProvider><ManutencaoPin /></ManutencaoProfileProvider></MenuGuard>} />
