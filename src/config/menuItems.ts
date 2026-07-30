@@ -85,6 +85,7 @@ export const menuItems: MenuItem[] = [
   { key: "chk-setores", label: "Setores", icon: Building2, path: "/checklists/setores", orgSlugs: ["grcheck"], adminOnly: true, tooltip: "Setores da organização de checklists" },
   { key: "chk-importar", label: "Importar", icon: Upload, path: "/checklists/importar", orgSlugs: ["grcheck"], adminOnly: true, tooltip: "Importar checklists a partir de arquivo JSON" },
   { key: "chk-relatorios", label: "Relatórios", icon: BarChart3, path: "/checklists/relatorios", orgSlugs: ["grcheck"], adminOnly: true, tooltip: "Relatório de acompanhamento" },
+  { key: "configuracoes", label: "Configurações", icon: Settings, path: "/configuracoes", tooltip: "Preferências e configurações gerais" },
 ];
 
 export type Roles = {
