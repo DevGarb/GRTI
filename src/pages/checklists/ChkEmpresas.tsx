@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Building, Plus, Pencil, Trash2 } from "lucide-react";
 import { useChkCompanies, useSaveChkCompany, useDeleteChkCompany, useChkSectors } from "@/hooks/useChecklists";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { ChkPageHeader, ChkEmptyState, ChkListSkeleton } from "@/components/checklists/ChkUI";
 
 export default function ChkEmpresas() {
   const { data: companies = [], isLoading } = useChkCompanies();
@@ -25,50 +26,55 @@ export default function ChkEmpresas() {
 
   return (
     <div className="space-y-6 max-w-3xl">
-      <div className="flex items-center justify-between gap-3">
-        <div className="flex items-center gap-3">
-          <Building className="h-6 w-6 text-primary" />
-          <div>
-            <h1 className="text-2xl font-bold">Empresas</h1>
-            <p className="text-sm text-muted-foreground">Empresas parceiras vinculadas a um setor</p>
-          </div>
-        </div>
-        <button onClick={openNew} className="px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-medium flex items-center gap-1.5 hover:opacity-90">
-          <Plus className="h-4 w-4" /> Nova empresa
-        </button>
-      </div>
+      <ChkPageHeader
+        icon={Building}
+        title="Empresas"
+        subtitle="Empresas parceiras vinculadas a um setor"
+        actions={
+          <button onClick={openNew} className="px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-semibold flex items-center gap-1.5 shadow-sm hover:brightness-110">
+            <Plus className="h-4 w-4" /> Nova empresa
+          </button>
+        }
+      />
 
       {showForm && (
-        <div className="card-elevated p-4 space-y-3">
-          <input placeholder="Nome" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm" />
-          <select value={form.sector_id} onChange={(e) => setForm({ ...form, sector_id: e.target.value })} className="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm">
-            <option value="">— Setor —</option>
-            {sectors.map((s: any) => <option key={s.id} value={s.id}>{s.name}</option>)}
-          </select>
-          <input placeholder="CNPJ (opcional)" value={form.document} onChange={(e) => setForm({ ...form, document: e.target.value })} className="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm" />
-          <input placeholder="Contato (opcional)" value={form.contact} onChange={(e) => setForm({ ...form, contact: e.target.value })} className="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm" />
-          <div className="flex gap-2 justify-end">
-            <button onClick={() => setShowForm(false)} className="px-4 py-2 text-sm rounded-lg border border-input hover:bg-muted">Cancelar</button>
-            <button onClick={submit} disabled={save.isPending} className="px-4 py-2 text-sm rounded-lg bg-primary text-primary-foreground hover:opacity-90 disabled:opacity-50">Salvar</button>
+        <div className="card-elevated p-5 space-y-3 animate-fade-in">
+          <p className="chk-eyebrow">{editing ? "Editar empresa" : "Nova empresa"}</p>
+          <input placeholder="Nome" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className="w-full px-3 py-2.5 rounded-lg border border-input bg-background text-sm" />
+          <div className="grid gap-3 sm:grid-cols-2">
+            <select value={form.sector_id} onChange={(e) => setForm({ ...form, sector_id: e.target.value })} className="w-full px-3 py-2.5 rounded-lg border border-input bg-background text-sm">
+              <option value="">— Setor —</option>
+              {sectors.map((s: any) => <option key={s.id} value={s.id}>{s.name}</option>)}
+            </select>
+            <input placeholder="CNPJ (opcional)" value={form.document} onChange={(e) => setForm({ ...form, document: e.target.value })} className="w-full px-3 py-2.5 rounded-lg border border-input bg-background text-sm" />
+          </div>
+          <input placeholder="Contato (opcional)" value={form.contact} onChange={(e) => setForm({ ...form, contact: e.target.value })} className="w-full px-3 py-2.5 rounded-lg border border-input bg-background text-sm" />
+          <div className="flex gap-2 justify-end pt-1">
+            <button onClick={() => setShowForm(false)} className="px-4 py-2 text-sm font-medium rounded-lg border border-input hover:bg-muted">Cancelar</button>
+            <button onClick={submit} disabled={save.isPending} className="px-4 py-2 text-sm font-semibold rounded-lg bg-primary text-primary-foreground shadow-sm hover:brightness-110 disabled:opacity-50">Salvar</button>
           </div>
         </div>
       )}
 
       {isLoading ? (
-        <div className="card-elevated p-12 flex justify-center"><div className="h-6 w-6 border-2 border-primary border-t-transparent rounded-full animate-spin" /></div>
+        <ChkListSkeleton rows={4} />
       ) : companies.length === 0 ? (
-        <div className="card-elevated p-12 text-center text-sm text-muted-foreground">Nenhuma empresa cadastrada.</div>
+        <ChkEmptyState icon={Building} title="Nenhuma empresa cadastrada" hint="Cadastre as empresas parceiras para vincular checklists e execuções." />
       ) : (
-        <div className="card-elevated divide-y divide-border">
+        <div className="card-elevated divide-y divide-[hsl(var(--chk-border))] overflow-hidden">
           {companies.map((c: any) => (
-            <div key={c.id} className="flex items-center gap-3 px-4 py-3">
-              <Building className="h-4 w-4 text-muted-foreground shrink-0" />
-              <div className="flex-1">
-                <p className="text-sm font-medium">{c.name}</p>
-                <p className="text-xs text-muted-foreground">{c.chk_sectors?.name || "Sem setor"} {c.document ? `· ${c.document}` : ""}</p>
+            <div key={c.id} className="chk-row flex items-center gap-3 px-4 py-3.5 min-h-[58px]">
+              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[hsl(var(--chk-surface-3))] text-[hsl(var(--chk-text-dim))]">
+                <Building className="h-4 w-4" />
+              </span>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-semibold truncate">{c.name}</p>
+                <p className="text-xs text-[hsl(var(--chk-text-dim))] truncate">
+                  {c.chk_sectors?.name || "Sem setor"} {c.document ? `· ${c.document}` : ""}
+                </p>
               </div>
-              <button onClick={() => openEdit(c)} className="p-1.5 rounded-md hover:bg-muted text-muted-foreground"><Pencil className="h-4 w-4" /></button>
-              <button onClick={() => setToDelete({ id: c.id, name: c.name })} className="p-1.5 rounded-md hover:bg-muted text-destructive"><Trash2 className="h-4 w-4" /></button>
+              <button onClick={() => openEdit(c)} aria-label={`Editar ${c.name}`} className="p-2 rounded-lg hover:bg-[hsl(var(--chk-surface-3))] text-[hsl(var(--chk-text-dim))]"><Pencil className="h-4 w-4" /></button>
+              <button onClick={() => setToDelete({ id: c.id, name: c.name })} aria-label={`Remover ${c.name}`} className="p-2 rounded-lg hover:bg-destructive/10 text-destructive"><Trash2 className="h-4 w-4" /></button>
             </div>
           ))}
         </div>

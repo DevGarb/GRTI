@@ -1,0 +1,182 @@
+/* GRCheck — camada visual escopada (somente telas de /checklists) */
+.chk-scope {
+  /* Azul institucional refinado */
+  --chk-primary: 207 86% 30%;         /* #0b4d8c */
+  --chk-primary-fg: 0 0% 100%;
+  --chk-accent: 212 79% 50%;          /* #1f7ae0 */
+  --chk-surface: 0 0% 100%;
+  --chk-surface-2: 210 27% 97%;       /* #f7f9fb */
+  --chk-surface-3: 210 26% 92%;       /* #e6ecf2 */
+  --chk-border: 210 22% 89%;
+  --chk-text: 212 35% 15%;
+  --chk-text-dim: 212 12% 45%;
+
+  --chk-ok: 152 58% 36%;
+  --chk-ok-bg: 152 55% 95%;
+  --chk-warn: 35 88% 42%;
+  --chk-warn-bg: 38 92% 94%;
+  --chk-info: 212 79% 46%;
+  --chk-info-bg: 212 90% 96%;
+  --chk-danger: 0 68% 47%;
+  --chk-danger-bg: 0 80% 96%;
+
+  --chk-shadow: 0 1px 2px hsl(212 30% 20% / 0.05), 0 1px 3px hsl(212 30% 20% / 0.04);
+  --chk-shadow-hover: 0 4px 10px -2px hsl(212 30% 20% / 0.10), 0 2px 6px -2px hsl(212 30% 20% / 0.06);
+
+  color: hsl(var(--chk-text));
+  background: hsl(var(--chk-surface-2));
+}
+
+.dark .chk-scope {
+  --chk-primary: 212 79% 56%;
+  --chk-accent: 212 85% 62%;
+  --chk-surface: 220 18% 13%;
+  --chk-surface-2: 220 20% 9%;
+  --chk-surface-3: 220 16% 17%;
+  --chk-border: 220 14% 22%;
+  --chk-text: 210 20% 92%;
+  --chk-text-dim: 212 12% 62%;
+
+  --chk-ok-bg: 152 40% 14%;
+  --chk-warn-bg: 38 55% 14%;
+  --chk-info-bg: 212 55% 16%;
+  --chk-danger-bg: 0 50% 16%;
+
+  --chk-shadow: 0 1px 2px hsl(0 0% 0% / 0.4);
+  --chk-shadow-hover: 0 6px 16px -4px hsl(0 0% 0% / 0.5);
+}
+
+/* Superfícies -------------------------------------------------------- */
+.chk-scope .card-elevated,
+.chk-scope .chk-card {
+  background: hsl(var(--chk-surface));
+  border: 1px solid hsl(var(--chk-border));
+  border-radius: 14px;
+  box-shadow: var(--chk-shadow);
+  transition: box-shadow 180ms ease, border-color 180ms ease, transform 180ms ease;
+}
+
+.chk-scope .chk-card-interactive:hover {
+  box-shadow: var(--chk-shadow-hover);
+  border-color: hsl(var(--chk-accent) / 0.45);
+  transform: translateY(-1px);
+}
+
+.chk-scope .chk-row {
+  transition: background-color 150ms ease;
+}
+.chk-scope .chk-row:hover {
+  background: hsl(var(--chk-surface-3) / 0.6);
+}
+
+/* Tipografia --------------------------------------------------------- */
+.chk-scope h1 {
+  letter-spacing: -0.02em;
+  font-weight: 700;
+}
+.chk-scope h2,
+.chk-scope h3 {
+  letter-spacing: -0.01em;
+}
+.chk-scope .chk-eyebrow {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: hsl(var(--chk-text-dim));
+}
+
+/* Formulários -------------------------------------------------------- */
+.chk-scope input[type="text"],
+.chk-scope input[type="date"],
+.chk-scope input[type="number"],
+.chk-scope input[type="search"],
+.chk-scope input:not([type]),
+.chk-scope select,
+.chk-scope textarea {
+  border-radius: 10px;
+  border-color: hsl(var(--chk-border));
+  background: hsl(var(--chk-surface));
+  transition: border-color 150ms ease, box-shadow 150ms ease;
+}
+.chk-scope input:focus-visible,
+.chk-scope select:focus-visible,
+.chk-scope textarea:focus-visible {
+  outline: none;
+  border-color: hsl(var(--chk-accent));
+  box-shadow: 0 0 0 3px hsl(var(--chk-accent) / 0.18);
+}
+
+.chk-scope button:focus-visible,
+.chk-scope a:focus-visible {
+  outline: 2px solid hsl(var(--chk-accent));
+  outline-offset: 2px;
+  border-radius: 10px;
+}
+
+.chk-scope button {
+  transition: background-color 150ms ease, color 150ms ease, box-shadow 150ms ease, opacity 150ms ease;
+}
+
+/* Badges de status --------------------------------------------------- */
+.chk-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.5;
+  white-space: nowrap;
+  border: 1px solid transparent;
+}
+.chk-badge-ok      { background: hsl(var(--chk-ok-bg));     color: hsl(var(--chk-ok));     border-color: hsl(var(--chk-ok) / 0.22); }
+.chk-badge-warn    { background: hsl(var(--chk-warn-bg));   color: hsl(var(--chk-warn));   border-color: hsl(var(--chk-warn) / 0.22); }
+.chk-badge-info    { background: hsl(var(--chk-info-bg));   color: hsl(var(--chk-info));   border-color: hsl(var(--chk-info) / 0.22); }
+.chk-badge-danger  { background: hsl(var(--chk-danger-bg)); color: hsl(var(--chk-danger)); border-color: hsl(var(--chk-danger) / 0.22); }
+.chk-badge-neutral { background: hsl(var(--chk-surface-3)); color: hsl(var(--chk-text-dim)); border-color: hsl(var(--chk-border)); }
+
+/* Chips de filtro ---------------------------------------------------- */
+.chk-chip {
+  padding: 6px 14px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  border: 1px solid hsl(var(--chk-border));
+  background: hsl(var(--chk-surface));
+  color: hsl(var(--chk-text-dim));
+}
+.chk-chip:hover { background: hsl(var(--chk-surface-3)); color: hsl(var(--chk-text)); }
+.chk-chip[data-active="true"] {
+  background: hsl(var(--chk-primary));
+  border-color: hsl(var(--chk-primary));
+  color: hsl(var(--chk-primary-fg));
+  box-shadow: var(--chk-shadow);
+}
+
+/* Tabelas ------------------------------------------------------------ */
+.chk-scope table thead th {
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: hsl(var(--chk-text-dim));
+  background: hsl(var(--chk-surface-3) / 0.55);
+}
+.chk-scope table tbody tr {
+  transition: background-color 150ms ease;
+}
+.chk-scope table tbody tr:hover {
+  background: hsl(var(--chk-surface-3) / 0.5);
+}
+
+/* Movimento reduzido -------------------------------------------------- */
+@media (prefers-reduced-motion: reduce) {
+  .chk-scope *,
+  .chk-scope *::before,
+  .chk-scope *::after {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+  }
+  .chk-scope .chk-card-interactive:hover { transform: none; }
+}

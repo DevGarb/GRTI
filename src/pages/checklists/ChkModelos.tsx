@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { FileText, Plus, Pencil, Trash2, Camera, X, GripVertical } from "lucide-react";
 import { useChkTemplates, useChkTemplate, useSaveChkTemplate, useDeleteChkTemplate, useChkSectors, type ChkFrequency } from "@/hooks/useChecklists";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { ChkPageHeader, ChkEmptyState, ChkListSkeleton, ChkBadge } from "@/components/checklists/ChkUI";
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, type DragEndEvent } from "@dnd-kit/core";
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
@@ -121,36 +122,40 @@ export default function ChkModelos() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between gap-3">
-        <div className="flex items-center gap-3">
-          <FileText className="h-6 w-6 text-primary" />
-          <div>
-            <h1 className="text-2xl font-bold">Modelos de Checklist</h1>
-            <p className="text-sm text-muted-foreground">Crie modelos com itens ponderados (1 comum · 2 importante · 3 imprescindível)</p>
-          </div>
-        </div>
-        <button onClick={() => setEditorId("new")} className="px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-medium flex items-center gap-1.5 hover:opacity-90">
-          <Plus className="h-4 w-4" /> Novo modelo
-        </button>
-      </div>
+      <ChkPageHeader
+        icon={FileText}
+        title="Modelos de Checklist"
+        subtitle="Crie modelos com itens ponderados (1 comum · 2 importante · 3 imprescindível)"
+        actions={
+          <button onClick={() => setEditorId("new")} className="px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-semibold flex items-center gap-1.5 shadow-sm hover:brightness-110">
+            <Plus className="h-4 w-4" /> Novo modelo
+          </button>
+        }
+      />
 
       {isLoading ? (
-        <div className="card-elevated p-12 flex justify-center"><div className="h-6 w-6 border-2 border-primary border-t-transparent rounded-full animate-spin" /></div>
+        <ChkListSkeleton rows={4} />
       ) : templates.length === 0 ? (
-        <div className="card-elevated p-12 text-center text-sm text-muted-foreground">Nenhum modelo criado ainda.</div>
+        <ChkEmptyState icon={FileText} title="Nenhum modelo criado ainda" hint="Crie um modelo com itens ponderados para começar a gerar execuções." />
       ) : (
-        <div className="grid gap-3 md:grid-cols-2">
+        <div className="grid gap-3 sm:gap-4 md:grid-cols-2 xl:grid-cols-3">
           {templates.map((t: any) => (
-            <div key={t.id} className="card-elevated p-4 flex items-start gap-3">
-              <FileText className="h-5 w-5 text-primary mt-1" />
-              <div className="flex-1">
-                <p className="font-medium">{t.title}</p>
-                <p className="text-xs text-muted-foreground mt-0.5">
-                  {t.chk_sectors?.name || "Sem setor"} · {t.frequency} · {t.chk_template_items?.length || 0} itens
-                </p>
+            <div key={t.id} className="card-elevated chk-card-interactive p-4 flex items-start gap-3">
+              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[hsl(var(--chk-primary)/0.10)] text-[hsl(var(--chk-primary))] ring-1 ring-[hsl(var(--chk-primary)/0.16)]">
+                <FileText className="h-4 w-4" />
+              </span>
+              <div className="flex-1 min-w-0">
+                <p className="font-semibold text-sm leading-snug">{t.title}</p>
+                <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
+                  <ChkBadge tone="neutral">{t.chk_sectors?.name || "Sem setor"}</ChkBadge>
+                  <ChkBadge tone="info">{t.frequency}</ChkBadge>
+                  <ChkBadge tone="neutral">{t.chk_template_items?.length || 0} itens</ChkBadge>
+                </div>
               </div>
-              <button onClick={() => setEditorId(t.id)} className="p-1.5 rounded-md hover:bg-muted text-muted-foreground"><Pencil className="h-4 w-4" /></button>
-              <button onClick={() => setToDelete({ id: t.id, title: t.title })} className="p-1.5 rounded-md hover:bg-muted text-destructive"><Trash2 className="h-4 w-4" /></button>
+              <div className="flex shrink-0 items-center gap-0.5">
+                <button onClick={() => setEditorId(t.id)} aria-label={`Editar ${t.title}`} className="p-2 rounded-lg hover:bg-[hsl(var(--chk-surface-3))] text-[hsl(var(--chk-text-dim))]"><Pencil className="h-4 w-4" /></button>
+                <button onClick={() => setToDelete({ id: t.id, title: t.title })} aria-label={`Remover ${t.title}`} className="p-2 rounded-lg hover:bg-destructive/10 text-destructive"><Trash2 className="h-4 w-4" /></button>
+              </div>
             </div>
           ))}
         </div>

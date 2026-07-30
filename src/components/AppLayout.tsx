@@ -11,6 +11,7 @@ import { useMenuAccess } from "@/hooks/useMenuAccess";
 import { useUserOrganizations } from "@/hooks/useUserOrganizations";
 import { useNewTicketNotifier, triggerTestAlert } from "@/hooks/useNewTicketNotifier";
 import NotificationBell from "@/components/NotificationBell";
+import "@/pages/checklists/grcheck.css";
 
 interface AppLayoutProps {
   children: React.ReactNode;
@@ -132,6 +133,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
   const mainItems = visibleNavItems.filter((item) => item.section !== "gerencial");
   const gerencialItems = visibleNavItems.filter((item) => item.section === "gerencial");
 
+  const isChkOrg = orgSlug === "grcheck";
   const renderNavItem = (item: MenuItem) => {
     const active = location.pathname === item.path;
     return (
@@ -142,7 +144,10 @@ export default function AppLayout({ children }: AppLayoutProps) {
               to={item.path}
               onClick={() => setSidebarOpen(false)}
               className={cn(
-                "flex items-center gap-3 px-3 py-2.5 rounded-lg text-[13px] font-medium transition-colors",
+                "relative flex items-center gap-3 px-3 py-2.5 rounded-lg text-[13px] font-medium transition-colors duration-150",
+                isChkOrg && "before:absolute before:left-0 before:top-1/2 before:-translate-y-1/2 before:h-0 before:w-[3px] before:rounded-full before:bg-sidebar-primary before:transition-all before:duration-200",
+                isChkOrg && active && "before:h-5",
+                isChkOrg && "min-h-[42px]",
                 active
                   ? "bg-sidebar-accent text-sidebar-accent-foreground"
                   : "text-sidebar-foreground hover:bg-sidebar-accent/50 hover:text-sidebar-accent-foreground"
@@ -289,7 +294,14 @@ export default function AppLayout({ children }: AppLayoutProps) {
           </div>
         </header>
 
-        <main className="flex-1 p-4 lg:p-8 overflow-auto">{children}</main>
+        <main
+          className={cn(
+            "flex-1 p-4 lg:p-8 overflow-auto",
+            location.pathname.startsWith("/checklists") && "chk-scope"
+          )}
+        >
+          {children}
+        </main>
       </div>
     </div>
   );
