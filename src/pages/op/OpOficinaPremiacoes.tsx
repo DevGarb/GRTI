@@ -182,7 +182,7 @@ export default function OpOficinaPremiacoes() {
             </Select>
           </div>
           <div>
-            <Label className="text-xs">Empresa</Label>
+            <Label className="text-xs">Empresas (Oficina)</Label>
             <Select value={companyFilter} onValueChange={setCompanyFilter}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
