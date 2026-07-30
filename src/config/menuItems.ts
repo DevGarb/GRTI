@@ -70,7 +70,6 @@ export const menuItems: MenuItem[] = [
   { key: "white-label", label: "White Label", icon: Building2, path: "/white-label", adminOnly: true, section: "gerencial", tooltip: "Personalizar identidade visual" },
   { key: "integracoes", label: "Integrações", icon: MessageSquare, path: "/integracoes", adminOnly: true, section: "gerencial", tooltip: "Configurar integrações externas (WhatsApp)" },
   { key: "documentacao", label: "Documentação", icon: BookOpen, path: "/documentacao", adminOnly: true, tooltip: "Guias e manuais do sistema" },
-  { key: "configuracoes", label: "Configurações", icon: Settings, path: "/configuracoes", tooltip: "Preferências e configurações gerais" },
   { key: "op-cadastros", label: "Cadastros", icon: Users, path: "/op/cadastros", orgSlugs: ["cgps-operacional"], tooltip: "Cadastros do módulo Operacional: motoristas, empresas e veículos" },
   { key: "op-entregas", label: "Entregas", icon: Truck, path: "/op/entregas", orgSlugs: ["cgps-operacional"], tooltip: "Controle de entregas externas" },
   { key: "op-oficina", label: "Oficina", icon: Wrench, path: "/op/oficina", orgSlugs: ["cgps-operacional"], tooltip: "Ordens de serviço da oficina" },
@@ -86,6 +85,7 @@ export const menuItems: MenuItem[] = [
   { key: "chk-setores", label: "Setores", icon: Building2, path: "/checklists/setores", orgSlugs: ["grcheck"], adminOnly: true, tooltip: "Setores da organização de checklists" },
   { key: "chk-importar", label: "Importar", icon: Upload, path: "/checklists/importar", orgSlugs: ["grcheck"], adminOnly: true, tooltip: "Importar checklists a partir de arquivo JSON" },
   { key: "chk-relatorios", label: "Relatórios", icon: BarChart3, path: "/checklists/relatorios", orgSlugs: ["grcheck"], adminOnly: true, tooltip: "Relatório de acompanhamento" },
+  { key: "configuracoes", label: "Configurações", icon: Settings, path: "/configuracoes", tooltip: "Preferências e configurações gerais" },
 ];
 
 export type Roles = {
