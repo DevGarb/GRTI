@@ -1,6 +1,6 @@
 import { filterOficinaCompanies } from "@/lib/oficinaCompanies";
 import { useEffect, useMemo, useState } from "react";
-import { Wrench, Package, CheckCircle2, ClipboardList, ShoppingCart, AlertTriangle, Plus, ChevronDown, ChevronUp, Camera, X } from "lucide-react";
+import { Wrench, Package, CheckCircle2, ClipboardList, ShoppingCart, AlertTriangle, Plus, ChevronDown, ChevronUp, Camera, X, MessageSquareWarning } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -625,6 +625,41 @@ export default function OpOficinaMinhas() {
           <Wrench className="h-3 w-3" />
           Gestão de Oficina · Regras de alerta em {DIAS_ALERTA} dias · SLA de {SLA_PECAS} dias para montagem após chegada de peças
         </div>
+
+        {/* Acionar supervisor */}
+        <Dialog open={!!alertOs} onOpenChange={v => !v && setAlertOs(null)}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle>Acionar supervisor</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-3">
+              <p className="text-sm text-muted-foreground">
+                Use quando não for possível finalizar o serviço agora (falta de peça, intercorrência etc.).
+                O supervisor verá a observação no acompanhamento.
+              </p>
+              <div>
+                <Label>Motivo</Label>
+                <Select value={alertReason} onValueChange={setAlertReason}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {ALERT_REASONS.map(r => <SelectItem key={r} value={r}>{r}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label>Observação *</Label>
+                <Textarea rows={4} value={alertNote} onChange={e => setAlertNote(e.target.value)}
+                  placeholder="Descreva o que está impedindo a conclusão do serviço" />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setAlertOs(null)}>Cancelar</Button>
+              <Button onClick={confirmAlert} disabled={alerting}>
+                {alerting ? "Enviando..." : "Acionar supervisor"}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
     </div>
   );
