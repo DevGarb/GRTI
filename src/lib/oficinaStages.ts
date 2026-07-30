@@ -51,3 +51,37 @@ export function partsSlaRemaining(partsArrivedAt?: string | null) {
   limit.setDate(limit.getDate() + SLA_PECAS);
   return diffDays(new Date().toISOString(), limit.toISOString());
 }
+
+/* ---------- Premiação por OS finalizada ---------- */
+
+export type AwardStatus = "pendente" | "validado" | "enviado_dp";
+
+export const AWARD_STATUS_INFO: Record<AwardStatus, { label: string; chip: string }> = {
+  pendente: { label: "Pendente", chip: "bg-amber-500/15 text-amber-700 dark:text-amber-300" },
+  validado: { label: "Validada", chip: "bg-sky-500/15 text-sky-700 dark:text-sky-300" },
+  enviado_dp: { label: "Enviada ao DP", chip: "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300" },
+};
+
+/** Valores sugeridos de premiação por OS finalizada. */
+export const PREMIO_NO_PRAZO = 50;
+export const PREMIO_FORA_PRAZO = 25;
+
+export const suggestedAward = (onTime: boolean) => (onTime ? PREMIO_NO_PRAZO : PREMIO_FORA_PRAZO);
+
+/** SLA da OS: usa o prazo (deadline) quando existir, senão abertura + DIAS_ALERTA. */
+export function osSlaInfo(o: { opened_at: string; finished_at?: string | null; deadline?: string | null }) {
+  const limit = o.deadline
+    ? new Date(`${o.deadline}T23:59:59`)
+    : (() => { const d = new Date(`${o.opened_at}T23:59:59`); d.setDate(d.getDate() + DIAS_ALERTA); return d; })();
+  const end = new Date(`${o.finished_at || new Date().toISOString().slice(0, 10)}T12:00:00`);
+  const days = Math.round((limit.getTime() - end.getTime()) / DAY);
+  const onTime = end.getTime() <= limit.getTime();
+  return {
+    onTime,
+    days,
+    label: onTime ? `No prazo${days > 0 ? ` (${days}d)` : ""}` : `Fora do prazo (${Math.abs(days)}d)`,
+    chip: onTime
+      ? "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300"
+      : "bg-rose-500/15 text-rose-700 dark:text-rose-300",
+  };
+}
