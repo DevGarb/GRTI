@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import OficinaNav from "@/pages/op/OficinaNav";
 import { useServiceOrders, useMechanics, type ServiceOrder } from "@/hooks/useOficina";
 import { useCompanies } from "@/hooks/useOperacional";
+import { filterOficinaCompanies } from "@/lib/oficinaCompanies";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -32,7 +33,8 @@ export default function OpOficinaPremiacoes() {
   const { user } = useAuth();
   const { items, update, refetch } = useServiceOrders();
   const { items: mechanics } = useMechanics();
-  const { items: companies } = useCompanies();
+  const { items: allCompanies } = useCompanies();
+  const companies = useMemo(() => filterOficinaCompanies(allCompanies), [allCompanies]);
 
   const [month, setMonth] = useState(getCurrentMonthValue());
   const [mechFilter, setMechFilter] = useState("all");
