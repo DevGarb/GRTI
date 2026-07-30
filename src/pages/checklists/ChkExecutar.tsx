@@ -134,7 +134,7 @@ export default function ChkExecutar() {
     <div className="space-y-5 max-w-3xl">
       <button onClick={() => navigate(-1)} className="text-sm text-[hsl(var(--chk-text-dim))] hover:text-foreground flex items-center gap-1.5 font-medium transition-colors"><ArrowLeft className="h-4 w-4" /> Voltar</button>
 
-      <div className="sticky top-12 z-20 -mx-1 px-1 pt-1 pb-2 bg-[hsl(var(--chk-bg))]/92 backdrop-blur-sm">
+      <div className="sticky top-12 z-20 -mx-1 px-1 pt-1 pb-2 bg-[hsl(var(--chk-surface-2))]/92 backdrop-blur-sm">
         <div className="card-elevated p-4 sm:p-5">
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div className="min-w-0">
@@ -212,7 +212,7 @@ export default function ChkExecutar() {
                   flushObservation(it.id);
                 }}
                 rows={2}
-                className="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm disabled:opacity-60"
+                className="w-full px-3 py-2.5 rounded-lg border border-input bg-background text-sm disabled:opacity-60"
               />
 
               <div className="flex items-center gap-3 flex-wrap">
@@ -221,7 +221,7 @@ export default function ChkExecutar() {
                   if (displayUrl) {
                     return (
                       <a href={displayUrl} target="_blank" rel="noreferrer" className="relative">
-                        <img src={displayUrl} alt="" className="h-16 w-16 object-cover rounded-lg border border-border" />
+                        <img src={displayUrl} alt="" className="h-16 w-16 object-cover rounded-xl border border-[hsl(var(--chk-border))]" />
                         {uploadingId === it.id && (
                           <div className="absolute inset-0 flex items-center justify-center bg-black/40 rounded-lg">
                             <Loader2 className="h-4 w-4 animate-spin text-white" />
@@ -230,10 +230,10 @@ export default function ChkExecutar() {
                       </a>
                     );
                   }
-                  return ti?.requires_photo && <span className="text-xs text-red-600">Foto obrigatória</span>;
+                  return ti?.requires_photo && <span className="chk-badge chk-badge-danger">Foto obrigatória</span>;
                 })()}
                 {!readonly && !na && (
-                  <label className={`text-xs px-3 py-1.5 rounded-lg border cursor-pointer flex items-center gap-1.5 ${failedIds.has(it.id) ? "border-red-500 text-red-600 hover:bg-red-50" : "border-input hover:bg-muted"}`}>
+                  <label className={`text-xs px-3 py-1.5 rounded-lg border cursor-pointer flex items-center gap-1.5 ${failedIds.has(it.id) ? "border-red-500 text-red-600 hover:bg-red-50" : "border-[hsl(var(--chk-border))] hover:bg-[hsl(var(--chk-surface-3))]"}`}>
                     {uploadingId === it.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Camera className="h-3.5 w-3.5" />}
                     {failedIds.has(it.id) ? "Falha no envio, toque pra tentar de novo" : (it.photo_path || localPreviews[it.id]) ? "Trocar foto" : "Anexar foto"}
                     <input type="file" accept="image/*" capture="environment" className="hidden" onChange={(e) => e.target.files?.[0] && handlePhoto(it, e.target.files[0])} />
@@ -243,7 +243,7 @@ export default function ChkExecutar() {
                   <button
                     type="button"
                     onClick={() => saveItem.mutate({ id: it.id, not_applicable: !na })}
-                    className={`text-xs px-3 py-1.5 rounded-lg border flex items-center gap-1.5 ml-auto ${na ? "bg-muted-foreground/10 border-muted-foreground/40 text-foreground" : "border-input hover:bg-muted text-muted-foreground"}`}
+                    className={`text-xs px-3 py-1.5 rounded-lg border flex items-center gap-1.5 ml-auto ${na ? "bg-muted-foreground/10 border-muted-foreground/40 text-foreground" : "border-[hsl(var(--chk-border))] hover:bg-[hsl(var(--chk-surface-3))] text-[hsl(var(--chk-text-dim))]"}`}
                     title="Marcar como não aplicável"
                   >
                     <Ban className="h-3.5 w-3.5" /> {na ? "N/A ativado" : "N/A"}
@@ -260,7 +260,7 @@ export default function ChkExecutar() {
           <button
             onClick={() => complete.mutate(exec.id, { onSuccess: () => navigate(-1) })}
             disabled={!canComplete || complete.isPending}
-            className="px-5 py-2.5 rounded-lg bg-primary text-primary-foreground font-medium shadow-lg hover:opacity-90 disabled:opacity-50"
+            className="px-6 py-3 rounded-xl bg-[hsl(var(--chk-primary))] text-primary-foreground font-semibold shadow-lg hover:brightness-110 transition disabled:opacity-50"
           >
             {canComplete ? "Concluir checklist" : `Faltam ${pending} item(ns)`}
           </button>
@@ -271,7 +271,7 @@ export default function ChkExecutar() {
           <button
             onClick={() => reopen.mutate(exec.id)}
             disabled={reopen.isPending}
-            className="px-5 py-2.5 rounded-lg bg-amber-600 text-white font-medium shadow-lg hover:opacity-90 disabled:opacity-50 flex items-center gap-2"
+            className="px-6 py-3 rounded-xl bg-[hsl(var(--chk-warn))] text-primary-foreground font-semibold shadow-lg hover:brightness-110 transition disabled:opacity-50 flex items-center gap-2"
           >
             <RotateCcw className="h-4 w-4" /> Reabrir checklist
           </button>
