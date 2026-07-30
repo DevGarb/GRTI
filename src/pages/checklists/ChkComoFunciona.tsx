@@ -73,23 +73,19 @@ const steps: Step[] = [
 export default function ChkComoFunciona() {
   return (
     <div className="space-y-8 max-w-4xl mx-auto">
-      <div className="flex items-center gap-3">
-        <HelpCircle className="h-6 w-6 text-primary" />
-        <div>
-          <h1 className="text-2xl font-bold">Como funciona o Checklist</h1>
-          <p className="text-sm text-muted-foreground">
-            Passo a passo do fluxo, do cadastro à execução e ao relatório.
-          </p>
-        </div>
-      </div>
+      <ChkPageHeader
+        icon={HelpCircle}
+        title="Como funciona o Checklist"
+        subtitle="Passo a passo do fluxo, do cadastro à execução e ao relatório."
+      />
 
       <div className="relative">
-        <div className="absolute left-6 top-4 bottom-4 w-px bg-border hidden sm:block" />
+        <div className="absolute left-6 top-4 bottom-4 w-px bg-[hsl(var(--chk-border))] hidden sm:block" />
         <ol className="space-y-4">
           {steps.map((s) => (
             <li key={s.n} className="relative">
-              <div className="card-elevated p-5 sm:pl-16">
-                <div className="hidden sm:flex absolute left-2 top-5 h-8 w-8 items-center justify-center rounded-full bg-primary text-primary-foreground font-bold text-sm shadow">
+              <div className="card-elevated chk-card-interactive p-5 sm:pl-16">
+                <div className="hidden sm:flex absolute left-2 top-5 h-8 w-8 items-center justify-center rounded-full bg-[hsl(var(--chk-primary))] text-primary-foreground font-bold text-sm shadow-md ring-4 ring-[hsl(var(--chk-surface-2))]">
                   {s.n}
                 </div>
                 <div className="flex items-start gap-3">
