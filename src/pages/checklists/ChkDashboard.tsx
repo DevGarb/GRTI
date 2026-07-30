@@ -1,7 +1,8 @@
 import { Link } from "react-router-dom";
-import { ClipboardCheck, Building2, FileText, UserCheck, ListChecks, BarChart3, AlertTriangle } from "lucide-react";
+import { ClipboardCheck, Building2, FileText, UserCheck, ListChecks, BarChart3, AlertTriangle, CheckCircle2, Clock, Layers, ChevronRight } from "lucide-react";
 import { useChkExecutions, useChkTemplates, useChkCompanies, useChkAssignments } from "@/hooks/useChecklists";
 import { useAuth } from "@/contexts/AuthContext";
+import { ChkPageHeader, ChkKpiCard } from "@/components/checklists/ChkUI";
 
 export default function ChkDashboard() {
   const { hasRole, isSuperAdmin } = useAuth();
@@ -34,62 +35,83 @@ export default function ChkDashboard() {
     : [{ to: "/checklists/minhas", icon: ClipboardCheck, label: "Minhas execuções", count: null }];
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center gap-3">
-        <ClipboardCheck className="h-6 w-6 text-primary" />
-        <div>
-          <h1 className="text-2xl font-bold">Checklists Operacionais</h1>
-          <p className="text-sm text-muted-foreground">
-            {isAdmin ? "Painel do gestor" : "Suas execuções atribuídas"}
-          </p>
-        </div>
-      </div>
+    <div className="space-y-6 sm:space-y-8">
+      <ChkPageHeader
+        icon={ClipboardCheck}
+        title="Checklists Operacionais"
+        subtitle={isAdmin ? "Painel do gestor" : "Suas execuções atribuídas"}
+      />
 
       {isAdmin && (
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <KPI label="Total" value={totals.total} />
-          <KPI label="Concluídas" value={totals.concluidas} tone="success" />
-          <KPI label="Pendentes" value={totals.pendentes} tone="warning" />
-          <Link
-            to="/checklists/execucoes?status=atrasada"
-            className="card-elevated p-4 hover:border-red-500 hover:shadow-md transition-all group"
-          >
-            <div className="flex items-center justify-between">
-              <p className="text-xs text-muted-foreground uppercase tracking-wide">Atrasadas</p>
-              <AlertTriangle className="h-4 w-4 text-red-600 opacity-70 group-hover:opacity-100" />
+        <section className="space-y-3">
+          <p className="chk-eyebrow">Visão geral</p>
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+            <ChkKpiCard label="Total" value={totals.total} icon={Layers} />
+            <ChkKpiCard label="Concluídas" value={totals.concluidas} tone="ok" icon={CheckCircle2} />
+            <ChkKpiCard label="Pendentes" value={totals.pendentes} tone="warn" icon={Clock} />
+            <Link
+              to="/checklists/execucoes?status=atrasada"
+              className="card-elevated chk-card-interactive relative overflow-hidden p-4 sm:p-5 block"
+            >
+              <span className="absolute left-0 top-0 h-full w-[3px] bg-[hsl(var(--chk-danger))]" />
+              <div className="flex items-start justify-between gap-2">
+                <p className="chk-eyebrow">Atrasadas</p>
+                <AlertTriangle className="h-4 w-4 shrink-0 text-[hsl(var(--chk-danger))]" />
+              </div>
+              <p className="mt-1.5 text-2xl sm:text-3xl font-bold tabular-nums text-[hsl(var(--chk-danger))]">
+                {totals.atrasadas}
+              </p>
+              <p className="mt-1 inline-flex items-center gap-1 text-[11px] text-[hsl(var(--chk-text-dim))]">
+                Ver a fila <ChevronRight className="h-3 w-3" />
+              </p>
+            </Link>
+          </div>
+        </section>
+      )}
+
+      {isAdmin && (
+        <div className="card-elevated p-5">
+          <div className="flex items-end justify-between gap-4">
+            <div>
+              <p className="chk-eyebrow">Score médio ponderado</p>
+              <p className="mt-1 text-4xl font-bold tabular-nums text-[hsl(var(--chk-primary))]">{avgScore}%</p>
             </div>
-            <p className="text-2xl font-bold text-red-600 mt-1">{totals.atrasadas}</p>
-            <p className="text-[10px] text-muted-foreground mt-1">Clique para ver a fila</p>
-          </Link>
+            <p className="text-xs text-[hsl(var(--chk-text-dim))] text-right">
+              Média das execuções concluídas
+            </p>
+          </div>
+          <div className="mt-4 h-2 w-full rounded-full bg-[hsl(var(--chk-surface-3))] overflow-hidden">
+            <div
+              className="h-full rounded-full bg-[hsl(var(--chk-primary))] transition-[width] duration-500"
+              style={{ width: `${Math.min(Math.max(avgScore, 0), 100)}%` }}
+            />
+          </div>
         </div>
       )}
 
-      {isAdmin && (
-        <div className="card-elevated p-4">
-          <p className="text-xs text-muted-foreground uppercase tracking-wide mb-1">Score médio ponderado</p>
-          <p className="text-3xl font-bold text-primary">{avgScore}%</p>
+      <section className="space-y-3">
+        <p className="chk-eyebrow">Acessos rápidos</p>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
+          {cards.map((c) => (
+            <Link
+              key={c.to}
+              to={c.to}
+              className="card-elevated chk-card-interactive group flex items-center gap-4 p-5"
+            >
+              <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[hsl(var(--chk-primary)/0.10)] text-[hsl(var(--chk-primary))] ring-1 ring-[hsl(var(--chk-primary)/0.16)]">
+                <c.icon className="h-5 w-5" />
+              </span>
+              <div className="min-w-0 flex-1">
+                <p className="font-semibold text-sm">{c.label}</p>
+                {c.count !== null && (
+                  <p className="text-xs text-[hsl(var(--chk-text-dim))] mt-0.5">{c.count} itens</p>
+                )}
+              </div>
+              <ChevronRight className="h-4 w-4 shrink-0 text-[hsl(var(--chk-text-dim))] transition-transform duration-200 group-hover:translate-x-0.5" />
+            </Link>
+          ))}
         </div>
-      )}
-
-      <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-        {cards.map((c) => (
-          <Link key={c.to} to={c.to} className="card-elevated p-5 hover:border-primary hover:shadow-md transition-all">
-            <c.icon className="h-6 w-6 text-primary mb-2" />
-            <p className="font-semibold text-foreground">{c.label}</p>
-            {c.count !== null && <p className="text-xs text-muted-foreground mt-1">{c.count} itens</p>}
-          </Link>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-function KPI({ label, value, tone = "default" }: { label: string; value: number; tone?: "default" | "success" | "warning" | "danger" }) {
-  const color = { default: "text-foreground", success: "text-emerald-600", warning: "text-amber-600", danger: "text-red-600" }[tone];
-  return (
-    <div className="card-elevated p-4">
-      <p className="text-xs text-muted-foreground uppercase tracking-wide">{label}</p>
-      <p className={`text-2xl font-bold ${color} mt-1`}>{value}</p>
+      </section>
     </div>
   );
 }

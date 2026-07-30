@@ -1,15 +1,17 @@
 import { Link } from "react-router-dom";
-import { ClipboardCheck, ChevronRight } from "lucide-react";
+import { ClipboardCheck, ChevronRight, Building, CalendarDays, PartyPopper } from "lucide-react";
 import { useChkExecutions, type ChkExecStatus } from "@/hooks/useChecklists";
+import { ChkPageHeader, ChkEmptyState, ChkListSkeleton, ChkBadge, type ChkTone } from "@/components/checklists/ChkUI";
+import { formatDateBR } from "@/lib/dateFormat";
 
 const STATUS_LABELS: Record<ChkExecStatus, string> = {
   pendente: "Pendente", em_andamento: "Em andamento", concluida: "Concluída", atrasada: "Atrasada",
 };
-const STATUS_COLORS: Record<ChkExecStatus, string> = {
-  pendente: "bg-amber-100 text-amber-700",
-  em_andamento: "bg-blue-100 text-blue-700",
-  concluida: "bg-emerald-100 text-emerald-700",
-  atrasada: "bg-red-100 text-red-700",
+const STATUS_TONES: Record<ChkExecStatus, ChkTone> = {
+  pendente: "warn",
+  em_andamento: "info",
+  concluida: "ok",
+  atrasada: "danger",
 };
 
 export default function ChkMinhas() {
@@ -21,33 +23,44 @@ export default function ChkMinhas() {
   const concluidas = execs.filter((e: any) => e.status === "concluida");
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center gap-3">
-        <ClipboardCheck className="h-6 w-6 text-primary" />
-        <div>
-          <h1 className="text-2xl font-bold">Meus Checklists</h1>
-          <p className="text-sm text-muted-foreground">Checklists atribuídos a você</p>
-        </div>
-      </div>
+    <div className="space-y-6 sm:space-y-8">
+      <ChkPageHeader icon={ClipboardCheck} title="Meus Checklists" subtitle="Checklists atribuídos a você" />
 
       {isLoading ? (
-        <div className="card-elevated p-12 flex justify-center"><div className="h-6 w-6 border-2 border-primary border-t-transparent rounded-full animate-spin" /></div>
+        <ChkListSkeleton rows={4} />
       ) : (
         <>
-          <section className="space-y-2">
-            <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">A fazer ({pendentes.length})</h2>
+          <section className="space-y-3">
+            <p className="chk-eyebrow">A fazer ({pendentes.length})</p>
             {pendentes.length === 0 ? (
-              <div className="card-elevated p-8 text-center text-sm text-muted-foreground">Nada pendente. 🎉</div>
+              <ChkEmptyState
+                icon={PartyPopper}
+                title="Nada pendente por aqui"
+                hint="Assim que um novo checklist for atribuído a você, ele aparece nesta lista."
+              />
             ) : (
-              <div className="card-elevated divide-y divide-border">
+              <div className="card-elevated divide-y divide-[hsl(var(--chk-border))] overflow-hidden">
                 {pendentes.map((e: any) => (
-                  <Link key={e.id} to={`/checklists/executar/${e.id}`} className="flex items-center gap-3 px-4 py-3 hover:bg-muted/50">
+                  <Link
+                    key={e.id}
+                    to={`/checklists/executar/${e.id}`}
+                    className="chk-row flex items-center gap-3 px-4 py-3.5 min-h-[60px] group"
+                  >
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium truncate">{e.chk_templates?.title}</p>
-                      <p className="text-xs text-muted-foreground truncate">{e.chk_companies?.name} · {e.target_date}</p>
+                      <p className="text-sm font-semibold truncate">{e.chk_templates?.title}</p>
+                      <p className="mt-0.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-[hsl(var(--chk-text-dim))]">
+                        <span className="inline-flex items-center gap-1 truncate">
+                          <Building className="h-3 w-3 shrink-0" /> {e.chk_companies?.name}
+                        </span>
+                        <span className="inline-flex items-center gap-1">
+                          <CalendarDays className="h-3 w-3 shrink-0" /> {formatDateBR(e.target_date)}
+                        </span>
+                      </p>
                     </div>
-                    <span className={`text-xs px-2 py-0.5 rounded-full ${STATUS_COLORS[e.status as ChkExecStatus]}`}>{STATUS_LABELS[e.status as ChkExecStatus]}</span>
-                    <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                    <ChkBadge tone={STATUS_TONES[e.status as ChkExecStatus]}>
+                      {STATUS_LABELS[e.status as ChkExecStatus]}
+                    </ChkBadge>
+                    <ChevronRight className="h-4 w-4 shrink-0 text-[hsl(var(--chk-text-dim))] transition-transform duration-200 group-hover:translate-x-0.5" />
                   </Link>
                 ))}
               </div>
@@ -55,17 +68,28 @@ export default function ChkMinhas() {
           </section>
 
           {concluidas.length > 0 && (
-            <section className="space-y-2">
-              <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">Concluídos ({concluidas.length})</h2>
-              <div className="card-elevated divide-y divide-border">
+            <section className="space-y-3">
+              <p className="chk-eyebrow">Concluídos ({concluidas.length})</p>
+              <div className="card-elevated divide-y divide-[hsl(var(--chk-border))] overflow-hidden">
                 {concluidas.map((e: any) => (
-                  <Link key={e.id} to={`/checklists/executar/${e.id}`} className="flex items-center gap-3 px-4 py-3 hover:bg-muted/50">
+                  <Link
+                    key={e.id}
+                    to={`/checklists/executar/${e.id}`}
+                    className="chk-row flex items-center gap-3 px-4 py-3.5 min-h-[60px] group"
+                  >
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium truncate">{e.chk_templates?.title}</p>
-                      <p className="text-xs text-muted-foreground truncate">{e.chk_companies?.name} · {e.target_date}</p>
+                      <p className="text-sm font-semibold truncate">{e.chk_templates?.title}</p>
+                      <p className="mt-0.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-[hsl(var(--chk-text-dim))]">
+                        <span className="inline-flex items-center gap-1 truncate">
+                          <Building className="h-3 w-3 shrink-0" /> {e.chk_companies?.name}
+                        </span>
+                        <span className="inline-flex items-center gap-1">
+                          <CalendarDays className="h-3 w-3 shrink-0" /> {formatDateBR(e.target_date)}
+                        </span>
+                      </p>
                     </div>
-                    <span className="text-sm font-semibold text-primary">{e.score}%</span>
-                    <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                    <span className="text-sm font-bold tabular-nums text-[hsl(var(--chk-primary))]">{e.score}%</span>
+                    <ChevronRight className="h-4 w-4 shrink-0 text-[hsl(var(--chk-text-dim))] transition-transform duration-200 group-hover:translate-x-0.5" />
                   </Link>
                 ))}
               </div>
