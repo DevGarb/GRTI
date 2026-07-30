@@ -132,12 +132,15 @@ export default function ChkImportar() {
         return Number.isFinite(n) ? n : null;
       };
 
+      const txt = (v: any, fallback: string) =>
+        v == null || String(v).trim() === "" ? fallback : String(v);
+
       parsed.forEach((c) => {
         const checklistId = toId(c.id);
         checklists.push({
           id: checklistId,
           organization_id: orgId,
-          name: c.name,
+          name: txt(c.name, "Checklist sem nome"),
           type: c.type ?? 1,
           description: c.description ?? null,
           active: c.active ?? true,
@@ -149,7 +152,7 @@ export default function ChkImportar() {
             id: catId,
             checklist_id: checklistId,
             organization_id: orgId,
-            name: cat.name,
+            name: txt(cat.name, "Categoria sem nome"),
             description: cat.description ?? null,
             parent_id: parentId,
             sort_order: ci,
@@ -161,7 +164,7 @@ export default function ChkImportar() {
               id: itemId,
               category_id: catId,
               organization_id: orgId,
-              name: it.name,
+              name: txt(it.name, "Item sem nome"),
               required: it.required ?? false,
               scale: it.scale ?? null,
               weight: it.weight ?? 1,
