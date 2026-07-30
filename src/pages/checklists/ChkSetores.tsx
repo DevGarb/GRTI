@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Building2, Plus, Pencil, Trash2, X, Check } from "lucide-react";
 import { useChkSectors, useSaveChkSector, useDeleteChkSector } from "@/hooks/useChecklists";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { ChkPageHeader, ChkEmptyState, ChkListSkeleton } from "@/components/checklists/ChkUI";
 
 export default function ChkSetores() {
   const { data: sectors = [], isLoading } = useChkSectors();
@@ -14,27 +15,27 @@ export default function ChkSetores() {
 
   return (
     <div className="space-y-6 max-w-2xl">
-      <div className="flex items-center gap-3">
-        <Building2 className="h-6 w-6 text-primary" />
-        <div>
-          <h1 className="text-2xl font-bold">Setores</h1>
-          <p className="text-sm text-muted-foreground">Agrupe empresas e modelos por setor (Limpeza, Segurança, etc.)</p>
-        </div>
-      </div>
+      <ChkPageHeader
+        icon={Building2}
+        title="Setores"
+        subtitle="Agrupe empresas e modelos por setor (Limpeza, Segurança, etc.)"
+      />
 
       <div className="card-elevated p-4">
-        <div className="flex gap-2">
+        <div className="flex flex-col sm:flex-row gap-2">
+          <label className="sr-only" htmlFor="novo-setor">Nome do novo setor</label>
           <input
+            id="novo-setor"
             value={newName}
             onChange={(e) => setNewName(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && newName.trim() && save.mutate({ name: newName.trim() }, { onSuccess: () => setNewName("") })}
             placeholder="Nome do novo setor..."
-            className="flex-1 px-3 py-2.5 rounded-lg border border-input bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring/20"
+            className="flex-1 px-3 py-2.5 rounded-lg border border-input bg-background text-sm"
           />
           <button
             onClick={() => newName.trim() && save.mutate({ name: newName.trim() }, { onSuccess: () => setNewName("") })}
             disabled={!newName.trim() || save.isPending}
-            className="px-4 py-2.5 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 disabled:opacity-50 flex items-center gap-1.5"
+            className="px-4 py-2.5 rounded-lg bg-primary text-primary-foreground text-sm font-semibold shadow-sm hover:brightness-110 disabled:opacity-50 flex items-center justify-center gap-1.5"
           >
             <Plus className="h-4 w-4" /> Adicionar
           </button>
@@ -42,33 +43,33 @@ export default function ChkSetores() {
       </div>
 
       {isLoading ? (
-        <div className="card-elevated p-12 flex items-center justify-center">
-          <div className="h-6 w-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-        </div>
+        <ChkListSkeleton rows={4} />
       ) : sectors.length === 0 ? (
-        <div className="card-elevated p-12 text-center text-sm text-muted-foreground">Nenhum setor cadastrado ainda.</div>
+        <ChkEmptyState icon={Building2} title="Nenhum setor cadastrado" hint="Crie o primeiro setor no campo acima para começar a organizar empresas e modelos." />
       ) : (
-        <div className="card-elevated divide-y divide-border">
+        <div className="card-elevated divide-y divide-[hsl(var(--chk-border))] overflow-hidden">
           {sectors.map((s: any) => (
-            <div key={s.id} className="flex items-center gap-3 px-4 py-3">
+            <div key={s.id} className="chk-row flex items-center gap-3 px-4 py-3 min-h-[56px]">
               {editingId === s.id ? (
                 <>
                   <input
                     value={editName}
                     onChange={(e) => setEditName(e.target.value)}
                     onKeyDown={(e) => e.key === "Enter" && save.mutate({ id: s.id, name: editName.trim() }, { onSuccess: () => setEditingId(null) })}
-                    className="flex-1 px-3 py-1.5 rounded-lg border border-input bg-background text-sm"
+                    className="flex-1 px-3 py-2 rounded-lg border border-input bg-background text-sm"
                     autoFocus
                   />
-                  <button onClick={() => save.mutate({ id: s.id, name: editName.trim() }, { onSuccess: () => setEditingId(null) })} className="p-1.5 rounded-md hover:bg-muted text-primary"><Check className="h-4 w-4" /></button>
-                  <button onClick={() => setEditingId(null)} className="p-1.5 rounded-md hover:bg-muted text-muted-foreground"><X className="h-4 w-4" /></button>
+                  <button onClick={() => save.mutate({ id: s.id, name: editName.trim() }, { onSuccess: () => setEditingId(null) })} aria-label="Salvar" className="p-2 rounded-lg hover:bg-[hsl(var(--chk-surface-3))] text-[hsl(var(--chk-primary))]"><Check className="h-4 w-4" /></button>
+                  <button onClick={() => setEditingId(null)} aria-label="Cancelar" className="p-2 rounded-lg hover:bg-[hsl(var(--chk-surface-3))] text-[hsl(var(--chk-text-dim))]"><X className="h-4 w-4" /></button>
                 </>
               ) : (
                 <>
-                  <Building2 className="h-4 w-4 text-muted-foreground shrink-0" />
-                  <span className="flex-1 text-sm">{s.name}</span>
-                  <button onClick={() => { setEditingId(s.id); setEditName(s.name); }} className="p-1.5 rounded-md hover:bg-muted text-muted-foreground"><Pencil className="h-4 w-4" /></button>
-                  <button onClick={() => setToDelete({ id: s.id, name: s.name })} className="p-1.5 rounded-md hover:bg-muted text-destructive"><Trash2 className="h-4 w-4" /></button>
+                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[hsl(var(--chk-surface-3))] text-[hsl(var(--chk-text-dim))]">
+                    <Building2 className="h-4 w-4" />
+                  </span>
+                  <span className="flex-1 text-sm font-medium truncate">{s.name}</span>
+                  <button onClick={() => { setEditingId(s.id); setEditName(s.name); }} aria-label={`Editar ${s.name}`} className="p-2 rounded-lg hover:bg-[hsl(var(--chk-surface-3))] text-[hsl(var(--chk-text-dim))]"><Pencil className="h-4 w-4" /></button>
+                  <button onClick={() => setToDelete({ id: s.id, name: s.name })} aria-label={`Remover ${s.name}`} className="p-2 rounded-lg hover:bg-destructive/10 text-destructive"><Trash2 className="h-4 w-4" /></button>
                 </>
               )}
             </div>
