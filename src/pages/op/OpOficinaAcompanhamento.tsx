@@ -47,13 +47,17 @@ export default function OpOficinaAcompanhamento() {
   const semMecanico = ativos.filter(o => !o.mechanic_id);
   const terceirizada = ativos.filter(o => TERCEIRIZADA_STAGES.includes(o.stage));
 
+  const acionados = ativos.filter(o => o.supervisor_alert);
+
   const acaoAgora = useMemo(() => {
     const map = new Map<string, { os: ServiceOrder; tag: string; tone: string }>();
+    acionados.forEach(o => map.set(o.id, { os: o, tag: o.supervisor_alert_reason || "Supervisor acionado", tone: "bg-amber-100 text-amber-800" }));
     slaEstourado.forEach(o => map.set(o.id, { os: o, tag: "SLA peça estourado", tone: "bg-rose-100 text-rose-700" }));
     atrasadas.forEach(o => { if (!map.has(o.id)) map.set(o.id, { os: o, tag: `${daysInWorkshop(o.opened_at)}d na oficina`, tone: "bg-rose-100 text-rose-700" }); });
     semMecanico.forEach(o => { if (!map.has(o.id)) map.set(o.id, { os: o, tag: "sem mecânico", tone: "bg-amber-100 text-amber-700" }); });
     return Array.from(map.values()).slice(0, 8);
-  }, [slaEstourado, atrasadas, semMecanico]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [acionados, slaEstourado, atrasadas, semMecanico]);
 
   const porEmpresa = useMemo(() => {
     const m = new Map<string, { name: string; count: number; days: number }>();
@@ -101,6 +105,7 @@ export default function OpOficinaAcompanhamento() {
             <MiniStat value={slaEstourado.length} label="SLA de peça estourado" tone="rose" />
             <MiniStat value={semMecanico.length} label="Sem mecânico" tone="amber" />
             <MiniStat value={terceirizada.length} label="Na terceirizada" tone="violet" />
+            <MiniStat value={acionados.length} label="Supervisor acionado" tone="amber" />
           </div>
         </section>
 
@@ -134,6 +139,9 @@ export default function OpOficinaAcompanhamento() {
                     <div className="text-xs text-muted-foreground">
                       {stageInfo(os.stage).label} · {mechName(os.mechanic_id)}
                     </div>
+                    {os.supervisor_alert && os.supervisor_alert_note && (
+                      <div className="text-xs text-amber-800 mt-1 line-clamp-2">{os.supervisor_alert_note}</div>
+                    )}
                   </div>
                   <ArrowRight className="h-4 w-4 text-muted-foreground shrink-0" />
                 </button>
