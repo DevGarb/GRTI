@@ -294,7 +294,14 @@ export default function AppLayout({ children }: AppLayoutProps) {
           </div>
         </header>
 
-        <main className="flex-1 p-4 lg:p-8 overflow-auto">{children}</main>
+        <main
+          className={cn(
+            "flex-1 p-4 lg:p-8 overflow-auto",
+            location.pathname.startsWith("/checklists") && "chk-scope"
+          )}
+        >
+          {children}
+        </main>
       </div>
     </div>
   );
