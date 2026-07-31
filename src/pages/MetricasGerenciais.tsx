@@ -114,6 +114,28 @@ export default function MetricasGerenciais() {
   });
   const [regenerating, setRegenerating] = useState(false);
 
+  // Análise de Metas (mês de referência = mês da data final do período)
+  const [analysisTab, setAnalysisTab] = useState<"operacional" | "metas">("operacional");
+  const { data: goalsData, isLoading: goalsLoading } = useGoalsAnalysis({
+    organizationId: orgId, reference: range.to, enabled: analysisTab === "metas",
+  });
+  const goalsInsights = useGoalsInsights();
+  const [goalsInsightsList, setGoalsInsightsList] = useState<string[]>([]);
+
+  useEffect(() => { setGoalsInsightsList([]); }, [goalsData?.year, goalsData?.month, orgId]);
+
+  async function generateGoalsInsights() {
+    if (!goalsData) return;
+    try {
+      const res = await goalsInsights.mutateAsync({ organizationName: null, data: goalsData });
+      setGoalsInsightsList(res);
+      if (res.length === 0) toast.error("A IA não retornou insights. Tente novamente.");
+    } catch (e: any) {
+      toast.error("Erro ao gerar análise: " + (e?.message ?? e));
+    }
+  }
+
+
   const [webhookUrl, setWebhookUrl] = useState("");
   const [sendTime, setSendTime] = useState("18:00");
   const [timezone, setTimezone] = useState<string>(DEFAULT_TZ);
