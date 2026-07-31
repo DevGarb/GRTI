@@ -292,30 +292,50 @@ export default function MetricasGerenciais() {
         reworkPercent={totals.reworkPct}
       />
 
-      {/* 2. Insights + Ranking lado a lado em desktop */}
-      <div className="grid gap-4 lg:grid-cols-2">
-        {insightsEnabled ? (
-          <InsightsCard
-            insights={insights?.insights ?? []}
-            highlights={insights?.highlights ?? []}
-            risks={insights?.risks ?? []}
-            loading={insightsLoading || regenerating}
-            onRegenerate={generateInsights}
-          />
-        ) : (
-          <Card className="border-dashed border-primary/40">
-            <CardContent className="p-6 flex flex-col items-center justify-center text-center gap-3 h-full">
-              <Sparkles className="h-8 w-8 text-primary" />
-              <p className="text-sm text-muted-foreground">Gere insights e o resumo executivo com IA para o período selecionado.</p>
-              <Button onClick={generateInsights}>
-                <Sparkles className="h-4 w-4 mr-1" /> Gerar Resumo Executivo
-              </Button>
-            </CardContent>
-          </Card>
-        )}
+      {/* 2. Análises: Operacional | Metas */}
+      <Tabs value={analysisTab} onValueChange={(v) => setAnalysisTab(v as "operacional" | "metas")}>
+        <TabsList>
+          <TabsTrigger value="operacional">Operacional</TabsTrigger>
+          <TabsTrigger value="metas">Metas</TabsTrigger>
+        </TabsList>
 
-        <TeamRanking rows={rows} technicianSummaries={insights?.technician_summaries} />
-      </div>
+        <TabsContent value="operacional" className="mt-4">
+          <div className="grid gap-4 lg:grid-cols-2">
+            {insightsEnabled ? (
+              <InsightsCard
+                insights={insights?.insights ?? []}
+                highlights={insights?.highlights ?? []}
+                risks={insights?.risks ?? []}
+                loading={insightsLoading || regenerating}
+                onRegenerate={generateInsights}
+              />
+            ) : (
+              <Card className="border-dashed border-primary/40">
+                <CardContent className="p-6 flex flex-col items-center justify-center text-center gap-3 h-full">
+                  <Sparkles className="h-8 w-8 text-primary" />
+                  <p className="text-sm text-muted-foreground">Gere insights e o resumo executivo com IA para o período selecionado.</p>
+                  <Button onClick={generateInsights}>
+                    <Sparkles className="h-4 w-4 mr-1" /> Gerar Resumo Executivo
+                  </Button>
+                </CardContent>
+              </Card>
+            )}
+
+            <TeamRanking rows={rows} technicianSummaries={insights?.technician_summaries} />
+          </div>
+        </TabsContent>
+
+        <TabsContent value="metas" className="mt-4">
+          <GoalsAnalysisCard
+            data={goalsData}
+            loading={goalsLoading}
+            insights={goalsInsightsList}
+            insightsLoading={goalsInsights.isPending}
+            onGenerate={generateGoalsInsights}
+          />
+        </TabsContent>
+      </Tabs>
+
 
       {/* 3. Resumo WhatsApp (mostrado após gerar) */}
       {insights?.whatsapp_message && (
