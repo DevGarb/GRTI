@@ -32,9 +32,13 @@ import {
 } from "@/lib/orgTimezone";
 import { ExecutiveSummary } from "@/components/metricas/ExecutiveSummary";
 import { InsightsCard } from "@/components/metricas/InsightsCard";
+import { GoalsAnalysisCard } from "@/components/metricas/GoalsAnalysisCard";
+import { useGoalsAnalysis, useGoalsInsights } from "@/hooks/useGoalsAnalysis";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { TeamRanking } from "@/components/metricas/TeamRanking";
 import { WhatsappSummary } from "@/components/metricas/WhatsappSummary";
 import { formatDateTimeBR } from "@/lib/dateFormat";
+
 
 function computeTotals(rows: ManagementMetricRow[]) {
   const t = rows.reduce(
