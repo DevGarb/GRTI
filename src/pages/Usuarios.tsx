@@ -416,15 +416,36 @@ export default function Usuarios() {
         )}
       </div>
 
-      <div className="relative max-w-lg">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-        <input
-          type="text"
-          placeholder="Buscar por nome ou login..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="w-full pl-9 pr-3 py-2.5 rounded-lg border border-input bg-background text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring/20"
-        />
+      <div className="flex flex-wrap items-center gap-3">
+        <div className="relative flex-1 min-w-[240px] max-w-lg">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <input
+            type="text"
+            placeholder="Buscar por nome ou login..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="w-full pl-9 pr-3 py-2.5 rounded-lg border border-input bg-background text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring/20"
+          />
+        </div>
+        <div className="inline-flex rounded-lg border border-input overflow-hidden">
+          {([
+            { key: "all", label: "Todos" },
+            { key: "active", label: "Ativos" },
+            { key: "inactive", label: "Inativos" },
+          ] as const).map((opt) => (
+            <button
+              key={opt.key}
+              onClick={() => setStatusFilter(opt.key)}
+              className={`px-3 py-2 text-xs font-medium transition-colors ${
+                statusFilter === opt.key
+                  ? "bg-primary text-primary-foreground"
+                  : "bg-background text-muted-foreground hover:bg-muted"
+              }`}
+            >
+              {opt.label}
+            </button>
+          ))}
+        </div>
       </div>
 
       {isLoading ? (
