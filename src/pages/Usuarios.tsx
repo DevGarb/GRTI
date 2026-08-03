@@ -272,31 +272,40 @@ export default function Usuarios() {
     onError: (e: Error) => toast.error("Erro: " + e.message),
   });
 
-  const deleteUser = useMutation({
-    mutationFn: async (userId: string) => {
-      const { data, error } = await supabase.functions.invoke("delete-user", {
-        body: { user_id: userId },
+  const setUserActive = useMutation({
+    mutationFn: async ({ userId, active }: { userId: string; active: boolean }) => {
+      const { data, error } = await supabase.functions.invoke("set-user-active", {
+        body: { user_id: userId, active },
       });
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
+      return active;
     },
-    onSuccess: () => {
+    onSuccess: (active) => {
       queryClient.invalidateQueries({ queryKey: ["admin-users"] });
-      toast.success("Usuário excluído com sucesso!");
+      toast.success(active ? "Acesso reativado!" : "Acesso inativado!");
     },
-    onError: (e: Error) => toast.error("Erro ao excluir: " + e.message),
+    onError: (e: Error) => toast.error("Erro: " + e.message),
   });
 
-  const handleDelete = (user: ProfileWithRoles) => {
-    if (!confirm(`Tem certeza que deseja excluir ${user.full_name}? Esta ação é irreversível.`)) return;
-    deleteUser.mutate(user.user_id);
+  const handleToggleActive = (user: ProfileWithRoles) => {
+    const active = user.is_active === false;
+    const msg = active
+      ? `Reativar o acesso de ${user.full_name}?`
+      : `Inativar o acesso de ${user.full_name}? Ele não conseguirá mais entrar no sistema, mas o histórico é preservado.`;
+    if (!confirm(msg)) return;
+    setUserActive.mutate({ userId: user.user_id, active });
   };
 
-  const filtered = users.filter(
-    (u) =>
-      u.full_name.toLowerCase().includes(search.toLowerCase()) ||
-      (u.username || "").toLowerCase().includes(search.toLowerCase())
-  );
+  const filtered = users.filter((u) => {
+    const term = search.toLowerCase();
+    const matchSearch =
+      u.full_name.toLowerCase().includes(term) || (u.username || "").toLowerCase().includes(term);
+    const isActive = u.is_active !== false;
+    const matchStatus =
+      statusFilter === "all" ? true : statusFilter === "active" ? isActive : !isActive;
+    return matchSearch && matchStatus;
+  });
 
   const grouped = roleGroupOrder.reduce<Record<string, ProfileWithRoles[]>>((acc, role) => {
     acc[role] = filtered.filter((u) => u.roles.includes(role));
