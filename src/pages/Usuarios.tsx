@@ -25,6 +25,7 @@ interface ProfileWithRoles {
   avatar_url: string | null;
   created_at: string;
   sector_id: string | null;
+  is_active: boolean;
   roles: string[];
 }
 
