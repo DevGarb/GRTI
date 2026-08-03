@@ -327,11 +327,12 @@ export default function Usuarios() {
   const isSuperAdminUser = (user: ProfileWithRoles) => user.roles.includes("super_admin");
 
   const exportCSV = () => {
-    const header = "Nome,Login,Tipo,Criado em\n";
+    const header = "Nome,Login,Tipo,Criado em,Status\n";
     const rows = users.map((u) => {
       const role = roleLabels[u.roles[0]] || u.roles[0] || "Colaborador";
       const date = formatDateBR(u.created_at);
-      return `"${u.full_name}","${u.username || "—"}","${role}","${date}"`;
+      const status = u.is_active === false ? "Inativo" : "Ativo";
+      return `"${u.full_name}","${u.username || "—"}","${role}","${date}","${status}"`;
     });
     const csv = header + rows.join("\n");
     const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8;" });
