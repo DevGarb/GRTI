@@ -477,6 +477,11 @@ export default function Usuarios() {
                                 (Protegido)
                               </span>
                             )}
+                            {user.is_active === false && (
+                              <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium bg-muted text-muted-foreground">
+                                Inativo
+                              </span>
+                            )}
                           </span>
                           <span className="text-[11px] text-muted-foreground">
                             {user.username ? user.username.toUpperCase() : "—"}
