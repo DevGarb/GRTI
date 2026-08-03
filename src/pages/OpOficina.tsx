@@ -1,3 +1,4 @@
+import DateRangeFilter, { currentMonthStart, todayStr, inDateRange } from "@/components/shared/DateRangeFilter";
 import { filterOficinaCompanies } from "@/lib/oficinaCompanies";
 import { useMemo, useState } from "react";
 import { Wrench, Plus, Search, Trash2, Upload, FileText, X, LayoutGrid, List, Eye, EyeOff, AlertTriangle, ShoppingCart, Package, Gauge, ChevronUp, ChevronDown, Truck, Check } from "lucide-react";
@@ -20,7 +21,6 @@ import OficinaNav from "@/pages/op/OficinaNav";
 import { cn } from "@/lib/utils";
 import { formatDateBR } from "@/lib/dateFormat";
 import {
-import DateRangeFilter, { currentMonthStart, todayStr, inDateRange } from "@/components/shared/DateRangeFilter";
   STAGES, STAGE_ENTREGUE, stageInfo, DIAS_ALERTA, SLA_PECAS,
   PART_STATUS_FLOW, PART_STATUS_INFO, daysInWorkshop, partsSlaRemaining,
 } from "@/lib/oficinaStages";
