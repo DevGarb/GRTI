@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Users, Shield, Search, UserPlus, ChevronDown, ChevronRight, Pencil, X, User, Crown, FileUp, Download, Code, KeyRound, Trash2, Building2, Link2 } from "lucide-react";
+import { Users, Shield, Search, UserPlus, ChevronDown, ChevronRight, Pencil, X, User, Crown, FileUp, Download, Code, KeyRound, Trash2, Building2, Link2, Ban, UserCheck } from "lucide-react";
 import LinkOrgModal from "@/components/usuarios/LinkOrgModal";
 import LinkExistingUserModal from "@/components/usuarios/LinkExistingUserModal";
 import ImportUsersModal from "@/components/usuarios/ImportUsersModal";
@@ -25,6 +25,7 @@ interface ProfileWithRoles {
   avatar_url: string | null;
   created_at: string;
   sector_id: string | null;
+  is_active: boolean;
   roles: string[];
 }
 
@@ -70,6 +71,7 @@ function generateUsername(fullName: string): string {
 
 export default function Usuarios() {
   const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState<"all" | "active" | "inactive">("all");
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set(roleGroupOrder));
   const [editingUser, setEditingUser] = useState<ProfileWithRoles | null>(null);
   const [permissionsUser, setPermissionsUser] = useState<ProfileWithRoles | null>(null);
@@ -164,7 +166,7 @@ export default function Usuarios() {
 
       const { data: profiles, error } = await supabase
         .from("profiles")
-        .select("user_id, full_name, email, phone, cpf, avatar_url, created_at, username, sector_id")
+        .select("user_id, full_name, email, phone, cpf, avatar_url, created_at, username, sector_id, is_active")
         .in("user_id", memberIds)
         .order("full_name");
       if (error) throw error;
@@ -271,31 +273,40 @@ export default function Usuarios() {
     onError: (e: Error) => toast.error("Erro: " + e.message),
   });
 
-  const deleteUser = useMutation({
-    mutationFn: async (userId: string) => {
-      const { data, error } = await supabase.functions.invoke("delete-user", {
-        body: { user_id: userId },
+  const setUserActive = useMutation({
+    mutationFn: async ({ userId, active }: { userId: string; active: boolean }) => {
+      const { data, error } = await supabase.functions.invoke("set-user-active", {
+        body: { user_id: userId, active },
       });
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
+      return active;
     },
-    onSuccess: () => {
+    onSuccess: (active) => {
       queryClient.invalidateQueries({ queryKey: ["admin-users"] });
-      toast.success("Usuário excluído com sucesso!");
+      toast.success(active ? "Acesso reativado!" : "Acesso inativado!");
     },
-    onError: (e: Error) => toast.error("Erro ao excluir: " + e.message),
+    onError: (e: Error) => toast.error("Erro: " + e.message),
   });
 
-  const handleDelete = (user: ProfileWithRoles) => {
-    if (!confirm(`Tem certeza que deseja excluir ${user.full_name}? Esta ação é irreversível.`)) return;
-    deleteUser.mutate(user.user_id);
+  const handleToggleActive = (user: ProfileWithRoles) => {
+    const active = user.is_active === false;
+    const msg = active
+      ? `Reativar o acesso de ${user.full_name}?`
+      : `Inativar o acesso de ${user.full_name}? Ele não conseguirá mais entrar no sistema, mas o histórico é preservado.`;
+    if (!confirm(msg)) return;
+    setUserActive.mutate({ userId: user.user_id, active });
   };
 
-  const filtered = users.filter(
-    (u) =>
-      u.full_name.toLowerCase().includes(search.toLowerCase()) ||
-      (u.username || "").toLowerCase().includes(search.toLowerCase())
-  );
+  const filtered = users.filter((u) => {
+    const term = search.toLowerCase();
+    const matchSearch =
+      u.full_name.toLowerCase().includes(term) || (u.username || "").toLowerCase().includes(term);
+    const isActive = u.is_active !== false;
+    const matchStatus =
+      statusFilter === "all" ? true : statusFilter === "active" ? isActive : !isActive;
+    return matchSearch && matchStatus;
+  });
 
   const grouped = roleGroupOrder.reduce<Record<string, ProfileWithRoles[]>>((acc, role) => {
     acc[role] = filtered.filter((u) => u.roles.includes(role));
@@ -316,11 +327,12 @@ export default function Usuarios() {
   const isSuperAdminUser = (user: ProfileWithRoles) => user.roles.includes("super_admin");
 
   const exportCSV = () => {
-    const header = "Nome,Login,Tipo,Criado em\n";
+    const header = "Nome,Login,Tipo,Criado em,Status\n";
     const rows = users.map((u) => {
       const role = roleLabels[u.roles[0]] || u.roles[0] || "Colaborador";
       const date = formatDateBR(u.created_at);
-      return `"${u.full_name}","${u.username || "—"}","${role}","${date}"`;
+      const status = u.is_active === false ? "Inativo" : "Ativo";
+      return `"${u.full_name}","${u.username || "—"}","${role}","${date}","${status}"`;
     });
     const csv = header + rows.join("\n");
     const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8;" });
@@ -405,15 +417,36 @@ export default function Usuarios() {
         )}
       </div>
 
-      <div className="relative max-w-lg">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-        <input
-          type="text"
-          placeholder="Buscar por nome ou login..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="w-full pl-9 pr-3 py-2.5 rounded-lg border border-input bg-background text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring/20"
-        />
+      <div className="flex flex-wrap items-center gap-3">
+        <div className="relative flex-1 min-w-[240px] max-w-lg">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <input
+            type="text"
+            placeholder="Buscar por nome ou login..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="w-full pl-9 pr-3 py-2.5 rounded-lg border border-input bg-background text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring/20"
+          />
+        </div>
+        <div className="inline-flex rounded-lg border border-input overflow-hidden">
+          {([
+            { key: "all", label: "Todos" },
+            { key: "active", label: "Ativos" },
+            { key: "inactive", label: "Inativos" },
+          ] as const).map((opt) => (
+            <button
+              key={opt.key}
+              onClick={() => setStatusFilter(opt.key)}
+              className={`px-3 py-2 text-xs font-medium transition-colors ${
+                statusFilter === opt.key
+                  ? "bg-primary text-primary-foreground"
+                  : "bg-background text-muted-foreground hover:bg-muted"
+              }`}
+            >
+              {opt.label}
+            </button>
+          ))}
+        </div>
       </div>
 
       {isLoading ? (
@@ -464,6 +497,11 @@ export default function Usuarios() {
                             {isSuperAdminUser(user) && (
                               <span className="ml-2 text-[10px] font-medium text-amber-600 dark:text-amber-400">
                                 (Protegido)
+                              </span>
+                            )}
+                            {user.is_active === false && (
+                              <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium bg-muted text-muted-foreground">
+                                Inativo
                               </span>
                             )}
                           </span>
@@ -531,16 +569,22 @@ export default function Usuarios() {
                                 <Building2 className="h-3.5 w-3.5" />
                               </button>
                             )}
-                            {isSuperAdmin && (
-                              <button
-                                onClick={() => handleDelete(user)}
-                                disabled={deleteUser.isPending}
-                                className="p-1.5 rounded-md hover:bg-destructive/10 text-destructive transition-colors disabled:opacity-50"
-                                title="Excluir usuário"
-                              >
-                                <Trash2 className="h-3.5 w-3.5" />
-                              </button>
-                            )}
+                            <button
+                              onClick={() => handleToggleActive(user)}
+                              disabled={setUserActive.isPending}
+                              className={`p-1.5 rounded-md transition-colors disabled:opacity-50 ${
+                                user.is_active === false
+                                  ? "hover:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
+                                  : "hover:bg-destructive/10 text-destructive"
+                              }`}
+                              title={user.is_active === false ? "Reativar acesso" : "Inativar acesso"}
+                            >
+                              {user.is_active === false ? (
+                                <UserCheck className="h-3.5 w-3.5" />
+                              ) : (
+                                <Ban className="h-3.5 w-3.5" />
+                              )}
+                            </button>
                           </>
                         )}
                         {isSuperAdmin && isSuperAdminUser(user) && (
