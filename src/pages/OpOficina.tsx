@@ -1,3 +1,4 @@
+import DateRangeFilter, { currentMonthStart, todayStr, inDateRange } from "@/components/shared/DateRangeFilter";
 import { filterOficinaCompanies } from "@/lib/oficinaCompanies";
 import { useMemo, useState } from "react";
 import { Wrench, Plus, Search, Trash2, Upload, FileText, X, LayoutGrid, List, Eye, EyeOff, AlertTriangle, ShoppingCart, Package, Gauge, ChevronUp, ChevronDown, Truck, Check } from "lucide-react";
@@ -55,7 +56,8 @@ export default function OpOficina() {
 
   const [view, setView] = useState<"kanban" | "lista" | "compras">("kanban");
   const [hideDelivered, setHideDelivered] = useState(true);
-  const [month, setMonth] = useState(new Date().toISOString().slice(0, 7));
+  const [dateFrom, setDateFrom] = useState(currentMonthStart());
+  const [dateTo, setDateTo] = useState(todayStr());
   const [mechFilter, setMechFilter] = useState<string>("all");
   const [search, setSearch] = useState("");
   const [onlyLate, setOnlyLate] = useState(false);
@@ -65,7 +67,7 @@ export default function OpOficina() {
 
   const baseFiltered = useMemo(() => {
     return items.filter(o => {
-      if (!o.opened_at.startsWith(month)) return false;
+      if (!inDateRange(o.opened_at, dateFrom, dateTo)) return false;
       if (mechFilter !== "all" && o.mechanic_id !== mechFilter) return false;
       if (search) {
         const s = search.toLowerCase();
@@ -76,7 +78,7 @@ export default function OpOficina() {
       }
       return true;
     });
-  }, [items, month, mechFilter, search]);
+  }, [items, dateFrom, dateTo, mechFilter, search]);
 
   const filtered = useMemo(
     () => baseFiltered.filter(o => (onlyLate ? isOverdue(o) : true)),
@@ -229,15 +231,12 @@ export default function OpOficina() {
         <Kpi label="Média dias na oficina" value={`${kpis.media}d`} icon={Gauge} />
         <Kpi label="Em alerta / atrasadas" value={kpis.atrasadas} icon={AlertTriangle} active={onlyLate} onClick={() => setOnlyLate(v => !v)} />
         <Kpi label="Aguardando peça" value={kpis.aguardPeca} icon={Package} />
-        <Kpi label="Entregues no mês" value={kpis.entregues} icon={Truck} />
+        <Kpi label="Entregues no período" value={kpis.entregues} icon={Truck} />
         <Kpi label="Custo entregues" value={fmtMoney(kpis.custo)} />
       </div>
 
       <div className="bg-card border rounded-lg p-3 flex flex-wrap gap-3 items-end">
-        <div>
-          <Label className="text-xs">Mês</Label>
-          <Input type="month" value={month} onChange={e => setMonth(e.target.value)} className="w-[170px]" />
-        </div>
+        <DateRangeFilter from={dateFrom} to={dateTo} onFromChange={setDateFrom} onToChange={setDateTo} />
         <div className="flex-1 min-w-[200px]">
           <Label className="text-xs">Buscar</Label>
           <div className="relative">

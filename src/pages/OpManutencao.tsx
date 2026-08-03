@@ -1,3 +1,4 @@
+import DateRangeFilter, { currentMonthStart, todayStr, inDateRange } from "@/components/shared/DateRangeFilter";
 import { useEffect, useMemo, useState } from "react";
 import { Navigate } from "react-router-dom";
 import { Wrench, Plus, Pencil, Trash2, AlertTriangle, Building2, ListChecks, Image as ImageIcon, X, LayoutGrid, List, Eye, EyeOff } from "lucide-react";
@@ -65,7 +66,8 @@ export default function OpManutencao() {
   const mechanics = useMaintTechnicians();
   const requesters = useDeliveryRequesters();
 
-  const [activeMonth, setActiveMonth] = useState(() => new Date().toISOString().slice(0, 7));
+  const [dateFrom, setDateFrom] = useState(() => currentMonthStart());
+  const [dateTo, setDateTo] = useState(() => todayStr());
   const [activeSite, setActiveSite] = useState<string>("all");
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
   const [statusFilter, setStatusFilter] = useState<"all" | "Aberta" | "Em execução" | "Concluída" | "atraso">("all");
@@ -93,12 +95,12 @@ export default function OpManutencao() {
       // Profile scoping (only affects operacional org via useMaintProfile)
       if (isTecnico && o.assigned_technician_id !== maintProfile.mechanicId) return false;
       if (isSolicitante && o.requester_id !== maintProfile.requesterId) return false;
-      if (!o.opened_at.startsWith(activeMonth)) return false;
+      if (!inDateRange(o.opened_at, dateFrom, dateTo)) return false;
       if (activeSite !== "all" && o.site_id !== activeSite) return false;
       if (categoryFilter !== "all" && o.category !== categoryFilter) return false;
       return true;
     });
-  }, [orders.items, activeMonth, activeSite, categoryFilter, isTecnico, isSolicitante, maintProfile.mechanicId, maintProfile.requesterId]);
+  }, [orders.items, dateFrom, dateTo, activeSite, categoryFilter, isTecnico, isSolicitante, maintProfile.mechanicId, maintProfile.requesterId]);
 
   const filtered = useMemo(() => {
     return baseFiltered.filter(o => {
@@ -301,7 +303,7 @@ export default function OpManutencao() {
               {hideFinalized ? <><EyeOff className="h-3 w-3 mr-1" />Ocultos</> : <><Eye className="h-3 w-3 mr-1" />Todos</>}
             </Button>
           )}
-          <Input type="month" value={activeMonth} onChange={e => setActiveMonth(e.target.value)} className="w-40" />
+          <DateRangeFilter from={dateFrom} to={dateTo} onFromChange={setDateFrom} onToChange={setDateTo} showLabels={false} />
           {!isTecnico && (
             <Button onClick={() => { setEditing(null); setOmOpen(true); }}>
               <Plus className="h-4 w-4 mr-1" /> {isSolicitante ? "Nova solicitação" : "Nova OM"}
@@ -331,7 +333,7 @@ export default function OpManutencao() {
             <KpiCard label="Abertas" value={kpis.abertas} color="text-amber-600" active={statusFilter === "Aberta"} onClick={() => toggleStatus("Aberta")} />
             <KpiCard label="Em execução" value={kpis.execucao} color="text-blue-600" active={statusFilter === "Em execução"} onClick={() => toggleStatus("Em execução")} />
             <KpiCard label="Concluídas" value={kpis.concluidas} color="text-emerald-600" active={statusFilter === "Concluída"} onClick={() => toggleStatus("Concluída")} />
-            <KpiCard label="Total no mês" value={kpis.total} active={statusFilter === "all"} onClick={() => setStatusFilter("all")} />
+            <KpiCard label="Total no período" value={kpis.total} active={statusFilter === "all"} onClick={() => setStatusFilter("all")} />
             <KpiCard label="Atrasadas" value={kpis.atrasadas} color="text-rose-600" icon={<AlertTriangle className="h-4 w-4" />} active={statusFilter === "atraso"} onClick={() => toggleStatus("atraso")} />
           </div>
 
@@ -347,9 +349,9 @@ export default function OpManutencao() {
 
           <Tabs value={activeSite} onValueChange={setActiveSite}>
             <TabsList className="flex-wrap h-auto">
-              <TabsTrigger value="all">Todas as sedes ({orders.items.filter(o => o.opened_at.startsWith(activeMonth)).length})</TabsTrigger>
+              <TabsTrigger value="all">Todas as sedes ({orders.items.filter(o => inDateRange(o.opened_at, dateFrom, dateTo)).length})</TabsTrigger>
               {sites.items.filter(s => s.is_active).map(s => {
-                const c = orders.items.filter(o => o.site_id === s.id && o.opened_at.startsWith(activeMonth)).length;
+                const c = orders.items.filter(o => o.site_id === s.id && inDateRange(o.opened_at, dateFrom, dateTo)).length;
                 return <TabsTrigger key={s.id} value={s.id}>{s.name} ({c})</TabsTrigger>;
               })}
             </TabsList>
