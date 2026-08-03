@@ -6,9 +6,9 @@ import { X } from "lucide-react";
 // Filtro de período por data inicial/final (YYYY-MM-DD).
 // Campos vazios = sem limite, permitindo visualização independente da data.
 
+/** Data inicial padrão do sistema: 01/01/1990 (histórico completo). */
 export function currentMonthStart() {
-  const n = new Date();
-  return `${n.getFullYear()}-${String(n.getMonth() + 1).padStart(2, "0")}-01`;
+  return "1990-01-01";
 }
 
 export function todayStr() {
