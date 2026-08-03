@@ -42,6 +42,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       .select("*")
       .eq("user_id", userId)
       .single();
+    if (data && (data as any).is_active === false) {
+      toast.error("Acesso inativado. Fale com o administrador.");
+      setProfile(null);
+      setRoles([]);
+      await supabase.auth.signOut();
+      return null;
+    }
     setProfile(data);
     return data;
   };
