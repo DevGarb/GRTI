@@ -542,16 +542,22 @@ export default function Usuarios() {
                                 <Building2 className="h-3.5 w-3.5" />
                               </button>
                             )}
-                            {isSuperAdmin && (
-                              <button
-                                onClick={() => handleDelete(user)}
-                                disabled={deleteUser.isPending}
-                                className="p-1.5 rounded-md hover:bg-destructive/10 text-destructive transition-colors disabled:opacity-50"
-                                title="Excluir usuário"
-                              >
-                                <Trash2 className="h-3.5 w-3.5" />
-                              </button>
-                            )}
+                            <button
+                              onClick={() => handleToggleActive(user)}
+                              disabled={setUserActive.isPending}
+                              className={`p-1.5 rounded-md transition-colors disabled:opacity-50 ${
+                                user.is_active === false
+                                  ? "hover:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
+                                  : "hover:bg-destructive/10 text-destructive"
+                              }`}
+                              title={user.is_active === false ? "Reativar acesso" : "Inativar acesso"}
+                            >
+                              {user.is_active === false ? (
+                                <UserCheck className="h-3.5 w-3.5" />
+                              ) : (
+                                <Ban className="h-3.5 w-3.5" />
+                              )}
+                            </button>
                           </>
                         )}
                         {isSuperAdmin && isSuperAdminUser(user) && (
