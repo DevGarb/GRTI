@@ -2639,9 +2639,12 @@ export type Database = {
           avatar_url: string | null
           cpf: string | null
           created_at: string
+          deactivated_at: string | null
+          deactivated_by: string | null
           email: string | null
           full_name: string
           id: string
+          is_active: boolean
           organization_id: string | null
           phone: string | null
           sector_id: string | null
@@ -2653,9 +2656,12 @@ export type Database = {
           avatar_url?: string | null
           cpf?: string | null
           created_at?: string
+          deactivated_at?: string | null
+          deactivated_by?: string | null
           email?: string | null
           full_name?: string
           id?: string
+          is_active?: boolean
           organization_id?: string | null
           phone?: string | null
           sector_id?: string | null
@@ -2667,9 +2673,12 @@ export type Database = {
           avatar_url?: string | null
           cpf?: string | null
           created_at?: string
+          deactivated_at?: string | null
+          deactivated_by?: string | null
           email?: string | null
           full_name?: string
           id?: string
+          is_active?: boolean
           organization_id?: string | null
           phone?: string | null
           sector_id?: string | null
