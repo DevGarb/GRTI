@@ -430,8 +430,8 @@ export default function ProjetosSprints() {
                   <div className="flex items-start justify-between gap-2">
                     <div className="min-w-0">
                       <CardTitle className="text-base truncate">{s.name}</CardTitle>
-                      <p className="text-xs text-muted-foreground truncate">{s.project_name}</p>
                     </div>
+
                     <Badge variant="outline" className={badgeClass}>
                       {badgeLabel}
                     </Badge>
