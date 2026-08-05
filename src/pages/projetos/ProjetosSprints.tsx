@@ -507,6 +507,85 @@ export default function ProjetosSprints() {
                   </div>
                 </CardContent>
               </Card>
+    );
+  };
+
+  return (
+    <div className="space-y-4">
+      <div className="flex flex-wrap items-end justify-between gap-3">
+        <div>
+          <h1 className="text-2xl font-bold">Sprints</h1>
+          <p className="text-sm text-muted-foreground">
+            Acompanhe burndown, velocidade, qualidade e fechamento das sprints, agrupadas por projeto.
+          </p>
+        </div>
+        {groups.length > 1 && (
+          <div className="space-y-1">
+            <Label className="text-xs">Projeto</Label>
+            <Select value={projectFilter} onValueChange={setProjectFilter}>
+              <SelectTrigger className="h-9 w-[260px]">
+                <SelectValue placeholder="Todos os projetos" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos os projetos</SelectItem>
+                {groups.map((g) => (
+                  <SelectItem key={g.id} value={g.id}>
+                    {g.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        )}
+      </div>
+
+      {isLoading ? (
+        <div className="text-sm text-muted-foreground">Carregando sprints...</div>
+      ) : sprints.length === 0 ? (
+        <div className="card-elevated p-8 text-center text-sm text-muted-foreground">
+          Nenhuma sprint cadastrada.
+        </div>
+      ) : (
+        <div className="space-y-5">
+          {visibleGroups.map((g) => {
+            const collapsed = !!collapsedProjects[g.id];
+            const active = g.items.filter((s) => s.status === "ativa").length;
+            const done = g.items.filter(
+              (s) => s.status === "concluida" || (s.total_tasks > 0 && s.completed >= s.total_tasks),
+            ).length;
+            return (
+              <section key={g.id} className="rounded-xl border bg-card/40">
+                <button
+                  type="button"
+                  onClick={() => setCollapsedProjects((p) => ({ ...p, [g.id]: !collapsed }))}
+                  className="flex w-full items-center justify-between gap-3 px-4 py-3 text-left"
+                >
+                  <div className="flex items-center gap-2 min-w-0">
+                    <ChevronDown
+                      className={`h-4 w-4 shrink-0 text-muted-foreground transition-transform ${collapsed ? "-rotate-90" : ""}`}
+                    />
+                    <h2 className="truncate font-semibold">{g.name}</h2>
+                  </div>
+                  <div className="flex shrink-0 items-center gap-1.5">
+                    <Badge variant="outline">{g.items.length} sprints</Badge>
+                    {active > 0 && (
+                      <Badge variant="outline" className="bg-blue-500/15 text-blue-700">
+                        {active} ativa{active > 1 ? "s" : ""}
+                      </Badge>
+                    )}
+                    {done > 0 && (
+                      <Badge variant="outline" className="bg-emerald-500/15 text-emerald-700">
+                        {done} concluída{done > 1 ? "s" : ""}
+                      </Badge>
+                    )}
+                  </div>
+                </button>
+                {!collapsed && (
+                  <div className="grid gap-3 border-t p-4 md:grid-cols-2 xl:grid-cols-3">
+                    {g.items.map(renderSprint)}
+                  </div>
+                )}
+              </section>
             );
           })}
         </div>
@@ -516,3 +595,4 @@ export default function ProjetosSprints() {
     </div>
   );
 }
+
