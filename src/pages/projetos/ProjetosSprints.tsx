@@ -389,29 +389,27 @@ export default function ProjetosSprints() {
   const { data: sprints = [], isLoading } = useAllSprints();
   const [toClose, setToClose] = useState<SprintRow | null>(null);
   const [expandedMetrics, setExpandedMetrics] = useState<Record<string, boolean>>({});
+  const [collapsedProjects, setCollapsedProjects] = useState<Record<string, boolean>>({});
+  const [projectFilter, setProjectFilter] = useState<string>("all");
 
-  return (
-    <div className="space-y-4">
-      <div>
-        <h1 className="text-2xl font-bold">Sprints</h1>
-        <p className="text-sm text-muted-foreground">
-          Acompanhe burndown, velocidade, qualidade e fechamento das sprints.
-        </p>
-      </div>
+  // Agrupa as sprints por projeto
+  const groups = (() => {
+    const map = new Map<string, { id: string; name: string; items: SprintRow[] }>();
+    sprints.forEach((s) => {
+      if (!map.has(s.project_id)) map.set(s.project_id, { id: s.project_id, name: s.project_name, items: [] });
+      map.get(s.project_id)!.items.push(s);
+    });
+    return Array.from(map.values()).sort((a, b) => a.name.localeCompare(b.name));
+  })();
 
-      {isLoading ? (
-        <div className="text-sm text-muted-foreground">Carregando sprints...</div>
-      ) : sprints.length === 0 ? (
-        <div className="card-elevated p-8 text-center text-sm text-muted-foreground">
-          Nenhuma sprint cadastrada.
-        </div>
-      ) : (
-        <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-          {sprints.map((s) => {
-            const concl = s.total_tasks > 0 ? Math.round((s.completed / s.total_tasks) * 100) : 0;
-            const retrab = s.total_tasks > 0 ? Math.round((s.reworks / s.total_tasks) * 100) : 0;
-            const efic = Math.round(concl * (1 - Math.min(retrab, 100) / 100));
-            const open = !!expandedMetrics[s.id];
+  const visibleGroups = projectFilter === "all" ? groups : groups.filter((g) => g.id === projectFilter);
+
+  const renderSprint = (s: SprintRow) => {
+    const concl = s.total_tasks > 0 ? Math.round((s.completed / s.total_tasks) * 100) : 0;
+    const retrab = s.total_tasks > 0 ? Math.round((s.reworks / s.total_tasks) * 100) : 0;
+    const efic = Math.round(concl * (1 - Math.min(retrab, 100) / 100));
+    const open = !!expandedMetrics[s.id];
+
             // Mesma regra usada no Visão Geral do projeto
             const fullyDone = s.total_tasks > 0 && concl >= 100;
             const isOfficial = s.status === "concluida";
