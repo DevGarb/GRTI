@@ -170,11 +170,12 @@ function SingleDayView({ tickets }: { tickets: (TodayTicket & { date?: string })
         const Icon = col.icon;
         return (
           <div key={ci} className="rounded-lg border border-[hsl(var(--tv-border))] bg-[hsl(var(--tv-surface-2))]/40 p-3">
-            <div className="flex items-center gap-1.5 mb-2 pb-2 border-b border-[hsl(var(--tv-border))]">
-              <Icon className="h-3.5 w-3.5 text-[hsl(var(--tv-accent-cyan))]" strokeWidth={1.75} />
-              <span className="text-[10px] uppercase tracking-widest text-[hsl(var(--tv-text-dim))]">
+            <div className="flex items-center gap-2 mb-2 pb-2 border-b border-[hsl(var(--tv-border))]">
+              <Icon className="h-4 w-4 text-[hsl(var(--tv-accent-cyan))]" strokeWidth={1.75} />
+              <span className="text-[13px] font-semibold uppercase tracking-widest text-[hsl(var(--tv-text-dim))]">
                 {col.label}
               </span>
+
             </div>
             <div>
               {col.hours.map(h => (
