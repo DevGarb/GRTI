@@ -43,6 +43,7 @@ export default function NewTicketModal({ onClose }: Props) {
   const [type, setType] = useState("Software");
   const [pendingFiles, setPendingFiles] = useState<PendingFile[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const submittingRef = useRef(false);
   const [showConfirm, setShowConfirm] = useState(false);
   const [skipConfirm, setSkipConfirm] = useState<boolean>(() => {
     try { return localStorage.getItem(SKIP_CONFIRM_KEY) === "1"; } catch { return false; }
