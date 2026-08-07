@@ -289,13 +289,14 @@ export function TodayAgendaPanel({ tickets, filter, onFilterChange, flashKey = 0
     <BentoTile accent="cyan" grid>
       <div className="flex items-center justify-between mb-4 gap-3 flex-wrap">
         <div className="flex items-center gap-2">
-          <div className="h-7 w-7 rounded-md flex items-center justify-center border border-[hsl(var(--tv-accent-cyan)/0.35)] bg-[hsl(var(--tv-accent-cyan)/0.08)]">
-            <CalendarDays className="h-3.5 w-3.5 text-[hsl(var(--tv-accent-cyan))]" strokeWidth={1.75} />
+          <div className="h-9 w-9 rounded-md flex items-center justify-center border border-[hsl(var(--tv-accent-cyan)/0.35)] bg-[hsl(var(--tv-accent-cyan)/0.08)]">
+            <CalendarDays className="h-5 w-5 text-[hsl(var(--tv-accent-cyan))]" strokeWidth={1.75} />
           </div>
           <div>
-            <div className="text-[10px] uppercase tracking-[0.22em] text-[hsl(var(--tv-text-dim))]">Agenda</div>
-            <div className="text-sm text-[hsl(var(--tv-text))]">{headerTitle}</div>
+            <div className="text-[12px] font-semibold uppercase tracking-[0.22em] text-[hsl(var(--tv-text-dim))]">Agenda</div>
+            <div className="text-lg font-semibold text-[hsl(var(--tv-text))]">{headerTitle}</div>
           </div>
+
         </div>
 
         <div className="flex items-center gap-2">
