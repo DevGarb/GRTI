@@ -48,6 +48,7 @@ export default function NewTicketWizardModal({ onClose }: Props) {
   const [pendingFiles, setPendingFiles] = useState<PendingFile[]>([]);
   const [dragOver, setDragOver] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const submittingRef = useRef(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const pendingFilesRef = useRef<PendingFile[]>([]);
 
