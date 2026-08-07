@@ -90,6 +90,7 @@ export default function NewTicketModal({ onClose }: Props) {
   };
 
   const handleClickSubmit = () => {
+    if (submittingRef.current || isSubmitting) return;
     if (!title.trim()) return;
     if (skipConfirm) {
       handleSubmit();
