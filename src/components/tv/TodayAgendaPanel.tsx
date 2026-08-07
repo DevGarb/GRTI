@@ -350,14 +350,15 @@ export function TodayAgendaPanel({ tickets, filter, onFilterChange, flashKey = 0
             </PopoverContent>
           </Popover>
 
-          <span className="font-mono-tech text-[10px] text-[hsl(var(--tv-text-mute))] tracking-widest">
+          <span className="font-mono-tech text-[13px] text-[hsl(var(--tv-text-dim))] tracking-widest">
             {tickets.length.toString().padStart(3, "0")} EVT
           </span>
         </div>
       </div>
 
       {tickets.length === 0 ? (
-        <div className="text-center text-sm text-[hsl(var(--tv-text-mute))] py-8">
+        <div className="text-center text-lg text-[hsl(var(--tv-text-dim))] py-8">
+
           Sem chamados no período selecionado
         </div>
       ) : isSingleDay ? (
