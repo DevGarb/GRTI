@@ -101,15 +101,18 @@ export default function NewTicketWizardModal({ onClose }: Props) {
 
   const handleConfirm = async () => {
     if (!user) return;
-    // Safety gate again server-side
-    const { data: pending } = await refetchPendingApproval();
-    if ((pending?.length ?? 0) > 0) {
-      toast.error(`Você possui ${pending!.length} chamado(s) aguardando aprovação.`);
-      onClose();
-      return;
-    }
+    // Trava imediata contra duplo clique (antes de qualquer await)
+    if (submittingRef.current) return;
+    submittingRef.current = true;
     setIsSubmitting(true);
     try {
+      // Safety gate again server-side
+      const { data: pending } = await refetchPendingApproval();
+      if ((pending?.length ?? 0) > 0) {
+        toast.error(`Você possui ${pending!.length} chamado(s) aguardando aprovação.`);
+        onClose();
+        return;
+      }
       const insertPayload: any = {
         title: title.trim(),
         description: description.trim(),
