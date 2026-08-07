@@ -106,30 +106,31 @@ function TicketChip({ t }: { t: TodayTicket & { date?: string } }) {
       type="button"
       onClick={() => openTicket(t.id)}
       className={cn(
-        "relative w-full text-left rounded-md border border-[hsl(var(--tv-border))] bg-[hsl(var(--tv-surface-2))] px-1.5 py-1 overflow-hidden min-w-0 cursor-pointer transition hover:border-[hsl(var(--tv-border-strong))] hover:bg-[hsl(var(--tv-surface))] focus:outline-none focus-visible:ring-1 focus-visible:ring-[hsl(var(--tv-accent-cyan))]",
+        "relative w-full text-left rounded-md border border-[hsl(var(--tv-border))] bg-[hsl(var(--tv-surface-2))] px-2 py-1.5 overflow-hidden min-w-0 cursor-pointer transition hover:border-[hsl(var(--tv-border-strong))] hover:bg-[hsl(var(--tv-surface))] focus:outline-none focus-visible:ring-1 focus-visible:ring-[hsl(var(--tv-accent-cyan))]",
         flashing && "tv-flash",
       )}
       style={{ backgroundImage: gradient }}
       title={`${t.code} · ${t.title} · ${t.hour}`}
     >
-      <div className="absolute left-0 top-0 h-full w-[2px]" style={{ background: color }} />
-      <div className="flex items-center gap-1.5 leading-none">
-        <span className="font-mono-tech text-[9px] text-[hsl(var(--tv-text-mute))] shrink-0">
+      <div className="absolute left-0 top-0 h-full w-[3px]" style={{ background: color }} />
+      <div className="flex items-center gap-2 leading-none">
+        <span className="font-mono-tech text-[13px] text-[hsl(var(--tv-text-dim))] shrink-0">
           {t.hour}
         </span>
-        <span className="text-[9px] text-[hsl(var(--tv-text-dim))] font-mono-tech shrink-0">
+        <span className="text-[13px] text-[hsl(var(--tv-text-dim))] font-mono-tech shrink-0">
           #{t.code}
         </span>
         <span
-          className="text-[8px] uppercase tracking-wider font-semibold px-1 py-0 rounded shrink-0"
-          style={{ color, background: `${color}18` }}
+          className="text-[11px] uppercase tracking-wider font-semibold px-1.5 py-0.5 rounded shrink-0"
+          style={{ color, background: `${color}22` }}
         >
           {t.priority}
         </span>
       </div>
-      <div className="text-[11px] text-[hsl(var(--tv-text))] leading-tight truncate mt-0.5">
+      <div className="text-[15px] font-medium text-[hsl(var(--tv-text))] leading-tight truncate mt-1">
         {t.title}
       </div>
+
     </button>
   );
 }
