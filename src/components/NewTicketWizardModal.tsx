@@ -167,6 +167,7 @@ export default function NewTicketWizardModal({ onClose }: Props) {
       console.error("Erro ao criar chamado", err);
       toast.error("Erro ao criar chamado: " + (err?.message || ""));
     } finally {
+      submittingRef.current = false;
       setIsSubmitting(false);
     }
   };
