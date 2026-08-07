@@ -48,6 +48,7 @@ export default function NewTicketWizardModal({ onClose }: Props) {
   const [pendingFiles, setPendingFiles] = useState<PendingFile[]>([]);
   const [dragOver, setDragOver] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const submittingRef = useRef(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const pendingFilesRef = useRef<PendingFile[]>([]);
 
@@ -101,15 +102,18 @@ export default function NewTicketWizardModal({ onClose }: Props) {
 
   const handleConfirm = async () => {
     if (!user) return;
-    // Safety gate again server-side
-    const { data: pending } = await refetchPendingApproval();
-    if ((pending?.length ?? 0) > 0) {
-      toast.error(`Você possui ${pending!.length} chamado(s) aguardando aprovação.`);
-      onClose();
-      return;
-    }
+    // Trava imediata contra duplo clique (antes de qualquer await)
+    if (submittingRef.current) return;
+    submittingRef.current = true;
     setIsSubmitting(true);
     try {
+      // Safety gate again server-side
+      const { data: pending } = await refetchPendingApproval();
+      if ((pending?.length ?? 0) > 0) {
+        toast.error(`Você possui ${pending!.length} chamado(s) aguardando aprovação.`);
+        onClose();
+        return;
+      }
       const insertPayload: any = {
         title: title.trim(),
         description: description.trim(),
@@ -163,6 +167,7 @@ export default function NewTicketWizardModal({ onClose }: Props) {
       console.error("Erro ao criar chamado", err);
       toast.error("Erro ao criar chamado: " + (err?.message || ""));
     } finally {
+      submittingRef.current = false;
       setIsSubmitting(false);
     }
   };

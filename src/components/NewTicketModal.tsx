@@ -43,6 +43,7 @@ export default function NewTicketModal({ onClose }: Props) {
   const [type, setType] = useState("Software");
   const [pendingFiles, setPendingFiles] = useState<PendingFile[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const submittingRef = useRef(false);
   const [showConfirm, setShowConfirm] = useState(false);
   const [skipConfirm, setSkipConfirm] = useState<boolean>(() => {
     try { return localStorage.getItem(SKIP_CONFIRM_KEY) === "1"; } catch { return false; }
@@ -107,17 +108,20 @@ export default function NewTicketModal({ onClose }: Props) {
 
   const handleSubmit = async () => {
     if (!title.trim()) return;
-    // Safety gate: bloqueia se houver chamados do próprio usuário aguardando aprovação
-    const { data: pending } = await refetchPendingApproval();
-    if ((pending?.length ?? 0) > 0) {
-      toast.error(
-        `Você possui ${pending!.length} chamado(s) aguardando aprovação. Aprove ou reenvie para retrabalho antes de abrir um novo.`
-      );
-      onClose();
-      return;
-    }
+    // Trava imediata contra duplo clique (antes de qualquer await)
+    if (submittingRef.current) return;
+    submittingRef.current = true;
     setIsSubmitting(true);
     try {
+      // Safety gate: bloqueia se houver chamados do próprio usuário aguardando aprovação
+      const { data: pending } = await refetchPendingApproval();
+      if ((pending?.length ?? 0) > 0) {
+        toast.error(
+          `Você possui ${pending!.length} chamado(s) aguardando aprovação. Aprove ou reenvie para retrabalho antes de abrir um novo.`
+        );
+        onClose();
+        return;
+      }
       // Create ticket first
       const ticketData = await new Promise<any>((resolve, reject) => {
         createTicket.mutate(
@@ -178,6 +182,7 @@ export default function NewTicketModal({ onClose }: Props) {
       console.error("Error creating ticket:", err);
       toast.error("Erro ao criar chamado");
     } finally {
+      submittingRef.current = false;
       setIsSubmitting(false);
     }
   };
