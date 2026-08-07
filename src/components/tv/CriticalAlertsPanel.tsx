@@ -25,34 +25,35 @@ export function CriticalAlertsPanel({ crit, warn, topCategories }: Props) {
             tone === "warn" && "text-[hsl(var(--status-waiting))]",
             tone === "ok" && "text-[hsl(var(--status-closed))]",
           )} />
-          <h3 className="text-sm md:text-base font-semibold uppercase tracking-wider">Alertas Críticos</h3>
+          <h3 className="text-base md:text-xl font-semibold uppercase tracking-wider">Alertas Críticos</h3>
         </div>
       </div>
 
       <div className="grid grid-cols-2 gap-3">
         <div className="rounded-xl bg-background/50 border p-3 text-center">
-          <div className="text-[10px] uppercase tracking-widest text-muted-foreground">Crítico</div>
-          <div className="text-4xl font-bold tabular-nums text-[hsl(var(--status-open))]">{crit}</div>
+          <div className="text-[13px] font-semibold uppercase tracking-widest text-muted-foreground">Crítico</div>
+          <div className="text-5xl font-bold tabular-nums text-[hsl(var(--status-open))]">{crit}</div>
         </div>
         <div className="rounded-xl bg-background/50 border p-3 text-center">
-          <div className="text-[10px] uppercase tracking-widest text-muted-foreground">Atenção</div>
-          <div className="text-4xl font-bold tabular-nums text-[hsl(var(--status-waiting))]">{warn}</div>
+          <div className="text-[13px] font-semibold uppercase tracking-widest text-muted-foreground">Atenção</div>
+          <div className="text-5xl font-bold tabular-nums text-[hsl(var(--status-waiting))]">{warn}</div>
         </div>
       </div>
 
       <div className="flex-1 min-h-0">
-        <div className="text-[10px] uppercase tracking-widest text-muted-foreground mb-2">Categorias mais impactadas</div>
+        <div className="text-[13px] font-semibold uppercase tracking-widest text-muted-foreground mb-2">Categorias mais impactadas</div>
         {topCategories.length === 0 ? (
-          <div className="text-sm text-muted-foreground text-center py-4">
+          <div className="text-lg text-muted-foreground text-center py-4">
             {tone === "ok" ? "Tudo dentro do prazo ✅" : "—"}
           </div>
         ) : (
           <ul className="space-y-2">
             {topCategories.map((c, i) => (
               <li key={i} className="flex items-center gap-2">
-                <span className="text-xs font-bold text-muted-foreground w-4">{i + 1}</span>
-                <span className="flex-1 truncate text-sm">{c.name}</span>
-                <span className="tabular-nums font-bold text-[hsl(var(--status-open))]">{c.count}</span>
+                <span className="text-base font-bold text-muted-foreground w-5">{i + 1}</span>
+                <span className="flex-1 truncate text-lg">{c.name}</span>
+                <span className="tabular-nums text-lg font-bold text-[hsl(var(--status-open))]">{c.count}</span>
+
               </li>
             ))}
           </ul>
