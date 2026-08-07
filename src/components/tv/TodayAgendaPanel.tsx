@@ -303,7 +303,7 @@ export function TodayAgendaPanel({ tickets, filter, onFilterChange, flashKey = 0
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <button
-                className="flex items-center gap-1.5 rounded-md border border-[hsl(var(--tv-border))] bg-[hsl(var(--tv-surface-2))] px-2.5 py-1.5 text-[11px] uppercase tracking-wider text-[hsl(var(--tv-text))] hover:border-[hsl(var(--tv-border-strong))] transition"
+                className="flex items-center gap-1.5 rounded-md border border-[hsl(var(--tv-border))] bg-[hsl(var(--tv-surface-2))] px-3 py-2 text-[13px] font-semibold uppercase tracking-wider text-[hsl(var(--tv-text))] hover:border-[hsl(var(--tv-border-strong))] transition"
               >
                 {FILTER_LABELS[filter.type]}
                 <ChevronDown className="h-3 w-3" />
