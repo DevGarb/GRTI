@@ -106,43 +106,45 @@ function TicketChip({ t }: { t: TodayTicket & { date?: string } }) {
       type="button"
       onClick={() => openTicket(t.id)}
       className={cn(
-        "relative w-full text-left rounded-md border border-[hsl(var(--tv-border))] bg-[hsl(var(--tv-surface-2))] px-1.5 py-1 overflow-hidden min-w-0 cursor-pointer transition hover:border-[hsl(var(--tv-border-strong))] hover:bg-[hsl(var(--tv-surface))] focus:outline-none focus-visible:ring-1 focus-visible:ring-[hsl(var(--tv-accent-cyan))]",
+        "relative w-full text-left rounded-md border border-[hsl(var(--tv-border))] bg-[hsl(var(--tv-surface-2))] px-2 py-1.5 overflow-hidden min-w-0 cursor-pointer transition hover:border-[hsl(var(--tv-border-strong))] hover:bg-[hsl(var(--tv-surface))] focus:outline-none focus-visible:ring-1 focus-visible:ring-[hsl(var(--tv-accent-cyan))]",
         flashing && "tv-flash",
       )}
       style={{ backgroundImage: gradient }}
       title={`${t.code} · ${t.title} · ${t.hour}`}
     >
-      <div className="absolute left-0 top-0 h-full w-[2px]" style={{ background: color }} />
-      <div className="flex items-center gap-1.5 leading-none">
-        <span className="font-mono-tech text-[9px] text-[hsl(var(--tv-text-mute))] shrink-0">
+      <div className="absolute left-0 top-0 h-full w-[3px]" style={{ background: color }} />
+      <div className="flex items-center gap-2 leading-none">
+        <span className="font-mono-tech text-[13px] text-[hsl(var(--tv-text-dim))] shrink-0">
           {t.hour}
         </span>
-        <span className="text-[9px] text-[hsl(var(--tv-text-dim))] font-mono-tech shrink-0">
+        <span className="text-[13px] text-[hsl(var(--tv-text-dim))] font-mono-tech shrink-0">
           #{t.code}
         </span>
         <span
-          className="text-[8px] uppercase tracking-wider font-semibold px-1 py-0 rounded shrink-0"
-          style={{ color, background: `${color}18` }}
+          className="text-[11px] uppercase tracking-wider font-semibold px-1.5 py-0.5 rounded shrink-0"
+          style={{ color, background: `${color}22` }}
         >
           {t.priority}
         </span>
       </div>
-      <div className="text-[11px] text-[hsl(var(--tv-text))] leading-tight truncate mt-0.5">
+      <div className="text-[15px] font-medium text-[hsl(var(--tv-text))] leading-tight truncate mt-1">
         {t.title}
       </div>
+
     </button>
   );
 }
 
 function HourRow({ hour, tickets }: { hour: number; tickets: (TodayTicket & { date?: string })[] }) {
   return (
-    <div className="flex items-start gap-2 py-1 border-b border-[hsl(var(--tv-border))] last:border-b-0 min-h-[28px]">
-      <div className="font-mono-tech text-[10px] text-[hsl(var(--tv-text-mute))] w-8 shrink-0 pt-0.5">
+    <div className="flex items-start gap-2 py-1 border-b border-[hsl(var(--tv-border))] last:border-b-0 min-h-[32px]">
+      <div className="font-mono-tech text-[14px] font-semibold text-[hsl(var(--tv-text-dim))] w-10 shrink-0 pt-0.5">
         {hour.toString().padStart(2, "0")}h
       </div>
       <div className="flex-1 min-w-0 grid grid-cols-1 xl:grid-cols-2 gap-1">
         {tickets.length === 0 ? (
-          <div className="text-[10px] text-[hsl(var(--tv-text-mute))]/60 italic pt-0.5">—</div>
+          <div className="text-[13px] text-[hsl(var(--tv-text-mute))]/70 italic pt-0.5">—</div>
+
         ) : (
           tickets.map(t => <TicketChip key={t.id} t={t} />)
         )}
@@ -168,11 +170,12 @@ function SingleDayView({ tickets }: { tickets: (TodayTicket & { date?: string })
         const Icon = col.icon;
         return (
           <div key={ci} className="rounded-lg border border-[hsl(var(--tv-border))] bg-[hsl(var(--tv-surface-2))]/40 p-3">
-            <div className="flex items-center gap-1.5 mb-2 pb-2 border-b border-[hsl(var(--tv-border))]">
-              <Icon className="h-3.5 w-3.5 text-[hsl(var(--tv-accent-cyan))]" strokeWidth={1.75} />
-              <span className="text-[10px] uppercase tracking-widest text-[hsl(var(--tv-text-dim))]">
+            <div className="flex items-center gap-2 mb-2 pb-2 border-b border-[hsl(var(--tv-border))]">
+              <Icon className="h-4 w-4 text-[hsl(var(--tv-accent-cyan))]" strokeWidth={1.75} />
+              <span className="text-[13px] font-semibold uppercase tracking-widest text-[hsl(var(--tv-text-dim))]">
                 {col.label}
               </span>
+
             </div>
             <div>
               {col.hours.map(h => (
@@ -203,12 +206,13 @@ function MultiDayView({ tickets }: { tickets: (TodayTicket & { date?: string })[
         return (
           <div key={day} className="rounded-lg border border-[hsl(var(--tv-border))] bg-[hsl(var(--tv-surface-2))]/40 p-3">
             <div className="flex items-center justify-between mb-2 pb-2 border-b border-[hsl(var(--tv-border))]">
-              <span className="text-[11px] uppercase tracking-widest text-[hsl(var(--tv-text-dim))] font-medium">
+              <span className="text-[13px] uppercase tracking-widest text-[hsl(var(--tv-text-dim))] font-semibold">
                 {label}
               </span>
-              <span className="font-mono-tech text-[10px] text-[hsl(var(--tv-text-mute))]">
+              <span className="font-mono-tech text-[13px] text-[hsl(var(--tv-text-dim))]">
                 {list.length.toString().padStart(2, "0")}
               </span>
+
             </div>
             <div className="flex flex-col gap-1">
               {list.map(t => <TicketChip key={t.id} t={t} />)}
@@ -285,20 +289,21 @@ export function TodayAgendaPanel({ tickets, filter, onFilterChange, flashKey = 0
     <BentoTile accent="cyan" grid>
       <div className="flex items-center justify-between mb-4 gap-3 flex-wrap">
         <div className="flex items-center gap-2">
-          <div className="h-7 w-7 rounded-md flex items-center justify-center border border-[hsl(var(--tv-accent-cyan)/0.35)] bg-[hsl(var(--tv-accent-cyan)/0.08)]">
-            <CalendarDays className="h-3.5 w-3.5 text-[hsl(var(--tv-accent-cyan))]" strokeWidth={1.75} />
+          <div className="h-9 w-9 rounded-md flex items-center justify-center border border-[hsl(var(--tv-accent-cyan)/0.35)] bg-[hsl(var(--tv-accent-cyan)/0.08)]">
+            <CalendarDays className="h-5 w-5 text-[hsl(var(--tv-accent-cyan))]" strokeWidth={1.75} />
           </div>
           <div>
-            <div className="text-[10px] uppercase tracking-[0.22em] text-[hsl(var(--tv-text-dim))]">Agenda</div>
-            <div className="text-sm text-[hsl(var(--tv-text))]">{headerTitle}</div>
+            <div className="text-[12px] font-semibold uppercase tracking-[0.22em] text-[hsl(var(--tv-text-dim))]">Agenda</div>
+            <div className="text-lg font-semibold text-[hsl(var(--tv-text))]">{headerTitle}</div>
           </div>
+
         </div>
 
         <div className="flex items-center gap-2">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <button
-                className="flex items-center gap-1.5 rounded-md border border-[hsl(var(--tv-border))] bg-[hsl(var(--tv-surface-2))] px-2.5 py-1.5 text-[11px] uppercase tracking-wider text-[hsl(var(--tv-text))] hover:border-[hsl(var(--tv-border-strong))] transition"
+                className="flex items-center gap-1.5 rounded-md border border-[hsl(var(--tv-border))] bg-[hsl(var(--tv-surface-2))] px-3 py-2 text-[13px] font-semibold uppercase tracking-wider text-[hsl(var(--tv-text))] hover:border-[hsl(var(--tv-border-strong))] transition"
               >
                 {FILTER_LABELS[filter.type]}
                 <ChevronDown className="h-3 w-3" />
@@ -345,14 +350,15 @@ export function TodayAgendaPanel({ tickets, filter, onFilterChange, flashKey = 0
             </PopoverContent>
           </Popover>
 
-          <span className="font-mono-tech text-[10px] text-[hsl(var(--tv-text-mute))] tracking-widest">
+          <span className="font-mono-tech text-[13px] text-[hsl(var(--tv-text-dim))] tracking-widest">
             {tickets.length.toString().padStart(3, "0")} EVT
           </span>
         </div>
       </div>
 
       {tickets.length === 0 ? (
-        <div className="text-center text-sm text-[hsl(var(--tv-text-mute))] py-8">
+        <div className="text-center text-lg text-[hsl(var(--tv-text-dim))] py-8">
+
           Sem chamados no período selecionado
         </div>
       ) : isSingleDay ? (

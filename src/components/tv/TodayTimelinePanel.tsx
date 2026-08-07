@@ -40,22 +40,23 @@ export function TodayTimelinePanel({ tickets }: Props) {
     <BentoTile accent="cyan" grid>
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
-          <div className="h-7 w-7 rounded-md flex items-center justify-center border border-[hsl(var(--tv-accent-cyan)/0.35)] bg-[hsl(var(--tv-accent-cyan)/0.08)]">
-            <CalendarDays className="h-3.5 w-3.5 text-[hsl(var(--tv-accent-cyan))]" strokeWidth={1.75} />
+          <div className="h-9 w-9 rounded-md flex items-center justify-center border border-[hsl(var(--tv-accent-cyan)/0.35)] bg-[hsl(var(--tv-accent-cyan)/0.08)]">
+            <CalendarDays className="h-5 w-5 text-[hsl(var(--tv-accent-cyan))]" strokeWidth={1.75} />
           </div>
           <div>
-            <div className="text-[10px] uppercase tracking-[0.22em] text-[hsl(var(--tv-text-dim))]">Hoje</div>
-            <div className="text-sm text-[hsl(var(--tv-text))]">Ticks ao longo do expediente</div>
+            <div className="text-[12px] font-semibold uppercase tracking-[0.22em] text-[hsl(var(--tv-text-dim))]">Hoje</div>
+            <div className="text-lg font-semibold text-[hsl(var(--tv-text))]">Ticks ao longo do expediente</div>
           </div>
         </div>
-        <span className="font-mono-tech text-[10px] text-[hsl(var(--tv-text-mute))] tracking-widest">
+        <span className="font-mono-tech text-[13px] text-[hsl(var(--tv-text-dim))] tracking-widest">
           {tickets.length.toString().padStart(3, "0")} EVT
         </span>
       </div>
 
       {/* Timeline */}
       <div className="relative mt-2 mb-4">
-        <div className="flex justify-between text-[10px] font-mono-tech text-[hsl(var(--tv-text-mute))] mb-1.5">
+        <div className="flex justify-between text-[13px] font-mono-tech text-[hsl(var(--tv-text-dim))] mb-1.5">
+
           {HOURS.map(h => (
             <span key={h}>{h.toString().padStart(2, "0")}h</span>
           ))}
@@ -101,20 +102,20 @@ export function TodayTimelinePanel({ tickets }: Props) {
                 style={{ background: color }}
               />
               <div className="flex items-center justify-between mb-1">
-                <span className="font-mono-tech text-[10px] text-[hsl(var(--tv-text-mute))]">
+                <span className="font-mono-tech text-[13px] text-[hsl(var(--tv-text-dim))]">
                   #{t.code}
                 </span>
                 <span
-                  className="text-[9px] uppercase tracking-wider font-semibold px-1.5 py-0.5 rounded"
-                  style={{ color, background: `${color}18` }}
+                  className="text-[11px] uppercase tracking-wider font-semibold px-1.5 py-0.5 rounded"
+                  style={{ color, background: `${color}22` }}
                 >
                   {t.priority}
                 </span>
               </div>
-              <div className="text-xs text-[hsl(var(--tv-text))] leading-tight line-clamp-2 mb-1.5 min-h-[2.2em]">
+              <div className="text-[15px] font-medium text-[hsl(var(--tv-text))] leading-tight line-clamp-2 mb-1.5 min-h-[2.2em]">
                 {t.title}
               </div>
-              <div className="flex items-center justify-between text-[10px] text-[hsl(var(--tv-text-dim))] font-mono-tech">
+              <div className="flex items-center justify-between text-[13px] text-[hsl(var(--tv-text-dim))] font-mono-tech">
                 <span>{t.hour}</span>
                 <span className="truncate ml-1">{t.technician ?? "—"}</span>
               </div>
@@ -122,7 +123,8 @@ export function TodayTimelinePanel({ tickets }: Props) {
           );
         })}
         {tickets.length === 0 && (
-          <div className="col-span-full text-center text-sm text-[hsl(var(--tv-text-mute))] py-6">
+          <div className="col-span-full text-center text-lg text-[hsl(var(--tv-text-dim))] py-6">
+
             Sem chamados registrados hoje
           </div>
         )}
