@@ -107,28 +107,29 @@ export function MonthGoalsStrip({ goals, variant = "full" }: Props) {
               <div className="absolute left-0 top-0 h-full w-[2px]" style={{ background: color }} />
               <div className="flex items-center justify-between mb-2">
                 <div className="flex items-center gap-1.5">
-                  <Icon className="h-3.5 w-3.5" strokeWidth={1.75} style={{ color }} />
-                  <span className="text-[10px] uppercase tracking-wider text-[hsl(var(--tv-text-dim))] truncate">
+                  <Icon className="h-4 w-4" strokeWidth={1.75} style={{ color }} />
+                  <span className="text-[13px] font-semibold uppercase tracking-wider text-[hsl(var(--tv-text-dim))] truncate">
                     {g.label}
                   </span>
                 </div>
                 <span
-                  className="font-mono-tech text-[9px] px-1.5 py-0.5 rounded"
-                  style={{ color, background: `${color}15` }}
+                  className="font-mono-tech text-[12px] px-1.5 py-0.5 rounded"
+                  style={{ color, background: `${color}22` }}
                 >
                   {Math.round(displayPct)}%
                 </span>
               </div>
               <div className="flex items-baseline gap-1 mb-2">
                 <span
-                  className="font-tv-display font-semibold text-2xl tabular-nums leading-none"
+                  className="font-tv-display font-semibold text-3xl tabular-nums leading-none"
                   style={{ color: "hsl(var(--tv-text))" }}
                 >
                   {fmt(g.actual)}{g.suffix ?? ""}
                 </span>
-                <span className="font-mono-tech text-[11px] text-[hsl(var(--tv-text-mute))]">
+                <span className="font-mono-tech text-[13px] text-[hsl(var(--tv-text-dim))]">
                   / {g.target > 0 ? fmt(g.target) : "—"}{g.suffix ?? ""}
                 </span>
+
               </div>
               <div className="h-[3px] rounded-full bg-[hsl(var(--tv-border))] overflow-hidden">
                 <div
