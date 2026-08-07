@@ -100,6 +100,7 @@ export default function NewTicketModal({ onClose }: Props) {
   };
 
   const handleConfirmSubmit = () => {
+    if (submittingRef.current || isSubmitting) return;
     if (skipConfirm) {
       try { localStorage.setItem(SKIP_CONFIRM_KEY, "1"); } catch {}
     }
