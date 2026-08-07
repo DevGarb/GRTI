@@ -34,7 +34,7 @@ export function DailyKpiTile({ label, value, suffix, sub, icon: Icon, accent, co
           >
             <Icon className="h-3.5 w-3.5" strokeWidth={1.75} style={{ color }} />
           </div>
-          <span className="text-[10px] uppercase tracking-[0.22em] text-[hsl(var(--tv-text-dim))] font-medium">
+          <span className="text-sm md:text-base uppercase tracking-[0.18em] text-[hsl(var(--tv-text))] font-semibold">
             {label}
           </span>
         </div>
