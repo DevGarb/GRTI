@@ -393,8 +393,8 @@ export default function NewTicketModal({ onClose }: Props) {
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Voltar e revisar</AlertDialogCancel>
-            <AlertDialogAction onClick={handleConfirmSubmit}>
-              Sim, abrir chamado
+            <AlertDialogAction onClick={handleConfirmSubmit} disabled={isSubmitting}>
+              {isSubmitting ? "Abrindo..." : "Sim, abrir chamado"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
