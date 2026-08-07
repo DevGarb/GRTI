@@ -1,30 +1,24 @@
-# Retrabalho de 6,7% no painel do Felipe
+# Aumentar legibilidade dos títulos dos cards KPI no Painel de TV
 
-## O que está acontecendo (verificado no banco)
+## Problema
+No painel de TV (que é renderizado numa TV de grande formato, vista à distância), os títulos dos cards do topo — **Abertos Hoje, Fechados Hoje, Top Técnico, TMA Hoje** — aparecem em fonte minúscula (`text-[10px]` uppercase), ficando praticamente ilegíveis.
 
-Existe **um** registro de retrabalho real do Felipe: chamado **#147** ("Solicitar a configuração da impressora..."), retrabalho lançado em **31/07/2026**.
+## Causa
+Em `src/components/tv/DailyKpiTile.tsx` (linha 37), o rótulo (`label`) é renderizado com `text-[10px] uppercase tracking-[0.22em] text-[hsl(var(--tv-text-dim))] font-medium`. Essa classe é aplicada a todos os 4 cards do topo do `TvDashboard.tsx`.
 
-O que muda entre as telas é a **data usada para dizer a que mês o chamado pertence**:
+## Correção
+Aumentar o tamanho e o contraste do título no `DailyKpiTile`:
 
-- Chamado #147: finalizado (Aguardando Aprovação) em **31/07**, mas só teve o fechamento formal em **06/08**.
-- O card pessoal "Minhas Metas" conta pelo `closed_at` (06/08) → o retrabalho cai em **agosto**: 1 de 15 = **6,7%**.
-- O painel do admin (Metas / Métricas Gerenciais) conta pela **finalização efetiva** (`aguardando_aprovacao_at`, com fallback para `closed_at`) → o mesmo retrabalho cai em **julho**, por isso agosto aparece zerado.
+- Trocar `text-[10px]` → `text-sm md:text-base`
+- Trocar cor `--tv-text-dim` → `--tv-text` (claro, legível)
+- Trocar `font-medium` → `font-semibold`
+- Reduzir o tracking de `0.22em` → `0.18em` para não esticar as letras demais no tamanho maior
 
-Ou seja: não é retrabalho inventado, é o mesmo evento contado em meses diferentes por causa de dois critérios distintos de período.
+Nenhuma outra mudança de layout, funcionalidade ou dados é necessária — os 4 títulos vêm do mesmo componente, então todos ficam legíveis de uma vez.
 
-## Correção proposta
+## Verificação
+- `bun run build` para validar.
+- Conferir visualmente no preview do painel de TV que os títulos ficam legíveis à distância.
 
-Padronizar o card pessoal pelo mesmo critério já usado em todo o resto do sistema (a regra de "finalização efetiva"):
-
-- Considerar chamados com status `Fechado` **ou** `Aprovado`.
-- Usar `aguardando_aprovacao_at` (fallback `closed_at`) como data de corte do mês.
-
-Com isso, o card do Felipe em agosto passa a mostrar **0% de retrabalho**, e a quantidade de chamados/pontos do mês fica igual à do painel do admin.
-
-## Detalhes técnicos
-
-- Arquivo: `src/components/metas/MyGoalCard.tsx`.
-- Substituir a consulta atual de chamados fechados (filtro `status = 'Fechado'` + `closed_at` entre início/fim do mês) por uma chamada à RPC já existente `get_metas_tecnicos(_year, _month)`, filtrando a linha do usuário logado. Ela já devolve `total_closed`, `total_points`, `avg_score`, `preventivas_done`, `rework_count` e o tempo médio pela mesma regra do painel gerencial.
-- Manter o cálculo de `rework_percent` como `rework_count / total_closed * 100`, e `avg_resolution_hours` a partir de `total_work_minutes / timed_tickets_count`.
-- Manter intacto o restante do card (radar, barras, metas, projetos entregues) — muda só a origem dos números.
-- Rodar `bun run build` ao final.
+## Escopo
+Alteração restrita ao componente `src/components/tv/DailyKpiTile.tsx`. Sem mudanças em `TvDashboard.tsx` nem em qualquer outro módulo.
