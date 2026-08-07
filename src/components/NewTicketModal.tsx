@@ -182,6 +182,7 @@ export default function NewTicketModal({ onClose }: Props) {
       console.error("Error creating ticket:", err);
       toast.error("Erro ao criar chamado");
     } finally {
+      submittingRef.current = false;
       setIsSubmitting(false);
     }
   };
