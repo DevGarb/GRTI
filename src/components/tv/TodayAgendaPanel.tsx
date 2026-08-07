@@ -206,12 +206,13 @@ function MultiDayView({ tickets }: { tickets: (TodayTicket & { date?: string })[
         return (
           <div key={day} className="rounded-lg border border-[hsl(var(--tv-border))] bg-[hsl(var(--tv-surface-2))]/40 p-3">
             <div className="flex items-center justify-between mb-2 pb-2 border-b border-[hsl(var(--tv-border))]">
-              <span className="text-[11px] uppercase tracking-widest text-[hsl(var(--tv-text-dim))] font-medium">
+              <span className="text-[13px] uppercase tracking-widest text-[hsl(var(--tv-text-dim))] font-semibold">
                 {label}
               </span>
-              <span className="font-mono-tech text-[10px] text-[hsl(var(--tv-text-mute))]">
+              <span className="font-mono-tech text-[13px] text-[hsl(var(--tv-text-dim))]">
                 {list.length.toString().padStart(2, "0")}
               </span>
+
             </div>
             <div className="flex flex-col gap-1">
               {list.map(t => <TicketChip key={t.id} t={t} />)}
