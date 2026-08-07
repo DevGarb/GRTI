@@ -137,13 +137,14 @@ function TicketChip({ t }: { t: TodayTicket & { date?: string } }) {
 
 function HourRow({ hour, tickets }: { hour: number; tickets: (TodayTicket & { date?: string })[] }) {
   return (
-    <div className="flex items-start gap-2 py-1 border-b border-[hsl(var(--tv-border))] last:border-b-0 min-h-[28px]">
-      <div className="font-mono-tech text-[10px] text-[hsl(var(--tv-text-mute))] w-8 shrink-0 pt-0.5">
+    <div className="flex items-start gap-2 py-1 border-b border-[hsl(var(--tv-border))] last:border-b-0 min-h-[32px]">
+      <div className="font-mono-tech text-[14px] font-semibold text-[hsl(var(--tv-text-dim))] w-10 shrink-0 pt-0.5">
         {hour.toString().padStart(2, "0")}h
       </div>
       <div className="flex-1 min-w-0 grid grid-cols-1 xl:grid-cols-2 gap-1">
         {tickets.length === 0 ? (
-          <div className="text-[10px] text-[hsl(var(--tv-text-mute))]/60 italic pt-0.5">—</div>
+          <div className="text-[13px] text-[hsl(var(--tv-text-mute))]/70 italic pt-0.5">—</div>
+
         ) : (
           tickets.map(t => <TicketChip key={t.id} t={t} />)
         )}
