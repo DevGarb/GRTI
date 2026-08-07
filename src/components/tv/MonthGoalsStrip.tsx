@@ -37,26 +37,27 @@ export function MonthGoalsStrip({ goals, variant = "full" }: Props) {
               className="relative rounded-md border border-[hsl(var(--tv-border))] bg-[hsl(var(--tv-surface)/0.6)] backdrop-blur px-2.5 py-1.5 overflow-hidden"
             >
               <div className="absolute left-0 top-0 h-full w-[2px]" style={{ background: color }} />
-              <div className="flex items-center gap-1.5 mb-0.5">
-                <Icon className="h-3 w-3 shrink-0" strokeWidth={1.75} style={{ color }} />
-                <span className="text-[9px] uppercase tracking-wider text-[hsl(var(--tv-text-dim))] truncate">
+              <div className="flex items-center gap-1.5 mb-1">
+                <Icon className="h-4 w-4 shrink-0" strokeWidth={1.75} style={{ color }} />
+                <span className="text-[13px] font-semibold uppercase tracking-wider text-[hsl(var(--tv-text-dim))] truncate">
                   {g.label}
                 </span>
                 <span
-                  className="ml-auto font-mono-tech text-[9px] px-1 rounded shrink-0"
-                  style={{ color, background: `${color}18` }}
+                  className="ml-auto font-mono-tech text-[12px] px-1.5 rounded shrink-0"
+                  style={{ color, background: `${color}22` }}
                 >
                   {Math.round(displayPct)}%
                 </span>
               </div>
-              <div className="flex items-baseline gap-1">
-                <span className="font-tv-display font-semibold text-sm tabular-nums leading-none text-[hsl(var(--tv-text))]">
+              <div className="flex items-baseline gap-1.5">
+                <span className="font-tv-display font-semibold text-2xl tabular-nums leading-none text-[hsl(var(--tv-text))]">
                   {fmt(g.actual)}{g.suffix ?? ""}
                 </span>
-                <span className="font-mono-tech text-[9px] text-[hsl(var(--tv-text-mute))] truncate">
+                <span className="font-mono-tech text-[12px] text-[hsl(var(--tv-text-dim))] truncate">
                   / {g.target > 0 ? fmt(g.target) : "—"}{g.suffix ?? ""}
                 </span>
               </div>
+
               <div className="mt-1 h-[2px] rounded-full bg-[hsl(var(--tv-border))] overflow-hidden">
                 <div
                   className="h-full transition-all duration-700"
