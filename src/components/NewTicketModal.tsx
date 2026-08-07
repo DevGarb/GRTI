@@ -108,17 +108,20 @@ export default function NewTicketModal({ onClose }: Props) {
 
   const handleSubmit = async () => {
     if (!title.trim()) return;
-    // Safety gate: bloqueia se houver chamados do próprio usuário aguardando aprovação
-    const { data: pending } = await refetchPendingApproval();
-    if ((pending?.length ?? 0) > 0) {
-      toast.error(
-        `Você possui ${pending!.length} chamado(s) aguardando aprovação. Aprove ou reenvie para retrabalho antes de abrir um novo.`
-      );
-      onClose();
-      return;
-    }
+    // Trava imediata contra duplo clique (antes de qualquer await)
+    if (submittingRef.current) return;
+    submittingRef.current = true;
     setIsSubmitting(true);
     try {
+      // Safety gate: bloqueia se houver chamados do próprio usuário aguardando aprovação
+      const { data: pending } = await refetchPendingApproval();
+      if ((pending?.length ?? 0) > 0) {
+        toast.error(
+          `Você possui ${pending!.length} chamado(s) aguardando aprovação. Aprove ou reenvie para retrabalho antes de abrir um novo.`
+        );
+        onClose();
+        return;
+      }
       // Create ticket first
       const ticketData = await new Promise<any>((resolve, reject) => {
         createTicket.mutate(
