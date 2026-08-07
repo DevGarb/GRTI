@@ -90,6 +90,7 @@ export default function NewTicketModal({ onClose }: Props) {
   };
 
   const handleClickSubmit = () => {
+    if (submittingRef.current || isSubmitting) return;
     if (!title.trim()) return;
     if (skipConfirm) {
       handleSubmit();
@@ -99,6 +100,7 @@ export default function NewTicketModal({ onClose }: Props) {
   };
 
   const handleConfirmSubmit = () => {
+    if (submittingRef.current || isSubmitting) return;
     if (skipConfirm) {
       try { localStorage.setItem(SKIP_CONFIRM_KEY, "1"); } catch {}
     }
@@ -391,8 +393,8 @@ export default function NewTicketModal({ onClose }: Props) {
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Voltar e revisar</AlertDialogCancel>
-            <AlertDialogAction onClick={handleConfirmSubmit}>
-              Sim, abrir chamado
+            <AlertDialogAction onClick={handleConfirmSubmit} disabled={isSubmitting}>
+              {isSubmitting ? "Abrindo..." : "Sim, abrir chamado"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
