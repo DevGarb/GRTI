@@ -30,6 +30,7 @@ export default function AiCloseApprovedModal({
   onClose: () => void;
 }) {
   const queryClient = useQueryClient();
+  const { openTicket } = useTicketModal();
   const { data: categoryLeaves = [] } = useServiceCategoryLeaves(organizationId);
   const [loading, setLoading] = useState(true);
   const [applying, setApplying] = useState(false);
