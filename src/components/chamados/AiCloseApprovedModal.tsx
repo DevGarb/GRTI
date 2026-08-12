@@ -171,7 +171,14 @@ export default function AiCloseApprovedModal({
                     {rows.map((r) => (
                       <tr key={r.ticket_id} className="border-b border-border last:border-0">
                         <td className="px-3 py-2">
-                          <p className="font-medium text-foreground">{r.title}</p>
+                          <button
+                            type="button"
+                            onClick={(e) => { e.stopPropagation(); openTicket(r.ticket_id); }}
+                            className="text-left font-medium text-foreground underline decoration-dotted underline-offset-2 hover:text-sky-600 dark:hover:text-sky-400"
+                            title="Abrir chamado para conferir"
+                          >
+                            {r.title}
+                          </button>
                           <p className="text-xs text-muted-foreground">{r.technician_name || "Sem técnico"}</p>
                         </td>
                         <td className="px-3 py-2">
