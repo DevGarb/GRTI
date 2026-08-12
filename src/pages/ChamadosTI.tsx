@@ -395,6 +395,8 @@ export default function ChamadosTI() {
   // usam o story_points, mesma regra das Metas e do MVP.
   const scoreBreakdown = computeScoreBreakdown(myEvalScore, closedByMe as any);
   const myScore = scoreBreakdown.total;
+  const [showScoreDetail, setShowScoreDetail] = useState(false);
+
 
   const closedFilteredIds = filtered.filter((t) => t.status === "Fechado").map((t) => t.id);
   const { data: evalScoreMap = new Map<string, number>() } = useQuery({
