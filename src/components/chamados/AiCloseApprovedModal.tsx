@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { useServiceCategoryLeaves } from "@/hooks/useServiceCategories";
+import { useTicketModal } from "@/contexts/TicketModalContext";
 
 interface Proposal {
   ticket_id: string;
