@@ -391,11 +391,9 @@ export default function ChamadosTI() {
   });
 
   // Chamados de crédito de sprint (tipo "Projeto") não recebem avaliação de pontuação:
-  // usam o story_points, mesma regra das Metas.
-  const mySprintPoints = closedByMe
-    .filter((t: any) => t.type === "Projeto")
-    .reduce((sum: number, t: any) => sum + (t.story_points || 0), 0);
-  const myScore = myEvalScore + mySprintPoints;
+  // usam o story_points, mesma regra das Metas e do MVP.
+  const scoreBreakdown = computeScoreBreakdown(myEvalScore, closedByMe as any);
+  const myScore = scoreBreakdown.total;
 
   const closedFilteredIds = filtered.filter((t) => t.status === "Fechado").map((t) => t.id);
   const { data: evalScoreMap = new Map<string, number>() } = useQuery({
@@ -412,15 +410,8 @@ export default function ChamadosTI() {
     enabled: closedFilteredIds.length > 0,
   });
 
-  const scoreMap = (() => {
-    const map = new Map<string, number>(evalScoreMap);
-    filtered.forEach((t: any) => {
-      if (!map.get(t.id) && t.type === "Projeto" && (t.story_points || 0) > 0) {
-        map.set(t.id, t.story_points);
-      }
-    });
-    return map;
-  })();
+  const scoreMap = buildScoreMap(evalScoreMap, filtered as any);
+
 
 
   const filteredIdsKey = filtered.map((t) => t.id).sort().join(",");
