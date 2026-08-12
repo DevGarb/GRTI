@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { useServiceCategoryLeaves } from "@/hooks/useServiceCategories";
+import { useTicketModal } from "@/contexts/TicketModalContext";
 
 interface Proposal {
   ticket_id: string;
@@ -29,6 +30,7 @@ export default function AiCloseApprovedModal({
   onClose: () => void;
 }) {
   const queryClient = useQueryClient();
+  const { openTicket } = useTicketModal();
   const { data: categoryLeaves = [] } = useServiceCategoryLeaves(organizationId);
   const [loading, setLoading] = useState(true);
   const [applying, setApplying] = useState(false);
@@ -100,7 +102,7 @@ export default function AiCloseApprovedModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm" onClick={onClose}>
+    <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm" onClick={onClose}>
       <div
         onClick={(e) => e.stopPropagation()}
         className="flex max-h-[85vh] w-full max-w-3xl flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-2xl"
@@ -169,7 +171,14 @@ export default function AiCloseApprovedModal({
                     {rows.map((r) => (
                       <tr key={r.ticket_id} className="border-b border-border last:border-0">
                         <td className="px-3 py-2">
-                          <p className="font-medium text-foreground">{r.title}</p>
+                          <button
+                            type="button"
+                            onClick={(e) => { e.stopPropagation(); openTicket(r.ticket_id); }}
+                            className="text-left font-medium text-foreground underline decoration-dotted underline-offset-2 hover:text-sky-600 dark:hover:text-sky-400"
+                            title="Abrir chamado para conferir"
+                          >
+                            {r.title}
+                          </button>
                           <p className="text-xs text-muted-foreground">{r.technician_name || "Sem técnico"}</p>
                         </td>
                         <td className="px-3 py-2">
