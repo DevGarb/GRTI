@@ -739,20 +739,57 @@ export default function ChamadosTI() {
           return (
             <div className="space-y-4">
               {(isAdmin || isTech) && (
-                <div className="relative flex items-center gap-4 overflow-hidden rounded-2xl border-2 border-amber-200 bg-amber-50/50 p-4 shadow-sm dark:border-amber-800 dark:bg-amber-950/20">
-                  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-amber-100 dark:bg-amber-900/40">
-                    <Trophy className="h-6 w-6 text-amber-600 dark:text-amber-400" />
+                <div className="overflow-hidden rounded-2xl border-2 border-amber-200 bg-amber-50/50 shadow-sm dark:border-amber-800 dark:bg-amber-950/20">
+                  <div className="relative flex items-center gap-4 p-4">
+                    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-amber-100 dark:bg-amber-900/40">
+                      <Trophy className="h-6 w-6 text-amber-600 dark:text-amber-400" />
+                    </div>
+                    <div className="flex-1">
+                      <p className="font-mono-tech text-[11px] font-medium uppercase tracking-wider text-muted-foreground">Minha Pontuação — {selectedMonth}</p>
+                      <p className="font-display text-3xl font-bold leading-tight text-amber-600 dark:text-amber-400">{myScore} <span className="text-base font-semibold">pts</span></p>
+                      {scoreBreakdown.sprintPoints > 0 && (
+                        <p className="mt-0.5 text-[11px] text-muted-foreground">
+                          {scoreBreakdown.evaluationPoints} pts de chamados + {scoreBreakdown.sprintPoints} pts de sprints
+                        </p>
+                      )}
+                    </div>
+                    <div className="text-right">
+                      <p className="text-xs text-muted-foreground">Chamados fechados</p>
+                      <p className="font-display text-2xl font-bold text-foreground">{closedByMe.length}</p>
+                    </div>
                   </div>
-                  <div className="flex-1">
-                    <p className="font-mono-tech text-[11px] font-medium uppercase tracking-wider text-muted-foreground">Minha Pontuação — {selectedMonth}</p>
-                    <p className="font-display text-3xl font-bold leading-tight text-amber-600 dark:text-amber-400">{myScore} <span className="text-base font-semibold">pts</span></p>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-xs text-muted-foreground">Chamados fechados</p>
-                    <p className="font-display text-2xl font-bold text-foreground">{closedByMe.length}</p>
-                  </div>
+                  {scoreBreakdown.sprints.length > 0 && (
+                    <div className="border-t border-amber-200 bg-amber-100/40 px-4 py-3 dark:border-amber-800 dark:bg-amber-900/20">
+                      <button
+                        type="button"
+                        onClick={() => setShowScoreDetail((v) => !v)}
+                        className="flex w-full items-center gap-1.5 text-[11px] font-medium uppercase tracking-wider text-amber-700 dark:text-amber-300"
+                      >
+                        {showScoreDetail ? <ChevronDown className="h-3.5 w-3.5" /> : <ChevronRight className="h-3.5 w-3.5" />}
+                        Detalhamento por sprint ({scoreBreakdown.sprints.length})
+                      </button>
+                      {showScoreDetail && (
+                        <div className="mt-2 space-y-1">
+                          {scoreBreakdown.sprints.map((s) => (
+                            <div key={s.id} className="flex items-center justify-between gap-2 text-xs">
+                              <span className="truncate text-foreground">{s.label}</span>
+                              <span className="shrink-0 font-mono-tech font-semibold text-amber-700 dark:text-amber-300">+{s.points} pts</span>
+                            </div>
+                          ))}
+                          <div className="mt-1 flex items-center justify-between gap-2 border-t border-amber-200 pt-1 text-xs font-semibold dark:border-amber-800">
+                            <span>Total das sprints</span>
+                            <span className="font-mono-tech text-amber-700 dark:text-amber-300">{scoreBreakdown.sprintPoints} pts</span>
+                          </div>
+                          <p className="pt-1 text-[10px] leading-snug text-muted-foreground">
+                            Esses pontos também entram na sua meta mensal e no cálculo do MVP.
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
               )}
+
               {availableTickets.length > 0 && (
                 <AvailableTicketsSection
                   tickets={availableTickets}
