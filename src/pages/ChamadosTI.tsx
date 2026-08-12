@@ -378,7 +378,7 @@ export default function ChamadosTI() {
   });
   const closedTicketIds = closedByMe.map((t) => t.id);
 
-  const { data: myScore = 0 } = useQuery({
+  const { data: myEvalScore = 0 } = useQuery({
     queryKey: ["my-score", user?.id, selectedMonth, closedTicketIds.join(",")],
     queryFn: async () => {
       if (!user?.id || closedTicketIds.length === 0) return 0;
@@ -390,8 +390,15 @@ export default function ChamadosTI() {
     enabled: !!user?.id && !isAdmin && closedTicketIds.length > 0,
   });
 
+  // Chamados de crédito de sprint (tipo "Projeto") não recebem avaliação de pontuação:
+  // usam o story_points, mesma regra das Metas.
+  const mySprintPoints = closedByMe
+    .filter((t: any) => t.type === "Projeto")
+    .reduce((sum: number, t: any) => sum + (t.story_points || 0), 0);
+  const myScore = myEvalScore + mySprintPoints;
+
   const closedFilteredIds = filtered.filter((t) => t.status === "Fechado").map((t) => t.id);
-  const { data: scoreMap = new Map<string, number>() } = useQuery({
+  const { data: evalScoreMap = new Map<string, number>() } = useQuery({
     queryKey: ["ticket-scores", closedFilteredIds.join(",")],
     queryFn: async () => {
       const map = new Map<string, number>();
@@ -404,6 +411,17 @@ export default function ChamadosTI() {
     },
     enabled: closedFilteredIds.length > 0,
   });
+
+  const scoreMap = (() => {
+    const map = new Map<string, number>(evalScoreMap);
+    filtered.forEach((t: any) => {
+      if (!map.get(t.id) && t.type === "Projeto" && (t.story_points || 0) > 0) {
+        map.set(t.id, t.story_points);
+      }
+    });
+    return map;
+  })();
+
 
   const filteredIdsKey = filtered.map((t) => t.id).sort().join(",");
   const { data: workMinutesMap = new Map<string, number>() } = useQuery({
