@@ -101,27 +101,12 @@ export function useTickets() {
       
       const profileMap = new Map((profiles || []).map(p => [p.user_id, p.full_name]));
 
-      // Fetch rework counts from ticket_history
-      const ticketIds = data.map(t => t.id);
-      let reworkMap = new Map<string, number>();
-      if (ticketIds.length > 0) {
-        const { data: reworkHistory } = await supabase
-          .from("ticket_history")
-          .select("ticket_id")
-          .in("ticket_id", ticketIds)
-          .eq("action", "rework");
-        if (reworkHistory) {
-          reworkHistory.forEach(h => {
-            reworkMap.set(h.ticket_id, (reworkMap.get(h.ticket_id) || 0) + 1);
-          });
-        }
-      }
-      
-      return data.map(t => ({
+      // rework_count é mantido no próprio chamado por trigger no banco
+      return data.map((t: any) => ({
         ...t,
         assignedProfile: t.assigned_to ? { full_name: profileMap.get(t.assigned_to) || "" } : null,
         creatorProfile: { full_name: profileMap.get(t.created_by) || "" },
-        reworkCount: reworkMap.get(t.id) || 0,
+        reworkCount: t.rework_count ?? 0,
       })) as Ticket[];
     },
   });
