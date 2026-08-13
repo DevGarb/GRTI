@@ -48,7 +48,7 @@ export function useDashboardMetrics(dateFrom?: Date, dateTo?: Date) {
       // Fetch tickets
       let ticketQuery = supabase
         .from("tickets")
-        .select("id, status, created_at, updated_at, closed_at, started_at, type, assigned_to")
+        .select("id, status, created_at, updated_at, closed_at, started_at, aguardando_aprovacao_at, type, assigned_to, category_id, story_points")
         .order("created_at", { ascending: false });
       if (orgId) {
         ticketQuery = ticketQuery.eq("organization_id", orgId);
