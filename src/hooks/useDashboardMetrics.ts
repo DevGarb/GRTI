@@ -48,7 +48,7 @@ export function useDashboardMetrics(dateFrom?: Date, dateTo?: Date) {
       // Fetch tickets
       let ticketQuery = supabase
         .from("tickets")
-        .select("id, status, created_at, updated_at, closed_at, started_at, type, assigned_to")
+        .select("id, status, created_at, updated_at, closed_at, started_at, aguardando_aprovacao_at, type, assigned_to, category_id, story_points")
         .order("created_at", { ascending: false });
       if (orgId) {
         ticketQuery = ticketQuery.eq("organization_id", orgId);
@@ -179,42 +179,58 @@ export function useDashboardMetrics(dateFrom?: Date, dateTo?: Date) {
       }
 
       // ===== PONTUAÇÃO =====
-      // Regra unificada: pontos vêm de avaliações META dos chamados FECHADOS no período.
-      // Deduplicar por ticket (uma única meta por ticket).
-      const closedTicketIds = closedTickets.map(t => t.id);
-      const closedTicketTechMap = new Map<string, string | null>(
-        closedTickets.map(t => [t.id, t.assigned_to])
-      );
+      // Regra única (mesma das RPCs get_metas_tecnicos / get_mvp_chamados_metrics):
+      //  - status Fechado ou Aprovado
+      //  - período pela finalização efetiva (aguardando_aprovacao_at, senão closed_at)
+      //  - pontos = pontuação da categoria; sem categoria e tipo "Projeto" => story_points da sprint
+      const scoredTickets = (tickets || []).filter((t: any) => {
+        if (t.status !== "Fechado" && t.status !== "Aprovado") return false;
+        if (!t.assigned_to) return false;
+        if (!dateFrom || !dateTo) return true;
+        const ref = t.aguardando_aprovacao_at ?? t.closed_at;
+        if (!ref) return false;
+        const d = new Date(ref);
+        return d >= dateFrom && d <= dateTo;
+      });
 
       let totalScore = 0;
       const techPointsMap = new Map<string, number>();
 
-      if (closedTicketIds.length > 0) {
-        const { data: metaEvals } = await supabase
-          .from("evaluations")
-          .select("score, ticket_id")
-          .eq("type", "meta")
-          .in("ticket_id", closedTicketIds);
+      if (scoredTickets.length > 0) {
+        const categoryIds = [...new Set(
+          scoredTickets.map((t: any) => t.category_id).filter(Boolean)
+        )] as string[];
+        let categoryScoreMap = new Map<string, number>();
+        if (categoryIds.length > 0) {
+          const { data: cats } = await supabase
+            .from("categories")
+            .select("id, score")
+            .in("id", categoryIds);
+          categoryScoreMap = new Map(((cats || []) as any[]).map((c) => [c.id, Number(c.score) || 0]));
+        }
 
-        // Map tech ids -> names (for closed tickets in period)
-        const closedTechIds = [...new Set(closedTickets.map(t => t.assigned_to).filter(Boolean))] as string[];
+        const scoredTechIds = [...new Set(
+          scoredTickets.map((t: any) => t.assigned_to).filter(Boolean)
+        )] as string[];
         let nameMap = new Map<string, string>();
-        if (closedTechIds.length > 0) {
+        if (scoredTechIds.length > 0) {
           const { data: profs } = await supabase
             .from("profiles")
             .select("user_id, full_name")
-            .in("user_id", closedTechIds);
+            .in("user_id", scoredTechIds);
           nameMap = new Map((profs || []).map(p => [p.user_id, p.full_name]));
         }
 
-        // Soma direta: um único meta por ticket (garantido pelo unique index no banco)
-        (metaEvals || []).forEach((e: any) => {
-          const score = e.score || 0;
-          totalScore += score;
-          const techId = closedTicketTechMap.get(e.ticket_id);
-          const techName = techId ? nameMap.get(techId) : null;
+        scoredTickets.forEach((t: any) => {
+          const catScore = t.category_id ? categoryScoreMap.get(t.category_id) : undefined;
+          const points = catScore != null
+            ? catScore
+            : (t.type === "Projeto" ? Number(t.story_points) || 0 : 0);
+          if (!points) return;
+          totalScore += points;
+          const techName = t.assigned_to ? nameMap.get(t.assigned_to) : null;
           if (techName) {
-            techPointsMap.set(techName, (techPointsMap.get(techName) || 0) + score);
+            techPointsMap.set(techName, (techPointsMap.get(techName) || 0) + points);
           }
         });
       }
