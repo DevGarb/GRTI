@@ -11,19 +11,24 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/contexts/AuthContext";
-import { useServiceOrders, useServiceOrderDetails, useMechanics, useParts, type ServiceOrder } from "@/hooks/useOficina";
+import { useServiceOrders, useServiceOrderDetails, useServiceChecklists, useMechanics, useParts, type ServiceOrder, type ServiceChecklistItem } from "@/hooks/useOficina";
 import { useCompanies, useVehicles } from "@/hooks/useOperacional";
 import OpKanbanBoard, { type KanbanColumn } from "@/components/operacional/OpKanbanBoard";
 import OpClosureDialog from "@/components/operacional/OpClosureDialog";
 import OpQuickActions from "@/components/operacional/OpQuickActions";
 import OpNotesPanel from "@/components/operacional/OpNotesPanel";
+import OsProgressBar from "@/components/operacional/OsProgressBar";
+import OsChecklist from "@/components/operacional/OsChecklist";
 import OficinaNav from "@/pages/op/OficinaNav";
+import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { formatDateBR } from "@/lib/dateFormat";
 import {
   STAGES, STAGE_ENTREGUE, stageInfo, DIAS_ALERTA, SLA_PECAS,
   PART_STATUS_FLOW, PART_STATUS_INFO, daysInWorkshop, partsSlaRemaining,
+  CHECKLIST_PARTS_LABEL, maxDeadlineFrom,
 } from "@/lib/oficinaStages";
+
 
 const TERMINAL = "Finalizado";
 
@@ -51,6 +56,8 @@ const DELIVERED_COLUMN: KanbanColumn = { id: STAGE_ENTREGUE, label: "Entregue", 
 export default function OpOficina() {
   const { user } = useAuth();
   const { items, partsByOs, partsCountByOs, add, update, remove, setPartStatus, movePriority } = useServiceOrders();
+  const checklist = useServiceChecklists();
+
   const { items: mechanics } = useMechanics();
   const { items: companies } = useCompanies();
 
@@ -129,6 +136,17 @@ export default function OpOficina() {
     update(o.id, patch);
   };
 
+  /** Peças disponíveis: registra a chegada e ativa o prazo de entrega (hoje + SLA de peças). */
+  const handlePartsAvailable = async (o: ServiceOrder) => {
+    const arrived = todayISO();
+    await update(o.id, {
+      parts_arrived_at: arrived,
+      deadline: o.deadline || maxDeadlineFrom(arrived),
+      stage: o.stage === "aguardando_peca" ? "execucao" : o.stage,
+    });
+    await checklist.markLabelDone(o.id, CHECKLIST_PARTS_LABEL);
+  };
+
   const confirmClosure = async (payload: { closure_summary: string; closed_at: string; total_cost?: number }) => {
     if (!closing) return;
     await update(closing.id, {
@@ -143,10 +161,13 @@ export default function OpOficina() {
   };
 
   const renderCard = (o: ServiceOrder) => {
+
     const overdue = isOverdue(o);
     const days = daysInWorkshop(o.opened_at, o.finished_at);
     const partsCount = partsCountByOs[o.id] || 0;
     const slaParts = partsSlaRemaining(o.parts_arrived_at);
+    const chk = checklist.byOs[o.id] || [];
+    const stg = stageInfo(isDelivered(o) ? STAGE_ENTREGUE : o.stage);
     return (
       <div>
         <div className="flex items-start gap-2 mb-1 flex-wrap" onClick={() => setSelected(o)}>
@@ -171,14 +192,29 @@ export default function OpOficina() {
         <div className="text-[11px] text-muted-foreground line-clamp-2 mt-1" onClick={() => setSelected(o)}>
           {o.description || "Sem descrição"}
         </div>
+        {chk.length > 0 && (
+          <OsProgressBar items={chk} barClass={stg.bar} className="mt-2" compact />
+        )}
         {slaParts != null && !isDelivered(o) && (
           <div className={cn("text-[11px] mt-1", slaParts < 0 ? "text-rose-600 font-medium" : "text-muted-foreground")}>
             SLA peças: {slaParts < 0 ? `${Math.abs(slaParts)}d em atraso` : `${slaParts}d restantes`}
           </div>
         )}
-        <div className={cn("text-[11px] mt-0.5", o.deadline && o.deadline < todayISO() && !isDelivered(o) ? "text-rose-600 font-medium" : "text-muted-foreground")}>
-          Prazo de entrega: {o.deadline ? formatDateBR(o.deadline) : "—"}
-        </div>
+        {o.parts_arrived_at ? (
+          <div className={cn("text-[11px] mt-0.5", o.deadline && o.deadline < todayISO() && !isDelivered(o) ? "text-rose-600 font-medium" : "text-muted-foreground")}>
+            Entrega até: {o.deadline ? formatDateBR(o.deadline) : "—"}
+          </div>
+        ) : !isDelivered(o) ? (
+          <Button
+            size="sm"
+            variant="outline"
+            className="mt-1.5 h-7 w-full text-[11px]"
+            onClick={(e) => { e.stopPropagation(); handlePartsAvailable(o); }}
+          >
+            <Check className="h-3.5 w-3.5 mr-1" /> Peças disponíveis
+          </Button>
+        ) : null}
+
 
         <div className="flex items-center justify-between mt-2">
           <span className="text-xs font-semibold">{fmtMoney(Number(o.total_cost || 0))}</span>
@@ -315,7 +351,7 @@ export default function OpOficina() {
           companyName={companyName}
           onOpen={setSelected}
           onPartStatus={setPartStatus}
-          onPartsArrived={(o) => update(o.id, { parts_arrived_at: todayISO(), stage: o.stage === "aguardando_peca" ? "execucao" : o.stage })}
+          onPartsArrived={handlePartsAvailable}
         />
       )}
 
@@ -328,8 +364,14 @@ export default function OpOficina() {
           onDelete={() => { remove(selected.id); setSelected(null); }}
           onRequestClose={(o) => { setSelected(null); setClosing(o); }}
           companyPhone={companyPhone(selected.company_id)}
+          checklistItems={checklist.byOs[selected.id] || []}
+          onToggleChecklist={checklist.toggle}
+          onAddChecklist={(label) => checklist.addItem(selected.id, label)}
+          onRemoveChecklist={checklist.removeItem}
+          onPartsAvailable={() => handlePartsAvailable(selected)}
         />
       )}
+
 
       <OpClosureDialog
         open={!!closing}
@@ -505,14 +547,20 @@ function NewOsDialog({ onClose, onCreate }: { onClose: () => void; onCreate: (in
   );
 }
 
-function OsDetailDialog({ os, onClose, onUpdate, onDelete, onRequestClose, companyPhone }: {
+function OsDetailDialog({ os, onClose, onUpdate, onDelete, onRequestClose, companyPhone, checklistItems, onToggleChecklist, onAddChecklist, onRemoveChecklist, onPartsAvailable }: {
   os: ServiceOrder;
   onClose: () => void;
   onUpdate: (p: Partial<ServiceOrder>) => void;
   onDelete: () => void;
   onRequestClose: (o: ServiceOrder) => void;
   companyPhone: string | null;
+  checklistItems: ServiceChecklistItem[];
+  onToggleChecklist: (item: ServiceChecklistItem) => void;
+  onAddChecklist: (label: string) => void;
+  onRemoveChecklist: (id: string) => void;
+  onPartsAvailable: () => void;
 }) {
+
   const { parts, photos, addPart, updatePart, removePart, uploadPhoto, removePhoto } = useServiceOrderDetails(os.id);
   const { items: partsCatalog } = useParts();
   const { items: mechanics } = useMechanics();
@@ -639,15 +687,29 @@ function OsDetailDialog({ os, onClose, onUpdate, onDelete, onRequestClose, compa
             <Input
               type="date"
               value={deadline}
-              onChange={e => setDeadline(e.target.value)}
+              max={os.parts_arrived_at ? maxDeadlineFrom(os.parts_arrived_at) : undefined}
+              onChange={e => {
+                const v = e.target.value;
+                if (os.parts_arrived_at && v && v > maxDeadlineFrom(os.parts_arrived_at)) {
+                  toast.error(`O prazo não pode passar de ${formatDateBR(maxDeadlineFrom(os.parts_arrived_at))} (${SLA_PECAS} dias após a chegada das peças)`);
+                  return;
+                }
+                setDeadline(v);
+              }}
               disabled={!os.parts_arrived_at}
             />
             <div className="text-[11px] mt-1 text-muted-foreground">
               {os.parts_arrived_at
-                ? `Peças recebidas em ${formatDateBR(os.parts_arrived_at)}`
-                : "Definido pelo supervisor após a chegada das peças"}
+                ? `Peças recebidas em ${formatDateBR(os.parts_arrived_at)} · máximo ${formatDateBR(maxDeadlineFrom(os.parts_arrived_at))}`
+                : "Clique em “Peças disponíveis” para liberar o prazo (máx. 10 dias)"}
             </div>
+            {!os.parts_arrived_at && (
+              <Button size="sm" variant="outline" className="mt-2" onClick={onPartsAvailable}>
+                <Check className="h-3.5 w-3.5 mr-1" /> Peças disponíveis
+              </Button>
+            )}
           </div>
+
           <div>
             <Label>Empresa</Label>
             <Select value={companyId} onValueChange={setCompanyId}>
@@ -685,6 +747,17 @@ function OsDetailDialog({ os, onClose, onUpdate, onDelete, onRequestClose, compa
           </div>
 
         </div>
+
+        <OsChecklist
+          items={checklistItems}
+          readOnly={os.stage === STAGE_ENTREGUE || os.status === TERMINAL}
+          barClass={stageInfo(stage).bar}
+          onToggle={onToggleChecklist}
+          onAdd={onAddChecklist}
+          onRemove={onRemoveChecklist}
+        />
+
+
 
         <div className="border-t pt-3">
           <h3 className="font-medium mb-2 flex items-center gap-2">

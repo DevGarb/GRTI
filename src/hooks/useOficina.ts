@@ -275,3 +275,69 @@ export function useServiceOrderDetails(serviceOrderId: string | null) {
 
   return { parts, photos, addPart, updatePart, removePart, uploadPhoto, removePhoto, refetch: fetch };
 }
+
+export interface ServiceChecklistItem {
+  id: string;
+  organization_id: string;
+  service_order_id: string;
+  label: string;
+  position: number;
+  done: boolean;
+  done_at: string | null;
+  done_by: string | null;
+}
+
+/** Checklist de serviço das OS da organização, agrupado por OS. */
+export function useServiceChecklists() {
+  const { profile, user } = useAuth();
+  const [byOs, setByOs] = useState<Record<string, ServiceChecklistItem[]>>({});
+
+  const fetch = useCallback(async () => {
+    if (!profile?.organization_id) return;
+    const { data } = await supabase
+      .from("op_service_order_checklist")
+      .select("*")
+      .eq("organization_id", profile.organization_id)
+      .order("position");
+    const map: Record<string, ServiceChecklistItem[]> = {};
+    ((data || []) as ServiceChecklistItem[]).forEach((r) => { (map[r.service_order_id] ||= []).push(r); });
+    setByOs(map);
+  }, [profile?.organization_id]);
+  useEffect(() => { fetch(); }, [fetch]);
+
+  const toggle = async (item: ServiceChecklistItem, done?: boolean) => {
+    const next = done ?? !item.done;
+    const { error } = await supabase.from("op_service_order_checklist").update({
+      done: next,
+      done_at: next ? new Date().toISOString() : null,
+      done_by: next ? user?.id || null : null,
+    }).eq("id", item.id);
+    if (error) toast.error(error.message); else fetch();
+  };
+
+  /** Marca (por rótulo) um item de uma OS como concluído, se existir e ainda não estiver. */
+  const markLabelDone = async (serviceOrderId: string, label: string) => {
+    const item = (byOs[serviceOrderId] || []).find((i) => i.label === label);
+    if (!item || item.done) return;
+    await toggle(item, true);
+  };
+
+  const addItem = async (serviceOrderId: string, label: string) => {
+    if (!profile?.organization_id || !label.trim()) return;
+    const list = byOs[serviceOrderId] || [];
+    const { error } = await supabase.from("op_service_order_checklist").insert({
+      organization_id: profile.organization_id,
+      service_order_id: serviceOrderId,
+      label: label.trim(),
+      position: (list[list.length - 1]?.position ?? 0) + 1,
+    });
+    if (error) toast.error(error.message); else fetch();
+  };
+
+  const removeItem = async (id: string) => {
+    const { error } = await supabase.from("op_service_order_checklist").delete().eq("id", id);
+    if (error) toast.error(error.message); else fetch();
+  };
+
+  return { byOs, toggle, markLabelDone, addItem, removeItem, refetch: fetch };
+}

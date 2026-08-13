@@ -139,9 +139,16 @@ export default function OpOficinaAcompanhamento() {
                     <div className="text-xs text-muted-foreground">
                       {stageInfo(os.stage).label} · {mechName(os.mechanic_id)}
                     </div>
+                    <OsProgressBar
+                      items={checklist.byOs[os.id] || []}
+                      barClass={stageInfo(os.stage).bar}
+                      className="mt-1.5 max-w-sm"
+                      compact
+                    />
                     {os.supervisor_alert && os.supervisor_alert_note && (
                       <div className="text-xs text-amber-800 mt-1 line-clamp-2">{os.supervisor_alert_note}</div>
                     )}
+
                   </div>
                   <ArrowRight className="h-4 w-4 text-muted-foreground shrink-0" />
                 </button>

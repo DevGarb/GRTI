@@ -85,3 +85,33 @@ export function osSlaInfo(o: { opened_at: string; finished_at?: string | null; d
       : "bg-rose-500/15 text-rose-700 dark:text-rose-300",
   };
 }
+
+/* ---------- Checklist de serviço (por OS) ---------- */
+
+/** Itens padrão do checklist de serviço, na mesma ordem criada no banco. */
+export const SERVICE_CHECKLIST = [
+  "Orçamento aprovado",
+  "Peças recebidas",
+  "Desmontagem",
+  "Desempeno / Chassi",
+  "Pintura",
+  "Pré-montagem",
+  "Montagem final",
+  "Revisão / Teste",
+] as const;
+
+export const CHECKLIST_PARTS_LABEL = "Peças recebidas";
+
+/** Percentual de conclusão do checklist (0-100). */
+export function checklistProgress(items: { done: boolean }[]) {
+  if (!items.length) return { done: 0, total: 0, percent: 0 };
+  const done = items.filter((i) => i.done).length;
+  return { done, total: items.length, percent: Math.round((done / items.length) * 100) };
+}
+
+/** Data máxima de entrega a partir da chegada das peças (chegada + SLA_PECAS). */
+export function maxDeadlineFrom(dateISO: string) {
+  const d = new Date(`${dateISO}T12:00:00`);
+  d.setDate(d.getDate() + SLA_PECAS);
+  return d.toISOString().slice(0, 10);
+}
