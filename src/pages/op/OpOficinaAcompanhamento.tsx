@@ -21,6 +21,7 @@ function isActive(o: ServiceOrder) {
 export default function OpOficinaAcompanhamento() {
   const navigate = useNavigate();
   const { items, partsCountByOs } = useServiceOrders();
+  const checklist = useServiceChecklists();
   const { items: mechanics } = useMechanics();
   const { items: companies } = useCompanies();
 
