@@ -6,6 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { formatDateBR } from "@/lib/dateFormat";
 import { formatTicketNumber } from "@/lib/ticketNumber";
+import { RefreshCw } from "lucide-react";
 
 const COLUMNS = [
   { id: "Aberto", label: "Aberto", color: "bg-red-500" },
@@ -138,6 +139,15 @@ export default function KanbanBoard({ tickets, onSelect }: KanbanBoardProps) {
                           </p>
                           <div className="flex items-center gap-1.5 flex-wrap">
                             <PriorityBadge priority={ticket.priority} />
+                            {(ticket.reworkCount || 0) > 0 && (
+                              <span
+                                title={`Retrabalho (${ticket.reworkCount}x)`}
+                                className="inline-flex items-center gap-1 rounded-full border border-orange-200 bg-orange-100 px-1.5 py-0.5 text-[10px] font-semibold text-orange-700 dark:border-orange-800 dark:bg-orange-900/30 dark:text-orange-400"
+                              >
+                                <RefreshCw className="h-2.5 w-2.5" />
+                                Retrabalho {ticket.reworkCount}x
+                              </span>
+                            )}
                           </div>
                           <p className="text-[11px] text-muted-foreground mt-2 truncate">
                             {ticket.creatorProfile?.full_name || "—"}

@@ -69,7 +69,7 @@ export default function ChamadosAbertos() {
         ...t,
         assignedProfile: t.assigned_to ? { full_name: profileMap.get(t.assigned_to) || "" } : null,
         creatorProfile: { full_name: profileMap.get(t.created_by) || "" },
-        reworkCount: 0,
+        reworkCount: (t as any).rework_count ?? 0,
       })) as Ticket[];
     },
   });
@@ -97,7 +97,7 @@ export default function ChamadosAbertos() {
           ...data,
           assignedProfile: null,
           creatorProfile: { full_name: map.get(data.created_by) || "" },
-          reworkCount: 0,
+          reworkCount: (data as any).rework_count ?? 0,
         } as Ticket);
       }
       setSearchParams({}, { replace: true });
