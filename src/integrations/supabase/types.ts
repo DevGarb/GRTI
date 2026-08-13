@@ -3355,6 +3355,7 @@ export type Database = {
           picked_at: string | null
           priority: string
           project_id: string | null
+          rework_count: number
           sector: string | null
           sla_deadline: string | null
           sprint_id: string | null
@@ -3384,6 +3385,7 @@ export type Database = {
           picked_at?: string | null
           priority?: string
           project_id?: string | null
+          rework_count?: number
           sector?: string | null
           sla_deadline?: string | null
           sprint_id?: string | null
@@ -3413,6 +3415,7 @@ export type Database = {
           picked_at?: string | null
           priority?: string
           project_id?: string | null
+          rework_count?: number
           sector?: string | null
           sla_deadline?: string | null
           sprint_id?: string | null
