@@ -48,7 +48,7 @@ export function TicketModalProvider({ children }: { children: ReactNode }) {
         ...data,
         assignedProfile: data.assigned_to ? { full_name: profileMap.get(data.assigned_to) || "" } : null,
         creatorProfile: { full_name: profileMap.get(data.created_by) || "" },
-        reworkCount: 0,
+        reworkCount: (data as any).rework_count ?? 0,
       } as Ticket);
       setLoading(false);
     })();
