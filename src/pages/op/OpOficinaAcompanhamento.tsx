@@ -2,7 +2,8 @@ import { useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { AlertTriangle, ArrowRight, ShoppingCart, Gauge } from "lucide-react";
 import OficinaNav from "@/pages/op/OficinaNav";
-import { useServiceOrders, useMechanics, type ServiceOrder } from "@/hooks/useOficina";
+import { useServiceOrders, useServiceChecklists, useMechanics, type ServiceOrder } from "@/hooks/useOficina";
+import OsProgressBar from "@/components/operacional/OsProgressBar";
 import { useCompanies } from "@/hooks/useOperacional";
 import { cn } from "@/lib/utils";
 import {
@@ -20,6 +21,7 @@ function isActive(o: ServiceOrder) {
 export default function OpOficinaAcompanhamento() {
   const navigate = useNavigate();
   const { items, partsCountByOs } = useServiceOrders();
+  const checklist = useServiceChecklists();
   const { items: mechanics } = useMechanics();
   const { items: companies } = useCompanies();
 
@@ -139,9 +141,16 @@ export default function OpOficinaAcompanhamento() {
                     <div className="text-xs text-muted-foreground">
                       {stageInfo(os.stage).label} · {mechName(os.mechanic_id)}
                     </div>
+                    <OsProgressBar
+                      items={checklist.byOs[os.id] || []}
+                      barClass={stageInfo(os.stage).bar}
+                      className="mt-1.5 max-w-sm"
+                      compact
+                    />
                     {os.supervisor_alert && os.supervisor_alert_note && (
                       <div className="text-xs text-amber-800 mt-1 line-clamp-2">{os.supervisor_alert_note}</div>
                     )}
+
                   </div>
                   <ArrowRight className="h-4 w-4 text-muted-foreground shrink-0" />
                 </button>

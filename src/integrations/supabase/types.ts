@@ -1956,6 +1956,50 @@ export type Database = {
         }
         Relationships: []
       }
+      op_service_order_checklist: {
+        Row: {
+          created_at: string
+          done: boolean
+          done_at: string | null
+          done_by: string | null
+          id: string
+          label: string
+          organization_id: string
+          position: number
+          service_order_id: string
+        }
+        Insert: {
+          created_at?: string
+          done?: boolean
+          done_at?: string | null
+          done_by?: string | null
+          id?: string
+          label: string
+          organization_id: string
+          position?: number
+          service_order_id: string
+        }
+        Update: {
+          created_at?: string
+          done?: boolean
+          done_at?: string | null
+          done_by?: string | null
+          id?: string
+          label?: string
+          organization_id?: string
+          position?: number
+          service_order_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "op_service_order_checklist_service_order_id_fkey"
+            columns: ["service_order_id"]
+            isOneToOne: false
+            referencedRelation: "op_service_orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       op_service_order_parts: {
         Row: {
           created_at: string

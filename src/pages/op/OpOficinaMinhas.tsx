@@ -9,7 +9,9 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useServiceOrders, type ServiceOrder, type ServiceOrderPhoto } from "@/hooks/useOficina";
+import { useServiceOrders, useServiceChecklists, type ServiceOrder, type ServiceOrderPhoto } from "@/hooks/useOficina";
+import OsProgressBar from "@/components/operacional/OsProgressBar";
+import OsChecklist from "@/components/operacional/OsChecklist";
 import { useCompanies } from "@/hooks/useOperacional";
 import { useOficinaProfile } from "@/contexts/OficinaProfileContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -36,6 +38,7 @@ export default function OpOficinaMinhas() {
   const { profile } = useOficinaProfile();
   const { user } = useAuth();
   const { items, partsByOs, update, add, refetch } = useServiceOrders();
+  const checklist = useServiceChecklists();
   const { items: companies } = useCompanies();
   const [tab, setTab] = useState("servicos");
   const [expanded, setExpanded] = useState<string | null>(null);
@@ -397,7 +400,9 @@ export default function OpOficinaMinhas() {
                       <div className="text-sm text-muted-foreground mt-0.5">
                         {[o.vehicle_model, (o as any).vehicle_color, (o as any).vehicle_year].filter(Boolean).join(" · ") || "—"}
                       </div>
+                      <OsProgressBar items={checklist.byOs[o.id] || []} barClass={st.bar} className="mt-2 max-w-xs" compact />
                     </div>
+
                     {open ? <ChevronUp className="h-5 w-5 text-muted-foreground" /> : <ChevronDown className="h-5 w-5 text-muted-foreground" />}
                   </button>
 
@@ -459,6 +464,16 @@ export default function OpOficinaMinhas() {
                           <span className="text-muted-foreground">{o.diagnosis}</span>
                         </div>
                       )}
+
+                      <OsChecklist
+                        items={checklist.byOs[o.id] || []}
+                        barClass={st.bar}
+                        onToggle={checklist.toggle}
+                        onAdd={(label) => checklist.addItem(o.id, label)}
+                        onRemove={checklist.removeItem}
+                      />
+
+
 
                       <div className="border rounded-md p-3 bg-muted/30">
                         <div className="text-sm font-medium flex items-center justify-between gap-2 mb-2">
