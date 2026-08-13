@@ -2,7 +2,8 @@ import { useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { AlertTriangle, ArrowRight, ShoppingCart, Gauge } from "lucide-react";
 import OficinaNav from "@/pages/op/OficinaNav";
-import { useServiceOrders, useMechanics, type ServiceOrder } from "@/hooks/useOficina";
+import { useServiceOrders, useServiceChecklists, useMechanics, type ServiceOrder } from "@/hooks/useOficina";
+import OsProgressBar from "@/components/operacional/OsProgressBar";
 import { useCompanies } from "@/hooks/useOperacional";
 import { cn } from "@/lib/utils";
 import {
