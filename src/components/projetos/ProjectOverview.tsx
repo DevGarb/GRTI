@@ -1,4 +1,4 @@
-import { Plus, ArrowRight, Ticket, ListTodo, Layers, TrendingUp, User, Users, CheckCircle2 } from "lucide-react";
+import { Plus, ArrowRight, ListTodo, Layers, TrendingUp, User, Users, CheckCircle2 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -138,102 +138,112 @@ export default function ProjectOverview({ project, sprints, onAddToActive, onCre
       {/* KPIs */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <KpiCard
-          icon={Ticket}
-          label="Chamados"
-          value={totalTickets}
-          hint={`${completedTickets} concluídos`}
-          accent="bg-blue-500/15 text-blue-600 dark:text-blue-300"
+          icon={TrendingUp}
+          label="Progresso do projeto"
+          value={`${delivery?.pctItems ?? 0}%`}
+          hint={
+            <div className="mt-1">
+              <Progress value={delivery?.pctItems ?? 0} className="h-1.5 [&>div]:bg-emerald-500" />
+              <div className="mt-1">
+                {delivery?.doneTasks ?? 0}/{delivery?.totalTasks ?? 0} itens concluídos
+              </div>
+            </div>
+          }
+          accent="bg-emerald-500/15 text-emerald-600 dark:text-emerald-300"
         />
         <KpiCard
           icon={ListTodo}
-          label="Tarefas"
-          value={totalTasks}
-          hint={`${completedTasks} concluídas`}
+          label="Backlog"
+          value={delivery?.totalTasks ?? totalTasks}
+          hint={`${delivery?.doneTasks ?? 0} concluídos · ${delivery?.inDevTasks ?? 0} em dev · ${delivery?.pendingTasks ?? 0} pendentes`}
           accent="bg-purple-500/15 text-purple-600 dark:text-purple-300"
         />
         <KpiCard
           icon={Layers}
           label="Sprints"
           value={totalSprints}
-          hint={`${sprintsByStatus.ativa} ativa · ${sprintsByStatus.planejada} planejada · ${sprintsByStatus.concluida} concluída`}
+          hint={`${sprintsByStatus.ativa} ativas · ${sprintsByStatus.planejada} planejadas · ${sprintsByStatus.concluida} concluídas (${sprintProgressPct}%)`}
           accent="bg-amber-500/15 text-amber-600 dark:text-amber-300"
         />
         <KpiCard
-          icon={TrendingUp}
-          label="Progresso por sprints"
-          value={`${sprintProgressPct}%`}
+          icon={CheckCircle2}
+          label="Pontos entregues"
+          value={`${delivery?.donePoints ?? 0}/${delivery?.totalPoints ?? 0}`}
           hint={
             <div className="mt-1">
-              <Progress value={sprintProgressPct} className="h-1.5 [&>div]:bg-emerald-500" />
-              <div className="mt-1">
-                {sprintsByStatus.concluida}/{totalSprints} sprints concluídas · {doneItems}/{totalItems} itens
-              </div>
+              <Progress value={delivery?.pctPoints ?? 0} className="h-1.5 [&>div]:bg-blue-500" />
+              <div className="mt-1">{delivery?.pctPoints ?? 0}% dos story points</div>
             </div>
           }
-          accent="bg-emerald-500/15 text-emerald-600 dark:text-emerald-300"
+          accent="bg-blue-500/15 text-blue-600 dark:text-blue-300"
         />
       </div>
 
-      {/* Conclusão do projeto + entregas por desenvolvedor */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-        <div className="card-elevated p-5">
-          <div className="flex items-center gap-2 mb-3">
-            <span className="h-7 w-7 rounded-md flex items-center justify-center bg-emerald-500/15 text-emerald-600 dark:text-emerald-300">
-              <CheckCircle2 className="h-3.5 w-3.5" />
+      {/* Entregas por desenvolvedor */}
+      <div className="card-elevated p-5">
+        <div className="flex items-center gap-2 mb-4">
+          <span className="h-7 w-7 rounded-md flex items-center justify-center bg-indigo-500/15 text-indigo-600 dark:text-indigo-300">
+            <Users className="h-3.5 w-3.5" />
+          </span>
+          <h4 className="text-sm font-semibold">Entregas por desenvolvedor</h4>
+          {(delivery?.byDev.length ?? 0) > 0 && (
+            <span className="text-[11px] text-muted-foreground ml-auto">
+              {delivery!.byDev.length} {delivery!.byDev.length === 1 ? "pessoa" : "pessoas"} ·{" "}
+              {delivery!.doneTasks} itens · {delivery!.donePoints} pts
             </span>
-            <h4 className="text-sm font-semibold">Conclusão do projeto</h4>
-          </div>
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <div className="text-3xl font-semibold leading-none">{delivery?.pctItems ?? 0}%</div>
-              <div className="text-[11px] text-muted-foreground mt-1">
-                por itens · {delivery?.doneTasks ?? 0}/{delivery?.totalTasks ?? 0} backlogs
-              </div>
-            </div>
-            <div>
-              <div className="text-3xl font-semibold leading-none">{delivery?.pctPoints ?? 0}%</div>
-              <div className="text-[11px] text-muted-foreground mt-1">
-                por pontos · {delivery?.donePoints ?? 0}/{delivery?.totalPoints ?? 0} pts
-              </div>
-            </div>
-          </div>
-          <Progress value={delivery?.pctItems ?? 0} className="h-2 mt-4 [&>div]:bg-emerald-500" />
+          )}
         </div>
-
-        <div className="card-elevated p-5">
-          <div className="flex items-center gap-2 mb-3">
-            <span className="h-7 w-7 rounded-md flex items-center justify-center bg-indigo-500/15 text-indigo-600 dark:text-indigo-300">
-              <Users className="h-3.5 w-3.5" />
-            </span>
-            <h4 className="text-sm font-semibold">Entregas por desenvolvedor</h4>
-          </div>
-          {(delivery?.byDev.length ?? 0) === 0 ? (
-            <p className="text-xs text-muted-foreground">Nenhum backlog concluído ainda.</p>
-          ) : (
-            <div className="space-y-2.5">
-              {delivery!.byDev.map((d) => (
-                <div key={d.userId ?? "none"} className="flex items-center gap-3">
+        {(delivery?.byDev.length ?? 0) === 0 ? (
+          <p className="text-xs text-muted-foreground">Nenhum backlog concluído ainda.</p>
+        ) : (
+          <div className="space-y-1">
+            <div className="hidden md:grid grid-cols-12 gap-3 px-2 pb-2 text-[10px] uppercase tracking-wide text-muted-foreground border-b">
+              <div className="col-span-4">Desenvolvedor</div>
+              <div className="col-span-2 text-right">Entregues</div>
+              <div className="col-span-3">Participação</div>
+              <div className="col-span-1 text-right">Em dev</div>
+              <div className="col-span-2 text-right">Última / Lead</div>
+            </div>
+            {delivery!.byDev.map((d) => (
+              <div
+                key={d.userId ?? "none"}
+                className="grid grid-cols-2 md:grid-cols-12 gap-3 items-center px-2 py-2.5 rounded-md hover:bg-muted/50 transition-colors"
+              >
+                <div className="col-span-2 md:col-span-4 flex items-center gap-2 min-w-0">
                   <span className="h-7 w-7 shrink-0 rounded-full bg-primary/10 text-primary text-[11px] font-semibold flex items-center justify-center">
                     {(d.name.trim().charAt(0) || "?").toUpperCase()}
                   </span>
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-center justify-between gap-2 text-xs">
-                      <span className="truncate font-medium">{d.name}</span>
-                      <span className="text-muted-foreground shrink-0">
-                        {d.items} {d.items === 1 ? "backlog" : "backlogs"} · {d.points} pts
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-2 mt-1">
-                      <Progress value={d.pctItems} className="h-1.5 flex-1 [&>div]:bg-indigo-500" />
-                      <span className="text-[10px] text-muted-foreground w-9 text-right">{d.pctItems}%</span>
-                    </div>
-                  </div>
+                  <span className="truncate text-xs font-medium">{d.name}</span>
                 </div>
-              ))}
-            </div>
-          )}
-        </div>
+                <div className="md:col-span-2 md:text-right text-xs">
+                  <span className="font-semibold">{d.items}</span>{" "}
+                  <span className="text-muted-foreground">itens · {d.points} pts</span>
+                </div>
+                <div className="col-span-2 md:col-span-3 flex items-center gap-2">
+                  <Progress value={d.pctItems} className="h-1.5 flex-1 [&>div]:bg-indigo-500" />
+                  <span className="text-[10px] text-muted-foreground w-16 text-right shrink-0">
+                    {d.pctItems}% · {d.pctPoints}% pts
+                  </span>
+                </div>
+                <div className="md:col-span-1 md:text-right text-xs">
+                  {d.inProgress > 0 ? (
+                    <Badge className="bg-blue-500/20 text-blue-700 dark:text-blue-300 text-[10px]">
+                      {d.inProgress}
+                    </Badge>
+                  ) : (
+                    <span className="text-muted-foreground">—</span>
+                  )}
+                </div>
+                <div className="md:col-span-2 md:text-right text-[11px] text-muted-foreground">
+                  {d.lastDeliveryAt ? formatDateBR(d.lastDeliveryAt) : "—"}
+                  {d.avgLeadDays != null && <> · {d.avgLeadDays}d</>}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
+
 
       {/* Sprint ativa */}
       {activeSprint ? (
@@ -295,8 +305,9 @@ export default function ProjectOverview({ project, sprints, onAddToActive, onCre
       )}
 
       {/* Mini-dashboards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+      <div className={cn("grid gap-3", totalTickets > 0 ? "grid-cols-1 md:grid-cols-2" : "grid-cols-1")}>
         {/* Status dos chamados */}
+        {totalTickets > 0 && (
         <div className="card-elevated p-5">
           <h4 className="text-sm font-semibold mb-3">Status dos chamados</h4>
           {statusEntries.length === 0 ? (
@@ -325,6 +336,7 @@ export default function ProjectOverview({ project, sprints, onAddToActive, onCre
             </div>
           )}
         </div>
+        )}
 
         {/* Distribuição por sprint */}
         <div className="card-elevated p-5">
