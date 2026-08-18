@@ -14,6 +14,7 @@ interface Props {
   left: Metric;
   right: Metric;
   code?: string;
+  className?: string;
 }
 
 function Half({ m }: { m: Metric }) {
@@ -46,10 +47,10 @@ function Half({ m }: { m: Metric }) {
   );
 }
 
-export function DualKpiTile({ left, right, code }: Props) {
+export function DualKpiTile({ left, right, code, className }: Props) {
   const color = `hsl(${accentVar[left.accent]})`;
   return (
-    <BentoTile accent={left.accent} grid>
+    <BentoTile accent={left.accent} grid className={className}>
       {code && (
         <span className="absolute right-0 top-0 font-mono-tech text-[10px] text-[hsl(var(--tv-text-mute))] tracking-widest">
           {code}

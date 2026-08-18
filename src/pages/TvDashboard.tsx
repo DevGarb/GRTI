@@ -9,6 +9,8 @@ import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { computeOpStatus, opStatusLabel } from "@/lib/opStatus";
 import { DailyKpiTile } from "@/components/tv/DailyKpiTile";
+import { DualKpiTile } from "@/components/tv/DualKpiTile";
+import { TeamStatusPanel, type TeamMemberStatus } from "@/components/tv/TeamStatusPanel";
 import { TodayTicket } from "@/components/tv/TodayTimelinePanel";
 import { TodayAgendaPanel, computeAgendaRange, type AgendaFilter } from "@/components/tv/TodayAgendaPanel";
 import { FunnelStrip } from "@/components/tv/FunnelStrip";
@@ -47,6 +49,7 @@ interface TvData {
     first_response_min: number; aging_min: number;
   };
   ranking_today: Array<{ id: string; name: string; fechados: number }>;
+  team_status?: TeamMemberStatus[];
   today_tickets: TodayTicket[];
   sla_alerts: Array<{ id: string; sla: string }>;
   preventivas_month: { total: number; feitas: number; pendentes: number; atrasadas: number };
@@ -368,6 +371,7 @@ export default function TvDashboard() {
           {/* Row 1: KPIs do dia — full width */}
           <section className="grid grid-cols-2 xl:grid-cols-4 gap-3">
             <DualKpiTile
+              className="col-span-2 xl:col-span-2"
               code="01"
               left={{ label: "Abertos Hoje", value: d.kpis.opened_today, icon: Inbox, accent: "blue", sub: "Chamados recebidos" }}
               right={{ label: "Fechados Hoje", value: d.kpis.closed_today, icon: CheckCircle2, accent: "cyan", sub: "Produtividade do dia" }}
