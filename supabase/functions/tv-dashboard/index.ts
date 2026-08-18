@@ -362,10 +362,11 @@ Deno.serve(async (req) => {
       projects_in_dev: number;
       closed_titles: string[];
       in_progress_titles: string[];
+      unstarted_titles: string[];
       project_titles: string[];
     };
     const teamAgg = new Map<string, TeamAgg>();
-    for (const id of techIds) teamAgg.set(id, { closed_today: 0, in_progress: 0, unstarted: 0, projects_in_dev: 0, closed_titles: [], in_progress_titles: [], project_titles: [] });
+    for (const id of techIds) teamAgg.set(id, { closed_today: 0, in_progress: 0, unstarted: 0, projects_in_dev: 0, closed_titles: [], in_progress_titles: [], unstarted_titles: [], project_titles: [] });
     for (const t of list) {
       if (!t.assigned_to) continue;
       const agg = teamAgg.get(t.assigned_to);
@@ -381,7 +382,10 @@ Deno.serve(async (req) => {
         agg.in_progress++;
         if (agg.in_progress_titles.length < 12) agg.in_progress_titles.push(t.title ?? "—");
       }
-      if (t.status === "Aberto") agg.unstarted++;
+      if (t.status === "Aberto") {
+        agg.unstarted++;
+        if (agg.unstarted_titles.length < 12) agg.unstarted_titles.push(t.title ?? "—");
+      }
     }
     for (const task of (devTasks ?? []) as any[]) {
       const owner = task.assignee_id ?? lastChangerOf.get(task.id);
@@ -404,6 +408,7 @@ Deno.serve(async (req) => {
           idle: a.in_progress === 0 && a.projects_in_dev === 0,
           closed_titles: a.closed_titles,
           in_progress_titles: a.in_progress_titles,
+          unstarted_titles: a.unstarted_titles,
           project_titles: a.project_titles,
         };
       })

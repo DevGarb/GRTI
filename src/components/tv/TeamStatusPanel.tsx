@@ -13,6 +13,7 @@ export interface TeamMemberStatus {
   projects_in_dev?: number;
   closed_titles?: string[];
   in_progress_titles?: string[];
+  unstarted_titles?: string[];
   project_titles?: string[];
 }
 
@@ -108,7 +109,7 @@ function MemberCardBody({ m }: { m: TeamMemberStatus }) {
           <div>
             <div className="flex items-center gap-1.5 text-[hsl(var(--tv-text-dim))]">
               <Activity className="h-3.5 w-3.5" style={{ color: `hsl(${accentVar.amber})` }} />
-              <span className="text-[11px] uppercase tracking-[0.16em]">Em Andamento</span>
+              <span className="text-[11px] uppercase tracking-[0.16em]">Andamento</span>
             </div>
             <div
               className="font-tv-display font-semibold tabular-nums leading-none mt-1"
@@ -163,11 +164,19 @@ function MemberCard({ m }: { m: TeamMemberStatus }) {
           Icon={CheckCircle2}
         />
         <TitleList
-          label="Em andamento"
+          label="Andamento"
           color={`hsl(${accentVar.amber})`}
           titles={m.in_progress_titles ?? []}
           Icon={Activity}
         />
+        {(m.unstarted_titles?.length ?? 0) > 0 && (
+          <TitleList
+            label="Sem iniciar"
+            color={`hsl(var(--tv-accent-red))`}
+            titles={m.unstarted_titles ?? []}
+            Icon={AlertTriangle}
+          />
+        )}
         {(m.project_titles?.length ?? 0) > 0 && (
           <TitleList
             label="Em desenvolvimento"
