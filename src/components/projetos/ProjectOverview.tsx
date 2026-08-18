@@ -196,47 +196,46 @@ export default function ProjectOverview({ project, sprints, onAddToActive, onCre
         {(delivery?.byDev.length ?? 0) === 0 ? (
           <p className="text-xs text-muted-foreground">Nenhum backlog concluído ainda.</p>
         ) : (
-          <div className="space-y-1">
-            <div className="hidden md:grid grid-cols-12 gap-3 px-2 pb-2 text-[10px] uppercase tracking-wide text-muted-foreground border-b">
-              <div className="col-span-4">Desenvolvedor</div>
-              <div className="col-span-2 text-right">Entregues</div>
-              <div className="col-span-3">Participação</div>
-              <div className="col-span-1 text-right">Em dev</div>
-              <div className="col-span-2 text-right">Última / Lead</div>
-            </div>
+          <div className="space-y-2">
             {delivery!.byDev.map((d) => (
               <div
                 key={d.userId ?? "none"}
-                className="grid grid-cols-2 md:grid-cols-12 gap-3 items-center px-2 py-2.5 rounded-md hover:bg-muted/50 transition-colors"
+                className="flex flex-wrap items-center gap-3 px-3 py-2.5 rounded-md hover:bg-muted/50 transition-colors"
               >
-                <div className="col-span-2 md:col-span-4 flex items-center gap-2 min-w-0">
+                <div className="flex items-center gap-2 min-w-[140px] max-w-[180px]">
                   <span className="h-7 w-7 shrink-0 rounded-full bg-primary/10 text-primary text-[11px] font-semibold flex items-center justify-center">
                     {(d.name.trim().charAt(0) || "?").toUpperCase()}
                   </span>
                   <span className="truncate text-xs font-medium">{d.name}</span>
                 </div>
-                <div className="md:col-span-2 md:text-right text-xs">
+
+                <div className="text-xs whitespace-nowrap">
                   <span className="font-semibold">{d.items}</span>{" "}
-                  <span className="text-muted-foreground">itens · {d.points} pts</span>
+                  <span className="text-muted-foreground">itens</span>
                 </div>
-                <div className="col-span-2 md:col-span-3 flex items-center gap-2">
-                  <Progress value={d.pctItems} className="h-1.5 flex-1 [&>div]:bg-indigo-500" />
-                  <span className="text-[10px] text-muted-foreground w-16 text-right shrink-0">
-                    {d.pctItems}% · {d.pctPoints}% pts
+
+                <div className="flex items-center gap-2 min-w-[140px] flex-1">
+                  <Progress value={d.pctItemsOfTotal} className="h-1.5 flex-1 [&>div]:bg-indigo-500" />
+                  <span className="text-[10px] text-muted-foreground w-10 text-right shrink-0">
+                    {d.pctItemsOfTotal}%
                   </span>
                 </div>
-                <div className="md:col-span-1 md:text-right text-xs">
+
+                <div className="flex items-center gap-1.5 text-xs">
+                  <span className="text-muted-foreground">Em dev</span>
                   {d.inProgress > 0 ? (
-                    <Badge className="bg-blue-500/20 text-blue-700 dark:text-blue-300 text-[10px]">
+                    <Badge className="bg-blue-500/20 text-blue-700 dark:text-blue-300 text-[10px] px-1.5">
                       {d.inProgress}
                     </Badge>
                   ) : (
-                    <span className="text-muted-foreground">—</span>
+                    <Badge variant="outline" className="text-[10px] px-1.5 text-emerald-600 border-emerald-200">
+                      OK
+                    </Badge>
                   )}
                 </div>
-                <div className="md:col-span-2 md:text-right text-[11px] text-muted-foreground">
-                  {d.lastDeliveryAt ? formatDateBR(d.lastDeliveryAt) : "—"}
-                  {d.avgLeadDays != null && <> · {d.avgLeadDays}d</>}
+
+                <div className="text-[11px] text-muted-foreground whitespace-nowrap ml-auto">
+                  Último: {d.lastDeliveryAt ? formatDateBR(d.lastDeliveryAt) : "—"}
                 </div>
               </div>
             ))}
