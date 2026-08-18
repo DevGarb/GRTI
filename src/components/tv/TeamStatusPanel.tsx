@@ -1,6 +1,7 @@
 import { Users, CheckCircle2, Activity, AlertTriangle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { accentVar } from "./BentoTile";
+import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card";
 
 export interface TeamMemberStatus {
   id: string;
@@ -9,6 +10,8 @@ export interface TeamMemberStatus {
   in_progress: number;
   unstarted: number;
   idle: boolean;
+  closed_titles?: string[];
+  in_progress_titles?: string[];
 }
 
 function firstAndLast(name: string) {
@@ -17,7 +20,41 @@ function firstAndLast(name: string) {
   return `${parts[0]} ${parts[parts.length - 1]}`;
 }
 
-function MemberCard({ m }: { m: TeamMemberStatus }) {
+function TitleList({
+  label,
+  color,
+  titles,
+  Icon,
+}: {
+  label: string;
+  color: string;
+  titles: string[];
+  Icon: typeof CheckCircle2;
+}) {
+  return (
+    <div>
+      <div className="flex items-center gap-1.5 mb-1">
+        <Icon className="h-3.5 w-3.5" style={{ color }} />
+        <span className="text-[11px] uppercase tracking-[0.16em]" style={{ color }}>
+          {label} ({titles.length})
+        </span>
+      </div>
+      {titles.length ? (
+        <ul className="space-y-1">
+          {titles.map((t, i) => (
+            <li key={i} className="text-[13px] leading-snug text-[hsl(var(--tv-text))] line-clamp-2">
+              • {t}
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <p className="text-[12px] text-[hsl(var(--tv-text-dim))]">Nenhum chamado</p>
+      )}
+    </div>
+  );
+}
+
+function MemberCardBody({ m }: { m: TeamMemberStatus }) {
   return (
     <div
       className={cn(
@@ -87,6 +124,38 @@ function MemberCard({ m }: { m: TeamMemberStatus }) {
     </div>
   );
 }
+
+function MemberCard({ m }: { m: TeamMemberStatus }) {
+  return (
+    <HoverCard openDelay={120} closeDelay={80}>
+      <HoverCardTrigger asChild>
+        <div className="cursor-default">
+          <MemberCardBody m={m} />
+        </div>
+      </HoverCardTrigger>
+      <HoverCardContent
+        align="start"
+        className="w-80 space-y-3 border-[hsl(var(--tv-border))] bg-[hsl(var(--tv-surface))] text-[hsl(var(--tv-text))] shadow-2xl"
+      >
+        <div className="font-tv-display text-[15px] font-semibold">{m.name}</div>
+        <TitleList
+          label="Fechados hoje"
+          color={`hsl(${accentVar.cyan})`}
+          titles={m.closed_titles ?? []}
+          Icon={CheckCircle2}
+        />
+        <TitleList
+          label="Em andamento"
+          color={`hsl(${accentVar.amber})`}
+          titles={m.in_progress_titles ?? []}
+          Icon={Activity}
+        />
+      </HoverCardContent>
+    </HoverCard>
+  );
+}
+
+
 
 export function TeamStatusPanel({ team }: { team: TeamMemberStatus[] }) {
   if (!team?.length) return null;
