@@ -170,6 +170,15 @@ function MemberCard({ m }: { m: TeamMemberStatus }) {
           titles={m.in_progress_titles ?? []}
           Icon={Activity}
         />
+        {(m.project_titles?.length ?? 0) > 0 && (
+          <TitleList
+            label="Em desenvolvimento"
+            color={`hsl(${accentVar.violet})`}
+            titles={m.project_titles ?? []}
+            Icon={Code2}
+          />
+        )}
+
       </HoverCardContent>
     </HoverCard>
   );
