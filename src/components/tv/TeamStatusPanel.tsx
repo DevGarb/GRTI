@@ -18,7 +18,6 @@ function firstAndLast(name: string) {
 }
 
 function MemberCard({ m }: { m: TeamMemberStatus }) {
-  const red = `hsl(${accentVar.magenta})`;
   return (
     <div
       className={cn(
@@ -80,7 +79,7 @@ function MemberCard({ m }: { m: TeamMemberStatus }) {
         </div>
 
         {m.idle && m.unstarted > 0 && (
-          <div className="mt-3 text-[13px] text-[hsl(var(--tv-accent-red))] font-mono-tech" style={{ color: red && undefined }}>
+          <div className="mt-3 text-[13px] text-[hsl(var(--tv-accent-red))] font-mono-tech">
             {m.unstarted} chamado{m.unstarted > 1 ? "s" : ""} sem iniciar
           </div>
         )}
