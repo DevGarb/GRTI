@@ -18,6 +18,7 @@ export interface ProjectTask {
   updated_at: string;
   converted_to_ticket: boolean;
   priority: string | null;
+  credited_to: string | null;
 }
 
 export function useProjectTasks(projectId: string | undefined, sprintId?: string | null) {
@@ -58,6 +59,7 @@ export function useCreateProjectTask() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["project-tasks"] });
       queryClient.invalidateQueries({ queryKey: ["task-status-authors"] });
+      queryClient.invalidateQueries({ queryKey: ["project-delivery"] });
       queryClient.invalidateQueries({ queryKey: ["sprints"] });
       queryClient.invalidateQueries({ queryKey: ["projects"] });
       toast.success("Tarefa criada!");
@@ -77,6 +79,7 @@ export function useUpdateProjectTask() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["project-tasks"] });
       queryClient.invalidateQueries({ queryKey: ["task-status-authors"] });
+      queryClient.invalidateQueries({ queryKey: ["project-delivery"] });
       queryClient.invalidateQueries({ queryKey: ["sprints"] });
       queryClient.invalidateQueries({ queryKey: ["projects"] });
     },
@@ -94,6 +97,7 @@ export function useDeleteProjectTask() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["project-tasks"] });
       queryClient.invalidateQueries({ queryKey: ["task-status-authors"] });
+      queryClient.invalidateQueries({ queryKey: ["project-delivery"] });
       queryClient.invalidateQueries({ queryKey: ["sprints"] });
       queryClient.invalidateQueries({ queryKey: ["projects"] });
       toast.success("Tarefa excluída");
@@ -123,6 +127,7 @@ export function useConvertTaskToTicket() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["project-tasks"] });
       queryClient.invalidateQueries({ queryKey: ["task-status-authors"] });
+      queryClient.invalidateQueries({ queryKey: ["project-delivery"] });
       queryClient.invalidateQueries({ queryKey: ["sprints"] });
       toast.success("Flags aplicadas à tarefa");
     },
