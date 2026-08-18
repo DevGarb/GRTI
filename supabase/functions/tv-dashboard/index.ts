@@ -336,8 +336,15 @@ Deno.serve(async (req) => {
       .in("user_id", techIds.length ? techIds : ["00000000-0000-0000-0000-000000000000"]);
     const techNameOf = new Map((techProfiles ?? []).map((p: any) => [p.user_id, p.full_name]));
 
-    const teamAgg = new Map<string, { closed_today: number; in_progress: number; unstarted: number }>();
-    for (const id of techIds) teamAgg.set(id, { closed_today: 0, in_progress: 0, unstarted: 0 });
+    type TeamAgg = {
+      closed_today: number;
+      in_progress: number;
+      unstarted: number;
+      closed_titles: string[];
+      in_progress_titles: string[];
+    };
+    const teamAgg = new Map<string, TeamAgg>();
+    for (const id of techIds) teamAgg.set(id, { closed_today: 0, in_progress: 0, unstarted: 0, closed_titles: [], in_progress_titles: [] });
     for (const t of list) {
       if (!t.assigned_to) continue;
       const agg = teamAgg.get(t.assigned_to);
@@ -345,8 +352,14 @@ Deno.serve(async (req) => {
       const aad = t.aguardando_aprovacao_at ? new Date(t.aguardando_aprovacao_at) : null;
       const isFinal = t.status === "Fechado" || t.status === "Aprovado";
       const eff = aad ?? (isFinal && t.closed_at ? new Date(t.closed_at) : null);
-      if (eff && eff >= startToday) agg.closed_today++;
-      if (t.status === "Em Andamento") agg.in_progress++;
+      if (eff && eff >= startToday) {
+        agg.closed_today++;
+        if (agg.closed_titles.length < 12) agg.closed_titles.push(t.title ?? "—");
+      }
+      if (t.status === "Em Andamento") {
+        agg.in_progress++;
+        if (agg.in_progress_titles.length < 12) agg.in_progress_titles.push(t.title ?? "—");
+      }
       if (t.status === "Aberto") agg.unstarted++;
     }
     const team_status = techIds
@@ -359,6 +372,8 @@ Deno.serve(async (req) => {
           in_progress: a.in_progress,
           unstarted: a.unstarted,
           idle: a.in_progress === 0,
+          closed_titles: a.closed_titles,
+          in_progress_titles: a.in_progress_titles,
         };
       })
       .sort((a, b) => (a.idle === b.idle ? b.closed_today - a.closed_today : a.idle ? 1 : -1));
