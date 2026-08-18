@@ -16,6 +16,8 @@ import { GripVertical, AlertCircle } from "lucide-react";
 import { useState } from "react";
 import { BacklogItem, TASK_STATUSES, TASK_PRIORITIES, useUpdateBacklogItem } from "@/hooks/useBacklog";
 import ReworkDialog from "@/components/projetos/ReworkDialog";
+import TaskAuthorBadge from "@/components/projetos/TaskAuthorBadge";
+import { useTaskStatusAuthors, type TaskStatusAuthor } from "@/hooks/useTaskStatusAuthors";
 import { useAuth } from "@/contexts/AuthContext";
 
 const STATUS_STYLES: Record<string, { bg: string; ring: string; label: string }> = {
