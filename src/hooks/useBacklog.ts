@@ -76,6 +76,7 @@ export function useUpdateBacklogItem() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["backlog"] });
       qc.invalidateQueries({ queryKey: ["project-tasks"] });
+      qc.invalidateQueries({ queryKey: ["task-status-authors"] });
       qc.invalidateQueries({ queryKey: ["projects"] });
       qc.invalidateQueries({ queryKey: ["delivery-calendar"] });
     },
