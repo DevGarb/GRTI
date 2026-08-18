@@ -83,7 +83,7 @@ function TaskCard({ item, dragging, author }: { item: BacklogItem; dragging?: bo
   );
 }
 
-function DraggableCard({ item }: { item: BacklogItem }) {
+function DraggableCard({ item, author }: { item: BacklogItem; author?: TaskStatusAuthor }) {
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({ id: item.id });
   return (
     <div
@@ -92,12 +92,20 @@ function DraggableCard({ item }: { item: BacklogItem }) {
       {...listeners}
       className={`cursor-grab active:cursor-grabbing ${isDragging ? "opacity-30" : ""}`}
     >
-      <TaskCard item={item} />
+      <TaskCard item={item} author={author} />
     </div>
   );
 }
 
-function Column({ status, items }: { status: string; items: BacklogItem[] }) {
+function Column({
+  status,
+  items,
+  authors,
+}: {
+  status: string;
+  items: BacklogItem[];
+  authors?: Map<string, TaskStatusAuthor>;
+}) {
   const { setNodeRef, isOver } = useDroppable({ id: status });
   const style = STATUS_STYLES[status];
   const total = items.reduce((s, i) => s + (i.story_points || 0), 0);
@@ -116,7 +124,7 @@ function Column({ status, items }: { status: string; items: BacklogItem[] }) {
       </div>
       <div className="p-2 space-y-2 overflow-y-auto flex-1">
         {items.map((i) => (
-          <DraggableCard key={i.id} item={i} />
+          <DraggableCard key={i.id} item={i} author={authors?.get(i.id)} />
         ))}
         {items.length === 0 && (
           <div className="text-[11px] text-muted-foreground text-center py-6">Sem tarefas</div>
