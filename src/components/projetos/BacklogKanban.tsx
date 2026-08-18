@@ -33,7 +33,7 @@ const PRIO_COLORS: Record<string, string> = {
   Crítica: "bg-red-500/15 text-red-700",
 };
 
-function TaskCard({ item, dragging }: { item: BacklogItem; dragging?: boolean }) {
+function TaskCard({ item, dragging, author }: { item: BacklogItem; dragging?: boolean; author?: TaskStatusAuthor }) {
   const update = useUpdateBacklogItem();
   return (
     <div
@@ -44,6 +44,9 @@ function TaskCard({ item, dragging }: { item: BacklogItem; dragging?: boolean })
       <div className="flex items-start gap-1">
         <GripVertical className="h-3.5 w-3.5 mt-0.5 text-muted-foreground shrink-0" />
         <div className="font-medium leading-tight flex-1">{item.title}</div>
+        <div onPointerDown={(e) => e.stopPropagation()}>
+          <TaskAuthorBadge author={author} />
+        </div>
       </div>
       <div className="text-[10px] text-muted-foreground truncate pl-4">
         {item.project_name || "Projeto"} · {item.assignee_name || "Não atribuído"}
