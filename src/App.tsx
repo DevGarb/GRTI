@@ -66,6 +66,7 @@ import OficinaGuard from "@/pages/op/OficinaGuard";
 import OpOficinaMinhas from "@/pages/op/OpOficinaMinhas";
 import OpOficinaCompras from "@/pages/op/OpOficinaCompras";
 import OpOficinaAcompanhamento from "@/pages/op/OpOficinaAcompanhamento";
+import OpOficinaHistorico from "@/pages/op/OpOficinaHistorico";
 import OpOficinaPremiacoes from "@/pages/op/OpOficinaPremiacoes";
 import OpOficinaAlertas from "@/pages/op/OpOficinaAlertas";
 import { OficinaProfileProvider } from "@/contexts/OficinaProfileContext";
