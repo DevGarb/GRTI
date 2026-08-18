@@ -8,6 +8,8 @@ export interface DevDelivery {
   points: number;
   pctItems: number;
   pctPoints: number;
+  /** Percentual de itens concluídos pelo dev em relação ao total de itens do projeto. */
+  pctItemsOfTotal: number;
   /** Itens dessa pessoa atualmente em "Em Desenvolvimento". */
   inProgress: number;
   /** Data (ISO) da última conclusão creditada. */
@@ -147,6 +149,7 @@ export function useProjectDelivery(projectId: string | undefined) {
           points: v.points,
           pctItems: doneTasks > 0 ? Math.round((v.items / doneTasks) * 100) : 0,
           pctPoints: donePoints > 0 ? Math.round((v.points / donePoints) * 100) : 0,
+          pctItemsOfTotal: totalTasks > 0 ? Math.round((v.items / totalTasks) * 100) : 0,
           inProgress: v.inProgress,
           lastDeliveryAt: v.lastDeliveryAt,
           avgLeadDays:
