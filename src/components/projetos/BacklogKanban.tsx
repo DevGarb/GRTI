@@ -140,6 +140,7 @@ export default function BacklogKanban({ items }: { items: BacklogItem[] }) {
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }));
   const [activeId, setActiveId] = useState<string | null>(null);
   const [reworkPending, setReworkPending] = useState<{ task: BacklogItem; newStatus: string } | null>(null);
+  const { data: authors } = useTaskStatusAuthors(items.map((i) => i.id));
 
   const grouped = useMemo(() => {
     const g: Record<string, BacklogItem[]> = {};
@@ -179,7 +180,7 @@ export default function BacklogKanban({ items }: { items: BacklogItem[] }) {
       >
         <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-5">
           {TASK_STATUSES.map((s) => (
-            <Column key={s} status={s} items={grouped[s]} />
+            <Column key={s} status={s} items={grouped[s]} authors={authors} />
           ))}
         </div>
         <DragOverlay>{activeItem ? <TaskCard item={activeItem} dragging /> : null}</DragOverlay>
