@@ -3,6 +3,7 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { supabase } from "@/integrations/supabase/client";
 import { LogOut, Menu, Moon, Sun, HelpCircle, Repeat, Bell } from "lucide-react";
+import { toast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import OrgSwitcher from "@/components/OrgSwitcher";
 import { useAuth } from "@/contexts/AuthContext";
@@ -134,6 +135,23 @@ export default function AppLayout({ children }: AppLayoutProps) {
   const gerencialItems = visibleNavItems.filter((item) => item.section === "gerencial");
 
   const isChkOrg = orgSlug === "grcheck";
+
+  const openTvPanel = async () => {
+    try {
+      const { data, error } = await supabase.functions.invoke("get-tv-access");
+      if (error) throw error;
+      const slug = (data as any)?.slug || orgSlug;
+      if (!slug) throw new Error("Organização não encontrada");
+      const tvToken = (data as any)?.token;
+      const url = tvToken
+        ? `/tv/${slug}?token=${encodeURIComponent(tvToken)}`
+        : `/tv/${slug}`;
+      window.open(url, "_blank");
+    } catch (e: any) {
+      toast({ title: "Não foi possível abrir o Painel de TV", description: e?.message, variant: "destructive" });
+    }
+  };
+
   const renderNavItem = (item: MenuItem) => {
     const active = location.pathname === item.path;
     return (
@@ -142,7 +160,13 @@ export default function AppLayout({ children }: AppLayoutProps) {
           <TooltipTrigger asChild>
             <Link
               to={item.path}
-              onClick={() => setSidebarOpen(false)}
+              onClick={(e) => {
+                if (item.key === "painel-tv") {
+                  e.preventDefault();
+                  openTvPanel();
+                }
+                setSidebarOpen(false);
+              }}
               className={cn(
                 "relative flex items-center gap-3 px-3 py-2.5 rounded-lg text-[13px] font-medium transition-colors duration-150",
                 isChkOrg && "before:absolute before:left-0 before:top-1/2 before:-translate-y-1/2 before:h-0 before:w-[3px] before:rounded-full before:bg-sidebar-primary before:transition-all before:duration-200",
