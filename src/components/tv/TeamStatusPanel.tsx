@@ -134,8 +134,11 @@ function MemberCardBody({ m }: { m: TeamMemberStatus }) {
           )}
         </div>
 
-        {m.idle && m.unstarted > 0 && (
-          <div className="mt-2 text-[12px] text-[hsl(var(--tv-accent-red))] font-mono-tech">
+        {m.unstarted > 0 && (
+          <div
+            className="mt-2 text-[12px] font-mono-tech"
+            style={{ color: m.idle ? "hsl(var(--tv-accent-red))" : `hsl(${accentVar.amber})` }}
+          >
             {m.unstarted} chamado{m.unstarted > 1 ? "s" : ""} sem iniciar
           </div>
         )}
