@@ -16,6 +16,8 @@ import { GripVertical, AlertCircle } from "lucide-react";
 import { useState } from "react";
 import { BacklogItem, TASK_STATUSES, TASK_PRIORITIES, useUpdateBacklogItem } from "@/hooks/useBacklog";
 import ReworkDialog from "@/components/projetos/ReworkDialog";
+import TaskAuthorBadge from "@/components/projetos/TaskAuthorBadge";
+import { useTaskStatusAuthors, type TaskStatusAuthor } from "@/hooks/useTaskStatusAuthors";
 import { useAuth } from "@/contexts/AuthContext";
 
 const STATUS_STYLES: Record<string, { bg: string; ring: string; label: string }> = {
@@ -33,7 +35,7 @@ const PRIO_COLORS: Record<string, string> = {
   Crítica: "bg-red-500/15 text-red-700",
 };
 
-function TaskCard({ item, dragging }: { item: BacklogItem; dragging?: boolean }) {
+function TaskCard({ item, dragging, author }: { item: BacklogItem; dragging?: boolean; author?: TaskStatusAuthor }) {
   const update = useUpdateBacklogItem();
   return (
     <div
@@ -44,6 +46,9 @@ function TaskCard({ item, dragging }: { item: BacklogItem; dragging?: boolean })
       <div className="flex items-start gap-1">
         <GripVertical className="h-3.5 w-3.5 mt-0.5 text-muted-foreground shrink-0" />
         <div className="font-medium leading-tight flex-1">{item.title}</div>
+        <div onPointerDown={(e) => e.stopPropagation()}>
+          <TaskAuthorBadge author={author} />
+        </div>
       </div>
       <div className="text-[10px] text-muted-foreground truncate pl-4">
         {item.project_name || "Projeto"} · {item.assignee_name || "Não atribuído"}
@@ -78,7 +83,7 @@ function TaskCard({ item, dragging }: { item: BacklogItem; dragging?: boolean })
   );
 }
 
-function DraggableCard({ item }: { item: BacklogItem }) {
+function DraggableCard({ item, author }: { item: BacklogItem; author?: TaskStatusAuthor }) {
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({ id: item.id });
   return (
     <div
@@ -87,12 +92,20 @@ function DraggableCard({ item }: { item: BacklogItem }) {
       {...listeners}
       className={`cursor-grab active:cursor-grabbing ${isDragging ? "opacity-30" : ""}`}
     >
-      <TaskCard item={item} />
+      <TaskCard item={item} author={author} />
     </div>
   );
 }
 
-function Column({ status, items }: { status: string; items: BacklogItem[] }) {
+function Column({
+  status,
+  items,
+  authors,
+}: {
+  status: string;
+  items: BacklogItem[];
+  authors?: Map<string, TaskStatusAuthor>;
+}) {
   const { setNodeRef, isOver } = useDroppable({ id: status });
   const style = STATUS_STYLES[status];
   const total = items.reduce((s, i) => s + (i.story_points || 0), 0);
@@ -111,7 +124,7 @@ function Column({ status, items }: { status: string; items: BacklogItem[] }) {
       </div>
       <div className="p-2 space-y-2 overflow-y-auto flex-1">
         {items.map((i) => (
-          <DraggableCard key={i.id} item={i} />
+          <DraggableCard key={i.id} item={i} author={authors?.get(i.id)} />
         ))}
         {items.length === 0 && (
           <div className="text-[11px] text-muted-foreground text-center py-6">Sem tarefas</div>
@@ -127,6 +140,7 @@ export default function BacklogKanban({ items }: { items: BacklogItem[] }) {
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }));
   const [activeId, setActiveId] = useState<string | null>(null);
   const [reworkPending, setReworkPending] = useState<{ task: BacklogItem; newStatus: string } | null>(null);
+  const { data: authors } = useTaskStatusAuthors(items.map((i) => i.id));
 
   const grouped = useMemo(() => {
     const g: Record<string, BacklogItem[]> = {};
@@ -166,7 +180,7 @@ export default function BacklogKanban({ items }: { items: BacklogItem[] }) {
       >
         <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-5">
           {TASK_STATUSES.map((s) => (
-            <Column key={s} status={s} items={grouped[s]} />
+            <Column key={s} status={s} items={grouped[s]} authors={authors} />
           ))}
         </div>
         <DragOverlay>{activeItem ? <TaskCard item={activeItem} dragging /> : null}</DragOverlay>

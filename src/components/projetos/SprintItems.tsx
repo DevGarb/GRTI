@@ -18,6 +18,8 @@ import {
 } from "@/components/ui/dialog";
 import { Ticket as TicketIcon, ListTodo, Trash2, ExternalLink, ArrowRightCircle, Loader2 } from "lucide-react";
 import TaskDetailModal from "./TaskDetailModal";
+import TaskAuthorBadge from "./TaskAuthorBadge";
+import { useTaskStatusAuthors } from "@/hooks/useTaskStatusAuthors";
 
 interface Props {
   projectId: string;
@@ -42,6 +44,7 @@ export default function SprintItems({ projectId, sprintId }: Props) {
 
   const [detailTask, setDetailTask] = useState<ProjectTask | null>(null);
   const [confirmTask, setConfirmTask] = useState<ProjectTask | null>(null);
+  const { data: authors } = useTaskStatusAuthors(tasks.map((t) => t.id));
 
   const currentSprintName = confirmTask
     ? (confirmTask.sprint_id ? sprints.find((s) => s.id === confirmTask.sprint_id)?.name : "Backlog")
@@ -151,6 +154,7 @@ export default function SprintItems({ projectId, sprintId }: Props) {
               <div className="text-[11px] text-muted-foreground line-clamp-1">{task.description}</div>
             )}
           </button>
+          <TaskAuthorBadge author={authors?.get(task.id)} />
           <Select
             value={task.status}
             onValueChange={(v) => updateTask.mutate({ id: task.id, status: v })}

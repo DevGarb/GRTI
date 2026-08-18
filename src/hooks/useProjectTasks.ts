@@ -57,6 +57,7 @@ export function useCreateProjectTask() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["project-tasks"] });
+      queryClient.invalidateQueries({ queryKey: ["task-status-authors"] });
       queryClient.invalidateQueries({ queryKey: ["sprints"] });
       queryClient.invalidateQueries({ queryKey: ["projects"] });
       toast.success("Tarefa criada!");
@@ -75,6 +76,7 @@ export function useUpdateProjectTask() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["project-tasks"] });
+      queryClient.invalidateQueries({ queryKey: ["task-status-authors"] });
       queryClient.invalidateQueries({ queryKey: ["sprints"] });
       queryClient.invalidateQueries({ queryKey: ["projects"] });
     },
@@ -91,6 +93,7 @@ export function useDeleteProjectTask() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["project-tasks"] });
+      queryClient.invalidateQueries({ queryKey: ["task-status-authors"] });
       queryClient.invalidateQueries({ queryKey: ["sprints"] });
       queryClient.invalidateQueries({ queryKey: ["projects"] });
       toast.success("Tarefa excluída");
@@ -119,6 +122,7 @@ export function useConvertTaskToTicket() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["project-tasks"] });
+      queryClient.invalidateQueries({ queryKey: ["task-status-authors"] });
       queryClient.invalidateQueries({ queryKey: ["sprints"] });
       toast.success("Flags aplicadas à tarefa");
     },
