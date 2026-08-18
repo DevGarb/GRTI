@@ -193,14 +193,20 @@ Deno.serve(async (req) => {
         if (effectiveFinish >= startMonth && effectiveFinish < endMonth) closed_month++;
       }
 
-      // TMA = tempo corrido entre started_at e a finalização efetiva.
+      // TMA = tempo corrido entre started_at e a finalização efetiva,
+      // considerando apenas chamados abertos e finalizados no mesmo dia civil.
       const finished = finishedAt.get(t.id) ?? effectiveFinish;
       if (t.started_at && finished) {
-        const m = (finished.getTime() - new Date(t.started_at).getTime()) / 60000;
-        if (m > 0) {
-          tmaSum += m; tmaN++;
-          if (finished >= startMonth && finished < endMonth) { tmaMonthSum += m; tmaMonthN++; }
-          if (finished >= startToday) { tmaTodaySum += m; tmaTodayN++; }
+        const createdParts = wallPartsInTz(new Date(t.created_at));
+        const finishedParts = wallPartsInTz(finished);
+        const sameDay = createdParts.y === finishedParts.y && createdParts.m === finishedParts.m && createdParts.d === finishedParts.d;
+        if (sameDay) {
+          const m = (finished.getTime() - new Date(t.started_at).getTime()) / 60000;
+          if (m > 0) {
+            tmaSum += m; tmaN++;
+            if (finished >= startMonth && finished < endMonth) { tmaMonthSum += m; tmaMonthN++; }
+            if (finished >= startToday) { tmaTodaySum += m; tmaTodayN++; }
+          }
         }
       }
 
@@ -322,7 +328,7 @@ Deno.serve(async (req) => {
       .from("user_organization_roles")
       .select("user_id")
       .eq("organization_id", orgId)
-      .eq("role", "tecnico");
+      .in("role", ["tecnico", "desenvolvedor"]);
     const techIds = Array.from(new Set((techRoles ?? []).map((r: any) => r.user_id)));
     const { data: techProfiles } = await supabase
       .from("profiles")
