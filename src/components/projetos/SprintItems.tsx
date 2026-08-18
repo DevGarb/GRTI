@@ -44,6 +44,7 @@ export default function SprintItems({ projectId, sprintId }: Props) {
 
   const [detailTask, setDetailTask] = useState<ProjectTask | null>(null);
   const [confirmTask, setConfirmTask] = useState<ProjectTask | null>(null);
+  const { data: authors } = useTaskStatusAuthors(tasks.map((t) => t.id));
 
   const currentSprintName = confirmTask
     ? (confirmTask.sprint_id ? sprints.find((s) => s.id === confirmTask.sprint_id)?.name : "Backlog")
