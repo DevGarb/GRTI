@@ -51,11 +51,12 @@ function TitleList({
           ))}
         </ul>
       ) : (
-        <p className="text-[12px] text-[hsl(var(--tv-text-dim))]">Nenhum chamado</p>
+        <p className="text-[12px] text-[hsl(var(--tv-text-dim))]">Nenhum item</p>
       )}
     </div>
   );
 }
+
 
 function MemberCardBody({ m }: { m: TeamMemberStatus }) {
   return (
