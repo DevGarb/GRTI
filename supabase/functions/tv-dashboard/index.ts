@@ -336,15 +336,36 @@ Deno.serve(async (req) => {
       .in("user_id", techIds.length ? techIds : ["00000000-0000-0000-0000-000000000000"]);
     const techNameOf = new Map((techProfiles ?? []).map((p: any) => [p.user_id, p.full_name]));
 
+    // Demandas de projeto: tarefas em "Em Desenvolvimento" atribuídas ao dev
+    // (assignee_id quando existir, senão quem fez a última mudança de status)
+    const { data: devTasks } = await supabase
+      .from("project_tasks")
+      .select("id, title, assignee_id")
+      .eq("organization_id", orgId)
+      .eq("status", "Em Desenvolvimento");
+    const devTaskIds = (devTasks ?? []).map((t: any) => t.id);
+    const { data: devHist } = await supabase
+      .from("task_status_history")
+      .select("task_id, changed_by, changed_at")
+      .in("task_id", devTaskIds.length ? devTaskIds : ["00000000-0000-0000-0000-000000000000"])
+      .eq("new_status", "Em Desenvolvimento")
+      .order("changed_at", { ascending: true });
+    const lastChangerOf = new Map<string, string>();
+    for (const h of (devHist ?? []) as any[]) {
+      if (h.changed_by) lastChangerOf.set(h.task_id, h.changed_by);
+    }
+
     type TeamAgg = {
       closed_today: number;
       in_progress: number;
       unstarted: number;
+      projects_in_dev: number;
       closed_titles: string[];
       in_progress_titles: string[];
+      project_titles: string[];
     };
     const teamAgg = new Map<string, TeamAgg>();
-    for (const id of techIds) teamAgg.set(id, { closed_today: 0, in_progress: 0, unstarted: 0, closed_titles: [], in_progress_titles: [] });
+    for (const id of techIds) teamAgg.set(id, { closed_today: 0, in_progress: 0, unstarted: 0, projects_in_dev: 0, closed_titles: [], in_progress_titles: [], project_titles: [] });
     for (const t of list) {
       if (!t.assigned_to) continue;
       const agg = teamAgg.get(t.assigned_to);
@@ -362,6 +383,14 @@ Deno.serve(async (req) => {
       }
       if (t.status === "Aberto") agg.unstarted++;
     }
+    for (const task of (devTasks ?? []) as any[]) {
+      const owner = task.assignee_id ?? lastChangerOf.get(task.id);
+      if (!owner) continue;
+      const agg = teamAgg.get(owner);
+      if (!agg) continue;
+      agg.projects_in_dev++;
+      if (agg.project_titles.length < 12) agg.project_titles.push(task.title ?? "—");
+    }
     const team_status = techIds
       .map((id) => {
         const a = teamAgg.get(id)!;
@@ -371,12 +400,15 @@ Deno.serve(async (req) => {
           closed_today: a.closed_today,
           in_progress: a.in_progress,
           unstarted: a.unstarted,
-          idle: a.in_progress === 0,
+          projects_in_dev: a.projects_in_dev,
+          idle: a.in_progress === 0 && a.projects_in_dev === 0,
           closed_titles: a.closed_titles,
           in_progress_titles: a.in_progress_titles,
+          project_titles: a.project_titles,
         };
       })
       .sort((a, b) => (a.idle === b.idle ? b.closed_today - a.closed_today : a.idle ? 1 : -1));
+
 
 
     // SLA alerts
