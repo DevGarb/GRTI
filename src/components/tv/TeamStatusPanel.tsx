@@ -1,0 +1,113 @@
+import { Users, CheckCircle2, Activity, AlertTriangle } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { accentVar } from "./BentoTile";
+
+export interface TeamMemberStatus {
+  id: string;
+  name: string;
+  closed_today: number;
+  in_progress: number;
+  unstarted: number;
+  idle: boolean;
+}
+
+function firstAndLast(name: string) {
+  const parts = (name ?? "").trim().split(/\s+/);
+  if (parts.length <= 1) return name;
+  return `${parts[0]} ${parts[parts.length - 1]}`;
+}
+
+function MemberCard({ m }: { m: TeamMemberStatus }) {
+  const red = `hsl(${accentVar.magenta})`;
+  return (
+    <div
+      className={cn(
+        "relative overflow-hidden rounded-xl border p-4",
+        "bg-[hsl(var(--tv-surface))]",
+        m.idle
+          ? "border-[hsl(var(--tv-accent-red))] tv-idle-pulse"
+          : "border-[hsl(var(--tv-border))]",
+        "shadow-[0_1px_0_hsl(0_0%_100%/0.04)_inset,0_20px_40px_-24px_hsl(0_0%_0%/0.6)]",
+      )}
+    >
+      <div
+        className="absolute left-0 top-0 h-full w-[2px]"
+        style={{
+          background: `linear-gradient(180deg, hsl(var(${m.idle ? "--tv-accent-red" : "--tv-accent-cyan"})), transparent 70%)`,
+        }}
+      />
+      <div className="relative">
+        <div className="flex items-start justify-between gap-2">
+          <span
+            className="font-tv-display font-semibold leading-tight text-[hsl(var(--tv-text))] break-words"
+            style={{ fontSize: "1.5rem", lineHeight: 1.1 }}
+          >
+            {firstAndLast(m.name)}
+          </span>
+          {m.idle && (
+            <span className="shrink-0 flex items-center gap-1 rounded-md border border-[hsl(var(--tv-accent-red)/0.6)] bg-[hsl(var(--tv-accent-red)/0.12)] px-2 py-0.5 text-[11px] font-semibold uppercase tracking-widest text-[hsl(var(--tv-accent-red))]">
+              <AlertTriangle className="h-3.5 w-3.5" strokeWidth={2} />
+              Ocioso
+            </span>
+          )}
+        </div>
+
+        <div className="mt-4 flex items-end gap-6">
+          <div>
+            <div className="flex items-center gap-1.5 text-[hsl(var(--tv-text-dim))]">
+              <CheckCircle2 className="h-4 w-4" style={{ color: `hsl(${accentVar.cyan})` }} />
+              <span className="text-[12px] uppercase tracking-[0.16em]">Fechados</span>
+            </div>
+            <div
+              className="font-tv-display font-semibold tabular-nums leading-none mt-1"
+              style={{ fontSize: "2.25rem", color: `hsl(${accentVar.cyan})` }}
+            >
+              {m.closed_today}
+            </div>
+          </div>
+          <div>
+            <div className="flex items-center gap-1.5 text-[hsl(var(--tv-text-dim))]">
+              <Activity className="h-4 w-4" style={{ color: `hsl(${accentVar.amber})` }} />
+              <span className="text-[12px] uppercase tracking-[0.16em]">Em Andamento</span>
+            </div>
+            <div
+              className="font-tv-display font-semibold tabular-nums leading-none mt-1"
+              style={{ fontSize: "2.25rem", color: `hsl(${accentVar.amber})` }}
+            >
+              {m.in_progress}
+            </div>
+          </div>
+        </div>
+
+        {m.idle && m.unstarted > 0 && (
+          <div className="mt-3 text-[13px] text-[hsl(var(--tv-accent-red))] font-mono-tech" style={{ color: red && undefined }}>
+            {m.unstarted} chamado{m.unstarted > 1 ? "s" : ""} sem iniciar
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+export function TeamStatusPanel({ team }: { team: TeamMemberStatus[] }) {
+  if (!team?.length) return null;
+  const idleCount = team.filter(t => t.idle).length;
+  return (
+    <div>
+      <div className="flex items-center justify-between mb-3">
+        <div className="flex items-center gap-2">
+          <Users className="h-5 w-5" style={{ color: `hsl(${accentVar.cyan})` }} strokeWidth={1.75} />
+          <span className="text-[13px] uppercase tracking-[0.22em] text-[hsl(var(--tv-text))] font-semibold">
+            Equipe Agora
+          </span>
+        </div>
+        <span className="font-mono-tech text-[12px] text-[hsl(var(--tv-text-dim))] tracking-widest">
+          {team.length} TÉCNICOS · {idleCount} OCIOSO{idleCount === 1 ? "" : "S"}
+        </span>
+      </div>
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        {team.map(m => <MemberCard key={m.id} m={m} />)}
+      </div>
+    </div>
+  );
+}
