@@ -1,4 +1,4 @@
-import { Users, CheckCircle2, Activity, AlertTriangle } from "lucide-react";
+import { Users, CheckCircle2, Activity, AlertTriangle, Code2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { accentVar } from "./BentoTile";
 import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card";
@@ -10,9 +10,12 @@ export interface TeamMemberStatus {
   in_progress: number;
   unstarted: number;
   idle: boolean;
+  projects_in_dev?: number;
   closed_titles?: string[];
   in_progress_titles?: string[];
+  project_titles?: string[];
 }
+
 
 function firstAndLast(name: string) {
   const parts = (name ?? "").trim().split(/\s+/);
