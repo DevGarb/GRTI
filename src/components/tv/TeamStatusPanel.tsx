@@ -120,12 +120,12 @@ function MemberCardBody({ m }: { m: TeamMemberStatus }) {
           {(m.projects_in_dev ?? 0) > 0 && (
             <div>
               <div className="flex items-center gap-1.5 text-[hsl(var(--tv-text-dim))]">
-                <Code2 className="h-4 w-4" style={{ color: `hsl(${accentVar.violet ?? accentVar.cyan})` }} />
+                <Code2 className="h-4 w-4" style={{ color: `hsl(${accentVar.violet})` }} />
                 <span className="text-[12px] uppercase tracking-[0.16em]">Projetos</span>
               </div>
               <div
                 className="font-tv-display font-semibold tabular-nums leading-none mt-1"
-                style={{ fontSize: "2.25rem", color: `hsl(${accentVar.violet ?? accentVar.cyan})` }}
+                style={{ fontSize: "2.25rem", color: `hsl(${accentVar.violet})` }}
               >
                 {m.projects_in_dev}
               </div>
