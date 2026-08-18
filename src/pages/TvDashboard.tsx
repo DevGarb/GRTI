@@ -87,7 +87,7 @@ export default function TvDashboard() {
   const query = useQuery<TvData>({
     queryKey: ["tv-dashboard", orgSlug, token],
     enabled: !!orgSlug && !!token,
-    refetchInterval: 300_000,
+    refetchInterval: 60_000,
     refetchOnWindowFocus: false,
     retry: 1,
     queryFn: async () => {
@@ -103,7 +103,7 @@ export default function TvDashboard() {
   const agendaQuery = useQuery<TvData>({
     queryKey: ["tv-dashboard-agenda", orgSlug, token, agendaFilter.from, agendaFilter.to],
     enabled: !!orgSlug && !!token && agendaFilter.type !== "today",
-    refetchInterval: 300_000,
+    refetchInterval: 60_000,
     refetchOnWindowFocus: false,
     retry: 1,
     queryFn: async () => {
