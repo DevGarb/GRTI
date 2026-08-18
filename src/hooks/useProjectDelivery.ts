@@ -149,6 +149,7 @@ export function useProjectDelivery(projectId: string | undefined) {
           points: v.points,
           pctItems: doneTasks > 0 ? Math.round((v.items / doneTasks) * 100) : 0,
           pctPoints: donePoints > 0 ? Math.round((v.points / donePoints) * 100) : 0,
+          pctItemsOfTotal: totalTasks > 0 ? Math.round((v.items / totalTasks) * 100) : 0,
           inProgress: v.inProgress,
           lastDeliveryAt: v.lastDeliveryAt,
           avgLeadDays:
