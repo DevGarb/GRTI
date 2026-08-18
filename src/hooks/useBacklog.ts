@@ -17,6 +17,7 @@ export interface BacklogItem {
   planned_date: string | null;
   delivered_date: string | null;
   rework_count: number;
+  credited_to: string | null;
   organization_id: string | null;
   created_at: string;
   updated_at: string;
@@ -77,6 +78,7 @@ export function useUpdateBacklogItem() {
       qc.invalidateQueries({ queryKey: ["backlog"] });
       qc.invalidateQueries({ queryKey: ["project-tasks"] });
       qc.invalidateQueries({ queryKey: ["task-status-authors"] });
+      qc.invalidateQueries({ queryKey: ["project-delivery"] });
       qc.invalidateQueries({ queryKey: ["projects"] });
       qc.invalidateQueries({ queryKey: ["delivery-calendar"] });
     },

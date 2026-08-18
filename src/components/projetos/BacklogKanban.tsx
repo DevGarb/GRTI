@@ -17,6 +17,7 @@ import { useState } from "react";
 import { BacklogItem, TASK_STATUSES, TASK_PRIORITIES, useUpdateBacklogItem } from "@/hooks/useBacklog";
 import ReworkDialog from "@/components/projetos/ReworkDialog";
 import TaskAuthorBadge from "@/components/projetos/TaskAuthorBadge";
+import CreditSelect from "@/components/projetos/CreditSelect";
 import { useTaskStatusAuthors, type TaskStatusAuthor } from "@/hooks/useTaskStatusAuthors";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -46,8 +47,12 @@ function TaskCard({ item, dragging, author }: { item: BacklogItem; dragging?: bo
       <div className="flex items-start gap-1">
         <GripVertical className="h-3.5 w-3.5 mt-0.5 text-muted-foreground shrink-0" />
         <div className="font-medium leading-tight flex-1">{item.title}</div>
-        <div onPointerDown={(e) => e.stopPropagation()}>
+        <div className="flex items-center gap-1" onPointerDown={(e) => e.stopPropagation()}>
           <TaskAuthorBadge author={author} />
+          <CreditSelect
+            value={item.credited_to}
+            onChange={(uid) => update.mutate({ id: item.id, credited_to: uid })}
+          />
         </div>
       </div>
       <div className="text-[10px] text-muted-foreground truncate pl-4">

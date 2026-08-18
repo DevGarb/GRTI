@@ -1,4 +1,4 @@
-import { Plus, ArrowRight, Ticket, ListTodo, Layers, TrendingUp, User, Users } from "lucide-react";
+import { Plus, ArrowRight, Ticket, ListTodo, Layers, TrendingUp, User, Users, CheckCircle2 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -9,6 +9,7 @@ import { Project } from "@/hooks/useProjects";
 import { SprintWithProgress, isSprintEffectivelyDone } from "@/hooks/useSprints";
 import { useProjectTickets } from "@/hooks/useProjectTickets";
 import { useProjectTasks } from "@/hooks/useProjectTasks";
+import { useProjectDelivery } from "@/hooks/useProjectDelivery";
 import { formatDateBR } from "@/lib/dateFormat";
 
 interface Props {
@@ -77,6 +78,7 @@ function KpiCard({
 export default function ProjectOverview({ project, sprints, onAddToActive, onCreateSprint }: Props) {
   const { data: tickets = [] } = useProjectTickets(project.id);
   const { data: tasks = [] } = useProjectTasks(project.id);
+  const { data: delivery } = useProjectDelivery(project.id);
 
   const ownerIds = [project.owner_id, project.co_owner_id].filter(Boolean) as string[];
   const { data: ownerProfiles = [] } = useQuery({
@@ -170,6 +172,67 @@ export default function ProjectOverview({ project, sprints, onAddToActive, onCre
           }
           accent="bg-emerald-500/15 text-emerald-600 dark:text-emerald-300"
         />
+      </div>
+
+      {/* Conclusão do projeto + entregas por desenvolvedor */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+        <div className="card-elevated p-5">
+          <div className="flex items-center gap-2 mb-3">
+            <span className="h-7 w-7 rounded-md flex items-center justify-center bg-emerald-500/15 text-emerald-600 dark:text-emerald-300">
+              <CheckCircle2 className="h-3.5 w-3.5" />
+            </span>
+            <h4 className="text-sm font-semibold">Conclusão do projeto</h4>
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <div className="text-3xl font-semibold leading-none">{delivery?.pctItems ?? 0}%</div>
+              <div className="text-[11px] text-muted-foreground mt-1">
+                por itens · {delivery?.doneTasks ?? 0}/{delivery?.totalTasks ?? 0} backlogs
+              </div>
+            </div>
+            <div>
+              <div className="text-3xl font-semibold leading-none">{delivery?.pctPoints ?? 0}%</div>
+              <div className="text-[11px] text-muted-foreground mt-1">
+                por pontos · {delivery?.donePoints ?? 0}/{delivery?.totalPoints ?? 0} pts
+              </div>
+            </div>
+          </div>
+          <Progress value={delivery?.pctItems ?? 0} className="h-2 mt-4 [&>div]:bg-emerald-500" />
+        </div>
+
+        <div className="card-elevated p-5">
+          <div className="flex items-center gap-2 mb-3">
+            <span className="h-7 w-7 rounded-md flex items-center justify-center bg-indigo-500/15 text-indigo-600 dark:text-indigo-300">
+              <Users className="h-3.5 w-3.5" />
+            </span>
+            <h4 className="text-sm font-semibold">Entregas por desenvolvedor</h4>
+          </div>
+          {(delivery?.byDev.length ?? 0) === 0 ? (
+            <p className="text-xs text-muted-foreground">Nenhum backlog concluído ainda.</p>
+          ) : (
+            <div className="space-y-2.5">
+              {delivery!.byDev.map((d) => (
+                <div key={d.userId ?? "none"} className="flex items-center gap-3">
+                  <span className="h-7 w-7 shrink-0 rounded-full bg-primary/10 text-primary text-[11px] font-semibold flex items-center justify-center">
+                    {(d.name.trim().charAt(0) || "?").toUpperCase()}
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center justify-between gap-2 text-xs">
+                      <span className="truncate font-medium">{d.name}</span>
+                      <span className="text-muted-foreground shrink-0">
+                        {d.items} {d.items === 1 ? "backlog" : "backlogs"} · {d.points} pts
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2 mt-1">
+                      <Progress value={d.pctItems} className="h-1.5 flex-1 [&>div]:bg-indigo-500" />
+                      <span className="text-[10px] text-muted-foreground w-9 text-right">{d.pctItems}%</span>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Sprint ativa */}

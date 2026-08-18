@@ -19,6 +19,7 @@ import {
 import { Ticket as TicketIcon, ListTodo, Trash2, ExternalLink, ArrowRightCircle, Loader2 } from "lucide-react";
 import TaskDetailModal from "./TaskDetailModal";
 import TaskAuthorBadge from "./TaskAuthorBadge";
+import CreditSelect from "./CreditSelect";
 import { useTaskStatusAuthors } from "@/hooks/useTaskStatusAuthors";
 
 interface Props {
@@ -155,6 +156,10 @@ export default function SprintItems({ projectId, sprintId }: Props) {
             )}
           </button>
           <TaskAuthorBadge author={authors?.get(task.id)} />
+          <CreditSelect
+            value={task.credited_to}
+            onChange={(uid) => updateTask.mutate({ id: task.id, credited_to: uid })}
+          />
           <Select
             value={task.status}
             onValueChange={(v) => updateTask.mutate({ id: task.id, status: v })}
