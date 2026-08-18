@@ -125,6 +125,38 @@ function MemberCardBody({ m }: { m: TeamMemberStatus }) {
   );
 }
 
+function MemberCard({ m }: { m: TeamMemberStatus }) {
+  return (
+    <HoverCard openDelay={120} closeDelay={80}>
+      <HoverCardTrigger asChild>
+        <div className="cursor-default">
+          <MemberCardBody m={m} />
+        </div>
+      </HoverCardTrigger>
+      <HoverCardContent
+        align="start"
+        className="w-80 space-y-3 border-[hsl(var(--tv-border))] bg-[hsl(var(--tv-surface))] text-[hsl(var(--tv-text))] shadow-2xl"
+      >
+        <div className="font-tv-display text-[15px] font-semibold">{m.name}</div>
+        <TitleList
+          label="Fechados hoje"
+          color={`hsl(${accentVar.cyan})`}
+          titles={m.closed_titles ?? []}
+          Icon={CheckCircle2}
+        />
+        <TitleList
+          label="Em andamento"
+          color={`hsl(${accentVar.amber})`}
+          titles={m.in_progress_titles ?? []}
+          Icon={Activity}
+        />
+      </HoverCardContent>
+    </HoverCard>
+  );
+}
+
+
+
 export function TeamStatusPanel({ team }: { team: TeamMemberStatus[] }) {
   if (!team?.length) return null;
   const idleCount = team.filter(t => t.idle).length;
