@@ -66,8 +66,9 @@ function fmtHoursMin(minutes: number) {
 
 export default function TvDashboard() {
   const { orgSlug } = useParams();
-  const [params] = useSearchParams();
+  const [params, setParams] = useSearchParams();
   const token = params.get("token") ?? "";
+  const [tokenInput, setTokenInput] = useState("");
   const [clock, setClock] = useState(new Date());
   const [tick, setTick] = useState(0);
 
@@ -209,12 +210,47 @@ export default function TvDashboard() {
 
   if (!token) {
     return (
-      <div className="min-h-screen flex items-center justify-center text-center p-8"
+      <div className="min-h-screen flex items-center justify-center p-8"
         style={{ background: "hsl(var(--tv-bg))", color: "hsl(var(--tv-text))" }}>
-        <div>
-          <h1 className="font-tv-display text-2xl font-bold mb-2">Token obrigatório</h1>
-          <p className="text-[hsl(var(--tv-text-dim))]">Adicione <code className="font-mono-tech">?token=...</code> à URL.</p>
-        </div>
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            const t = tokenInput.trim();
+            if (!t) return;
+            const next = new URLSearchParams(params);
+            next.set("token", t);
+            setParams(next, { replace: true });
+          }}
+          className="w-full max-w-sm rounded-2xl border p-8 text-center"
+          style={{
+            background: "hsl(var(--tv-surface))",
+            borderColor: "hsl(var(--tv-accent-cyan) / 0.25)",
+            boxShadow: "0 0 40px hsl(var(--tv-accent-cyan) / 0.08)",
+          }}
+        >
+          <h1 className="font-tv-display text-2xl font-bold mb-1 tracking-wide">Painel de TV</h1>
+          <p className="text-sm mb-6 text-[hsl(var(--tv-text-dim))]">Informe o token de acesso</p>
+          <input
+            type="password"
+            autoFocus
+            value={tokenInput}
+            onChange={(e) => setTokenInput(e.target.value)}
+            placeholder="••••••••"
+            className="w-full rounded-lg px-4 py-3 text-center tracking-[0.3em] outline-none border"
+            style={{
+              background: "hsl(var(--tv-bg))",
+              borderColor: "hsl(var(--tv-accent-cyan) / 0.3)",
+              color: "hsl(var(--tv-text))",
+            }}
+          />
+          <button
+            type="submit"
+            className="mt-4 w-full rounded-lg px-4 py-3 font-tv-display font-semibold uppercase tracking-widest transition-opacity hover:opacity-90"
+            style={{ background: "hsl(var(--tv-accent-cyan))", color: "hsl(var(--tv-bg))" }}
+          >
+            Entrar
+          </button>
+        </form>
       </div>
     );
   }
