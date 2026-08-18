@@ -1,4 +1,4 @@
-import { Plus, ArrowRight, Ticket, ListTodo, Layers, TrendingUp, User, Users, CheckCircle2 } from "lucide-react";
+import { Plus, ArrowRight, ListTodo, Layers, TrendingUp, User, Users, CheckCircle2 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -305,8 +305,9 @@ export default function ProjectOverview({ project, sprints, onAddToActive, onCre
       )}
 
       {/* Mini-dashboards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+      <div className={cn("grid gap-3", totalTickets > 0 ? "grid-cols-1 md:grid-cols-2" : "grid-cols-1")}>
         {/* Status dos chamados */}
+        {totalTickets > 0 && (
         <div className="card-elevated p-5">
           <h4 className="text-sm font-semibold mb-3">Status dos chamados</h4>
           {statusEntries.length === 0 ? (
@@ -335,6 +336,7 @@ export default function ProjectOverview({ project, sprints, onAddToActive, onCre
             </div>
           )}
         </div>
+        )}
 
         {/* Distribuição por sprint */}
         <div className="card-elevated p-5">
