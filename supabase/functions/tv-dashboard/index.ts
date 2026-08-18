@@ -429,6 +429,7 @@ Deno.serve(async (req) => {
       open_queue: openList,
       in_progress_list: progList,
       ranking_today: ranking,
+      team_status,
       today_tickets: todayTickets,
       sla_alerts: slaAlerts,
       preventivas_month: { total: prevTotal, feitas: prevDone, pendentes: prevPendente, atrasadas: prevOverdue },
