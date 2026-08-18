@@ -8,6 +8,8 @@ export interface DevDelivery {
   points: number;
   pctItems: number;
   pctPoints: number;
+  /** Percentual de itens concluídos pelo dev em relação ao total de itens do projeto. */
+  pctItemsOfTotal: number;
   /** Itens dessa pessoa atualmente em "Em Desenvolvimento". */
   inProgress: number;
   /** Data (ISO) da última conclusão creditada. */
