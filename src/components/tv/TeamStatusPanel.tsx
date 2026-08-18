@@ -117,7 +117,23 @@ function MemberCardBody({ m }: { m: TeamMemberStatus }) {
               {m.in_progress}
             </div>
           </div>
+          {(m.projects_in_dev ?? 0) > 0 && (
+            <div>
+              <div className="flex items-center gap-1.5 text-[hsl(var(--tv-text-dim))]">
+                <Code2 className="h-4 w-4" style={{ color: `hsl(${accentVar.violet ?? accentVar.cyan})` }} />
+                <span className="text-[12px] uppercase tracking-[0.16em]">Projetos</span>
+              </div>
+              <div
+                className="font-tv-display font-semibold tabular-nums leading-none mt-1"
+                style={{ fontSize: "2.25rem", color: `hsl(${accentVar.violet ?? accentVar.cyan})` }}
+              >
+                {m.projects_in_dev}
+              </div>
+            </div>
+          )}
         </div>
+
+
 
         {m.idle && m.unstarted > 0 && (
           <div className="mt-3 text-[13px] text-[hsl(var(--tv-accent-red))] font-mono-tech">
