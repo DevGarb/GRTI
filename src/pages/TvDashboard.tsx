@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useParams, useSearchParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import {
@@ -87,7 +87,7 @@ export default function TvDashboard() {
   const query = useQuery<TvData>({
     queryKey: ["tv-dashboard", orgSlug, token],
     enabled: !!orgSlug && !!token,
-    refetchInterval: 300_000,
+    refetchInterval: 60_000,
     refetchOnWindowFocus: false,
     retry: 1,
     queryFn: async () => {
@@ -103,7 +103,7 @@ export default function TvDashboard() {
   const agendaQuery = useQuery<TvData>({
     queryKey: ["tv-dashboard-agenda", orgSlug, token, agendaFilter.from, agendaFilter.to],
     enabled: !!orgSlug && !!token && agendaFilter.type !== "today",
-    refetchInterval: 300_000,
+    refetchInterval: 60_000,
     refetchOnWindowFocus: false,
     retry: 1,
     queryFn: async () => {
@@ -152,6 +152,23 @@ export default function TvDashboard() {
     } catch (e) { console.warn("beep failed", e); }
   }
 
+  // Debounce de recarga silenciosa (mudanças de chamados/tarefas)
+  const refetchTimerRef = useRef<number | null>(null);
+  const queryRef = useRef(query);
+  const agendaQueryRef = useRef(agendaQuery);
+  useEffect(() => { queryRef.current = query; agendaQueryRef.current = agendaQuery; });
+
+  const scheduleRefetch = useCallback(() => {
+    if (refetchTimerRef.current) window.clearTimeout(refetchTimerRef.current);
+    refetchTimerRef.current = window.setTimeout(() => {
+      refetchTimerRef.current = null;
+      queryRef.current.refetch();
+      if (agendaQueryRef.current.isFetched || agendaQueryRef.current.data) {
+        agendaQueryRef.current.refetch();
+      }
+    }, 1500);
+  }, []);
+
   useEffect(() => {
     if (!orgSlug || !token) return;
     const channel = supabase
@@ -170,15 +187,18 @@ export default function TvDashboard() {
         if (soundEnabledRef.current) playBeep();
         if (alertTimeoutRef.current) window.clearTimeout(alertTimeoutRef.current);
         alertTimeoutRef.current = window.setTimeout(() => setAlert(null), 15_000);
-        query.refetch();
+        scheduleRefetch();
       })
+      .on("broadcast", { event: "ticket_changed" }, () => scheduleRefetch())
+      .on("broadcast", { event: "task_changed" }, () => scheduleRefetch())
       .subscribe();
     return () => {
       supabase.removeChannel(channel);
       if (alertTimeoutRef.current) window.clearTimeout(alertTimeoutRef.current);
+      if (refetchTimerRef.current) window.clearTimeout(refetchTimerRef.current);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [orgSlug, token]);
+  }, [orgSlug, token, scheduleRefetch]);
 
   function enableSound() {
     try {
