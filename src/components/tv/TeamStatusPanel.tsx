@@ -1,4 +1,4 @@
-import { Users, CheckCircle2, Activity, AlertTriangle } from "lucide-react";
+import { Users, CheckCircle2, Activity, AlertTriangle, Code2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { accentVar } from "./BentoTile";
 import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card";
@@ -10,9 +10,12 @@ export interface TeamMemberStatus {
   in_progress: number;
   unstarted: number;
   idle: boolean;
+  projects_in_dev?: number;
   closed_titles?: string[];
   in_progress_titles?: string[];
+  project_titles?: string[];
 }
+
 
 function firstAndLast(name: string) {
   const parts = (name ?? "").trim().split(/\s+/);
@@ -48,11 +51,12 @@ function TitleList({
           ))}
         </ul>
       ) : (
-        <p className="text-[12px] text-[hsl(var(--tv-text-dim))]">Nenhum chamado</p>
+        <p className="text-[12px] text-[hsl(var(--tv-text-dim))]">Nenhum item</p>
       )}
     </div>
   );
 }
+
 
 function MemberCardBody({ m }: { m: TeamMemberStatus }) {
   return (
@@ -113,7 +117,23 @@ function MemberCardBody({ m }: { m: TeamMemberStatus }) {
               {m.in_progress}
             </div>
           </div>
+          {(m.projects_in_dev ?? 0) > 0 && (
+            <div>
+              <div className="flex items-center gap-1.5 text-[hsl(var(--tv-text-dim))]">
+                <Code2 className="h-4 w-4" style={{ color: `hsl(${accentVar.violet})` }} />
+                <span className="text-[12px] uppercase tracking-[0.16em]">Projetos</span>
+              </div>
+              <div
+                className="font-tv-display font-semibold tabular-nums leading-none mt-1"
+                style={{ fontSize: "2.25rem", color: `hsl(${accentVar.violet})` }}
+              >
+                {m.projects_in_dev}
+              </div>
+            </div>
+          )}
         </div>
+
+
 
         {m.idle && m.unstarted > 0 && (
           <div className="mt-3 text-[13px] text-[hsl(var(--tv-accent-red))] font-mono-tech">
@@ -150,6 +170,15 @@ function MemberCard({ m }: { m: TeamMemberStatus }) {
           titles={m.in_progress_titles ?? []}
           Icon={Activity}
         />
+        {(m.project_titles?.length ?? 0) > 0 && (
+          <TitleList
+            label="Em desenvolvimento"
+            color={`hsl(${accentVar.violet})`}
+            titles={m.project_titles ?? []}
+            Icon={Code2}
+          />
+        )}
+
       </HoverCardContent>
     </HoverCard>
   );
