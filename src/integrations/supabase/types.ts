@@ -2754,6 +2754,7 @@ export type Database = {
           converted_to_ticket: boolean
           created_at: string
           created_by: string
+          credited_to: string | null
           delivered_date: string | null
           description: string | null
           id: string
@@ -2779,6 +2780,7 @@ export type Database = {
           converted_to_ticket?: boolean
           created_at?: string
           created_by: string
+          credited_to?: string | null
           delivered_date?: string | null
           description?: string | null
           id?: string
@@ -2804,6 +2806,7 @@ export type Database = {
           converted_to_ticket?: boolean
           created_at?: string
           created_by?: string
+          credited_to?: string | null
           delivered_date?: string | null
           description?: string | null
           id?: string
