@@ -317,6 +317,47 @@ Deno.serve(async (req) => {
       if (t.status === "Em Andamento" && t.assigned_to) active_techs.add(t.assigned_to);
     }
 
+    // Equipe agora: todos os técnicos da organização
+    const { data: techRoles } = await supabase
+      .from("user_organization_roles")
+      .select("user_id")
+      .eq("organization_id", orgId)
+      .eq("role", "tecnico");
+    const techIds = Array.from(new Set((techRoles ?? []).map((r: any) => r.user_id)));
+    const { data: techProfiles } = await supabase
+      .from("profiles")
+      .select("user_id, full_name")
+      .in("user_id", techIds.length ? techIds : ["00000000-0000-0000-0000-000000000000"]);
+    const techNameOf = new Map((techProfiles ?? []).map((p: any) => [p.user_id, p.full_name]));
+
+    const teamAgg = new Map<string, { closed_today: number; in_progress: number; unstarted: number }>();
+    for (const id of techIds) teamAgg.set(id, { closed_today: 0, in_progress: 0, unstarted: 0 });
+    for (const t of list) {
+      if (!t.assigned_to) continue;
+      const agg = teamAgg.get(t.assigned_to);
+      if (!agg) continue;
+      const aad = t.aguardando_aprovacao_at ? new Date(t.aguardando_aprovacao_at) : null;
+      const isFinal = t.status === "Fechado" || t.status === "Aprovado";
+      const eff = aad ?? (isFinal && t.closed_at ? new Date(t.closed_at) : null);
+      if (eff && eff >= startToday) agg.closed_today++;
+      if (t.status === "Em Andamento") agg.in_progress++;
+      if (t.status === "Aberto") agg.unstarted++;
+    }
+    const team_status = techIds
+      .map((id) => {
+        const a = teamAgg.get(id)!;
+        return {
+          id,
+          name: techNameOf.get(id) ?? "—",
+          closed_today: a.closed_today,
+          in_progress: a.in_progress,
+          unstarted: a.unstarted,
+          idle: a.in_progress === 0,
+        };
+      })
+      .sort((a, b) => (a.idle === b.idle ? b.closed_today - a.closed_today : a.idle ? 1 : -1));
+
+
     // SLA alerts
     const slaAlerts = [...openList, ...progList]
       .filter(x => x.sla !== "ok")
@@ -388,6 +429,7 @@ Deno.serve(async (req) => {
       open_queue: openList,
       in_progress_list: progList,
       ranking_today: ranking,
+      team_status,
       today_tickets: todayTickets,
       sla_alerts: slaAlerts,
       preventivas_month: { total: prevTotal, feitas: prevDone, pendentes: prevPendente, atrasadas: prevOverdue },

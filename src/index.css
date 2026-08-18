@@ -200,10 +200,23 @@
     100% { box-shadow: 0 0 0 0 hsl(var(--tv-accent-magenta) / 0); }
   }
   .tv-flash { animation: tv-flash-glow 1.5s ease-out 1; }
+  @keyframes tv-idle-pulse {
+    0%, 100% {
+      border-color: hsl(var(--tv-accent-red) / 0.45);
+      box-shadow: 0 0 0 0 hsl(var(--tv-accent-red) / 0);
+    }
+    50% {
+      border-color: hsl(var(--tv-accent-red) / 0.95);
+      box-shadow: 0 0 28px 2px hsl(var(--tv-accent-red) / 0.45);
+    }
+  }
+  .tv-idle-pulse { animation: tv-idle-pulse 1.8s ease-in-out infinite; }
   @media (prefers-reduced-motion: reduce) {
     .tv-shimmer::after { animation: none; display: none; }
     .tv-flash { animation: none; }
+    .tv-idle-pulse { animation: none; border-color: hsl(var(--tv-accent-red) / 0.85); }
   }
+
 }
 
 @layer base {

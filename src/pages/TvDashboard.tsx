@@ -9,6 +9,8 @@ import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { computeOpStatus, opStatusLabel } from "@/lib/opStatus";
 import { DailyKpiTile } from "@/components/tv/DailyKpiTile";
+import { DualKpiTile } from "@/components/tv/DualKpiTile";
+import { TeamStatusPanel, type TeamMemberStatus } from "@/components/tv/TeamStatusPanel";
 import { TodayTicket } from "@/components/tv/TodayTimelinePanel";
 import { TodayAgendaPanel, computeAgendaRange, type AgendaFilter } from "@/components/tv/TodayAgendaPanel";
 import { FunnelStrip } from "@/components/tv/FunnelStrip";
@@ -47,6 +49,7 @@ interface TvData {
     first_response_min: number; aging_min: number;
   };
   ranking_today: Array<{ id: string; name: string; fechados: number }>;
+  team_status?: TeamMemberStatus[];
   today_tickets: TodayTicket[];
   sla_alerts: Array<{ id: string; sla: string }>;
   preventivas_month: { total: number; feitas: number; pendentes: number; atrasadas: number };
@@ -365,37 +368,29 @@ export default function TvDashboard() {
         </div>
       ) : (
         <>
-          {/* Row 1: 4 KPIs do dia — full width */}
+          {/* Row 1: KPIs do dia — full width */}
           <section className="grid grid-cols-2 xl:grid-cols-4 gap-3">
-            <DailyKpiTile
-              label="Abertos Hoje"
-              value={d.kpis.opened_today}
-              icon={Inbox}
-              accent="blue"
+            <DualKpiTile
+              className="col-span-2 xl:col-span-2"
               code="01"
-              sub="Chamados recebidos"
-            />
-            <DailyKpiTile
-              label="Fechados Hoje"
-              value={d.kpis.closed_today}
-              icon={CheckCircle2}
-              accent="cyan"
-              code="02"
-              sub="Produtividade do dia"
+              left={{ label: "Abertos Hoje", value: d.kpis.opened_today, icon: Inbox, accent: "blue", sub: "Chamados recebidos" }}
+              right={{ label: "Fechados Hoje", value: d.kpis.closed_today, icon: CheckCircle2, accent: "cyan", sub: "Produtividade do dia" }}
             />
             <DailyKpiTile
               label="Top Técnico"
               icon={Trophy}
               accent="amber"
-              code="03"
-              sub={topTech ? `${topTech.fechados} tickets · ${topTechPct}% da produção` : "Sem fechamentos hoje"}
+              code="02"
             >
-              <div className="flex flex-col gap-1">
+              <div className="flex flex-col gap-2">
                 <span
                   className="font-tv-display font-semibold leading-tight text-[hsl(var(--tv-text))] break-words"
-                  style={{ fontSize: topTech && topTech.name.length > 14 ? "1.5rem" : "1.9rem", lineHeight: 1.05 }}
+                  style={{ fontSize: topTech && topTech.name.length > 14 ? "1.6rem" : "2rem", lineHeight: 1.05 }}
                 >
                   {topTech?.name ?? "—"}
+                </span>
+                <span className="font-mono-tech text-base text-[hsl(var(--tv-text-dim))]">
+                  {topTech ? `${topTech.fechados} fechados hoje` : "Sem fechamentos hoje"}
                 </span>
               </div>
             </DailyKpiTile>
@@ -404,10 +399,18 @@ export default function TvDashboard() {
               value={fmtHoursMin(d.kpis.tma_today_minutes)}
               icon={Timer}
               accent="violet"
-              code="04"
+              code="03"
               sub="Início → Finalização"
             />
           </section>
+
+          {/* Row 1.5: Equipe agora */}
+          {d.team_status?.length ? (
+            <section>
+              <TeamStatusPanel team={d.team_status} />
+            </section>
+          ) : null}
+
 
           {/* Row 2: Agenda — filtro por período */}
           <section>
