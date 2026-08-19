@@ -19,7 +19,7 @@ const osTotal = (list: ServiceOrderPart[]) =>
 const COMPRAS_STAGES = ["orcamento", "aguardando_peca"] as const;
 
 export default function OpOficinaCompras() {
-  const { items, partsByOs, update, setPartStatus } = useServiceOrders();
+  const { items, partsByOs, update, setPartStatus, setPartPrice } = useServiceOrders();
   const { items: mechanics } = useMechanics();
   const { items: companies } = useCompanies();
   const [search, setSearch] = useState("");
