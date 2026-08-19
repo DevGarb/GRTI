@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
-import { Calendar, ChevronLeft, ChevronRight, CalendarPlus, Check, X, Clock, Bike, User, Trash2 } from "lucide-react";
+import { Calendar, ChevronLeft, ChevronRight, CalendarPlus, Check, X, Clock, Bike, User, Trash2, Search, Plus } from "lucide-react";
+
 import OficinaNav from "./OficinaNav";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
