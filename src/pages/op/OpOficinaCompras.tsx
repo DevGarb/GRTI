@@ -32,7 +32,9 @@ export default function OpOficinaCompras() {
     Object.entries(partsByOs).forEach(([osId, list]) => {
       const os = osById[osId];
       if (!os) return;
-      if (os.stage === STAGE_ENTREGUE || os.status === "Finalizado") return;
+      // Apenas motos ativas nas etapas de compra/orçamento ou aguardando peças
+      const isPartsStage = os.stage === "orcamento" || os.stage === "aguardando_peca";
+      if (!isPartsStage || os.stage === STAGE_ENTREGUE || os.status === "Finalizado") return;
       list.forEach(p => {
         all.push({ ...p, os });
       });
