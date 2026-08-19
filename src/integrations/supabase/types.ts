@@ -2105,6 +2105,10 @@ export type Database = {
           organization_id: string
           os_number: number
           parts_arrived_at: string | null
+          schedule_notes: string | null
+          schedule_order: number
+          scheduled_date: string | null
+          scheduled_period: string | null
           stage: string
           status: string
           supervisor_action_at: string | null
@@ -2152,6 +2156,10 @@ export type Database = {
           organization_id: string
           os_number?: number
           parts_arrived_at?: string | null
+          schedule_notes?: string | null
+          schedule_order?: number
+          scheduled_date?: string | null
+          scheduled_period?: string | null
           stage?: string
           status?: string
           supervisor_action_at?: string | null
@@ -2199,6 +2207,10 @@ export type Database = {
           organization_id?: string
           os_number?: number
           parts_arrived_at?: string | null
+          schedule_notes?: string | null
+          schedule_order?: number
+          scheduled_date?: string | null
+          scheduled_period?: string | null
           stage?: string
           status?: string
           supervisor_action_at?: string | null
@@ -2297,6 +2309,94 @@ export type Database = {
           vehicle_type?: string
         }
         Relationships: []
+      }
+      op_workshop_bookings: {
+        Row: {
+          admin_notes: string | null
+          company_id: string | null
+          created_at: string
+          created_by: string | null
+          description: string | null
+          id: string
+          mechanic_id: string | null
+          organization_id: string
+          preferred_date: string | null
+          preferred_period: string | null
+          requester_name: string | null
+          scheduled_date: string | null
+          scheduled_period: string | null
+          service_order_id: string | null
+          service_type: string | null
+          status: string
+          updated_at: string
+          vehicle_model: string | null
+          vehicle_plate: string
+        }
+        Insert: {
+          admin_notes?: string | null
+          company_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          mechanic_id?: string | null
+          organization_id: string
+          preferred_date?: string | null
+          preferred_period?: string | null
+          requester_name?: string | null
+          scheduled_date?: string | null
+          scheduled_period?: string | null
+          service_order_id?: string | null
+          service_type?: string | null
+          status?: string
+          updated_at?: string
+          vehicle_model?: string | null
+          vehicle_plate: string
+        }
+        Update: {
+          admin_notes?: string | null
+          company_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          mechanic_id?: string | null
+          organization_id?: string
+          preferred_date?: string | null
+          preferred_period?: string | null
+          requester_name?: string | null
+          scheduled_date?: string | null
+          scheduled_period?: string | null
+          service_order_id?: string | null
+          service_type?: string | null
+          status?: string
+          updated_at?: string
+          vehicle_model?: string | null
+          vehicle_plate?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "op_workshop_bookings_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "op_companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "op_workshop_bookings_mechanic_id_fkey"
+            columns: ["mechanic_id"]
+            isOneToOne: false
+            referencedRelation: "op_mechanics"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "op_workshop_bookings_service_order_id_fkey"
+            columns: ["service_order_id"]
+            isOneToOne: false
+            referencedRelation: "op_service_orders"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       organization_integrations: {
         Row: {
