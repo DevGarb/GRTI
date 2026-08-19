@@ -1,3 +1,4 @@
+import TiPageHeader from "@/components/ti/TiPageHeader";
 import { useState, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
 import { Clock, HandMetal, Search } from "lucide-react";
@@ -122,14 +123,11 @@ export default function ChamadosAbertos() {
   return (
     <div className="space-y-4 max-w-7xl">
       <ChamadosTabs />
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-foreground">Chamados em Aberto</h1>
-          <p className="text-sm text-muted-foreground mt-1">
-            Chamados aguardando atendimento — clique em "Atribuir para mim" para assumir
-          </p>
-        </div>
-      </div>
+      <TiPageHeader
+        eyebrow="Fila de Atendimento"
+        title="Chamados em Aberto"
+        description='Chamados aguardando atendimento — clique em "Atribuir para mim" para assumir'
+      />
 
       <div className="relative max-w-md">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />

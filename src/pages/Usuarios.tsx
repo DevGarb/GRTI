@@ -1,3 +1,4 @@
+import TiPageHeader from "@/components/ti/TiPageHeader";
 import { useState } from "react";
 import { Users, Shield, Search, UserPlus, ChevronDown, ChevronRight, Pencil, X, User, Crown, FileUp, Download, Code, KeyRound, Trash2, Building2, Link2, Ban, UserCheck } from "lucide-react";
 import LinkOrgModal from "@/components/usuarios/LinkOrgModal";
@@ -371,9 +372,7 @@ export default function Usuarios() {
 
   return (
     <div className="space-y-6 max-w-5xl">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-foreground">Usuários</h1>
-      </div>
+      <TiPageHeader eyebrow="Controle de Acesso" title="Usuários" />
 
       <Tabs defaultValue="users" className="w-full">
         <TabsList>

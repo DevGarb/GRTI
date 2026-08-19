@@ -1,3 +1,4 @@
+import TiPageHeader from "@/components/ti/TiPageHeader";
 import { useState } from "react";
 import { Plus, Wrench, Monitor, Laptop, Printer, Server, Search, Download, Filter, CheckCircle2, XCircle, AlertTriangle, Clock, Settings, ChevronDown, Camera, BarChart3 } from "lucide-react";
 import NewPreventivaModal from "@/components/NewPreventivaModal";
@@ -110,15 +111,12 @@ export default function Preventivas() {
     <div className="space-y-6 max-w-7xl">
       {/* Header */}
       <div className="flex items-center justify-between flex-wrap gap-4">
-        <div className="flex items-center gap-3">
-          <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center">
-            <Wrench className="h-5 w-5 text-primary" />
-          </div>
-          <div>
-            <h1 className="text-2xl font-bold text-foreground">Manutenções Preventivas</h1>
-            <p className="text-sm text-muted-foreground">Acompanhamento e registro de preventivas em equipamentos</p>
-          </div>
-        </div>
+        <TiPageHeader
+          className="mb-0"
+          eyebrow="Manutenção · Equipamentos"
+          title="Manutenções Preventivas"
+          description="Acompanhamento e registro de preventivas em equipamentos"
+        />
         <div className="flex items-center gap-2">
           <button
             onClick={handleExport}

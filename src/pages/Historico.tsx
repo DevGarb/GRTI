@@ -1,3 +1,4 @@
+import TiPageHeader from "@/components/ti/TiPageHeader";
 import { History, Search } from "lucide-react";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
@@ -59,13 +60,11 @@ export default function Historico() {
 
   return (
     <div className="space-y-6 max-w-5xl">
-      <div className="flex items-center gap-3">
-        <History className="h-6 w-6 text-primary" />
-        <div>
-          <h1 className="text-2xl font-bold text-foreground">Histórico</h1>
-          <p className="text-sm text-muted-foreground">Registro de atividades do sistema</p>
-        </div>
-      </div>
+      <TiPageHeader
+        eyebrow="Trilha de Atividades"
+        title="Histórico"
+        description="Registro de atividades do sistema"
+      />
 
       <div className="relative max-w-md">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
