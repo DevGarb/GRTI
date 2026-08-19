@@ -565,17 +565,54 @@ export default function OpOficinaMinhas() {
                 Nenhuma peça vinculada às suas motos.
               </div>
             )}
-            {myParts.map(p => {
-              const info = PART_STATUS_INFO[p.part_status] || { label: p.part_status, chip: "" };
+
+            {partsByMoto.map(({ os, parts }) => {
+              const open = expandedPartOs === os.id;
               return (
-                <div key={p.id} className="bg-card border rounded-lg p-3 flex items-center justify-between gap-3 flex-wrap">
-                  <div>
-                    <div className="font-medium text-sm">{p.part_name} (x{p.quantity})</div>
-                    <div className="text-xs text-muted-foreground">
-                      {p.os.vehicle_plate || `OS #${p.os.os_number}`} · {p.os.vehicle_model || "—"}
+                <div key={os.id} className="bg-card border rounded-lg overflow-hidden">
+                  <button
+                    onClick={() => setExpandedPartOs(open ? null : os.id)}
+                    className="w-full flex items-center justify-between gap-3 px-4 py-3 hover:bg-muted/40 transition-colors"
+                  >
+                    <div className="flex-1 min-w-0 text-left">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="text-base font-bold tracking-wide uppercase">
+                          {os.vehicle_plate || `OS #${os.os_number}`}
+                        </span>
+                        <span className="text-sm text-muted-foreground">{os.vehicle_model || "—"}</span>
+                      </div>
+                      <div className="text-xs text-muted-foreground mt-0.5">
+                        {parts.length} peça(s) — {os.customer_name}
+                      </div>
                     </div>
-                  </div>
-                  <Badge variant="secondary" className={info.chip}>{info.label}</Badge>
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs hidden sm:inline text-muted-foreground">
+                        {open ? "Recolher" : "Ver peças"}
+                      </span>
+                      {open ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                    </div>
+                  </button>
+
+                  {open && (
+                    <div className="px-4 pb-4 space-y-2 border-t border-border/60 pt-3">
+                      {parts.map(part => {
+                        const info = PART_STATUS_INFO[part.part_status] || { label: part.part_status, chip: "" };
+                        return (
+                          <div
+                            key={part.id}
+                            className="flex items-center justify-between gap-3 bg-muted/40 rounded-md px-3 py-2"
+                          >
+                            <span className="text-sm font-medium truncate">
+                              {part.part_name} <span className="text-muted-foreground">(x{part.quantity})</span>
+                            </span>
+                            <Badge variant="secondary" className={cn("text-xs shrink-0", info.chip)}>
+                              {info.label}
+                            </Badge>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
                 </div>
               );
             })}
