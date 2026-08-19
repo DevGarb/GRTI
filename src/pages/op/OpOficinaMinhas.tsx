@@ -389,7 +389,15 @@ export default function OpOficinaMinhas() {
               </div>
             )}
 
-            {mine.map(o => {
+            {mineGroups.map((g, gi) => (
+            <div key={g.id} className="space-y-3">
+              <div className={`flex items-center gap-2 ${gi > 0 ? "pt-4" : ""}`}>
+                <span className={`h-2.5 w-2.5 rounded-full ${g.dot}`} />
+                <h3 className="text-sm font-bold uppercase tracking-wide">{g.label}</h3>
+                <Badge variant="secondary" className={g.chip}>{g.orders.length}</Badge>
+                {gi === 0 && <span className="text-[11px] text-muted-foreground">prioridade</span>}
+              </div>
+            {g.orders.map(o => {
               const st = stageInfo(o.stage);
               const parts = partsByOs[o.id] || [];
               const days = daysInWorkshop(o.opened_at);
