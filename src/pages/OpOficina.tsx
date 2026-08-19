@@ -937,7 +937,7 @@ function OsDetailDialog({ os, onClose, onUpdate, onDelete, onRequestClose, compa
 
 /* ---------- Coluna de agendamentos confirmados (antes da Análise/Triagem) ---------- */
 function ConfirmedBookingsColumn({ onCreated }: { onCreated?: () => void }) {
-  const { items, loading, refetch } = useWorkshopBookings();
+  const { items, loading, refetch, remove } = useWorkshopBookings();
   const { user } = useAuth();
   const [opening, setOpening] = useState<string | null>(null);
   const list = useMemo(
@@ -955,6 +955,12 @@ function ConfirmedBookingsColumn({ onCreated }: { onCreated?: () => void }) {
     } finally {
       setOpening(null);
     }
+  };
+
+  const handleDelete = async (b: typeof list[number]) => {
+    if (!confirm(`Excluir o agendamento da moto ${b.vehicle_plate}? Use quando o veículo não comparecer.`)) return;
+    await remove(b.id);
+    refetch();
   };
 
   return (
@@ -993,6 +999,14 @@ function ConfirmedBookingsColumn({ onCreated }: { onCreated?: () => void }) {
                 onClick={() => handleOpen(b)}
               >
                 {opening === b.id ? "Abrindo..." : "Abrir OS (chegou)"}
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                className="w-full h-7 text-xs text-destructive hover:text-destructive"
+                onClick={() => handleDelete(b)}
+              >
+                <Trash2 className="h-3 w-3 mr-1" /> Não compareceu · excluir
               </Button>
             </div>
           );
