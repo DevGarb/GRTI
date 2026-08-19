@@ -14,7 +14,7 @@ export const STAGES: OficinaStage[] = [
   { id: "orcamento", label: "Orçamento / Compras", dot: "bg-sky-500", bar: "bg-sky-500", chip: "bg-sky-500/10 text-sky-700 dark:text-sky-300" },
   { id: "aguardando_peca", label: "Aguardando Peça", dot: "bg-amber-500", bar: "bg-amber-500", chip: "bg-amber-500/10 text-amber-700 dark:text-amber-300" },
   { id: "desempeno", label: "Desempeno / Chassi", dot: "bg-violet-500", bar: "bg-violet-500", chip: "bg-violet-500/10 text-violet-700 dark:text-violet-300" },
-  { id: "pintura", label: "Pintura", dot: "bg-fuchsia-500", bar: "bg-fuchsia-500", chip: "bg-fuchsia-500/10 text-fuchsia-700 dark:text-fuchsia-300" },
+  { id: "pintura", label: "Aguardando para iniciar reparo", dot: "bg-fuchsia-500", bar: "bg-fuchsia-500", chip: "bg-fuchsia-500/10 text-fuchsia-700 dark:text-fuchsia-300" },
   { id: "execucao", label: "Em Execução", dot: "bg-blue-500", bar: "bg-blue-500", chip: "bg-blue-500/10 text-blue-700 dark:text-blue-300" },
   { id: "pronto", label: "Pronto p/ Entrega", dot: "bg-emerald-500", bar: "bg-emerald-500", chip: "bg-emerald-500/10 text-emerald-700 dark:text-emerald-300" },
 ];
