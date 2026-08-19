@@ -1,7 +1,7 @@
 import DateRangeFilter, { currentMonthStart, todayStr, inDateRange } from "@/components/shared/DateRangeFilter";
 import { filterOficinaCompanies } from "@/lib/oficinaCompanies";
 import { useMemo, useState } from "react";
-import { Wrench, Plus, Search, Trash2, Upload, FileText, X, LayoutGrid, List, Eye, EyeOff, AlertTriangle, ShoppingCart, Package, Gauge, ChevronUp, ChevronDown, Truck, Check } from "lucide-react";
+import { Wrench, Plus, Search, Trash2, Upload, FileText, X, LayoutGrid, List, Eye, EyeOff, AlertTriangle, ShoppingCart, Package, Gauge, ChevronUp, ChevronDown, Truck, Check, Home } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -179,6 +179,11 @@ export default function OpOficina() {
             <Badge variant="outline" className="text-[10px] h-5"><Package className="h-3 w-3 mr-0.5" />{partsCount}</Badge>
           )}
           {overdue && <Badge variant="destructive" className="text-[10px]"><AlertTriangle className="h-3 w-3 mr-0.5" />Alerta</Badge>}
+          {o.with_customer && (
+            <Badge variant="outline" className="text-[10px] h-5 border-sky-300 text-sky-700 dark:text-sky-300">
+              <Home className="h-3 w-3 mr-0.5" />Com o cliente
+            </Badge>
+          )}
         </div>
         <div className="text-sm font-semibold truncate" onClick={() => setSelected(o)}>
           {[o.vehicle_plate, o.vehicle_model, o.vehicle_color, o.vehicle_year].filter(Boolean).join(" · ") || "Sem veículo"}
