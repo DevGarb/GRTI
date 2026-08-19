@@ -23,6 +23,8 @@ import {
   stageInfo, PART_STATUS_INFO, daysInWorkshop, partsSlaRemaining, DIAS_ALERTA, SLA_PECAS,
 } from "@/lib/oficinaStages";
 import { periodInfo, todayISO, formatDateBRShort, weekdayLabel } from "@/lib/oficinaAgenda";
+import { useWorkshopBookings, type WorkshopBooking } from "@/hooks/useWorkshopBookings";
+import { openOsFromBooking } from "@/lib/openOsFromBooking";
 
 
 const MY_STAGES = ["analise", "desempeno", "pintura", "execucao"];
@@ -171,6 +173,26 @@ export default function OpOficinaMinhas() {
     [mine],
   );
   const agendaHoje = agendaGroups.find(g => g.isToday)?.orders.length || 0;
+
+  // Agendamentos confirmados aguardando chegada da moto
+  const { items: allBookings, refetch: refetchBookings } = useWorkshopBookings();
+  const [openingBooking, setOpeningBooking] = useState<string | null>(null);
+  const bookings = useMemo(
+    () => allBookings
+      .filter(b => b.status === "agendado" && !b.service_order_id)
+      .sort((a, b) => (a.scheduled_date || "").localeCompare(b.scheduled_date || "")),
+    [allBookings],
+  );
+
+  const handleOpenBooking = async (b: WorkshopBooking) => {
+    setOpeningBooking(b.id);
+    try {
+      const os = await openOsFromBooking(b, { userId: user?.id, mechanicId: profile?.id || null });
+      if (os) { refetchBookings(); refetch(); setTab("servicos"); }
+    } finally {
+      setOpeningBooking(null);
+    }
+  };
 
   // Motos na oficina sem mecânico atribuído
   const [availSearch, setAvailSearch] = useState("");
@@ -648,6 +670,41 @@ export default function OpOficinaMinhas() {
                 Datas de execução definidas pela oficina para as motos sob sua responsabilidade.
               </p>
             </div>
+
+            {bookings.length > 0 && (
+              <div className="bg-card border rounded-lg overflow-hidden">
+                <div className="px-4 py-2 border-b bg-teal-600/10 flex items-center gap-2">
+                  <CalendarDays className="h-4 w-4 text-teal-700" />
+                  <span className="font-semibold text-sm">Agendamentos confirmados (chegada)</span>
+                  <Badge variant="secondary" className="ml-auto">{bookings.length}</Badge>
+                </div>
+                <div className="divide-y">
+                  {bookings.map(b => {
+                    const per = periodInfo(b.scheduled_period);
+                    return (
+                      <div key={b.id} className="p-3 flex items-center gap-3 flex-wrap">
+                        <div className="flex-1 min-w-[200px]">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="font-bold tracking-wide">{b.vehicle_plate}</span>
+                            {b.scheduled_period && <Badge variant="secondary" className={per.chip}>{per.label}</Badge>}
+                            {b.scheduled_date && (
+                              <Badge variant="outline">{formatDateBRShort(b.scheduled_date)}</Badge>
+                            )}
+                          </div>
+                          <div className="text-sm text-muted-foreground mt-0.5">
+                            {[b.vehicle_model, b.service_type, b.requester_name].filter(Boolean).join(" · ") || "—"}
+                          </div>
+                        </div>
+                        <Button size="sm" disabled={openingBooking === b.id} onClick={() => handleOpenBooking(b)}>
+                          {openingBooking === b.id ? "Abrindo..." : "Moto chegou · abrir OS"}
+                        </Button>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
 
             {agendaGroups.length === 0 && (
               <div className="bg-card border rounded-lg p-12 text-center text-muted-foreground">
