@@ -33,6 +33,15 @@ export default function OpOficinaAgenda() {
   const [day, setDay] = useState(todayISO());
   const [scheduling, setScheduling] = useState<ServiceOrder | null>(null);
   const [booking, setBooking] = useState<any | null>(null);
+  const [creating, setCreating] = useState(false);
+  const [search, setSearch] = useState("");
+
+  const q = search.trim().toLowerCase();
+  const matches = (o: ServiceOrder) =>
+    !q ||
+    (o.vehicle_plate || "").toLowerCase().includes(q) ||
+    (o.vehicle_model || "").toLowerCase().includes(q) ||
+    String(o.os_number || "").includes(q);
 
   const mecs = useMemo(
     () => mechanics.filter((m) => m.is_active !== false && (m.role || "mecanico") === "mecanico"),
@@ -43,10 +52,11 @@ export default function OpOficinaAgenda() {
   const actives = useMemo(() => orders.filter(isActive), [orders]);
   const ofDay = useMemo(
     () => actives.filter((o) => (o as any).scheduled_date === day)
-      .filter((o) => (readOnly && profile?.id ? o.mechanic_id === profile.id : true)),
-    [actives, day, readOnly, profile?.id],
+      .filter((o) => (readOnly && profile?.id ? o.mechanic_id === profile.id : true))
+      .filter(matches),
+    [actives, day, readOnly, profile?.id, q],
   );
-  const unscheduled = useMemo(() => actives.filter((o) => !(o as any).scheduled_date), [actives]);
+  const unscheduled = useMemo(() => actives.filter((o) => !(o as any).scheduled_date).filter(matches), [actives, q]);
   const pending = useMemo(() => bookings.filter((b) => b.status === "pendente"), [bookings]);
 
   const columns = useMemo(() => {
@@ -55,6 +65,7 @@ export default function OpOficinaAgenda() {
     if (!readOnly) cols.push({ id: null, name: "A definir", list: ofDay.filter((o) => !o.mechanic_id || !mecs.some((m) => m.id === o.mechanic_id)) });
     return cols;
   }, [mecs, ofDay, readOnly, profile?.id]);
+
 
   const weekCounts = useMemo(() => {
     return Array.from({ length: 7 }, (_, i) => {
