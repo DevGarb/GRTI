@@ -66,6 +66,7 @@ export default function OpOficina() {
 
   const [view, setView] = useState<"kanban" | "lista" | "compras">("kanban");
   const [hideDelivered, setHideDelivered] = useState(true);
+  const [hideBookings, setHideBookings] = useState(false);
   const [dateFrom, setDateFrom] = useState(currentMonthStart());
   const [dateTo, setDateTo] = useState(todayStr());
   const [mechFilter, setMechFilter] = useState<string>("all");
@@ -338,9 +339,14 @@ export default function OpOficina() {
           <AlertTriangle className="h-3 w-3 mr-1" /> Só atrasadas
         </Button>
         {view === "kanban" && (
-          <Button size="sm" variant="outline" onClick={() => setHideDelivered(v => !v)}>
-            {hideDelivered ? <><EyeOff className="h-3 w-3 mr-1" />Ocultando entregues</> : <><Eye className="h-3 w-3 mr-1" />Mostrando todas</>}
-          </Button>
+          <>
+            <Button size="sm" variant="outline" onClick={() => setHideDelivered(v => !v)}>
+              {hideDelivered ? <><EyeOff className="h-3 w-3 mr-1" />Ocultando entregues</> : <><Eye className="h-3 w-3 mr-1" />Mostrando todas</>}
+            </Button>
+            <Button size="sm" variant="outline" onClick={() => setHideBookings(v => !v)}>
+              {hideBookings ? <><Eye className="h-3 w-3 mr-1" />Mostrar agendamentos</> : <><EyeOff className="h-3 w-3 mr-1" />Ocultar agendamentos</>}
+            </Button>
+          </>
         )}
       </div>
 
@@ -355,7 +361,7 @@ export default function OpOficina() {
 
       {view === "kanban" && (
         <div className="flex gap-3 items-start">
-          <ConfirmedBookingsColumn onCreated={refetch} />
+          {!hideBookings && <ConfirmedBookingsColumn onCreated={refetch} />}
           <div className="flex-1 min-w-0">
             <OpKanbanBoard<ServiceOrder>
               columns={columns}
