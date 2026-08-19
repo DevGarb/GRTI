@@ -352,14 +352,19 @@ export default function OpOficina() {
       </Tabs>
 
       {view === "kanban" && (
-        <OpKanbanBoard<ServiceOrder>
-          columns={columns}
-          itemsByColumn={itemsByCol}
-          renderCard={renderCard}
-          resolveItem={(id) => filtered.find(o => o.id === id)}
-          onMove={(item, _from, to) => handleStageChange(item, to)}
-          emptyText="— sem motos —"
-        />
+        <div className="flex gap-3 items-start">
+          <ConfirmedBookingsColumn />
+          <div className="flex-1 min-w-0">
+            <OpKanbanBoard<ServiceOrder>
+              columns={columns}
+              itemsByColumn={itemsByCol}
+              renderCard={renderCard}
+              resolveItem={(id) => filtered.find(o => o.id === id)}
+              onMove={(item, _from, to) => handleStageChange(item, to)}
+              emptyText="— sem motos —"
+            />
+          </div>
+        </div>
       )}
 
       {view === "lista" && (
