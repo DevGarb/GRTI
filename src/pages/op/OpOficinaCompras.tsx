@@ -136,7 +136,14 @@ export default function OpOficinaCompras() {
 
                         {expanded && (
                           <div className="border-t p-4 space-y-3 bg-muted/20">
-                            <div className="flex justify-end">
+                            <div className="flex items-center justify-between gap-2 flex-wrap">
+                              <div className="text-sm">
+                                <span className="text-muted-foreground">Valor total da OS: </span>
+                                <span className="font-bold">{brl(osTotal(allParts))}</span>
+                                <span className="text-xs text-muted-foreground ml-2">
+                                  (pendentes: {brl(osTotal(pending))})
+                                </span>
+                              </div>
                               <Button size="sm" onClick={() => registerArrival(o)}>
                                 <Truck className="h-4 w-4 mr-1" /> Chegada total da OS
                               </Button>
@@ -149,6 +156,23 @@ export default function OpOficinaCompras() {
                                   <Badge variant="secondary" className={cn("ml-auto", PART_STATUS_INFO[p.part_status]?.chip)}>
                                     {PART_STATUS_INFO[p.part_status]?.label || p.part_status}
                                   </Badge>
+                                </div>
+                                <div className="flex items-center gap-2 flex-wrap">
+                                  <label className="text-xs text-muted-foreground">Valor unit. (R$)</label>
+                                  <Input
+                                    type="number"
+                                    min={0}
+                                    step="0.01"
+                                    defaultValue={Number(p.unit_price) || 0}
+                                    onBlur={e => {
+                                      const v = Number(e.target.value) || 0;
+                                      if (v !== Number(p.unit_price)) setPartPrice(p.id, v);
+                                    }}
+                                    className="h-7 w-28 text-xs"
+                                  />
+                                  <span className="text-xs text-muted-foreground">
+                                    Subtotal: <span className="font-medium text-foreground">{brl(Number(p.quantity) * Number(p.unit_price || 0))}</span>
+                                  </span>
                                 </div>
                                 <div className="flex items-center gap-2 flex-wrap">
                                   {PART_STATUS_FLOW.map(st => (
@@ -166,6 +190,7 @@ export default function OpOficinaCompras() {
                                 </div>
                               </div>
                             ))}
+
                             {pending.length === 0 && (
                               <div className="text-sm text-muted-foreground flex items-center gap-1">
                                 <Package className="h-4 w-4" /> Todas as peças recebidas.
