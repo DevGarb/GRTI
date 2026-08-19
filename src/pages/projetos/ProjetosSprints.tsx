@@ -335,10 +335,81 @@ function CloseSprintDialog({
             </SelectContent>
           </Select>
           <p className="text-[11px] text-muted-foreground">
-            Este encerramento vai gerar 1 chamado para{" "}
-            <strong>{selectedStaff ? selectedStaff.full_name || selectedStaff.email : "—"}</strong>{" "}
-            com <strong>{totalPoints}</strong> {totalPoints === 1 ? "ponto" : "pontos"} (soma dos chamados + tarefas da sprint).
+            Responsável formal da sprint:{" "}
+            <strong>{selectedStaff ? selectedStaff.full_name || selectedStaff.email : "—"}</strong>. Os pontos são
+            distribuídos abaixo entre quem entregou os itens.
           </p>
+        </div>
+
+        <div className="space-y-1.5">
+          <div className="flex items-center justify-between">
+            <Label className="text-xs">Divisão da pontuação</Label>
+            <span className={`text-[11px] ${splitOk ? "text-emerald-600" : "text-amber-700"}`}>
+              {creditSum} / {totalPoints} pts
+            </span>
+          </div>
+
+          <div className="rounded-md border divide-y">
+            {creditRows.length === 0 && (
+              <div className="px-2.5 py-2 text-[11px] text-muted-foreground">
+                Nenhum item pontuado nesta sprint.
+              </div>
+            )}
+            {creditRows.map((r) => (
+              <div key={r.user_id} className="flex items-center gap-2 px-2.5 py-2">
+                <div className="flex-1 min-w-0">
+                  <div className="text-sm truncate">{staffName(r.user_id)}</div>
+                  <div className="text-[11px] text-muted-foreground">
+                    {r.count} {r.count === 1 ? "item entregue" : "itens entregues"}
+                  </div>
+                </div>
+                <input
+                  type="number"
+                  min={0}
+                  value={r.points}
+                  onChange={(e) =>
+                    setCredits((p) => ({ ...p, [r.user_id]: Math.max(0, Number(e.target.value) || 0) }))
+                  }
+                  className="h-8 w-20 rounded-md border bg-background px-2 text-sm text-right"
+                />
+                <span className="text-[11px] text-muted-foreground">pts</span>
+              </div>
+            ))}
+          </div>
+
+          {split && split.unassignedCount > 0 && (
+            <p className="text-[11px] text-amber-700 flex items-center gap-1">
+              <AlertTriangle className="h-3 w-3" />
+              {split.unassignedCount} {split.unassignedCount === 1 ? "item sem responsável" : "itens sem responsável"} (
+              {split.unassignedPoints} pts) creditados ao responsável formal — ajuste acima se necessário.
+            </p>
+          )}
+
+          {!splitOk && creditRows.length > 0 && (
+            <p className="text-[11px] text-amber-700">
+              A soma da divisão precisa ser exatamente {totalPoints} pontos.
+            </p>
+          )}
+
+          {staff.length > 0 && (
+            <Select
+              value=""
+              onValueChange={(v) => setCredits((p) => ({ ...p, [v]: p[v] ?? 0 }))}
+            >
+              <SelectTrigger className="h-8 text-xs">
+                <SelectValue placeholder="+ Adicionar participante..." />
+              </SelectTrigger>
+              <SelectContent>
+                {staff
+                  .filter((s: any) => credits[s.user_id] === undefined)
+                  .map((s: any) => (
+                    <SelectItem key={s.user_id} value={s.user_id}>
+                      {s.full_name || s.email}
+                    </SelectItem>
+                  ))}
+              </SelectContent>
+            </Select>
+          )}
         </div>
 
         <div className="space-y-1.5">
