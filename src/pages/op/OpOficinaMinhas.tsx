@@ -179,6 +179,15 @@ export default function OpOficinaMinhas() {
     [mine, partsByOs],
   );
 
+  const partsByMoto = useMemo(() => {
+    const map: Record<string, { os: ServiceOrder; parts: (ServiceOrderPart & { os: ServiceOrder })[] }> = {};
+    myParts.forEach(p => {
+      if (!map[p.os.id]) map[p.os.id] = { os: p.os, parts: [] };
+      map[p.os.id].parts.push(p);
+    });
+    return Object.values(map).sort((a, b) => String(a.os.vehicle_plate || a.os.os_number).localeCompare(String(b.os.vehicle_plate || b.os.os_number)));
+  }, [myParts]);
+
   const openFinish = (o: ServiceOrder) => {
     setFinishOs(o);
     setSummary("");
