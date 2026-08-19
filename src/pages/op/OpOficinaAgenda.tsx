@@ -28,7 +28,7 @@ export default function OpOficinaAgenda() {
   const readOnly = profile?.type === "mecanico";
   const { items: orders, update, add: addOrder } = useServiceOrders();
   const { items: mechanics } = useMechanics();
-  const { items: bookings, update: updateBooking } = useWorkshopBookings();
+  const { items: bookings, update: updateBooking, add: addBooking } = useWorkshopBookings();
 
   const [day, setDay] = useState(todayISO());
   const [scheduling, setScheduling] = useState<ServiceOrder | null>(null);
