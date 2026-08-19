@@ -782,9 +782,12 @@ export default function OpOficinaMinhas() {
                           {o.description && (
                             <div className="text-xs text-muted-foreground mt-1 line-clamp-2">{o.description}</div>
                           )}
-                          <div className="mt-2 max-w-xs">
-                            <OsProgressBar total={(partsByOs[o.id] || []).length} done={(partsByOs[o.id] || []).filter(p => p.part_status === "recebida").length} />
-                          </div>
+                          {(partsByOs[o.id] || []).length > 0 && (
+                            <div className="text-xs text-muted-foreground mt-1">
+                              Peças: {(partsByOs[o.id] || []).filter(p => p.part_status === "recebida").length}/{(partsByOs[o.id] || []).length} recebidas
+                            </div>
+                          )}
+
                         </div>
                         <Button size="sm" disabled={pulling === o.id} onClick={() => pullOs(o)}>
                           {pulling === o.id ? "Puxando..." : "Puxar pra mim"}
