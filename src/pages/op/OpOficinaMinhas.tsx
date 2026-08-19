@@ -45,6 +45,7 @@ export default function OpOficinaMinhas() {
   const [hiddenStages, setHiddenStages] = useState<string[]>([]);
   const toggleStage = (id: string) =>
     setHiddenStages(prev => prev.includes(id) ? prev.filter(s => s !== id) : [...prev, id]);
+  const [expandedPartOs, setExpandedPartOs] = useState<string | null>(null);
 
   const [openNew, setOpenNew] = useState(false);
   const [plate, setPlate] = useState("");
