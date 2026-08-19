@@ -467,7 +467,22 @@ export default function OpOficinaMinhas() {
                       <div className="flex items-center gap-2 flex-wrap">
                         <span className="text-lg font-bold tracking-wide">{o.vehicle_plate || `OS #${o.os_number}`}</span>
                         <Badge variant="secondary" className={st.chip}>{st.label}</Badge>
+                        {(o as any).scheduled_date && (
+                          <Badge
+                            variant="secondary"
+                            className={cn(
+                              "bg-sky-500/15 text-sky-700",
+                              (o as any).scheduled_date === todayISO() && "bg-emerald-500/15 text-emerald-700",
+                              (o as any).scheduled_date < todayISO() && "bg-rose-500/15 text-rose-700",
+                            )}
+                          >
+                            <CalendarDays className="h-3 w-3 mr-1" />
+                            {(o as any).scheduled_date === todayISO() ? "Hoje" : formatDateBRShort((o as any).scheduled_date)}
+                            {(o as any).scheduled_period ? ` · ${periodInfo((o as any).scheduled_period).label}` : ""}
+                          </Badge>
+                        )}
                       </div>
+
                       <div className="text-sm text-muted-foreground mt-0.5">
                         {[o.vehicle_model, (o as any).vehicle_color, (o as any).vehicle_year].filter(Boolean).join(" · ") || "—"}
                       </div>
