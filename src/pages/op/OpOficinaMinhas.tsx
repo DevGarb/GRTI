@@ -147,6 +147,32 @@ export default function OpOficinaMinhas() {
     [mine],
   );
 
+  // Agenda do mecânico: serviços com data de execução definida
+  const agendaGroups = useMemo(() => {
+    const today = todayISO();
+    const scheduled = items
+      .filter(o => o.mechanic_id === profile?.id && !DONE_STAGES.includes(o.stage) && (o as any).scheduled_date)
+      .sort((a, b) => String((a as any).scheduled_date).localeCompare(String((b as any).scheduled_date)));
+    const byDate = new Map<string, ServiceOrder[]>();
+    scheduled.forEach(o => {
+      const d = String((o as any).scheduled_date);
+      byDate.set(d, [...(byDate.get(d) || []), o]);
+    });
+    return Array.from(byDate.entries()).map(([date, orders]) => ({
+      date,
+      orders,
+      isToday: date === today,
+      isLate: date < today,
+    }));
+  }, [items, profile?.id]);
+
+  const semData = useMemo(
+    () => mine.filter(o => !(o as any).scheduled_date),
+    [mine],
+  );
+  const agendaHoje = agendaGroups.find(g => g.isToday)?.orders.length || 0;
+
+
   const [onlyMine, setOnlyMine] = useState(false);
   const [doneSearch, setDoneSearch] = useState("");
 
