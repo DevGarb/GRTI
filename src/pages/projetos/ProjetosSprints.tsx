@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -157,20 +157,97 @@ function CloseSprintDialog({
     },
   });
 
-  // Soma de pontos de TODOS os itens da sprint (tickets + project_tasks)
-  const { data: totalPoints = 0 } = useQuery({
-    queryKey: ["sprint-total-points", sprint?.id],
+  // Itens da sprint com autoria (tarefas + chamados) para dividir a pontuação
+  const { data: split } = useQuery({
+    queryKey: ["sprint-credit-split", sprint?.id],
     enabled: !!open && !!sprint?.id,
     queryFn: async () => {
       const [{ data: tasks }, { data: tks }] = await Promise.all([
-        supabase.from("project_tasks").select("story_points").eq("sprint_id", sprint!.id),
-        supabase.from("tickets").select("story_points").eq("sprint_id", sprint!.id).neq("type", "Projeto"),
+        supabase
+          .from("project_tasks")
+          .select("story_points, credited_to, assignee_id")
+          .eq("sprint_id", sprint!.id),
+        supabase
+          .from("tickets")
+          .select("story_points, assigned_to")
+          .eq("sprint_id", sprint!.id)
+          .neq("type", "Projeto"),
       ]);
-      const t1 = (tasks || []).reduce((s: number, r: any) => s + (r.story_points || 0), 0);
-      const t2 = (tks || []).reduce((s: number, r: any) => s + (r.story_points || 0), 0);
-      return t1 + t2;
+      const rows: { user_id: string | null; points: number }[] = [
+        ...(tasks || []).map((t: any) => ({
+          user_id: (t.credited_to || t.assignee_id || null) as string | null,
+          points: t.story_points || 0,
+        })),
+        ...(tks || []).map((t: any) => ({
+          user_id: (t.assigned_to || null) as string | null,
+          points: t.story_points || 0,
+        })),
+      ];
+      const byUser = new Map<string, { points: number; count: number }>();
+      let unassignedPoints = 0;
+      let unassignedCount = 0;
+      for (const r of rows) {
+        if (!r.user_id) {
+          unassignedPoints += r.points;
+          unassignedCount += 1;
+          continue;
+        }
+        const cur = byUser.get(r.user_id) || { points: 0, count: 0 };
+        byUser.set(r.user_id, { points: cur.points + r.points, count: cur.count + 1 });
+      }
+      const totalPoints = rows.reduce((s, r) => s + r.points, 0);
+      return {
+        totalPoints,
+        unassignedPoints,
+        unassignedCount,
+        entries: Array.from(byUser.entries()).map(([user_id, v]) => ({ user_id, ...v })),
+      };
     },
   });
+
+  const totalPoints = split?.totalPoints ?? 0;
+
+  // Pontos editáveis por pessoa
+  const [credits, setCredits] = useState<Record<string, number>>({});
+  const [splitKey, setSplitKey] = useState<string>("");
+
+  useEffect(() => {
+    if (!split || !sprint) return;
+    const key = `${sprint.id}:${split.totalPoints}:${split.entries.length}`;
+    if (key === splitKey) return;
+    const base: Record<string, number> = {};
+    split.entries.forEach((e) => (base[e.user_id] = e.points));
+    if (split.unassignedPoints > 0 && finishedBy) {
+      base[finishedBy] = (base[finishedBy] || 0) + split.unassignedPoints;
+    }
+    setCredits(base);
+    setSplitKey(key);
+  }, [split, sprint, finishedBy, splitKey]);
+
+  useEffect(() => {
+    if (!open) {
+      setCredits({});
+      setSplitKey("");
+    }
+  }, [open]);
+
+  const staffName = (id: string) => {
+    const s = staff.find((x: any) => x.user_id === id);
+    return s?.full_name || s?.email || "Usuário";
+  };
+
+  const creditRows = useMemo(
+    () =>
+      Object.entries(credits).map(([user_id, points]) => ({
+        user_id,
+        points,
+        count: split?.entries.find((e) => e.user_id === user_id)?.count ?? 0,
+      })),
+    [credits, split]
+  );
+
+  const creditSum = creditRows.reduce((s, r) => s + (Number(r.points) || 0), 0);
+  const splitOk = totalPoints === 0 ? true : creditRows.length > 0 && creditSum === totalPoints;
 
   const handleUpload = async (key: CheckKey, file: File) => {
     if (!sprint) return;
@@ -207,6 +284,9 @@ function CloseSprintDialog({
         _finished_by: finishedBy,
         _category_id: categoryId || null,
         _evidences: evidencesPayload,
+        _credits: creditRows
+          .filter((r) => (Number(r.points) || 0) > 0)
+          .map((r) => ({ user_id: r.user_id, points: Number(r.points) || 0 })),
       });
       if (error) throw error;
     },
@@ -222,7 +302,7 @@ function CloseSprintDialog({
   });
 
   const allChecked = Object.values(checks).every(Boolean);
-  const canClose = allChecked && !!finishedBy && !!categoryId;
+  const canClose = allChecked && !!finishedBy && !!categoryId && splitOk;
   const score = Object.values(checks).filter(Boolean).length * 20;
   const selectedStaff = staff.find((s: any) => s.user_id === finishedBy);
 
@@ -255,10 +335,81 @@ function CloseSprintDialog({
             </SelectContent>
           </Select>
           <p className="text-[11px] text-muted-foreground">
-            Este encerramento vai gerar 1 chamado para{" "}
-            <strong>{selectedStaff ? selectedStaff.full_name || selectedStaff.email : "—"}</strong>{" "}
-            com <strong>{totalPoints}</strong> {totalPoints === 1 ? "ponto" : "pontos"} (soma dos chamados + tarefas da sprint).
+            Responsável formal da sprint:{" "}
+            <strong>{selectedStaff ? selectedStaff.full_name || selectedStaff.email : "—"}</strong>. Os pontos são
+            distribuídos abaixo entre quem entregou os itens.
           </p>
+        </div>
+
+        <div className="space-y-1.5">
+          <div className="flex items-center justify-between">
+            <Label className="text-xs">Divisão da pontuação</Label>
+            <span className={`text-[11px] ${splitOk ? "text-emerald-600" : "text-amber-700"}`}>
+              {creditSum} / {totalPoints} pts
+            </span>
+          </div>
+
+          <div className="rounded-md border divide-y">
+            {creditRows.length === 0 && (
+              <div className="px-2.5 py-2 text-[11px] text-muted-foreground">
+                Nenhum item pontuado nesta sprint.
+              </div>
+            )}
+            {creditRows.map((r) => (
+              <div key={r.user_id} className="flex items-center gap-2 px-2.5 py-2">
+                <div className="flex-1 min-w-0">
+                  <div className="text-sm truncate">{staffName(r.user_id)}</div>
+                  <div className="text-[11px] text-muted-foreground">
+                    {r.count} {r.count === 1 ? "item entregue" : "itens entregues"}
+                  </div>
+                </div>
+                <input
+                  type="number"
+                  min={0}
+                  value={r.points}
+                  onChange={(e) =>
+                    setCredits((p) => ({ ...p, [r.user_id]: Math.max(0, Number(e.target.value) || 0) }))
+                  }
+                  className="h-8 w-20 rounded-md border bg-background px-2 text-sm text-right"
+                />
+                <span className="text-[11px] text-muted-foreground">pts</span>
+              </div>
+            ))}
+          </div>
+
+          {split && split.unassignedCount > 0 && (
+            <p className="text-[11px] text-amber-700 flex items-center gap-1">
+              <AlertTriangle className="h-3 w-3" />
+              {split.unassignedCount} {split.unassignedCount === 1 ? "item sem responsável" : "itens sem responsável"} (
+              {split.unassignedPoints} pts) creditados ao responsável formal — ajuste acima se necessário.
+            </p>
+          )}
+
+          {!splitOk && creditRows.length > 0 && (
+            <p className="text-[11px] text-amber-700">
+              A soma da divisão precisa ser exatamente {totalPoints} pontos.
+            </p>
+          )}
+
+          {staff.length > 0 && (
+            <Select
+              value=""
+              onValueChange={(v) => setCredits((p) => ({ ...p, [v]: p[v] ?? 0 }))}
+            >
+              <SelectTrigger className="h-8 text-xs">
+                <SelectValue placeholder="+ Adicionar participante..." />
+              </SelectTrigger>
+              <SelectContent>
+                {staff
+                  .filter((s: any) => credits[s.user_id] === undefined)
+                  .map((s: any) => (
+                    <SelectItem key={s.user_id} value={s.user_id}>
+                      {s.full_name || s.email}
+                    </SelectItem>
+                  ))}
+              </SelectContent>
+            </Select>
+          )}
         </div>
 
         <div className="space-y-1.5">
