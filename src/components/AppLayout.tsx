@@ -140,6 +140,15 @@ export default function AppLayout({ children }: AppLayoutProps) {
   const gerencialItems = visibleNavItems.filter((item) => item.section === "gerencial");
 
   const isChkOrg = orgSlug === "grcheck";
+  const isTiOrg = orgSlug === "grupo-ramos";
+
+  // Tema escopado da T.I aplicado no <html> para alcançar também os portais
+  // (dialog, popover, select) renderizados fora da árvore do layout.
+  useEffect(() => {
+    document.documentElement.classList.toggle("ti-scope", isTiOrg);
+    return () => document.documentElement.classList.remove("ti-scope");
+  }, [isTiOrg]);
+
 
   const openTvPanel = async () => {
     try {
