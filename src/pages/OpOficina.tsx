@@ -204,6 +204,34 @@ export default function OpOficina() {
         <div className="text-[11px] text-muted-foreground line-clamp-2 mt-1" onClick={() => setSelected(o)}>
           {o.description || "Sem descrição"}
         </div>
+
+        {!isDelivered(o) && (
+          <div className="flex items-center gap-2 mt-2">
+            <div className="flex items-center gap-1.5 flex-1 min-w-0">
+              <Calendar className="h-3 w-3 text-muted-foreground shrink-0" />
+              <Input
+                type="date"
+                value={o.scheduled_date || ""}
+                onClick={(e) => e.stopPropagation()}
+                onChange={(e) => { e.stopPropagation(); update(o.id, { scheduled_date: e.target.value || null }); }}
+                className="h-7 text-[11px] px-2 py-0 flex-1 min-w-0"
+              />
+            </div>
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                const idx = SCHEDULE_PERIODS.findIndex(p => p.id === o.scheduled_period);
+                const next = SCHEDULE_PERIODS[(idx + 1) % SCHEDULE_PERIODS.length];
+                update(o.id, { scheduled_period: next.id });
+              }}
+              className={cn("text-[10px] px-2 py-1 rounded border shrink-0", periodInfo(o.scheduled_period).chip.replace(/\//g, " "))}
+            >
+              {periodInfo(o.scheduled_period).label}
+            </button>
+          </div>
+        )}
+
         {chk.length > 0 && (
           <OsProgressBar items={chk} barClass={stg.bar} className="mt-2" compact />
         )}
