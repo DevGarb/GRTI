@@ -66,6 +66,7 @@ export default function OpOficina() {
 
   const [view, setView] = useState<"kanban" | "lista" | "compras">("kanban");
   const [hideDelivered, setHideDelivered] = useState(true);
+  const [hideBookings, setHideBookings] = useState(false);
   const [dateFrom, setDateFrom] = useState(currentMonthStart());
   const [dateTo, setDateTo] = useState(todayStr());
   const [mechFilter, setMechFilter] = useState<string>("all");
