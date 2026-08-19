@@ -436,9 +436,12 @@ function ComprasView({ orders, partsByOs, companyName, onOpen, onPartStatus, onP
   onPartStatus: (partId: string, status: string) => void;
   onPartsArrived: (o: ServiceOrder) => void;
 }) {
-  const withParts = orders.filter(o => (partsByOs[o.id] || []).length > 0);
+  const withParts = orders.filter(o => {
+    const ps = partsByOs[o.id] || [];
+    return ps.length > 0 && !ps.every(p => p.part_status === "recebida");
+  });
   if (withParts.length === 0) {
-    return <div className="bg-card border rounded-lg p-12 text-center text-muted-foreground">Nenhuma peça na fila de compras</div>;
+    return <div className="bg-card border rounded-lg p-12 text-center text-muted-foreground">Nenhuma peça pendente de compra ou recebimento</div>;
   }
   return (
     <div className="space-y-3">
@@ -604,15 +607,14 @@ function OsDetailDialog({ os, onClose, onUpdate, onDelete, onRequestClose, compa
   const [vehiclePlate, setVehiclePlate] = useState<string>(os.vehicle_plate || "");
   const [vehicleModel, setVehicleModel] = useState<string>(os.vehicle_model || "");
 
-  const [partName, setPartName] = useState(""); const [qty, setQty] = useState("1"); const [price, setPrice] = useState("0");
+  const [partName, setPartName] = useState(""); const [qty, setQty] = useState("1");
 
   const handleAddPart = () => {
     if (!partName) return;
-    addPart({ part_name: partName, quantity: Number(qty), unit_price: Number(price) });
-    setPartName(""); setQty("1"); setPrice("0");
+    addPart({ part_name: partName, quantity: Number(qty), unit_price: 0 });
+    setPartName(""); setQty("1");
   };
 
-  const total = parts.reduce((s, p) => s + Number(p.quantity) * Number(p.unit_price), 0);
   const days = daysInWorkshop(openedAt || os.opened_at, os.finished_at);
 
   const saveHeader = () => {
@@ -646,7 +648,7 @@ function OsDetailDialog({ os, onClose, onUpdate, onDelete, onRequestClose, compa
     const w = window.open("", "_blank"); if (!w) return;
     const mech = mechanics.find(m => m.id === os.mechanic_id)?.name || "—";
     const comp = companies.find(c => c.id === os.company_id)?.name || "—";
-    const partsRows = parts.map(p => `<tr><td>${p.part_name}</td><td style="text-align:center">${p.quantity}</td><td style="text-align:center">${(PART_STATUS_INFO[p.part_status] || PART_STATUS_INFO.solicitada).label}</td><td style="text-align:right">${fmtMoney(Number(p.unit_price))}</td><td style="text-align:right">${fmtMoney(Number(p.quantity) * Number(p.unit_price))}</td></tr>`).join("");
+    const partsRows = parts.map(p => `<tr><td>${p.part_name}</td><td style="text-align:center">${p.quantity}</td><td style="text-align:center">${(PART_STATUS_INFO[p.part_status] || PART_STATUS_INFO.solicitada).label}</td></tr>`).join("");
     const photosHtml = photos.map(p => `<div style="display:inline-block;margin:4px;text-align:center"><img src="${p.photo_url}" style="max-width:200px;max-height:160px;border:1px solid #ccc"/><div style="font-size:11px">${p.photo_type}</div></div>`).join("");
     w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>OS #${os.os_number}</title>
       <style>body{font-family:Arial,sans-serif;padding:24px;color:#222}h1{margin:0 0 4px}h2{font-size:14px;margin:16px 0 6px;border-bottom:1px solid #ddd;padding-bottom:4px}table{width:100%;border-collapse:collapse;font-size:12px}th,td{border:1px solid #ccc;padding:6px}th{background:#f2f2f2;text-align:left}.grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:12px}.f{padding:6px;background:#f7f7f7;border-radius:4px}</style></head><body>
@@ -664,8 +666,8 @@ function OsDetailDialog({ os, onClose, onUpdate, onDelete, onRequestClose, compa
       <h2>Descrição</h2><div>${(os.description || "—").replace(/\n/g, "<br>")}</div>
       <h2>Diagnóstico</h2><div>${(diagnosis || "—").replace(/\n/g, "<br>")}</div>
       <h2>Peças / Itens</h2>
-      <table><thead><tr><th>Item</th><th>Qtd</th><th>Situação</th><th>Unit.</th><th>Total</th></tr></thead><tbody>${partsRows || '<tr><td colspan="5" style="text-align:center">Sem itens</td></tr>'}</tbody>
-      <tfoot><tr><th colspan="4" style="text-align:right">Total</th><th style="text-align:right">${fmtMoney(total)}</th></tr></tfoot></table>
+      <table><thead><tr><th>Item</th><th>Qtd</th><th>Situação</th></tr></thead><tbody>${partsRows || '<tr><td colspan="3" style="text-align:center">Sem itens</td></tr>'}</tbody>
+      </table>
       ${photos.length ? `<h2>Fotos</h2><div>${photosHtml}</div>` : ""}
       ${notes ? `<h2>Observações</h2><div>${notes.replace(/\n/g, "<br>")}</div>` : ""}
       <script>window.onload=()=>setTimeout(()=>window.print(),300)</script>
@@ -793,16 +795,12 @@ function OsDetailDialog({ os, onClose, onUpdate, onDelete, onRequestClose, compa
             Peças / Itens
             <Badge variant="secondary">{parts.length}</Badge>
           </h3>
-          <div className="grid grid-cols-[1fr_80px_120px_auto] gap-2 mb-2">
+          <div className="grid grid-cols-[1fr_80px_auto] gap-2 mb-2">
             <Input
               list="parts-catalog"
               placeholder="Peça/serviço"
               value={partName}
-              onChange={e => {
-                setPartName(e.target.value);
-                const found = partsCatalog.find(p => p.name === e.target.value);
-                if (found) setPrice(String(found.default_price));
-              }}
+              onChange={e => setPartName(e.target.value)}
               onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); handleAddPart(); } }}
             />
             <datalist id="parts-catalog">{partsCatalog.map(p => <option key={p.id} value={p.name} />)}</datalist>
@@ -812,15 +810,6 @@ function OsDetailDialog({ os, onClose, onUpdate, onDelete, onRequestClose, compa
               min="0"
               value={qty}
               onChange={e => setQty(e.target.value)}
-              onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); handleAddPart(); } }}
-            />
-            <Input
-              type="number"
-              step="0.01"
-              min="0"
-              value={price}
-              onChange={e => setPrice(e.target.value)}
-              placeholder="Valor"
               onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); handleAddPart(); } }}
             />
             <Button onClick={handleAddPart}>
@@ -839,15 +828,11 @@ function OsDetailDialog({ os, onClose, onUpdate, onDelete, onRequestClose, compa
                     {PART_STATUS_FLOW.map(s => <SelectItem key={s} value={s}>{PART_STATUS_INFO[s].label}</SelectItem>)}
                   </SelectContent>
                 </Select>
-                <div className="w-24 text-right text-xs">{fmtMoney(Number(p.unit_price))}</div>
-                <div className="w-24 text-right font-medium">{fmtMoney(Number(p.quantity) * Number(p.unit_price))}</div>
                 <Button variant="ghost" size="icon" onClick={() => removePart(p.id)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
               </div>
             ))}
-            {parts.length > 0 && (
-              <div className="p-2 flex justify-end font-semibold bg-muted/30">Total: {fmtMoney(total)}</div>
-            )}
           </div>
+
         </div>
 
         <div className="border-t pt-3">
