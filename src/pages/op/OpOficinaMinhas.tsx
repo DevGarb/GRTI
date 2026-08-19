@@ -717,6 +717,88 @@ export default function OpOficinaMinhas() {
             )}
           </TabsContent>
 
+          <TabsContent value="disponiveis" className="space-y-3 mt-4">
+            <div className="bg-card border rounded-lg p-4 flex items-center justify-between flex-wrap gap-2">
+              <div>
+                <h1 className="font-bold text-lg flex items-center gap-2">
+                  <Wrench className="h-5 w-5" /> Motos sem mecânico atribuído
+                </h1>
+                <p className="text-sm text-muted-foreground">
+                  Veja o status e puxe para você caso possa adiantar o serviço.
+                </p>
+              </div>
+              <div className="flex items-center gap-2">
+                <Badge variant="outline">{availableCount} moto(s)</Badge>
+                <Input
+                  value={availSearch}
+                  onChange={e => setAvailSearch(e.target.value)}
+                  placeholder="Buscar placa, modelo, OS..."
+                  className="w-56"
+                />
+              </div>
+            </div>
+
+            {availableGroups.length === 0 && (
+              <div className="bg-card border rounded-lg p-12 text-center text-muted-foreground">
+                Nenhuma moto disponível sem mecânico no momento.
+              </div>
+            )}
+
+            {availableGroups.map(g => (
+              <div key={g.id} className="bg-card border rounded-lg overflow-hidden">
+                <div className="px-4 py-2 flex items-center gap-2 border-b bg-muted/40">
+                  <span className="font-semibold">{g.label}</span>
+                  <Badge variant="secondary" className="ml-auto">{g.orders.length}</Badge>
+                </div>
+                <div className="divide-y">
+                  {g.orders.map(o => {
+                    const st = stageInfo(o.stage);
+                    const dias = daysInWorkshop(o as any);
+                    return (
+                      <div key={o.id} className="p-3 flex items-center gap-3 flex-wrap">
+                        <div className="flex-1 min-w-[200px]">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="font-bold tracking-wide">{o.vehicle_plate || `OS #${o.os_number}`}</span>
+                            <Badge variant="secondary" className={st.chip}>{st.label}</Badge>
+                            {(o as any).scheduled_date && (
+                              <Badge variant="outline" className="gap-1">
+                                <CalendarDays className="h-3 w-3" />
+                                {formatDateBRShort(String((o as any).scheduled_date))}
+                                {(o as any).scheduled_period ? ` · ${periodInfo((o as any).scheduled_period).label}` : ""}
+                              </Badge>
+                            )}
+                            {o.supervisor_alert && (
+                              <Badge variant="destructive" className="gap-1">
+                                <MessageSquareWarning className="h-3 w-3" /> Alerta
+                              </Badge>
+                            )}
+                            {typeof dias === "number" && dias >= DIAS_ALERTA && (
+                              <Badge variant="destructive">{dias} dias na oficina</Badge>
+                            )}
+                          </div>
+                          <div className="text-sm text-muted-foreground mt-0.5">
+                            {[o.vehicle_model, o.customer_name].filter(Boolean).join(" · ") || "—"}
+                          </div>
+                          {o.description && (
+                            <div className="text-xs text-muted-foreground mt-1 line-clamp-2">{o.description}</div>
+                          )}
+                          <div className="mt-2 max-w-xs">
+                            <OsProgressBar total={(partsByOs[o.id] || []).length} done={(partsByOs[o.id] || []).filter(p => p.part_status === "recebida").length} />
+                          </div>
+                        </div>
+                        <Button size="sm" disabled={pulling === o.id} onClick={() => pullOs(o)}>
+                          {pulling === o.id ? "Puxando..." : "Puxar pra mim"}
+                        </Button>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            ))}
+          </TabsContent>
+
+
+
 
 
           <TabsContent value="pecas" className="space-y-3 mt-4">
