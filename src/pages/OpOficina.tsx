@@ -653,6 +653,8 @@ function OsDetailDialog({ os, onClose, onUpdate, onDelete, onRequestClose, compa
       stage,
       diagnosis,
       deadline: deadline || null,
+      scheduled_date: scheduledDate || null,
+      scheduled_period: scheduledPeriod,
       company_id: companyId || null,
       customer_name: customerName || null,
 
