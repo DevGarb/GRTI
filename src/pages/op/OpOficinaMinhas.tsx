@@ -22,6 +22,8 @@ import { toast } from "sonner";
 import {
   stageInfo, PART_STATUS_INFO, daysInWorkshop, partsSlaRemaining, DIAS_ALERTA, SLA_PECAS,
 } from "@/lib/oficinaStages";
+import { periodInfo, todayISO, formatDateBRShort, weekdayLabel } from "@/lib/oficinaAgenda";
+
 
 const MY_STAGES = ["analise", "desempeno", "pintura", "execucao"];
 const DONE_STAGES = ["pronto", "entregue"];
