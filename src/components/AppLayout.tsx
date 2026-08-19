@@ -181,12 +181,16 @@ export default function AppLayout({ children }: AppLayoutProps) {
                 }
                 setSidebarOpen(false);
               }}
+              data-active={active ? "true" : "false"}
               className={cn(
                 "relative flex items-center gap-3 px-3 py-2.5 rounded-lg text-[13px] font-medium transition-colors duration-150",
                 isChkOrg && "before:absolute before:left-0 before:top-1/2 before:-translate-y-1/2 before:h-0 before:w-[3px] before:rounded-full before:bg-sidebar-primary before:transition-all before:duration-200",
                 isChkOrg && active && "before:h-5",
                 isChkOrg && "min-h-[42px]",
-                active
+                isTiOrg && "ti-nav-item min-h-[42px]",
+                isTiOrg
+                  ? "text-sidebar-foreground"
+                  : active
                   ? "bg-sidebar-accent text-sidebar-accent-foreground"
                   : "text-sidebar-foreground hover:bg-sidebar-accent/50 hover:text-sidebar-accent-foreground"
               )}
