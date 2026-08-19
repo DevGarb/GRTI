@@ -339,9 +339,14 @@ export default function OpOficina() {
           <AlertTriangle className="h-3 w-3 mr-1" /> Só atrasadas
         </Button>
         {view === "kanban" && (
-          <Button size="sm" variant="outline" onClick={() => setHideDelivered(v => !v)}>
-            {hideDelivered ? <><EyeOff className="h-3 w-3 mr-1" />Ocultando entregues</> : <><Eye className="h-3 w-3 mr-1" />Mostrando todas</>}
-          </Button>
+          <>
+            <Button size="sm" variant="outline" onClick={() => setHideDelivered(v => !v)}>
+              {hideDelivered ? <><EyeOff className="h-3 w-3 mr-1" />Ocultando entregues</> : <><Eye className="h-3 w-3 mr-1" />Mostrando todas</>}
+            </Button>
+            <Button size="sm" variant="outline" onClick={() => setHideBookings(v => !v)}>
+              {hideBookings ? <><Eye className="h-3 w-3 mr-1" />Mostrar agendamentos</> : <><EyeOff className="h-3 w-3 mr-1" />Ocultar agendamentos</>}
+            </Button>
+          </>
         )}
       </div>
 
