@@ -1,6 +1,6 @@
 import { filterOficinaCompanies } from "@/lib/oficinaCompanies";
 import { useEffect, useMemo, useState } from "react";
-import { Wrench, Package, CheckCircle2, ClipboardList, ShoppingCart, AlertTriangle, Plus, ChevronDown, ChevronUp, Camera, X, MessageSquareWarning } from "lucide-react";
+import { Wrench, Package, CheckCircle2, ClipboardList, ShoppingCart, AlertTriangle, Plus, ChevronDown, ChevronUp, Camera, X, MessageSquareWarning, Eye, EyeOff } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -42,6 +42,9 @@ export default function OpOficinaMinhas() {
   const { items: companies } = useCompanies();
   const [tab, setTab] = useState("servicos");
   const [expanded, setExpanded] = useState<string | null>(null);
+  const [hiddenStages, setHiddenStages] = useState<string[]>([]);
+  const toggleStage = (id: string) =>
+    setHiddenStages(prev => prev.includes(id) ? prev.filter(s => s !== id) : [...prev, id]);
 
   const [openNew, setOpenNew] = useState(false);
   const [plate, setPlate] = useState("");
@@ -389,15 +392,26 @@ export default function OpOficinaMinhas() {
               </div>
             )}
 
-            {mineGroups.map((g, gi) => (
-            <div key={g.id} className="space-y-3">
-              <div className={`flex items-center gap-2 ${gi > 0 ? "pt-4" : ""}`}>
-                <span className={`h-2.5 w-2.5 rounded-full ${g.dot}`} />
-                <h3 className="text-sm font-bold uppercase tracking-wide">{g.label}</h3>
-                <Badge variant="secondary" className={g.chip}>{g.orders.length}</Badge>
-                {gi === 0 && <span className="text-[11px] text-muted-foreground">prioridade</span>}
-              </div>
-            {g.orders.map(o => {
+            {mineGroups.map((g, gi) => {
+              const isHidden = hiddenStages.includes(g.id);
+              return (
+                <div key={g.id} className="space-y-3">
+                  <div className={`flex items-center gap-2 ${gi > 0 ? "pt-4" : ""}`}>
+                    <span className={`h-2.5 w-2.5 rounded-full ${g.dot}`} />
+                    <h3 className="text-sm font-bold uppercase tracking-wide">{g.label}</h3>
+                    <Badge variant="secondary" className={g.chip}>{g.orders.length}</Badge>
+                    {gi === 0 && <span className="text-[11px] text-muted-foreground">prioridade</span>}
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="ml-auto h-7 px-2 text-xs"
+                      onClick={() => toggleStage(g.id)}
+                    >
+                      {isHidden ? <Eye className="h-4 w-4 mr-1" /> : <EyeOff className="h-4 w-4 mr-1" />}
+                      {isHidden ? "Mostrar" : "Ocultar"}
+                    </Button>
+                  </div>
+                  {!isHidden && g.orders.map(o => {
               const st = stageInfo(o.stage);
               const parts = partsByOs[o.id] || [];
               const days = daysInWorkshop(o.opened_at);
@@ -530,8 +544,9 @@ export default function OpOficinaMinhas() {
                 </div>
               );
             })}
-            </div>
-            ))}
+          </div>
+        );
+      })}
           </TabsContent>
 
           <TabsContent value="pecas" className="space-y-3 mt-4">
