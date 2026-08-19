@@ -628,6 +628,8 @@ function OsDetailDialog({ os, onClose, onUpdate, onDelete, onRequestClose, compa
   const [diagnosis, setDiagnosis] = useState(os.diagnosis || "");
   const [notes] = useState(os.notes || "");
   const [deadline, setDeadline] = useState(os.deadline || "");
+  const [scheduledDate, setScheduledDate] = useState(os.scheduled_date || "");
+  const [scheduledPeriod, setScheduledPeriod] = useState(os.scheduled_period || "dia");
   const openedAt = os.opened_at || "";
   const [companyId, setCompanyId] = useState<string>(os.company_id || "");
   const [customerName, setCustomerName] = useState<string>(os.customer_name || "");
