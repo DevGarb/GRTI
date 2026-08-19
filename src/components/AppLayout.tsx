@@ -220,6 +220,11 @@ export default function AppLayout({ children }: AppLayoutProps) {
 
   return (
     <div className="flex min-h-screen w-full">
+      {isTiOrg && (
+        <div className="fixed inset-0 -z-10 pointer-events-none" aria-hidden="true">
+          <AuroraBackground />
+        </div>
+      )}
       {sidebarOpen && (
         <div
           className="fixed inset-0 bg-foreground/20 backdrop-blur-sm z-40 lg:hidden"
@@ -229,7 +234,8 @@ export default function AppLayout({ children }: AppLayoutProps) {
 
       <aside
         className={cn(
-          "fixed lg:sticky top-0 left-0 z-50 h-screen w-[240px] flex flex-col bg-sidebar text-sidebar-foreground transition-transform duration-200 lg:translate-x-0",
+          "fixed lg:sticky top-0 left-0 z-50 h-screen w-[240px] flex flex-col text-sidebar-foreground transition-transform duration-200 lg:translate-x-0",
+          isTiOrg ? "ti-sidebar" : "bg-sidebar",
           sidebarOpen ? "translate-x-0" : "-translate-x-full"
         )}
       >
