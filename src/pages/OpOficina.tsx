@@ -103,7 +103,7 @@ export default function OpOficina() {
       atrasadas: baseFiltered.filter(isOverdue).length,
       aguardPeca: ativas.filter(o => o.stage === "aguardando_peca").length,
       entregues: baseFiltered.filter(isDelivered).length,
-      custo: baseFiltered.filter(isDelivered).reduce((s, o) => s + Number(o.total_cost || 0), 0),
+      comCliente: ativas.filter(o => !!o.with_customer).length,
     };
   }, [baseFiltered]);
 
@@ -268,7 +268,7 @@ export default function OpOficina() {
         <Kpi label="Em alerta / atrasadas" value={kpis.atrasadas} icon={AlertTriangle} active={onlyLate} onClick={() => setOnlyLate(v => !v)} />
         <Kpi label="Aguardando peça" value={kpis.aguardPeca} icon={Package} />
         <Kpi label="Entregues no período" value={kpis.entregues} icon={Truck} />
-        <Kpi label="Custo entregues" value={fmtMoney(kpis.custo)} />
+        <Kpi label="Com o cliente" value={kpis.comCliente} icon={Home} />
       </div>
 
       <div className="bg-card border rounded-lg p-3 flex flex-wrap gap-3 items-end">
