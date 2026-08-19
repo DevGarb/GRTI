@@ -195,6 +195,18 @@ export function useServiceOrders() {
     const { error } = await supabase.from("op_service_order_parts").update({ part_status }).eq("id", partId);
     if (error) toast.error(error.message); else fetch();
   };
+  const setPartPrice = async (partId: string, unit_price: number) => {
+    setPartsByOs(prev => {
+      const next: Record<string, ServiceOrderPart[]> = {};
+      Object.entries(prev).forEach(([k, list]) => {
+        next[k] = list.map(p => (p.id === partId ? { ...p, unit_price } : p));
+      });
+      return next;
+    });
+    const { error } = await supabase.from("op_service_order_parts").update({ unit_price }).eq("id", partId);
+    if (error) toast.error(error.message);
+  };
+
   const movePriority = async (order: ServiceOrder, dir: -1 | 1) => {
     const queue = items
       .filter(o => o.stage === order.stage)
