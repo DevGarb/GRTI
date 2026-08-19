@@ -291,7 +291,7 @@ export default function OpOficina() {
 
       <div className="grid grid-cols-2 md:grid-cols-6 gap-3">
         <Kpi label="Motos ativas" value={kpis.total} icon={Wrench} />
-        <Kpi label="Média dias na oficina" value={`${kpis.media}d`} icon={Gauge} />
+        <Kpi label="Motos fisicamente na oficina" value={kpis.total - kpis.comCliente} icon={Gauge} />
         <Kpi label="Em alerta / atrasadas" value={kpis.atrasadas} icon={AlertTriangle} active={onlyLate} onClick={() => setOnlyLate(v => !v)} />
         <Kpi label="Aguardando peça" value={kpis.aguardPeca} icon={Package} />
         <Kpi label="Entregues no período" value={kpis.entregues} icon={Truck} />
