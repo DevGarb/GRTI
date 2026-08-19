@@ -16,7 +16,7 @@ import { useOficinaProfile } from "@/contexts/OficinaProfileContext";
 import { stageInfo, STAGE_ENTREGUE } from "@/lib/oficinaStages";
 import {
   SCHEDULE_PERIODS, periodInfo, BOOKING_STATUS_INFO, todayISO, shiftDay,
-  formatDateBRShort, weekdayLabel, type BookingStatus,
+  formatDateBRShort, weekdayLabel, SERVICE_TYPES, type BookingStatus,
 } from "@/lib/oficinaAgenda";
 import { toast } from "sonner";
 import "./cearagps.css";
@@ -432,6 +432,84 @@ function BookingDialog({ booking, defaultDate, mechanics, onClose, onConfirm }: 
             setSaving(true);
             onConfirm({ date, period, mechanic_id: mechanicId === "none" ? null : mechanicId, notes });
           }}>Confirmar agendamento</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function NewBookingDialog({ defaultDate, mechanics, onClose, onConfirm }: {
+  defaultDate: string;
+  mechanics: { id: string; name: string }[];
+  onClose: () => void;
+  onConfirm: (v: { plate: string; model: string; serviceType: string; date: string; period: string; mechanic_id: string | null; notes: string }) => void;
+}) {
+  const [plate, setPlate] = useState("");
+  const [model, setModel] = useState("");
+  const [serviceType, setServiceType] = useState(SERVICE_TYPES[0]);
+  const [date, setDate] = useState(defaultDate);
+  const [period, setPeriod] = useState("dia");
+  const [mechanicId, setMechanicId] = useState("none");
+  const [notes, setNotes] = useState("");
+  const [saving, setSaving] = useState(false);
+
+  return (
+    <Dialog open onOpenChange={onClose}>
+      <DialogContent>
+        <DialogHeader><DialogTitle>Novo agendamento</DialogTitle></DialogHeader>
+        <p className="text-xs text-slate-500 -mt-2">Cria a OS em Análise / Triagem já com data de execução.</p>
+        <div className="space-y-3">
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <Label>Placa *</Label>
+              <Input value={plate} onChange={(e) => setPlate(e.target.value.toUpperCase())} placeholder="ABC1D23" />
+            </div>
+            <div>
+              <Label>Modelo</Label>
+              <Input value={model} onChange={(e) => setModel(e.target.value)} placeholder="CG 160 Titan" />
+            </div>
+          </div>
+          <div>
+            <Label>Tipo de serviço</Label>
+            <Select value={serviceType} onValueChange={setServiceType}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>{SERVICE_TYPES.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
+            </Select>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <Label>Data de execução</Label>
+              <Input type="date" value={date} onChange={(e) => setDate(e.target.value)} />
+            </div>
+            <div>
+              <Label>Período</Label>
+              <Select value={period} onValueChange={setPeriod}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>{SCHEDULE_PERIODS.map((p) => <SelectItem key={p.id} value={p.id}>{p.label}</SelectItem>)}</SelectContent>
+              </Select>
+            </div>
+          </div>
+          <div>
+            <Label>Mecânico responsável</Label>
+            <Select value={mechanicId} onValueChange={setMechanicId}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">A definir</SelectItem>
+                {mechanics.map((m) => <SelectItem key={m.id} value={m.id}>{m.name}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
+          <div>
+            <Label>Observações</Label>
+            <Textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={3} />
+          </div>
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={onClose}>Cancelar</Button>
+          <Button className="cgps-btn-primary" disabled={saving || !plate.trim() || !date} onClick={() => {
+            setSaving(true);
+            onConfirm({ plate: plate.trim(), model, serviceType, date, period, mechanic_id: mechanicId === "none" ? null : mechanicId, notes });
+          }}>Criar agendamento</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
