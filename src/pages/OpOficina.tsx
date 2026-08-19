@@ -147,6 +147,16 @@ export default function OpOficina() {
     await checklist.markLabelDone(o.id, CHECKLIST_PARTS_LABEL);
   };
 
+  /** Marca/desmarca que a moto está com o cliente aguardando as peças (fora da oficina). */
+  const toggleWithCustomer = async (o: ServiceOrder) => {
+    const next = !o.with_customer;
+    await update(o.id, {
+      with_customer: next,
+      with_customer_at: next ? new Date().toISOString() : null,
+    } as Partial<ServiceOrder>);
+    toast.success(next ? "Moto marcada como com o cliente" : "Moto marcada como na oficina");
+  };
+
   const confirmClosure = async (payload: { closure_summary: string; closed_at: string; total_cost?: number }) => {
     if (!closing) return;
     await update(closing.id, {
