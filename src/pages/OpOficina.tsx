@@ -1,7 +1,7 @@
 import DateRangeFilter, { currentMonthStart, todayStr, inDateRange } from "@/components/shared/DateRangeFilter";
 import { filterOficinaCompanies } from "@/lib/oficinaCompanies";
 import { useMemo, useState } from "react";
-import { Wrench, Plus, Search, Trash2, Upload, FileText, X, LayoutGrid, List, Eye, EyeOff, AlertTriangle, ShoppingCart, Package, Gauge, ChevronUp, ChevronDown, Truck, Check, Home } from "lucide-react";
+import { Wrench, Plus, Search, Trash2, Upload, FileText, X, LayoutGrid, List, Eye, EyeOff, AlertTriangle, ShoppingCart, Package, Gauge, ChevronUp, ChevronDown, Truck, Check, Home, Calendar } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -28,6 +28,7 @@ import {
   PART_STATUS_FLOW, PART_STATUS_INFO, daysInWorkshop, partsSlaRemaining,
   CHECKLIST_PARTS_LABEL, maxDeadlineFrom,
 } from "@/lib/oficinaStages";
+import { SCHEDULE_PERIODS, periodInfo, formatDateBRShort } from "@/lib/oficinaAgenda";
 
 
 const TERMINAL = "Finalizado";
