@@ -314,7 +314,12 @@ export default function AppLayout({ children }: AppLayoutProps) {
       </aside>
 
       <div className="flex-1 flex flex-col min-w-0">
-        <header className="sticky top-0 z-30 h-12 flex items-center justify-between border-b border-border bg-background/80 backdrop-blur-sm px-4 lg:px-6">
+        <header
+          className={cn(
+            "sticky top-0 z-30 h-12 flex items-center justify-between border-b border-border px-4 lg:px-6",
+            isTiOrg ? "ti-header" : "bg-background/80 backdrop-blur-sm"
+          )}
+        >
           <button
             onClick={() => setSidebarOpen(true)}
             className="lg:hidden p-1.5 rounded-md hover:bg-muted text-muted-foreground"
