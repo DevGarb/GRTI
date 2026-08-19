@@ -2124,6 +2124,8 @@ export type Database = {
           vehicle_model: string | null
           vehicle_plate: string | null
           vehicle_year: string | null
+          with_customer: boolean
+          with_customer_at: string | null
         }
         Insert: {
           award_amount?: number
@@ -2169,6 +2171,8 @@ export type Database = {
           vehicle_model?: string | null
           vehicle_plate?: string | null
           vehicle_year?: string | null
+          with_customer?: boolean
+          with_customer_at?: string | null
         }
         Update: {
           award_amount?: number
@@ -2214,6 +2218,8 @@ export type Database = {
           vehicle_model?: string | null
           vehicle_plate?: string | null
           vehicle_year?: string | null
+          with_customer?: boolean
+          with_customer_at?: string | null
         }
         Relationships: []
       }
