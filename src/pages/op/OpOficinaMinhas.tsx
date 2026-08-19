@@ -23,6 +23,8 @@ import {
   stageInfo, PART_STATUS_INFO, daysInWorkshop, partsSlaRemaining, DIAS_ALERTA, SLA_PECAS,
 } from "@/lib/oficinaStages";
 import { periodInfo, todayISO, formatDateBRShort, weekdayLabel } from "@/lib/oficinaAgenda";
+import { useWorkshopBookings, type WorkshopBooking } from "@/hooks/useWorkshopBookings";
+import { openOsFromBooking } from "@/lib/openOsFromBooking";
 
 
 const MY_STAGES = ["analise", "desempeno", "pintura", "execucao"];
