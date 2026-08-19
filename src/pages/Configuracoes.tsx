@@ -1,3 +1,4 @@
+import TiPageHeader from "@/components/ti/TiPageHeader";
 import { useState } from "react";
 import { Sun, Lock, User } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
@@ -46,7 +47,7 @@ export default function Configuracoes() {
 
   return (
     <div className="space-y-6 max-w-2xl">
-      <h1 className="text-2xl font-bold text-foreground">Configurações</h1>
+      <TiPageHeader eyebrow="Preferências" title="Configurações" />
 
       {/* Appearance */}
       <div className="card-elevated p-5 space-y-4">

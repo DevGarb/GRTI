@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { supabase } from "@/integrations/supabase/client";
-import { LogOut, Menu, Moon, Sun, HelpCircle, Repeat, Bell } from "lucide-react";
+import { LogOut, Menu, Moon, Sun, HelpCircle, Repeat, Bell, ChevronLeft, ChevronRight } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import OrgSwitcher from "@/components/OrgSwitcher";
@@ -19,6 +19,9 @@ import "@/pages/ti/ti.css";
 interface AppLayoutProps {
   children: React.ReactNode;
 }
+
+export const TI_SIDEBAR_KEY = "ti-sidebar-collapsed";
+
 
 function hexToHSL(hex: string): string | null {
   const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
@@ -45,6 +48,14 @@ export default function AppLayout({ children }: AppLayoutProps) {
   const location = useLocation();
   const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [tiCollapsed, setTiCollapsed] = useState(() => {
+    try {
+      return localStorage.getItem(TI_SIDEBAR_KEY) === "true";
+    } catch {
+      return false;
+    }
+  });
+
   const [darkMode, setDarkMode] = useState(() => {
     const saved = localStorage.getItem("dark-mode");
     if (saved !== null) return saved === "true";
@@ -149,6 +160,40 @@ export default function AppLayout({ children }: AppLayoutProps) {
     return () => document.documentElement.classList.remove("ti-scope");
   }, [isTiOrg]);
 
+  // Persistência do mini-rail (apenas desktop, apenas T.I).
+  useEffect(() => {
+    if (!isTiOrg) return;
+    try {
+      localStorage.setItem(TI_SIDEBAR_KEY, String(tiCollapsed));
+    } catch {
+      /* storage indisponível — ignora */
+    }
+  }, [tiCollapsed, isTiOrg]);
+
+  const railMode = isTiOrg && tiCollapsed;
+
+  // Gaveta mobile: fecha com Esc e trava o scroll do corpo enquanto aberta.
+  useEffect(() => {
+    if (!sidebarOpen) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setSidebarOpen(false);
+    };
+    document.addEventListener("keydown", onKey);
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.removeEventListener("keydown", onKey);
+      document.body.style.overflow = prev;
+    };
+  }, [sidebarOpen]);
+
+  // Fecha a gaveta ao navegar.
+  useEffect(() => {
+    setSidebarOpen(false);
+  }, [location.pathname]);
+
+
+
 
   const openTvPanel = async () => {
     try {
@@ -188,6 +233,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
                 isChkOrg && active && "before:h-5",
                 isChkOrg && "min-h-[42px]",
                 isTiOrg && "ti-nav-item min-h-[42px]",
+                railMode && "justify-center px-2",
                 isTiOrg
                   ? "text-sidebar-foreground"
                   : active
@@ -195,15 +241,17 @@ export default function AppLayout({ children }: AppLayoutProps) {
                   : "text-sidebar-foreground hover:bg-sidebar-accent/50 hover:text-sidebar-accent-foreground"
               )}
             >
-              <item.icon className="h-4 w-4" />
-              <div className="flex flex-col">
-                <span>{item.label}</span>
-                {(item as any).subtitle && (
-                  <span className="text-[10px] font-normal text-sidebar-muted leading-tight">
-                    {(item as any).subtitle}
-                  </span>
-                )}
-              </div>
+              <item.icon className="h-4 w-4 shrink-0" />
+              {!railMode && (
+                <div className="flex flex-col min-w-0">
+                  <span className="truncate">{item.label}</span>
+                  {(item as any).subtitle && (
+                    <span className="text-[10px] font-normal text-sidebar-muted leading-tight truncate">
+                      {(item as any).subtitle}
+                    </span>
+                  )}
+                </div>
+              )}
             </Link>
           </TooltipTrigger>
           <TooltipContent side="right" className="text-xs max-w-[200px]">
@@ -233,18 +281,34 @@ export default function AppLayout({ children }: AppLayoutProps) {
       )}
 
       <aside
+        aria-label="Menu lateral"
+        data-collapsed={railMode ? "true" : "false"}
         className={cn(
-          "fixed lg:sticky top-0 left-0 z-50 h-screen w-[240px] flex flex-col text-sidebar-foreground transition-transform duration-200 lg:translate-x-0",
+          "fixed lg:sticky top-0 left-0 z-50 h-screen flex flex-col text-sidebar-foreground transition-transform duration-200 lg:translate-x-0",
+          railMode ? "w-[240px] lg:w-[72px] ti-sidebar--rail" : "w-[240px]",
           isTiOrg ? "ti-sidebar" : "bg-sidebar",
           sidebarOpen ? "translate-x-0" : "-translate-x-full"
         )}
       >
-        <div className="flex flex-col items-center px-5 py-6 gap-1.5">
+        {isTiOrg && (
+          <div className="hidden lg:flex justify-end px-2 pt-2">
+            <button
+              onClick={() => setTiCollapsed((v) => !v)}
+              aria-label={tiCollapsed ? "Expandir menu lateral" : "Recolher menu lateral"}
+              aria-expanded={!tiCollapsed}
+              className="p-1.5 rounded-md text-sidebar-muted hover:bg-sidebar-accent/40 hover:text-sidebar-foreground transition-colors"
+            >
+              {tiCollapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
+            </button>
+          </div>
+        )}
+
+        <div className={cn("flex flex-col items-center gap-1.5", railMode ? "px-2 py-4 lg:gap-0" : "px-5 py-6")}>
           {orgData?.logo_url ? (
             <img
               src={orgData.logo_url}
               alt={orgData.name}
-              className="h-10 max-w-[140px] rounded-lg object-contain"
+              className={cn("rounded-lg object-contain", railMode ? "h-8 max-w-[48px]" : "h-10 max-w-[140px]")}
             />
           ) : (
             <div className="h-9 w-9 rounded-lg bg-sidebar-primary flex items-center justify-center shrink-0">
@@ -253,18 +317,20 @@ export default function AppLayout({ children }: AppLayoutProps) {
               </span>
             </div>
           )}
-          {!orgData?.logo_url && (
+          {!orgData?.logo_url && !railMode && (
             <span className="text-sidebar-primary font-semibold text-sm leading-tight text-center">
               {orgData?.name || "GRTI"}
             </span>
           )}
-          <span className="text-sidebar-muted text-[11px] text-center truncate max-w-full">{profile?.full_name || "Carregando..."}</span>
+          {!railMode && (
+            <span className="text-sidebar-muted text-[11px] text-center truncate max-w-full">{profile?.full_name || "Carregando..."}</span>
+          )}
         </div>
 
-        <OrgSwitcher />
+        {!railMode && <OrgSwitcher />}
 
-        <nav className="flex-1 px-3 mt-2 overflow-y-auto min-h-0 scrollbar-thin">
-          <span className="px-3 text-[10px] font-semibold uppercase tracking-widest text-sidebar-muted">
+        <nav className={cn("flex-1 mt-2 overflow-y-auto min-h-0 scrollbar-thin", railMode ? "px-2" : "px-3")}>
+          <span className={cn("px-3 text-[10px] font-semibold uppercase tracking-widest text-sidebar-muted", railMode && "sr-only")}>
             Menu
           </span>
           <ul className="mt-2 space-y-0.5">
@@ -273,7 +339,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
 
           {gerencialItems.length > 0 && (
             <>
-              <span className="mt-5 block px-3 text-[10px] font-semibold uppercase tracking-widest text-sidebar-muted">
+              <span className={cn("mt-5 block px-3 text-[10px] font-semibold uppercase tracking-widest text-sidebar-muted", railMode && "sr-only")}>
                 Gerencial
               </span>
               <ul className="mt-2 space-y-0.5">
@@ -283,9 +349,9 @@ export default function AppLayout({ children }: AppLayoutProps) {
           )}
         </nav>
 
-        <div className="px-4 py-4 border-t border-sidebar-border">
-          <p className="text-[12px] text-sidebar-muted truncate">{profile?.email || ""}</p>
-          <div className="flex items-center gap-2 mt-3">
+        <div className={cn("py-4 border-t border-sidebar-border", railMode ? "px-2" : "px-4")}>
+          {!railMode && <p className="text-[12px] text-sidebar-muted truncate">{profile?.email || ""}</p>}
+          <div className={cn("flex items-center gap-2", railMode ? "flex-col gap-1" : "mt-3")}>
             <button
               onClick={() => {
                 navigate(`/documentacao?tab=${getDocTab()}`);
@@ -320,12 +386,25 @@ export default function AppLayout({ children }: AppLayoutProps) {
             isTiOrg ? "ti-header" : "bg-background/80 backdrop-blur-sm"
           )}
         >
-          <button
-            onClick={() => setSidebarOpen(true)}
-            className="lg:hidden p-1.5 rounded-md hover:bg-muted text-muted-foreground"
-          >
-            <Menu className="h-5 w-5" />
-          </button>
+          <div className="flex items-center gap-2 min-w-0">
+            <button
+              onClick={() => setSidebarOpen(true)}
+              aria-label="Abrir menu lateral"
+              aria-expanded={sidebarOpen}
+              className="lg:hidden p-1.5 rounded-md hover:bg-muted text-muted-foreground"
+            >
+              <Menu className="h-5 w-5" />
+            </button>
+            {isTiOrg && (
+              <div className="flex items-center gap-2 min-w-0 lg:hidden">
+                {orgData?.logo_url ? (
+                  <img src={orgData.logo_url} alt={orgData.name} className="h-6 max-w-[96px] object-contain" />
+                ) : (
+                  <span className="text-[13px] font-semibold text-foreground truncate">{orgData?.name}</span>
+                )}
+              </div>
+            )}
+          </div>
           <div className="ml-auto flex items-center gap-1">
             <NotificationBell />
             {canUseAdminAlert && (

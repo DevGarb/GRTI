@@ -1,3 +1,4 @@
+import TiPageHeader from "@/components/ti/TiPageHeader";
 import { ShieldCheck, Search, Download, Calendar, FileSpreadsheet, Trash2, TicketCheck } from "lucide-react";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
@@ -408,13 +409,11 @@ export default function Auditoria() {
 
   return (
     <div className="space-y-6 max-w-6xl">
-      <div className="flex items-center gap-3">
-        <ShieldCheck className="h-6 w-6 text-primary" />
-        <div>
-          <h1 className="text-2xl font-bold text-foreground">Auditoria</h1>
-          <p className="text-sm text-muted-foreground">Auditoria de chamados — somente admin e auditor</p>
-        </div>
-      </div>
+      <TiPageHeader
+        eyebrow="Controle e Conformidade"
+        title="Auditoria"
+        description="Auditoria de chamados — somente admin e auditor"
+      />
 
       {/* Tabs */}
       <div className="flex gap-1 border-b border-border">

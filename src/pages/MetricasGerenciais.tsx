@@ -1,3 +1,4 @@
+import TiPageHeader from "@/components/ti/TiPageHeader";
 import { useEffect, useMemo, useState } from "react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -224,12 +225,12 @@ export default function MetricasGerenciais() {
   return (
     <div className="space-y-6 p-4 md:p-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-bold">Métricas Gerenciais</h1>
-          <p className="text-sm text-muted-foreground">
-            Visão executiva — fuso <span className="font-medium">{orgTz}</span>
-          </p>
-        </div>
+        <TiPageHeader
+          className="mb-0"
+          eyebrow="Visão Executiva"
+          title="Métricas Gerenciais"
+          description={<>Visão executiva — fuso <span className="font-medium">{orgTz}</span></>}
+        />
         <div className="flex flex-wrap items-center gap-2">
           {(["today", "yesterday", "last7", "thisMonth"] as const as RangePreset[]).map((p) => (
             <Button

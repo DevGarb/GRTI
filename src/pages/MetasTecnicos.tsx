@@ -1,3 +1,4 @@
+import TiPageHeader from "@/components/ti/TiPageHeader";
 import { useState } from "react";
 import { Target, Star, Clock, TrendingUp, User, ChevronDown, ChevronRight, Award, Settings2, BarChart3, RefreshCw, AlertCircle, Loader2 } from "lucide-react";
 import { useQuery, keepPreviousData } from "@tanstack/react-query";
@@ -212,13 +213,12 @@ export default function MetasTecnicos() {
     return (
       <div className="space-y-6 max-w-2xl">
         <div className="flex items-center justify-between flex-wrap gap-4">
-          <div className="flex items-center gap-3">
-            <Target className="h-6 w-6 text-primary" />
-            <div>
-              <h1 className="text-2xl font-bold text-foreground">Minhas Metas</h1>
-              <p className="text-sm text-muted-foreground">Acompanhe seu desempenho e metas do mês</p>
-            </div>
-          </div>
+          <TiPageHeader
+            className="mb-0"
+            eyebrow="Desempenho Individual"
+            title="Minhas Metas"
+            description="Acompanhe seu desempenho e metas do mês"
+          />
           <PeriodFilter
             year={selectedYear}
             month={selectedMonth}
@@ -249,13 +249,12 @@ export default function MetasTecnicos() {
   return (
     <div className="space-y-6 max-w-6xl">
       <div className="flex items-center justify-between flex-wrap gap-4">
-        <div className="flex items-center gap-3">
-          <Target className="h-6 w-6 text-primary" />
-          <div>
-            <h1 className="text-2xl font-bold text-foreground">Metas & Desempenho</h1>
-            <p className="text-sm text-muted-foreground">Defina metas e acompanhe o desempenho dos técnicos</p>
-          </div>
-        </div>
+        <TiPageHeader
+          className="mb-0"
+          eyebrow="Gestão de Performance"
+          title="Metas & Desempenho"
+          description="Defina metas e acompanhe o desempenho dos técnicos"
+        />
         <div className="flex items-center gap-2">
           {isFetching && !isLoading && (
             <span className="flex items-center gap-1.5 text-[11px] text-muted-foreground mr-1">

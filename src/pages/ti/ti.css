@@ -133,6 +133,16 @@ html.ti-scope.dark,
   border-right: 1px solid hsl(var(--ti-hairline) / 0.12);
 }
 
+/* Mini-rail (desktop) — largura animada, ícones centralizados */
+.ti-scope .ti-sidebar {
+  transition: width 200ms ease, transform 200ms ease;
+}
+@media (prefers-reduced-motion: reduce) {
+  .ti-scope .ti-sidebar {
+    transition: none;
+  }
+}
+
 .ti-scope .ti-nav-item {
   position: relative;
   border: 1px solid transparent;
@@ -226,4 +236,22 @@ html.ti-scope.dark,
   .ti-card-interactive:hover {
     transform: none;
   }
+}
+
+/* ---------- Cabeçalho de página (TiPageHeader) ------------------- */
+/* Fora do escopo T.I o título fica sólido; dentro dele ganha o mesmo
+   gradiente do login. */
+.ti-scope .ti-title {
+  background-image: linear-gradient(
+    90deg,
+    hsl(205 95% 62%),
+    hsl(188 90% 68%),
+    hsl(262 85% 72%)
+  );
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+.ti-scope [data-testid="ti-page-header"] .ti-eyebrow {
+  display: block;
 }

@@ -1,3 +1,4 @@
+import TiPageHeader from "@/components/ti/TiPageHeader";
 import { useMemo, useState } from "react";
 import { motion, useReducedMotion, type Variants } from "framer-motion";
 import {
@@ -142,26 +143,18 @@ export default function TodosTI() {
           <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-sky-500/[0.07] via-cyan-400/[0.04] to-violet-500/[0.07]" />
           <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-cyan-400/60 to-transparent" />
           <div className="relative flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-            <div>
-              <div className="flex items-center gap-2 font-mono-tech text-[11px] uppercase tracking-[0.25em] text-cyan-600 dark:text-cyan-300/80">
-                <span className="relative flex h-2 w-2">
-                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-60" />
-                  <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500" />
-                </span>
-                Gestão de Tarefas · Setor T.I
-              </div>
-              <h1 className="font-display mt-2 text-3xl font-bold tracking-tight text-foreground">
-                TODO{" "}
-                <span className="bg-gradient-to-r from-sky-500 via-cyan-400 to-violet-500 bg-clip-text text-transparent">List</span>
-              </h1>
-              <p className="mt-1 text-sm text-muted-foreground">
-                {tab === "hoje"
+            <TiPageHeader
+              className="mb-0"
+              eyebrow="Gestão de Tarefas · Setor T.I"
+              title="TODO List"
+              description={
+                tab === "hoje"
                   ? "Pendentes e concluídos de hoje, agrupados por pessoa."
                   : tab === "matriz"
                   ? "Suas tarefas na matriz de Eisenhower — priorize por urgência e importância."
-                  : "Histórico completo de tarefas concluídas."}
-              </p>
-            </div>
+                  : "Histórico completo de tarefas concluídas."
+              }
+            />
 
             <div className="flex flex-wrap items-center gap-2">
               <button

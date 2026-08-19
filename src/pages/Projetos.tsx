@@ -1,3 +1,4 @@
+import TiPageHeader from "@/components/ti/TiPageHeader";
 import { useState } from "react";
 import { FolderKanban, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -16,15 +17,12 @@ export default function Projetos() {
   return (
     <div className="space-y-6 max-w-7xl">
       <div className="flex items-center justify-between gap-3">
-        <div className="flex items-center gap-3">
-          <FolderKanban className="h-6 w-6 text-primary" />
-          <div>
-            <h1 className="text-2xl font-bold text-foreground">Projetos</h1>
-            <p className="text-sm text-muted-foreground">
-              Planejamento ágil integrado com chamados, sprints e pontuação
-            </p>
-          </div>
-        </div>
+        <TiPageHeader
+          className="mb-0"
+          eyebrow="Planejamento Ágil"
+          title="Projetos"
+          description="Planejamento ágil integrado com chamados, sprints e pontuação"
+        />
         <Button onClick={() => setModalOpen(true)}>
           <Plus className="h-4 w-4 mr-1" /> Novo projeto
         </Button>
