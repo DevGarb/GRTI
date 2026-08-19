@@ -750,9 +750,12 @@ function OsDetailDialog({ os, onClose, onUpdate, onDelete, onRequestClose, compa
 
           <div>
             <Label>Mecânico</Label>
-            <Select value={mechanicId} onValueChange={setMechanicId}>
+            <Select value={mechanicId || "__none__"} onValueChange={v => setMechanicId(v === "__none__" ? "" : v)}>
               <SelectTrigger><SelectValue placeholder="A definir" /></SelectTrigger>
-              <SelectContent>{mechanics.map(m => <SelectItem key={m.id} value={m.id}>{m.name}</SelectItem>)}</SelectContent>
+              <SelectContent>
+                <SelectItem value="__none__">A definir</SelectItem>
+                {mechanics.map(m => <SelectItem key={m.id} value={m.id}>{m.name}</SelectItem>)}
+              </SelectContent>
             </Select>
           </div>
           <div>
