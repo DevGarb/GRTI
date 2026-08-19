@@ -172,6 +172,41 @@ export default function OpOficinaMinhas() {
   );
   const agendaHoje = agendaGroups.find(g => g.isToday)?.orders.length || 0;
 
+  // Motos na oficina sem mecânico atribuído
+  const [availSearch, setAvailSearch] = useState("");
+  const [pulling, setPulling] = useState<string | null>(null);
+
+  const availableGroups = useMemo(() => {
+    const q = availSearch.trim().toLowerCase();
+    const free = items
+      .filter(o => !o.mechanic_id && !DONE_STAGES.includes(o.stage))
+      .filter(o => !q || `${o.vehicle_plate || ""} ${o.vehicle_model || ""} ${o.customer_name || ""} ${o.os_number}`.toLowerCase().includes(q));
+    return STAGE_PRIORITY.concat(free.map(o => o.stage).filter(s => !STAGE_PRIORITY.includes(s)))
+      .filter((s, i, arr) => arr.indexOf(s) === i)
+      .map(id => ({ ...stageInfo(id), id, orders: free.filter(o => o.stage === id) }))
+      .filter(g => g.orders.length > 0);
+  }, [items, availSearch]);
+
+  const availableCount = useMemo(
+    () => items.filter(o => !o.mechanic_id && !DONE_STAGES.includes(o.stage)).length,
+    [items],
+  );
+
+  const pullOs = async (o: ServiceOrder) => {
+    if (!profile?.id) return toast.error("Perfil de mecânico não identificado");
+    setPulling(o.id);
+    try {
+      await update(o.id, { mechanic_id: profile.id } as any);
+      toast.success(`${o.vehicle_plate || `OS #${o.os_number}`} atribuída a você`);
+      refetch();
+    } catch (e: any) {
+      toast.error(e?.message || "Não foi possível puxar o serviço");
+    } finally {
+      setPulling(null);
+    }
+  };
+
+
 
   const [onlyMine, setOnlyMine] = useState(false);
   const [doneSearch, setDoneSearch] = useState("");
@@ -307,6 +342,7 @@ export default function OpOficinaMinhas() {
           <TabsList>
             <TabsTrigger value="servicos"><ClipboardList className="h-4 w-4 mr-1" />Meus Serviços</TabsTrigger>
             <TabsTrigger value="agenda"><CalendarDays className="h-4 w-4 mr-1" />Agenda{agendaHoje ? ` (${agendaHoje} hoje)` : ""}</TabsTrigger>
+            <TabsTrigger value="disponiveis"><Wrench className="h-4 w-4 mr-1" />Disponíveis{availableCount ? ` (${availableCount})` : ""}</TabsTrigger>
             <TabsTrigger value="pecas"><ShoppingCart className="h-4 w-4 mr-1" />Minhas Peças</TabsTrigger>
             <TabsTrigger value="finalizadas"><CheckCircle2 className="h-4 w-4 mr-1" />Finalizadas ({done.length})</TabsTrigger>
 
@@ -680,6 +716,91 @@ export default function OpOficinaMinhas() {
               </div>
             )}
           </TabsContent>
+
+          <TabsContent value="disponiveis" className="space-y-3 mt-4">
+            <div className="bg-card border rounded-lg p-4 flex items-center justify-between flex-wrap gap-2">
+              <div>
+                <h1 className="font-bold text-lg flex items-center gap-2">
+                  <Wrench className="h-5 w-5" /> Motos sem mecânico atribuído
+                </h1>
+                <p className="text-sm text-muted-foreground">
+                  Veja o status e puxe para você caso possa adiantar o serviço.
+                </p>
+              </div>
+              <div className="flex items-center gap-2">
+                <Badge variant="outline">{availableCount} moto(s)</Badge>
+                <Input
+                  value={availSearch}
+                  onChange={e => setAvailSearch(e.target.value)}
+                  placeholder="Buscar placa, modelo, OS..."
+                  className="w-56"
+                />
+              </div>
+            </div>
+
+            {availableGroups.length === 0 && (
+              <div className="bg-card border rounded-lg p-12 text-center text-muted-foreground">
+                Nenhuma moto disponível sem mecânico no momento.
+              </div>
+            )}
+
+            {availableGroups.map(g => (
+              <div key={g.id} className="bg-card border rounded-lg overflow-hidden">
+                <div className="px-4 py-2 flex items-center gap-2 border-b bg-muted/40">
+                  <span className="font-semibold">{g.label}</span>
+                  <Badge variant="secondary" className="ml-auto">{g.orders.length}</Badge>
+                </div>
+                <div className="divide-y">
+                  {g.orders.map(o => {
+                    const st = stageInfo(o.stage);
+                    const dias = daysInWorkshop(o as any);
+                    return (
+                      <div key={o.id} className="p-3 flex items-center gap-3 flex-wrap">
+                        <div className="flex-1 min-w-[200px]">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="font-bold tracking-wide">{o.vehicle_plate || `OS #${o.os_number}`}</span>
+                            <Badge variant="secondary" className={st.chip}>{st.label}</Badge>
+                            {(o as any).scheduled_date && (
+                              <Badge variant="outline" className="gap-1">
+                                <CalendarDays className="h-3 w-3" />
+                                {formatDateBRShort(String((o as any).scheduled_date))}
+                                {(o as any).scheduled_period ? ` · ${periodInfo((o as any).scheduled_period).label}` : ""}
+                              </Badge>
+                            )}
+                            {o.supervisor_alert && (
+                              <Badge variant="destructive" className="gap-1">
+                                <MessageSquareWarning className="h-3 w-3" /> Alerta
+                              </Badge>
+                            )}
+                            {typeof dias === "number" && dias >= DIAS_ALERTA && (
+                              <Badge variant="destructive">{dias} dias na oficina</Badge>
+                            )}
+                          </div>
+                          <div className="text-sm text-muted-foreground mt-0.5">
+                            {[o.vehicle_model, o.customer_name].filter(Boolean).join(" · ") || "—"}
+                          </div>
+                          {o.description && (
+                            <div className="text-xs text-muted-foreground mt-1 line-clamp-2">{o.description}</div>
+                          )}
+                          {(partsByOs[o.id] || []).length > 0 && (
+                            <div className="text-xs text-muted-foreground mt-1">
+                              Peças: {(partsByOs[o.id] || []).filter(p => p.part_status === "recebida").length}/{(partsByOs[o.id] || []).length} recebidas
+                            </div>
+                          )}
+
+                        </div>
+                        <Button size="sm" disabled={pulling === o.id} onClick={() => pullOs(o)}>
+                          {pulling === o.id ? "Puxando..." : "Puxar pra mim"}
+                        </Button>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            ))}
+          </TabsContent>
+
+
 
 
 
