@@ -97,6 +97,9 @@ export default function AppLayout({ children }: AppLayoutProps) {
 
     if (!orgData) return;
 
+    // Org T.I usa o tema escopado próprio (aurora) — sem white-label por cor.
+    if (orgData.slug === "grupo-ramos") return;
+
     // Only apply white-label overrides in light mode to avoid breaking dark theme
     if (darkMode) return;
 
