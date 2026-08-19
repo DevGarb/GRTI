@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useServiceOrders, useServiceChecklists, type ServiceOrder, type ServiceOrderPhoto } from "@/hooks/useOficina";
+import { useServiceOrders, useServiceChecklists, type ServiceOrder, type ServiceOrderPhoto, type ServiceOrderPart } from "@/hooks/useOficina";
 import OsProgressBar from "@/components/operacional/OsProgressBar";
 import OsChecklist from "@/components/operacional/OsChecklist";
 import { useCompanies } from "@/hooks/useOperacional";
