@@ -247,7 +247,7 @@ function CloseSprintDialog({
   );
 
   const creditSum = creditRows.reduce((s, r) => s + (Number(r.points) || 0), 0);
-  const splitOk = creditRows.length === 0 ? false : creditSum === totalPoints;
+  const splitOk = totalPoints === 0 ? true : creditRows.length > 0 && creditSum === totalPoints;
 
   const handleUpload = async (key: CheckKey, file: File) => {
     if (!sprint) return;
