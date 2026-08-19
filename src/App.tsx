@@ -64,6 +64,8 @@ import OpOficina from "@/pages/OpOficina";
 import OficinaPin from "@/pages/op/OficinaPin";
 import OficinaGuard from "@/pages/op/OficinaGuard";
 import OpOficinaMinhas from "@/pages/op/OpOficinaMinhas";
+import OpOficinaAgenda from "@/pages/op/OpOficinaAgenda";
+import OpOficinaAgendar from "@/pages/op/OpOficinaAgendar";
 import OpOficinaCompras from "@/pages/op/OpOficinaCompras";
 import OpOficinaAcompanhamento from "@/pages/op/OpOficinaAcompanhamento";
 import OpOficinaHistorico from "@/pages/op/OpOficinaHistorico";
@@ -260,6 +262,8 @@ const App = () => (
                       <Route path="/op/oficina/alertas" element={<MenuGuard menuKey="op-oficina"><OficinaProfileProvider><OficinaGuard allow={["admin"]}><OpOficinaAlertas /></OficinaGuard></OficinaProfileProvider></MenuGuard>} />
                       <Route path="/op/oficina/acompanhamento" element={<MenuGuard menuKey="op-oficina"><OficinaProfileProvider><OficinaGuard allow={["admin"]}><OpOficinaAcompanhamento /></OficinaGuard></OficinaProfileProvider></MenuGuard>} />
                       <Route path="/op/oficina/historico" element={<MenuGuard menuKey="op-oficina"><OficinaProfileProvider><OficinaGuard allow={["admin"]}><OpOficinaHistorico /></OficinaGuard></OficinaProfileProvider></MenuGuard>} />
+                      <Route path="/op/oficina/agenda" element={<MenuGuard menuKey="op-oficina"><OficinaProfileProvider><OficinaGuard allow={["admin","mecanico"]}><OpOficinaAgenda /></OficinaGuard></OficinaProfileProvider></MenuGuard>} />
+                      <Route path="/op/oficina/agendar" element={<MenuGuard menuKey="op-oficina"><OficinaProfileProvider><OficinaGuard allow={["admin","motoloc"]}><OpOficinaAgendar /></OficinaGuard></OficinaProfileProvider></MenuGuard>} />
                       <Route path="/op/oficina" element={<MenuGuard menuKey="op-oficina"><OficinaProfileProvider><OficinaGuard allow={["admin"]}><OpOficina /></OficinaGuard></OficinaProfileProvider></MenuGuard>} />
                       <Route path="/op/manutencao/pin" element={<MenuGuard menuKey="op-manutencao"><ManutencaoProfileProvider><ManutencaoPin /></ManutencaoProfileProvider></MenuGuard>} />
                       <Route path="/op/manutencao/minhas" element={<MenuGuard menuKey="op-manutencao"><ManutencaoProfileProvider><ManutencaoGuard><OpManutencaoMinhas /></ManutencaoGuard></ManutencaoProfileProvider></MenuGuard>} />

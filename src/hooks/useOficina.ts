@@ -28,6 +28,10 @@ export interface ServiceOrder {
   opened_at: string;
   finished_at: string | null;
   deadline?: string | null;
+  scheduled_date?: string | null;
+  scheduled_period?: string | null;
+  schedule_notes?: string | null;
+  schedule_order?: number | null;
   total_cost: number;
   notes: string | null;
   closure_summary?: string | null;
