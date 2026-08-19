@@ -94,12 +94,8 @@ export default function OpOficina() {
 
   const kpis = useMemo(() => {
     const ativas = baseFiltered.filter(o => !isDelivered(o));
-    const media = ativas.length
-      ? Math.round(ativas.reduce((s, o) => s + daysInWorkshop(o.opened_at), 0) / ativas.length)
-      : 0;
     return {
       total: ativas.length,
-      media,
       atrasadas: baseFiltered.filter(isOverdue).length,
       aguardPeca: ativas.filter(o => o.stage === "aguardando_peca").length,
       entregues: baseFiltered.filter(isDelivered).length,
@@ -291,7 +287,7 @@ export default function OpOficina() {
 
       <div className="grid grid-cols-2 md:grid-cols-6 gap-3">
         <Kpi label="Motos ativas" value={kpis.total} icon={Wrench} />
-        <Kpi label="Média dias na oficina" value={`${kpis.media}d`} icon={Gauge} />
+        <Kpi label="Motos fisicamente na oficina" value={kpis.total - kpis.comCliente} icon={Gauge} />
         <Kpi label="Em alerta / atrasadas" value={kpis.atrasadas} icon={AlertTriangle} active={onlyLate} onClick={() => setOnlyLate(v => !v)} />
         <Kpi label="Aguardando peça" value={kpis.aguardPeca} icon={Package} />
         <Kpi label="Entregues no período" value={kpis.entregues} icon={Truck} />
