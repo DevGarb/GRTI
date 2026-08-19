@@ -1,7 +1,7 @@
 import DateRangeFilter, { currentMonthStart, todayStr, inDateRange } from "@/components/shared/DateRangeFilter";
 import { filterOficinaCompanies } from "@/lib/oficinaCompanies";
 import { useMemo, useState } from "react";
-import { Wrench, Plus, Search, Trash2, Upload, FileText, X, LayoutGrid, List, Eye, EyeOff, AlertTriangle, ShoppingCart, Package, Gauge, ChevronUp, ChevronDown, Truck, Check } from "lucide-react";
+import { Wrench, Plus, Search, Trash2, Upload, FileText, X, LayoutGrid, List, Eye, EyeOff, AlertTriangle, ShoppingCart, Package, Gauge, ChevronUp, ChevronDown, Truck, Check, Home } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -103,7 +103,7 @@ export default function OpOficina() {
       atrasadas: baseFiltered.filter(isOverdue).length,
       aguardPeca: ativas.filter(o => o.stage === "aguardando_peca").length,
       entregues: baseFiltered.filter(isDelivered).length,
-      custo: baseFiltered.filter(isDelivered).reduce((s, o) => s + Number(o.total_cost || 0), 0),
+      comCliente: ativas.filter(o => !!o.with_customer).length,
     };
   }, [baseFiltered]);
 
@@ -147,6 +147,16 @@ export default function OpOficina() {
     await checklist.markLabelDone(o.id, CHECKLIST_PARTS_LABEL);
   };
 
+  /** Marca/desmarca que a moto está com o cliente aguardando as peças (fora da oficina). */
+  const toggleWithCustomer = async (o: ServiceOrder) => {
+    const next = !o.with_customer;
+    await update(o.id, {
+      with_customer: next,
+      with_customer_at: next ? new Date().toISOString() : null,
+    } as Partial<ServiceOrder>);
+    toast.success(next ? "Moto marcada como com o cliente" : "Moto marcada como na oficina");
+  };
+
   const confirmClosure = async (payload: { closure_summary: string; closed_at: string; total_cost?: number }) => {
     if (!closing) return;
     await update(closing.id, {
@@ -179,6 +189,11 @@ export default function OpOficina() {
             <Badge variant="outline" className="text-[10px] h-5"><Package className="h-3 w-3 mr-0.5" />{partsCount}</Badge>
           )}
           {overdue && <Badge variant="destructive" className="text-[10px]"><AlertTriangle className="h-3 w-3 mr-0.5" />Alerta</Badge>}
+          {o.with_customer && (
+            <Badge variant="outline" className="text-[10px] h-5 border-sky-300 text-sky-700 dark:text-sky-300">
+              <Home className="h-3 w-3 mr-0.5" />Com o cliente
+            </Badge>
+          )}
         </div>
         <div className="text-sm font-semibold truncate" onClick={() => setSelected(o)}>
           {[o.vehicle_plate, o.vehicle_model, o.vehicle_color, o.vehicle_year].filter(Boolean).join(" · ") || "Sem veículo"}
@@ -214,6 +229,18 @@ export default function OpOficina() {
             <Check className="h-3.5 w-3.5 mr-1" /> Peças disponíveis
           </Button>
         ) : null}
+        {!isDelivered(o) && (
+          <Button
+            size="sm"
+            variant={o.with_customer ? "secondary" : "outline"}
+            className="mt-1.5 h-7 w-full text-[11px]"
+            onClick={(e) => { e.stopPropagation(); toggleWithCustomer(o); }}
+          >
+            <Home className="h-3.5 w-3.5 mr-1" />
+            {o.with_customer ? "Retornou à oficina" : "Moto com o cliente"}
+          </Button>
+        )}
+
 
 
         <div className="flex items-center justify-between mt-2">
@@ -268,7 +295,7 @@ export default function OpOficina() {
         <Kpi label="Em alerta / atrasadas" value={kpis.atrasadas} icon={AlertTriangle} active={onlyLate} onClick={() => setOnlyLate(v => !v)} />
         <Kpi label="Aguardando peça" value={kpis.aguardPeca} icon={Package} />
         <Kpi label="Entregues no período" value={kpis.entregues} icon={Truck} />
-        <Kpi label="Custo entregues" value={fmtMoney(kpis.custo)} />
+        <Kpi label="Com o cliente" value={kpis.comCliente} icon={Home} />
       </div>
 
       <div className="bg-card border rounded-lg p-3 flex flex-wrap gap-3 items-end">
