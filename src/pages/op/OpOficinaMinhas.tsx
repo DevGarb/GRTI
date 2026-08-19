@@ -42,6 +42,9 @@ export default function OpOficinaMinhas() {
   const { items: companies } = useCompanies();
   const [tab, setTab] = useState("servicos");
   const [expanded, setExpanded] = useState<string | null>(null);
+  const [hiddenStages, setHiddenStages] = useState<string[]>([]);
+  const toggleStage = (id: string) =>
+    setHiddenStages(prev => prev.includes(id) ? prev.filter(s => s !== id) : [...prev, id]);
 
   const [openNew, setOpenNew] = useState(false);
   const [plate, setPlate] = useState("");
