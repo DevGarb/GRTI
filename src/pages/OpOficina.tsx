@@ -436,9 +436,12 @@ function ComprasView({ orders, partsByOs, companyName, onOpen, onPartStatus, onP
   onPartStatus: (partId: string, status: string) => void;
   onPartsArrived: (o: ServiceOrder) => void;
 }) {
-  const withParts = orders.filter(o => (partsByOs[o.id] || []).length > 0);
+  const withParts = orders.filter(o => {
+    const ps = partsByOs[o.id] || [];
+    return ps.length > 0 && !ps.every(p => p.part_status === "recebida");
+  });
   if (withParts.length === 0) {
-    return <div className="bg-card border rounded-lg p-12 text-center text-muted-foreground">Nenhuma peça na fila de compras</div>;
+    return <div className="bg-card border rounded-lg p-12 text-center text-muted-foreground">Nenhuma peça pendente de compra ou recebimento</div>;
   }
   return (
     <div className="space-y-3">
