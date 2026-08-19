@@ -935,14 +935,26 @@ function OsDetailDialog({ os, onClose, onUpdate, onDelete, onRequestClose, compa
 }
 
 /* ---------- Coluna de agendamentos confirmados (antes da Análise/Triagem) ---------- */
-function ConfirmedBookingsColumn() {
-  const { items, loading } = useWorkshopBookings();
+function ConfirmedBookingsColumn({ onCreated }: { onCreated?: () => void }) {
+  const { items, loading, refetch } = useWorkshopBookings();
+  const { user } = useAuth();
+  const [opening, setOpening] = useState<string | null>(null);
   const list = useMemo(
     () => items
       .filter(b => b.status === "agendado" && !b.service_order_id)
       .sort((a, b) => (a.scheduled_date || "").localeCompare(b.scheduled_date || "")),
     [items],
   );
+
+  const handleOpen = async (b: typeof list[number]) => {
+    setOpening(b.id);
+    try {
+      const os = await openOsFromBooking(b, { userId: user?.id });
+      if (os) { refetch(); onCreated?.(); }
+    } finally {
+      setOpening(null);
+    }
+  };
 
   return (
     <div className="flex-shrink-0 w-[300px] flex flex-col">
@@ -973,6 +985,14 @@ function ConfirmedBookingsColumn() {
               </div>
               {b.service_type && <div className="text-[11px] text-muted-foreground truncate">{b.service_type}</div>}
               {b.requester_name && <div className="text-[11px] text-muted-foreground truncate">Solic.: {b.requester_name}</div>}
+              <Button
+                size="sm"
+                className="w-full h-7 text-xs mt-1"
+                disabled={opening === b.id}
+                onClick={() => handleOpen(b)}
+              >
+                {opening === b.id ? "Abrindo..." : "Abrir OS (chegou)"}
+              </Button>
             </div>
           );
         })}
