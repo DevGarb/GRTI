@@ -306,6 +306,7 @@ export default function OpOficinaMinhas() {
         <Tabs value={tab} onValueChange={setTab}>
           <TabsList>
             <TabsTrigger value="servicos"><ClipboardList className="h-4 w-4 mr-1" />Meus Serviços</TabsTrigger>
+            <TabsTrigger value="agenda"><CalendarDays className="h-4 w-4 mr-1" />Agenda{agendaHoje ? ` (${agendaHoje} hoje)` : ""}</TabsTrigger>
             <TabsTrigger value="pecas"><ShoppingCart className="h-4 w-4 mr-1" />Minhas Peças</TabsTrigger>
             <TabsTrigger value="finalizadas"><CheckCircle2 className="h-4 w-4 mr-1" />Finalizadas ({done.length})</TabsTrigger>
 
