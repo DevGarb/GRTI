@@ -31,6 +31,8 @@ import {
 import { SCHEDULE_PERIODS, periodInfo, formatDateBRShort } from "@/lib/oficinaAgenda";
 import { useWorkshopBookings } from "@/hooks/useWorkshopBookings";
 import { openOsFromBooking } from "@/lib/openOsFromBooking";
+import { supabase } from "@/integrations/supabase/client";
+
 
 
 const TERMINAL = "Finalizado";
