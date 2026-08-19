@@ -131,6 +131,16 @@ export default function OpOficinaMinhas() {
     [items, profile?.id],
   );
 
+  // Ordem de prioridade das etapas na visão do mecânico
+  const STAGE_PRIORITY = ["execucao", "desempeno", "pintura", "analise"];
+  const mineGroups = useMemo(
+    () =>
+      STAGE_PRIORITY
+        .map(id => ({ ...stageInfo(id), orders: mine.filter(o => o.stage === id) }))
+        .filter(g => g.orders.length > 0),
+    [mine],
+  );
+
   const [onlyMine, setOnlyMine] = useState(false);
   const [doneSearch, setDoneSearch] = useState("");
 
@@ -379,7 +389,15 @@ export default function OpOficinaMinhas() {
               </div>
             )}
 
-            {mine.map(o => {
+            {mineGroups.map((g, gi) => (
+            <div key={g.id} className="space-y-3">
+              <div className={`flex items-center gap-2 ${gi > 0 ? "pt-4" : ""}`}>
+                <span className={`h-2.5 w-2.5 rounded-full ${g.dot}`} />
+                <h3 className="text-sm font-bold uppercase tracking-wide">{g.label}</h3>
+                <Badge variant="secondary" className={g.chip}>{g.orders.length}</Badge>
+                {gi === 0 && <span className="text-[11px] text-muted-foreground">prioridade</span>}
+              </div>
+            {g.orders.map(o => {
               const st = stageInfo(o.stage);
               const parts = partsByOs[o.id] || [];
               const days = daysInWorkshop(o.opened_at);
@@ -512,6 +530,8 @@ export default function OpOficinaMinhas() {
                 </div>
               );
             })}
+            </div>
+            ))}
           </TabsContent>
 
           <TabsContent value="pecas" className="space-y-3 mt-4">
