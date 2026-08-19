@@ -664,8 +664,8 @@ function OsDetailDialog({ os, onClose, onUpdate, onDelete, onRequestClose, compa
       <h2>Descrição</h2><div>${(os.description || "—").replace(/\n/g, "<br>")}</div>
       <h2>Diagnóstico</h2><div>${(diagnosis || "—").replace(/\n/g, "<br>")}</div>
       <h2>Peças / Itens</h2>
-      <table><thead><tr><th>Item</th><th>Qtd</th><th>Situação</th><th>Unit.</th><th>Total</th></tr></thead><tbody>${partsRows || '<tr><td colspan="5" style="text-align:center">Sem itens</td></tr>'}</tbody>
-      <tfoot><tr><th colspan="4" style="text-align:right">Total</th><th style="text-align:right">${fmtMoney(total)}</th></tr></tfoot></table>
+      <table><thead><tr><th>Item</th><th>Qtd</th><th>Situação</th></tr></thead><tbody>${partsRows || '<tr><td colspan="3" style="text-align:center">Sem itens</td></tr>'}</tbody>
+      </table>
       ${photos.length ? `<h2>Fotos</h2><div>${photosHtml}</div>` : ""}
       ${notes ? `<h2>Observações</h2><div>${notes.replace(/\n/g, "<br>")}</div>` : ""}
       <script>window.onload=()=>setTimeout(()=>window.print(),300)</script>
