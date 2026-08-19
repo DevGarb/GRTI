@@ -92,12 +92,27 @@ export default function OpOficinaAgenda() {
               {weekdayLabel(day)} · {formatDateBRShort(day)} · {ofDay.length} serviço(s) programado(s)
             </p>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
+            <div className="relative">
+              <Search className="h-4 w-4 absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" />
+              <Input
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Buscar placa, modelo ou OS"
+                className="pl-8 w-[230px] bg-white"
+              />
+            </div>
             <Button size="icon" variant="outline" onClick={() => setDay(shiftDay(day, -1))}><ChevronLeft className="h-4 w-4" /></Button>
             <Input type="date" value={day} onChange={(e) => setDay(e.target.value)} className="w-[160px] bg-white" />
             <Button size="icon" variant="outline" onClick={() => setDay(shiftDay(day, 1))}><ChevronRight className="h-4 w-4" /></Button>
             <Button variant="secondary" onClick={() => setDay(todayISO())}>Hoje</Button>
+            {!readOnly && (
+              <Button className="cgps-btn-primary" onClick={() => setCreating(true)}>
+                <Plus className="h-4 w-4 mr-1" /> Novo agendamento
+              </Button>
+            )}
           </div>
+
         </div>
 
         <div className="flex gap-2 overflow-x-auto pb-1">
