@@ -157,20 +157,97 @@ function CloseSprintDialog({
     },
   });
 
-  // Soma de pontos de TODOS os itens da sprint (tickets + project_tasks)
-  const { data: totalPoints = 0 } = useQuery({
-    queryKey: ["sprint-total-points", sprint?.id],
+  // Itens da sprint com autoria (tarefas + chamados) para dividir a pontuação
+  const { data: split } = useQuery({
+    queryKey: ["sprint-credit-split", sprint?.id],
     enabled: !!open && !!sprint?.id,
     queryFn: async () => {
       const [{ data: tasks }, { data: tks }] = await Promise.all([
-        supabase.from("project_tasks").select("story_points").eq("sprint_id", sprint!.id),
-        supabase.from("tickets").select("story_points").eq("sprint_id", sprint!.id).neq("type", "Projeto"),
+        supabase
+          .from("project_tasks")
+          .select("story_points, credited_to, assignee_id")
+          .eq("sprint_id", sprint!.id),
+        supabase
+          .from("tickets")
+          .select("story_points, assigned_to")
+          .eq("sprint_id", sprint!.id)
+          .neq("type", "Projeto"),
       ]);
-      const t1 = (tasks || []).reduce((s: number, r: any) => s + (r.story_points || 0), 0);
-      const t2 = (tks || []).reduce((s: number, r: any) => s + (r.story_points || 0), 0);
-      return t1 + t2;
+      const rows: { user_id: string | null; points: number }[] = [
+        ...(tasks || []).map((t: any) => ({
+          user_id: (t.credited_to || t.assignee_id || null) as string | null,
+          points: t.story_points || 0,
+        })),
+        ...(tks || []).map((t: any) => ({
+          user_id: (t.assigned_to || null) as string | null,
+          points: t.story_points || 0,
+        })),
+      ];
+      const byUser = new Map<string, { points: number; count: number }>();
+      let unassignedPoints = 0;
+      let unassignedCount = 0;
+      for (const r of rows) {
+        if (!r.user_id) {
+          unassignedPoints += r.points;
+          unassignedCount += 1;
+          continue;
+        }
+        const cur = byUser.get(r.user_id) || { points: 0, count: 0 };
+        byUser.set(r.user_id, { points: cur.points + r.points, count: cur.count + 1 });
+      }
+      const totalPoints = rows.reduce((s, r) => s + r.points, 0);
+      return {
+        totalPoints,
+        unassignedPoints,
+        unassignedCount,
+        entries: Array.from(byUser.entries()).map(([user_id, v]) => ({ user_id, ...v })),
+      };
     },
   });
+
+  const totalPoints = split?.totalPoints ?? 0;
+
+  // Pontos editáveis por pessoa
+  const [credits, setCredits] = useState<Record<string, number>>({});
+  const [splitKey, setSplitKey] = useState<string>("");
+
+  useEffect(() => {
+    if (!split || !sprint) return;
+    const key = `${sprint.id}:${split.totalPoints}:${split.entries.length}`;
+    if (key === splitKey) return;
+    const base: Record<string, number> = {};
+    split.entries.forEach((e) => (base[e.user_id] = e.points));
+    if (split.unassignedPoints > 0 && finishedBy) {
+      base[finishedBy] = (base[finishedBy] || 0) + split.unassignedPoints;
+    }
+    setCredits(base);
+    setSplitKey(key);
+  }, [split, sprint, finishedBy, splitKey]);
+
+  useEffect(() => {
+    if (!open) {
+      setCredits({});
+      setSplitKey("");
+    }
+  }, [open]);
+
+  const staffName = (id: string) => {
+    const s = staff.find((x: any) => x.user_id === id);
+    return s?.full_name || s?.email || "Usuário";
+  };
+
+  const creditRows = useMemo(
+    () =>
+      Object.entries(credits).map(([user_id, points]) => ({
+        user_id,
+        points,
+        count: split?.entries.find((e) => e.user_id === user_id)?.count ?? 0,
+      })),
+    [credits, split]
+  );
+
+  const creditSum = creditRows.reduce((s, r) => s + (Number(r.points) || 0), 0);
+  const splitOk = creditRows.length === 0 ? false : creditSum === totalPoints;
 
   const handleUpload = async (key: CheckKey, file: File) => {
     if (!sprint) return;
