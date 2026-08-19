@@ -1,7 +1,7 @@
 import DateRangeFilter, { currentMonthStart, todayStr, inDateRange } from "@/components/shared/DateRangeFilter";
 import { filterOficinaCompanies } from "@/lib/oficinaCompanies";
 import { useMemo, useState } from "react";
-import { Wrench, Plus, Search, Trash2, Upload, FileText, X, LayoutGrid, List, Eye, EyeOff, AlertTriangle, ShoppingCart, Package, Gauge, ChevronUp, ChevronDown, Truck, Check, Home } from "lucide-react";
+import { Wrench, Plus, Search, Trash2, Upload, FileText, X, LayoutGrid, List, Eye, EyeOff, AlertTriangle, ShoppingCart, Package, Gauge, ChevronUp, ChevronDown, Truck, Check, Home, Calendar } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -28,6 +28,7 @@ import {
   PART_STATUS_FLOW, PART_STATUS_INFO, daysInWorkshop, partsSlaRemaining,
   CHECKLIST_PARTS_LABEL, maxDeadlineFrom,
 } from "@/lib/oficinaStages";
+import { SCHEDULE_PERIODS, periodInfo, formatDateBRShort } from "@/lib/oficinaAgenda";
 
 
 const TERMINAL = "Finalizado";
@@ -203,6 +204,34 @@ export default function OpOficina() {
         <div className="text-[11px] text-muted-foreground line-clamp-2 mt-1" onClick={() => setSelected(o)}>
           {o.description || "Sem descrição"}
         </div>
+
+        {!isDelivered(o) && (
+          <div className="flex items-center gap-2 mt-2">
+            <div className="flex items-center gap-1.5 flex-1 min-w-0">
+              <Calendar className="h-3 w-3 text-muted-foreground shrink-0" />
+              <Input
+                type="date"
+                value={o.scheduled_date || ""}
+                onClick={(e) => e.stopPropagation()}
+                onChange={(e) => { e.stopPropagation(); update(o.id, { scheduled_date: e.target.value || null }); }}
+                className="h-7 text-[11px] px-2 py-0 flex-1 min-w-0"
+              />
+            </div>
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                const idx = SCHEDULE_PERIODS.findIndex(p => p.id === o.scheduled_period);
+                const next = SCHEDULE_PERIODS[(idx + 1) % SCHEDULE_PERIODS.length];
+                update(o.id, { scheduled_period: next.id });
+              }}
+              className={cn("text-[10px] px-2 py-1 rounded border shrink-0", periodInfo(o.scheduled_period).chip.replace(/\//g, " "))}
+            >
+              {periodInfo(o.scheduled_period).label}
+            </button>
+          </div>
+        )}
+
         {chk.length > 0 && (
           <OsProgressBar items={chk} barClass={stg.bar} className="mt-2" compact />
         )}
@@ -599,6 +628,8 @@ function OsDetailDialog({ os, onClose, onUpdate, onDelete, onRequestClose, compa
   const [diagnosis, setDiagnosis] = useState(os.diagnosis || "");
   const [notes] = useState(os.notes || "");
   const [deadline, setDeadline] = useState(os.deadline || "");
+  const [scheduledDate, setScheduledDate] = useState(os.scheduled_date || "");
+  const [scheduledPeriod, setScheduledPeriod] = useState(os.scheduled_period || "dia");
   const openedAt = os.opened_at || "";
   const [companyId, setCompanyId] = useState<string>(os.company_id || "");
   const [customerName, setCustomerName] = useState<string>(os.customer_name || "");
@@ -622,6 +653,8 @@ function OsDetailDialog({ os, onClose, onUpdate, onDelete, onRequestClose, compa
       stage,
       diagnosis,
       deadline: deadline || null,
+      scheduled_date: scheduledDate || null,
+      scheduled_period: scheduledPeriod,
       company_id: companyId || null,
       customer_name: customerName || null,
 
@@ -736,6 +769,25 @@ function OsDetailDialog({ os, onClose, onUpdate, onDelete, onRequestClose, compa
                 <Check className="h-3.5 w-3.5 mr-1" /> Peças disponíveis
               </Button>
             )}
+          </div>
+
+          <div>
+            <Label>Data de execução</Label>
+            <Input
+              type="date"
+              value={scheduledDate}
+              onChange={e => setScheduledDate(e.target.value)}
+            />
+            <div className="text-[11px] mt-1 text-muted-foreground">
+              Dia em que a moto deve entrar na oficina para execução.
+            </div>
+          </div>
+          <div>
+            <Label>Período de execução</Label>
+            <Select value={scheduledPeriod} onValueChange={v => setScheduledPeriod(v)}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>{SCHEDULE_PERIODS.map(p => <SelectItem key={p.id} value={p.id}>{p.label}</SelectItem>)}</SelectContent>
+            </Select>
           </div>
 
           <div>
