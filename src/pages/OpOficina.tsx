@@ -646,7 +646,7 @@ function OsDetailDialog({ os, onClose, onUpdate, onDelete, onRequestClose, compa
     const w = window.open("", "_blank"); if (!w) return;
     const mech = mechanics.find(m => m.id === os.mechanic_id)?.name || "—";
     const comp = companies.find(c => c.id === os.company_id)?.name || "—";
-    const partsRows = parts.map(p => `<tr><td>${p.part_name}</td><td style="text-align:center">${p.quantity}</td><td style="text-align:center">${(PART_STATUS_INFO[p.part_status] || PART_STATUS_INFO.solicitada).label}</td><td style="text-align:right">${fmtMoney(Number(p.unit_price))}</td><td style="text-align:right">${fmtMoney(Number(p.quantity) * Number(p.unit_price))}</td></tr>`).join("");
+    const partsRows = parts.map(p => `<tr><td>${p.part_name}</td><td style="text-align:center">${p.quantity}</td><td style="text-align:center">${(PART_STATUS_INFO[p.part_status] || PART_STATUS_INFO.solicitada).label}</td></tr>`).join("");
     const photosHtml = photos.map(p => `<div style="display:inline-block;margin:4px;text-align:center"><img src="${p.photo_url}" style="max-width:200px;max-height:160px;border:1px solid #ccc"/><div style="font-size:11px">${p.photo_type}</div></div>`).join("");
     w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>OS #${os.os_number}</title>
       <style>body{font-family:Arial,sans-serif;padding:24px;color:#222}h1{margin:0 0 4px}h2{font-size:14px;margin:16px 0 6px;border-bottom:1px solid #ddd;padding-bottom:4px}table{width:100%;border-collapse:collapse;font-size:12px}th,td{border:1px solid #ccc;padding:6px}th{background:#f2f2f2;text-align:left}.grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:12px}.f{padding:6px;background:#f7f7f7;border-radius:4px}</style></head><body>
