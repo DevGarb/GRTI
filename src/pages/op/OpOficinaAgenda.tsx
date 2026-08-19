@@ -278,7 +278,47 @@ export default function OpOficinaAgenda() {
           }}
         />
       )}
+
+      {creating && (
+        <NewBookingDialog
+          defaultDate={day}
+          mechanics={mecs}
+          onClose={() => setCreating(false)}
+          onConfirm={async (v) => {
+            const created = await addOrder({
+              vehicle_plate: v.plate.toUpperCase(),
+              vehicle_model: v.model || null,
+              description: [v.serviceType, v.notes].filter(Boolean).join(" — ") || "Serviço agendado",
+              mechanic_id: v.mechanic_id,
+              stage: "analise",
+            } as any);
+            if (created) {
+              await update((created as any).id, {
+                scheduled_date: v.date, scheduled_period: v.period, schedule_notes: v.notes || null,
+              } as any);
+              const b = await addBooking({
+                vehicle_plate: v.plate,
+                vehicle_model: v.model || null,
+                service_type: v.serviceType || null,
+                description: v.notes || null,
+                preferred_date: v.date,
+                preferred_period: v.period,
+              });
+              if (b) {
+                await updateBooking((b as any).id, {
+                  status: "agendado", scheduled_date: v.date, scheduled_period: v.period,
+                  mechanic_id: v.mechanic_id, service_order_id: (created as any).id, admin_notes: v.notes || null,
+                });
+              }
+              setDay(v.date);
+              toast.success("Agendamento criado");
+            }
+            setCreating(false);
+          }}
+        />
+      )}
     </div>
+
   );
 }
 
