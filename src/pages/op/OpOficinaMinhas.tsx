@@ -603,6 +603,86 @@ export default function OpOficinaMinhas() {
       })}
           </TabsContent>
 
+          <TabsContent value="agenda" className="space-y-3 mt-4">
+            <div className="bg-card border rounded-lg p-4">
+              <h1 className="font-bold text-lg flex items-center gap-2">
+                <CalendarDays className="h-5 w-5" /> Minha agenda de execuções
+              </h1>
+              <p className="text-sm text-muted-foreground">
+                Datas de execução definidas pela oficina para as motos sob sua responsabilidade.
+              </p>
+            </div>
+
+            {agendaGroups.length === 0 && (
+              <div className="bg-card border rounded-lg p-12 text-center text-muted-foreground">
+                Nenhum serviço agendado para você no momento.
+              </div>
+            )}
+
+            {agendaGroups.map(g => (
+              <div key={g.date} className="bg-card border rounded-lg overflow-hidden">
+                <div className={cn(
+                  "px-4 py-2 flex items-center gap-2 border-b",
+                  g.isToday && "bg-emerald-500/10",
+                  g.isLate && "bg-rose-500/10",
+                )}>
+                  <CalendarDays className="h-4 w-4 text-muted-foreground" />
+                  <span className="font-semibold capitalize">
+                    {weekdayLabel(g.date)} · {formatDateBRShort(g.date)}
+                  </span>
+                  {g.isToday && <Badge className="bg-emerald-600 hover:bg-emerald-600">Hoje</Badge>}
+                  {g.isLate && <Badge variant="destructive">Atrasado</Badge>}
+                  <Badge variant="secondary" className="ml-auto">{g.orders.length} serviço(s)</Badge>
+                </div>
+                <div className="divide-y">
+                  {g.orders.map(o => {
+                    const st = stageInfo(o.stage);
+                    const p = periodInfo((o as any).scheduled_period);
+                    return (
+                      <div key={o.id} className="p-3 flex items-center gap-3 flex-wrap">
+                        <div className="flex-1 min-w-[180px]">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="font-bold tracking-wide">{o.vehicle_plate || `OS #${o.os_number}`}</span>
+                            <Badge variant="secondary" className={st.chip}>{st.label}</Badge>
+                            {(o as any).scheduled_period && (
+                              <Badge variant="secondary" className={p.chip}>{p.label}</Badge>
+                            )}
+                          </div>
+                          <div className="text-sm text-muted-foreground mt-0.5">
+                            {[o.vehicle_model, o.customer_name].filter(Boolean).join(" · ") || "—"}
+                          </div>
+                          {(o as any).schedule_notes && (
+                            <div className="text-xs text-muted-foreground mt-1">
+                              Direcionamento: {(o as any).schedule_notes}
+                            </div>
+                          )}
+                        </div>
+                        <Button size="sm" variant="outline" onClick={() => { setTab("servicos"); setExpanded(o.id); }}>
+                          Abrir OS
+                        </Button>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            ))}
+
+            {semData.length > 0 && (
+              <div className="bg-card border rounded-lg p-4">
+                <h2 className="font-semibold text-sm mb-2">Sem data definida ({semData.length})</h2>
+                <div className="flex flex-wrap gap-2">
+                  {semData.map(o => (
+                    <Badge key={o.id} variant="outline">
+                      {o.vehicle_plate || `OS #${o.os_number}`} · {stageInfo(o.stage).label}
+                    </Badge>
+                  ))}
+                </div>
+              </div>
+            )}
+          </TabsContent>
+
+
+
           <TabsContent value="pecas" className="space-y-3 mt-4">
             {myParts.length === 0 && (
               <div className="bg-card border rounded-lg p-12 text-center text-muted-foreground">
