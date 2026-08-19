@@ -284,6 +284,9 @@ function CloseSprintDialog({
         _finished_by: finishedBy,
         _category_id: categoryId || null,
         _evidences: evidencesPayload,
+        _credits: creditRows
+          .filter((r) => (Number(r.points) || 0) > 0)
+          .map((r) => ({ user_id: r.user_id, points: Number(r.points) || 0 })),
       });
       if (error) throw error;
     },
