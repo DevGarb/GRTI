@@ -1,0 +1,229 @@
+/* ============================================================
+   T.I (grupo-ramos) — camada visual escopada
+   Replica a linguagem do Login / Escolher Organização:
+   fundo aurora escuro, superfícies de vidro, acentos ciano.
+   Aplicada apenas quando a org ativa é a T.I (classe no <html>).
+   ============================================================ */
+
+html.ti-scope,
+html.ti-scope.dark,
+.ti-scope {
+  /* Tokens semânticos sobrescritos — todas as páginas herdam */
+  --background: 220 45% 4%;
+  --foreground: 210 25% 96%;
+
+  --card: 216 40% 10%;
+  --card-foreground: 210 25% 96%;
+
+  --popover: 219 42% 8%;
+  --popover-foreground: 210 25% 96%;
+
+  --primary: 199 95% 55%;
+  --primary-foreground: 220 45% 6%;
+
+  --secondary: 217 35% 14%;
+  --secondary-foreground: 210 25% 92%;
+
+  --muted: 217 32% 14%;
+  --muted-foreground: 213 18% 68%;
+
+  --accent: 188 90% 55%;
+  --accent-foreground: 220 45% 6%;
+
+  --destructive: 0 72% 55%;
+  --destructive-foreground: 0 0% 100%;
+
+  --border: 213 30% 22%;
+  --input: 213 30% 22%;
+  --ring: 191 95% 55%;
+
+  --radius: 1rem;
+
+  --sidebar-background: 220 45% 5%;
+  --sidebar-foreground: 213 25% 84%;
+  --sidebar-primary: 191 95% 62%;
+  --sidebar-primary-foreground: 220 45% 6%;
+  --sidebar-accent: 205 80% 22%;
+  --sidebar-accent-foreground: 0 0% 100%;
+  --sidebar-border: 213 35% 20%;
+  --sidebar-ring: 191 95% 60%;
+  --sidebar-muted: 213 18% 62%;
+
+  --status-open: 0 75% 62%;
+  --status-open-bg: 0 60% 16%;
+  --status-waiting: 35 92% 58%;
+  --status-waiting-bg: 35 70% 16%;
+  --status-closed: 152 65% 48%;
+  --status-closed-bg: 152 55% 14%;
+
+  --chart-1: 199 95% 55%;
+  --chart-2: 188 90% 55%;
+  --chart-3: 152 65% 48%;
+  --chart-4: 35 92% 58%;
+  --chart-5: 258 88% 66%;
+
+  /* Tokens próprios do escopo */
+  --ti-glass: 213 40% 12%;
+  --ti-glass-strong: 213 42% 15%;
+  --ti-hairline: 210 40% 80%;
+  --ti-shadow: 0 24px 80px -28px hsl(220 45% 2% / 0.9);
+  --ti-shadow-hover: 0 28px 90px -24px hsl(199 95% 50% / 0.25);
+
+  color-scheme: dark;
+}
+
+/* Fundo global do app no escopo T.I (a aurora fica atrás, em fixed) */
+.ti-scope body {
+  background: hsl(220 45% 4%);
+  color: hsl(var(--foreground));
+}
+
+/* ---------- Superfícies de vidro -------------------------------- */
+.ti-scope .bg-card,
+.ti-scope .bg-background,
+.ti-scope .bg-popover {
+  background-color: hsl(var(--ti-glass) / 0.72) !important;
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+}
+
+.ti-scope .bg-muted,
+.ti-scope .bg-secondary,
+.ti-scope .bg-muted\/50,
+.ti-scope .bg-muted\/30 {
+  background-color: hsl(var(--ti-glass-strong) / 0.6) !important;
+}
+
+.ti-scope .border,
+.ti-scope .border-border,
+.ti-scope .border-b,
+.ti-scope .border-t,
+.ti-scope .border-l,
+.ti-scope .border-r {
+  border-color: hsl(var(--ti-hairline) / 0.12);
+}
+
+.ti-scope [data-radix-popper-content-wrapper] > *,
+.ti-scope [role="dialog"],
+.ti-scope [role="menu"],
+.ti-scope [role="listbox"] {
+  background-color: hsl(219 42% 9% / 0.94) !important;
+  backdrop-filter: blur(22px);
+  -webkit-backdrop-filter: blur(22px);
+  border-color: hsl(var(--ti-hairline) / 0.14) !important;
+  box-shadow: var(--ti-shadow);
+}
+
+/* Cartões: raio maior, hairline e sombra profunda */
+.ti-scope .rounded-lg.border,
+.ti-scope .rounded-xl.border,
+.ti-scope .rounded-2xl.border {
+  box-shadow: var(--ti-shadow);
+}
+
+/* ---------- Shell: sidebar e header ----------------------------- */
+.ti-scope .ti-sidebar {
+  background: linear-gradient(
+    180deg,
+    hsl(216 45% 8% / 0.86) 0%,
+    hsl(220 48% 5% / 0.92) 100%
+  );
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border-right: 1px solid hsl(var(--ti-hairline) / 0.12);
+}
+
+.ti-scope .ti-nav-item {
+  position: relative;
+  border: 1px solid transparent;
+}
+.ti-scope .ti-nav-item::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  height: 0;
+  width: 2px;
+  border-radius: 999px;
+  background: linear-gradient(180deg, hsl(199 95% 60%), hsl(258 88% 66%));
+  transition: height 180ms ease;
+}
+.ti-scope .ti-nav-item[data-active="true"] {
+  background: hsl(199 95% 55% / 0.12);
+  border-color: hsl(199 95% 60% / 0.25);
+  color: hsl(188 90% 78%);
+}
+.ti-scope .ti-nav-item[data-active="true"]::before {
+  height: 20px;
+}
+.ti-scope .ti-nav-item:hover {
+  background: hsl(210 60% 70% / 0.07);
+}
+
+.ti-scope .ti-header {
+  background: hsl(220 45% 5% / 0.62) !important;
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  border-bottom: 1px solid hsl(var(--ti-hairline) / 0.1);
+}
+
+/* ---------- Tipografia ------------------------------------------ */
+.ti-scope h1 {
+  font-family: "Space Grotesk", "Inter", sans-serif;
+  letter-spacing: -0.02em;
+}
+.ti-scope h2,
+.ti-scope h3 {
+  letter-spacing: -0.01em;
+}
+
+/* ---------- Utilitários do tema --------------------------------- */
+.ti-card {
+  background: hsl(var(--ti-glass) / 0.7);
+  border: 1px solid hsl(var(--ti-hairline) / 0.12);
+  border-radius: 16px;
+  box-shadow: var(--ti-shadow);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+}
+.ti-card-interactive {
+  transition: transform 180ms ease, border-color 180ms ease, box-shadow 180ms ease;
+}
+.ti-card-interactive:hover {
+  transform: translateY(-2px);
+  border-color: hsl(191 95% 60% / 0.4);
+  box-shadow: var(--ti-shadow-hover);
+}
+.ti-chip {
+  border-radius: 999px;
+  border: 1px solid hsl(191 95% 60% / 0.28);
+  background: hsl(191 95% 55% / 0.12);
+  color: hsl(188 90% 78%);
+}
+.ti-eyebrow {
+  font-family: "JetBrains Mono", monospace;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.25em;
+  color: hsl(188 90% 72% / 0.8);
+}
+
+/* Barras de rolagem discretas */
+.ti-scope ::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+.ti-scope ::-webkit-scrollbar-thumb {
+  background: hsl(210 40% 60% / 0.18);
+  border-radius: 999px;
+}
+.ti-scope ::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ti-card-interactive:hover {
+    transform: none;
+  }
+}

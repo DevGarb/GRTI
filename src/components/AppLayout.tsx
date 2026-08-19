@@ -12,7 +12,9 @@ import { useMenuAccess } from "@/hooks/useMenuAccess";
 import { useUserOrganizations } from "@/hooks/useUserOrganizations";
 import { useNewTicketNotifier, triggerTestAlert } from "@/hooks/useNewTicketNotifier";
 import NotificationBell from "@/components/NotificationBell";
+import AuroraBackground from "@/components/login/AuroraBackground";
 import "@/pages/checklists/grcheck.css";
+import "@/pages/ti/ti.css";
 
 interface AppLayoutProps {
   children: React.ReactNode;
@@ -95,6 +97,9 @@ export default function AppLayout({ children }: AppLayoutProps) {
 
     if (!orgData) return;
 
+    // Org T.I usa o tema escopado próprio (aurora) — sem white-label por cor.
+    if (orgData.slug === "grupo-ramos") return;
+
     // Only apply white-label overrides in light mode to avoid breaking dark theme
     if (darkMode) return;
 
@@ -135,6 +140,15 @@ export default function AppLayout({ children }: AppLayoutProps) {
   const gerencialItems = visibleNavItems.filter((item) => item.section === "gerencial");
 
   const isChkOrg = orgSlug === "grcheck";
+  const isTiOrg = orgSlug === "grupo-ramos";
+
+  // Tema escopado da T.I aplicado no <html> para alcançar também os portais
+  // (dialog, popover, select) renderizados fora da árvore do layout.
+  useEffect(() => {
+    document.documentElement.classList.toggle("ti-scope", isTiOrg);
+    return () => document.documentElement.classList.remove("ti-scope");
+  }, [isTiOrg]);
+
 
   const openTvPanel = async () => {
     try {
@@ -167,12 +181,16 @@ export default function AppLayout({ children }: AppLayoutProps) {
                 }
                 setSidebarOpen(false);
               }}
+              data-active={active ? "true" : "false"}
               className={cn(
                 "relative flex items-center gap-3 px-3 py-2.5 rounded-lg text-[13px] font-medium transition-colors duration-150",
                 isChkOrg && "before:absolute before:left-0 before:top-1/2 before:-translate-y-1/2 before:h-0 before:w-[3px] before:rounded-full before:bg-sidebar-primary before:transition-all before:duration-200",
                 isChkOrg && active && "before:h-5",
                 isChkOrg && "min-h-[42px]",
-                active
+                isTiOrg && "ti-nav-item min-h-[42px]",
+                isTiOrg
+                  ? "text-sidebar-foreground"
+                  : active
                   ? "bg-sidebar-accent text-sidebar-accent-foreground"
                   : "text-sidebar-foreground hover:bg-sidebar-accent/50 hover:text-sidebar-accent-foreground"
               )}
@@ -202,6 +220,11 @@ export default function AppLayout({ children }: AppLayoutProps) {
 
   return (
     <div className="flex min-h-screen w-full">
+      {isTiOrg && (
+        <div className="fixed inset-0 -z-10 pointer-events-none" aria-hidden="true">
+          <AuroraBackground />
+        </div>
+      )}
       {sidebarOpen && (
         <div
           className="fixed inset-0 bg-foreground/20 backdrop-blur-sm z-40 lg:hidden"
@@ -211,7 +234,8 @@ export default function AppLayout({ children }: AppLayoutProps) {
 
       <aside
         className={cn(
-          "fixed lg:sticky top-0 left-0 z-50 h-screen w-[240px] flex flex-col bg-sidebar text-sidebar-foreground transition-transform duration-200 lg:translate-x-0",
+          "fixed lg:sticky top-0 left-0 z-50 h-screen w-[240px] flex flex-col text-sidebar-foreground transition-transform duration-200 lg:translate-x-0",
+          isTiOrg ? "ti-sidebar" : "bg-sidebar",
           sidebarOpen ? "translate-x-0" : "-translate-x-full"
         )}
       >
@@ -290,7 +314,12 @@ export default function AppLayout({ children }: AppLayoutProps) {
       </aside>
 
       <div className="flex-1 flex flex-col min-w-0">
-        <header className="sticky top-0 z-30 h-12 flex items-center justify-between border-b border-border bg-background/80 backdrop-blur-sm px-4 lg:px-6">
+        <header
+          className={cn(
+            "sticky top-0 z-30 h-12 flex items-center justify-between border-b border-border px-4 lg:px-6",
+            isTiOrg ? "ti-header" : "bg-background/80 backdrop-blur-sm"
+          )}
+        >
           <button
             onClick={() => setSidebarOpen(true)}
             className="lg:hidden p-1.5 rounded-md hover:bg-muted text-muted-foreground"
