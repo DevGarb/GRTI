@@ -44,7 +44,7 @@ export default function OpOficinaCompras() {
       const info = stageInfo(stage);
       const orders = items.filter(o => {
         if (o.stage !== stage) return false;
-        if (o.stage === STAGE_ENTREGUE || o.status === "Finalizado") return false;
+        if (o.status === "Finalizado") return false;
         const pending = pendingByOs[o.id];
         if (!pending?.length) return false; // todas as peças recebidas -> some da área
         if (!s) return true;
