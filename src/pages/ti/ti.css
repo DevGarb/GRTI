@@ -5,6 +5,8 @@
    Aplicada apenas quando a org ativa é a T.I (classe no <html>).
    ============================================================ */
 
+html.ti-scope,
+html.ti-scope.dark,
 .ti-scope {
   /* Tokens semânticos sobrescritos — todas as páginas herdam */
   --background: 220 45% 4%;
