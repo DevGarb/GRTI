@@ -219,6 +219,18 @@ export default function OpOficina() {
             <Check className="h-3.5 w-3.5 mr-1" /> Peças disponíveis
           </Button>
         ) : null}
+        {!isDelivered(o) && (
+          <Button
+            size="sm"
+            variant={o.with_customer ? "secondary" : "outline"}
+            className="mt-1.5 h-7 w-full text-[11px]"
+            onClick={(e) => { e.stopPropagation(); toggleWithCustomer(o); }}
+          >
+            <Home className="h-3.5 w-3.5 mr-1" />
+            {o.with_customer ? "Retornou à oficina" : "Moto com o cliente"}
+          </Button>
+        )}
+
 
 
         <div className="flex items-center justify-between mt-2">
