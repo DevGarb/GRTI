@@ -3914,10 +3914,11 @@ export type Database = {
       close_sprint_with_checklist: {
         Args: {
           _backlog_ok: boolean
-          _category_id?: string
+          _category_id: string
+          _credits?: Json
           _doc_ok: boolean
           _evidence_ok: boolean
-          _evidences?: Json
+          _evidences: Json
           _finished_by: string
           _homolog_ok: boolean
           _sprint_id: string
