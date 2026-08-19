@@ -302,7 +302,7 @@ function CloseSprintDialog({
   });
 
   const allChecked = Object.values(checks).every(Boolean);
-  const canClose = allChecked && !!finishedBy && !!categoryId;
+  const canClose = allChecked && !!finishedBy && !!categoryId && splitOk;
   const score = Object.values(checks).filter(Boolean).length * 20;
   const selectedStaff = staff.find((s: any) => s.user_id === finishedBy);
 
