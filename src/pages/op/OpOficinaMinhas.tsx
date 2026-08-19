@@ -172,6 +172,26 @@ export default function OpOficinaMinhas() {
   );
   const agendaHoje = agendaGroups.find(g => g.isToday)?.orders.length || 0;
 
+  // Agendamentos confirmados aguardando chegada da moto
+  const { items: allBookings, refetch: refetchBookings } = useWorkshopBookings();
+  const [openingBooking, setOpeningBooking] = useState<string | null>(null);
+  const bookings = useMemo(
+    () => allBookings
+      .filter(b => b.status === "agendado" && !b.service_order_id)
+      .sort((a, b) => (a.scheduled_date || "").localeCompare(b.scheduled_date || "")),
+    [allBookings],
+  );
+
+  const handleOpenBooking = async (b: WorkshopBooking) => {
+    setOpeningBooking(b.id);
+    try {
+      const os = await openOsFromBooking(b, { userId: user?.id, mechanicId: profile?.id || null });
+      if (os) { refetchBookings(); refetch(); setTab("servicos"); }
+    } finally {
+      setOpeningBooking(null);
+    }
+  };
+
   // Motos na oficina sem mecânico atribuído
   const [availSearch, setAvailSearch] = useState("");
   const [pulling, setPulling] = useState<string | null>(null);
