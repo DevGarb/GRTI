@@ -12,7 +12,9 @@ import { useMenuAccess } from "@/hooks/useMenuAccess";
 import { useUserOrganizations } from "@/hooks/useUserOrganizations";
 import { useNewTicketNotifier, triggerTestAlert } from "@/hooks/useNewTicketNotifier";
 import NotificationBell from "@/components/NotificationBell";
+import AuroraBackground from "@/components/login/AuroraBackground";
 import "@/pages/checklists/grcheck.css";
+import "@/pages/ti/ti.css";
 
 interface AppLayoutProps {
   children: React.ReactNode;
