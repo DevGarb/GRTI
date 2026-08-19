@@ -30,6 +30,7 @@ import {
 } from "@/lib/oficinaStages";
 import { SCHEDULE_PERIODS, periodInfo, formatDateBRShort } from "@/lib/oficinaAgenda";
 import { useWorkshopBookings } from "@/hooks/useWorkshopBookings";
+import { openOsFromBooking } from "@/lib/openOsFromBooking";
 
 
 const TERMINAL = "Finalizado";
