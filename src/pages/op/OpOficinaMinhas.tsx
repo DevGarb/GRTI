@@ -530,6 +530,8 @@ export default function OpOficinaMinhas() {
                 </div>
               );
             })}
+            </div>
+            ))}
           </TabsContent>
 
           <TabsContent value="pecas" className="space-y-3 mt-4">
