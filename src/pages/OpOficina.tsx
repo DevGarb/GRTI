@@ -518,9 +518,12 @@ function NewOsDialog({ onClose, onCreate }: { onClose: () => void; onCreate: (in
           <div>
 
             <Label>Mecânico</Label>
-            <Select value={form.mechanic_id || ""} onValueChange={v => setF({ mechanic_id: v })}>
-              <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
-              <SelectContent>{mechanics.map(m => <SelectItem key={m.id} value={m.id}>{m.name}</SelectItem>)}</SelectContent>
+            <Select value={form.mechanic_id || "__none__"} onValueChange={v => setF({ mechanic_id: v === "__none__" ? null : v })}>
+              <SelectTrigger><SelectValue placeholder="A definir" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="__none__">A definir</SelectItem>
+                {mechanics.map(m => <SelectItem key={m.id} value={m.id}>{m.name}</SelectItem>)}
+              </SelectContent>
             </Select>
           </div>
           <div>
