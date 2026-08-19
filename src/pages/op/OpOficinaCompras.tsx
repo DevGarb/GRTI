@@ -11,6 +11,10 @@ import { cn } from "@/lib/utils";
 
 function todayISO() { return new Date().toISOString().slice(0, 10); }
 
+const brl = (n: number) => n.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+const osTotal = (list: ServiceOrderPart[]) =>
+  list.reduce((s, p) => s + Number(p.quantity || 0) * Number(p.unit_price || 0), 0);
+
 /** Etapas (colunas) exibidas no painel de compras. */
 const COMPRAS_STAGES = ["orcamento", "aguardando_peca"] as const;
 
