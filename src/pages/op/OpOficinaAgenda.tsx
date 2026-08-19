@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
-import { Calendar, ChevronLeft, ChevronRight, CalendarPlus, Check, X, Clock, Bike, User, Trash2 } from "lucide-react";
+import { Calendar, ChevronLeft, ChevronRight, CalendarPlus, Check, X, Clock, Bike, User, Trash2, Search, Plus } from "lucide-react";
+
 import OficinaNav from "./OficinaNav";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -15,7 +16,7 @@ import { useOficinaProfile } from "@/contexts/OficinaProfileContext";
 import { stageInfo, STAGE_ENTREGUE } from "@/lib/oficinaStages";
 import {
   SCHEDULE_PERIODS, periodInfo, BOOKING_STATUS_INFO, todayISO, shiftDay,
-  formatDateBRShort, weekdayLabel, type BookingStatus,
+  formatDateBRShort, weekdayLabel, SERVICE_TYPES, type BookingStatus,
 } from "@/lib/oficinaAgenda";
 import { toast } from "sonner";
 import "./cearagps.css";
@@ -27,11 +28,20 @@ export default function OpOficinaAgenda() {
   const readOnly = profile?.type === "mecanico";
   const { items: orders, update, add: addOrder } = useServiceOrders();
   const { items: mechanics } = useMechanics();
-  const { items: bookings, update: updateBooking } = useWorkshopBookings();
+  const { items: bookings, update: updateBooking, add: addBooking } = useWorkshopBookings();
 
   const [day, setDay] = useState(todayISO());
   const [scheduling, setScheduling] = useState<ServiceOrder | null>(null);
   const [booking, setBooking] = useState<any | null>(null);
+  const [creating, setCreating] = useState(false);
+  const [search, setSearch] = useState("");
+
+  const q = search.trim().toLowerCase();
+  const matches = (o: ServiceOrder) =>
+    !q ||
+    (o.vehicle_plate || "").toLowerCase().includes(q) ||
+    (o.vehicle_model || "").toLowerCase().includes(q) ||
+    String(o.os_number || "").includes(q);
 
   const mecs = useMemo(
     () => mechanics.filter((m) => m.is_active !== false && (m.role || "mecanico") === "mecanico"),
@@ -42,10 +52,11 @@ export default function OpOficinaAgenda() {
   const actives = useMemo(() => orders.filter(isActive), [orders]);
   const ofDay = useMemo(
     () => actives.filter((o) => (o as any).scheduled_date === day)
-      .filter((o) => (readOnly && profile?.id ? o.mechanic_id === profile.id : true)),
-    [actives, day, readOnly, profile?.id],
+      .filter((o) => (readOnly && profile?.id ? o.mechanic_id === profile.id : true))
+      .filter(matches),
+    [actives, day, readOnly, profile?.id, q],
   );
-  const unscheduled = useMemo(() => actives.filter((o) => !(o as any).scheduled_date), [actives]);
+  const unscheduled = useMemo(() => actives.filter((o) => !(o as any).scheduled_date).filter(matches), [actives, q]);
   const pending = useMemo(() => bookings.filter((b) => b.status === "pendente"), [bookings]);
 
   const columns = useMemo(() => {
@@ -54,6 +65,7 @@ export default function OpOficinaAgenda() {
     if (!readOnly) cols.push({ id: null, name: "A definir", list: ofDay.filter((o) => !o.mechanic_id || !mecs.some((m) => m.id === o.mechanic_id)) });
     return cols;
   }, [mecs, ofDay, readOnly, profile?.id]);
+
 
   const weekCounts = useMemo(() => {
     return Array.from({ length: 7 }, (_, i) => {
@@ -80,12 +92,27 @@ export default function OpOficinaAgenda() {
               {weekdayLabel(day)} · {formatDateBRShort(day)} · {ofDay.length} serviço(s) programado(s)
             </p>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
+            <div className="relative">
+              <Search className="h-4 w-4 absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" />
+              <Input
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Buscar placa, modelo ou OS"
+                className="pl-8 w-[230px] bg-white"
+              />
+            </div>
             <Button size="icon" variant="outline" onClick={() => setDay(shiftDay(day, -1))}><ChevronLeft className="h-4 w-4" /></Button>
             <Input type="date" value={day} onChange={(e) => setDay(e.target.value)} className="w-[160px] bg-white" />
             <Button size="icon" variant="outline" onClick={() => setDay(shiftDay(day, 1))}><ChevronRight className="h-4 w-4" /></Button>
             <Button variant="secondary" onClick={() => setDay(todayISO())}>Hoje</Button>
+            {!readOnly && (
+              <Button className="cgps-btn-primary" onClick={() => setCreating(true)}>
+                <Plus className="h-4 w-4 mr-1" /> Novo agendamento
+              </Button>
+            )}
           </div>
+
         </div>
 
         <div className="flex gap-2 overflow-x-auto pb-1">
@@ -251,7 +278,47 @@ export default function OpOficinaAgenda() {
           }}
         />
       )}
+
+      {creating && (
+        <NewBookingDialog
+          defaultDate={day}
+          mechanics={mecs}
+          onClose={() => setCreating(false)}
+          onConfirm={async (v) => {
+            const created = await addOrder({
+              vehicle_plate: v.plate.toUpperCase(),
+              vehicle_model: v.model || null,
+              description: [v.serviceType, v.notes].filter(Boolean).join(" — ") || "Serviço agendado",
+              mechanic_id: v.mechanic_id,
+              stage: "analise",
+            } as any);
+            if (created) {
+              await update((created as any).id, {
+                scheduled_date: v.date, scheduled_period: v.period, schedule_notes: v.notes || null,
+              } as any);
+              const b = await addBooking({
+                vehicle_plate: v.plate,
+                vehicle_model: v.model || null,
+                service_type: v.serviceType || null,
+                description: v.notes || null,
+                preferred_date: v.date,
+                preferred_period: v.period,
+              });
+              if (b) {
+                await updateBooking((b as any).id, {
+                  status: "agendado", scheduled_date: v.date, scheduled_period: v.period,
+                  mechanic_id: v.mechanic_id, service_order_id: (created as any).id, admin_notes: v.notes || null,
+                });
+              }
+              setDay(v.date);
+              toast.success("Agendamento criado");
+            }
+            setCreating(false);
+          }}
+        />
+      )}
     </div>
+
   );
 }
 
@@ -365,6 +432,84 @@ function BookingDialog({ booking, defaultDate, mechanics, onClose, onConfirm }: 
             setSaving(true);
             onConfirm({ date, period, mechanic_id: mechanicId === "none" ? null : mechanicId, notes });
           }}>Confirmar agendamento</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function NewBookingDialog({ defaultDate, mechanics, onClose, onConfirm }: {
+  defaultDate: string;
+  mechanics: { id: string; name: string }[];
+  onClose: () => void;
+  onConfirm: (v: { plate: string; model: string; serviceType: string; date: string; period: string; mechanic_id: string | null; notes: string }) => void;
+}) {
+  const [plate, setPlate] = useState("");
+  const [model, setModel] = useState("");
+  const [serviceType, setServiceType] = useState(SERVICE_TYPES[0]);
+  const [date, setDate] = useState(defaultDate);
+  const [period, setPeriod] = useState("dia");
+  const [mechanicId, setMechanicId] = useState("none");
+  const [notes, setNotes] = useState("");
+  const [saving, setSaving] = useState(false);
+
+  return (
+    <Dialog open onOpenChange={onClose}>
+      <DialogContent>
+        <DialogHeader><DialogTitle>Novo agendamento</DialogTitle></DialogHeader>
+        <p className="text-xs text-slate-500 -mt-2">Cria a OS em Análise / Triagem já com data de execução.</p>
+        <div className="space-y-3">
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <Label>Placa *</Label>
+              <Input value={plate} onChange={(e) => setPlate(e.target.value.toUpperCase())} placeholder="ABC1D23" />
+            </div>
+            <div>
+              <Label>Modelo</Label>
+              <Input value={model} onChange={(e) => setModel(e.target.value)} placeholder="CG 160 Titan" />
+            </div>
+          </div>
+          <div>
+            <Label>Tipo de serviço</Label>
+            <Select value={serviceType} onValueChange={setServiceType}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>{SERVICE_TYPES.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
+            </Select>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <Label>Data de execução</Label>
+              <Input type="date" value={date} onChange={(e) => setDate(e.target.value)} />
+            </div>
+            <div>
+              <Label>Período</Label>
+              <Select value={period} onValueChange={setPeriod}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>{SCHEDULE_PERIODS.map((p) => <SelectItem key={p.id} value={p.id}>{p.label}</SelectItem>)}</SelectContent>
+              </Select>
+            </div>
+          </div>
+          <div>
+            <Label>Mecânico responsável</Label>
+            <Select value={mechanicId} onValueChange={setMechanicId}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">A definir</SelectItem>
+                {mechanics.map((m) => <SelectItem key={m.id} value={m.id}>{m.name}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
+          <div>
+            <Label>Observações</Label>
+            <Textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={3} />
+          </div>
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={onClose}>Cancelar</Button>
+          <Button className="cgps-btn-primary" disabled={saving || !plate.trim() || !date} onClick={() => {
+            setSaving(true);
+            onConfirm({ plate: plate.trim(), model, serviceType, date, period, mechanic_id: mechanicId === "none" ? null : mechanicId, notes });
+          }}>Criar agendamento</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
