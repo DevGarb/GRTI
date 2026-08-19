@@ -57,7 +57,7 @@ const DELIVERED_COLUMN: KanbanColumn = { id: STAGE_ENTREGUE, label: "Entregue", 
 
 export default function OpOficina() {
   const { user } = useAuth();
-  const { items, partsByOs, partsCountByOs, add, update, remove, setPartStatus, movePriority } = useServiceOrders();
+  const { items, partsByOs, partsCountByOs, add, update, remove, setPartStatus, movePriority, refetch } = useServiceOrders();
   const checklist = useServiceChecklists();
 
   const { items: mechanics } = useMechanics();
