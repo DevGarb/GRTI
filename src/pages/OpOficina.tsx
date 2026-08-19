@@ -354,7 +354,7 @@ export default function OpOficina() {
 
       {view === "kanban" && (
         <div className="flex gap-3 items-start">
-          <ConfirmedBookingsColumn />
+          <ConfirmedBookingsColumn onCreated={refetch} />
           <div className="flex-1 min-w-0">
             <OpKanbanBoard<ServiceOrder>
               columns={columns}
