@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Wrench, HardHat, ShoppingCart, Shield, ArrowRight } from "lucide-react";
+import { Wrench, HardHat, ShoppingCart, Shield, ArrowRight, CalendarPlus } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -22,6 +22,7 @@ export default function OficinaPin() {
   const [mecPin, setMecPin] = useState("");
   const [compPin, setCompPin] = useState("");
   const [adminPin, setAdminPin] = useState("");
+  const [motoPin, setMotoPin] = useState("");
 
   const loginAdmin = () => {
     if (!isAdmin && adminPin.trim() !== "0000") {
@@ -61,9 +62,10 @@ export default function OficinaPin() {
         </div>
 
         <Tabs defaultValue={isAdmin ? "admin" : "mecanico"} className="p-6">
-          <TabsList className="grid grid-cols-3 mb-6">
+          <TabsList className="grid grid-cols-4 mb-6">
             <TabsTrigger value="mecanico"><HardHat className="h-3.5 w-3.5 mr-1" />Mecânico</TabsTrigger>
             <TabsTrigger value="compras"><ShoppingCart className="h-3.5 w-3.5 mr-1" />Compras</TabsTrigger>
+            <TabsTrigger value="motoloc"><CalendarPlus className="h-3.5 w-3.5 mr-1" />Motoloc</TabsTrigger>
             <TabsTrigger value="admin"><Shield className="h-3.5 w-3.5 mr-1" />Admin</TabsTrigger>
           </TabsList>
 
@@ -103,6 +105,25 @@ export default function OficinaPin() {
             </div>
             <Button onClick={() => loginByPin("compras", compPin)} className="w-full cgps-btn-primary">
               Entrar como compras <ArrowRight className="h-4 w-4 ml-1" />
+            </Button>
+          </TabsContent>
+
+          <TabsContent value="motoloc" className="space-y-3">
+            <div>
+              <Label>PIN Motoloc</Label>
+              <Input
+                type="password"
+                inputMode="numeric"
+                maxLength={6}
+                value={motoPin}
+                onChange={(e) => setMotoPin(e.target.value.replace(/\D/g, ""))}
+                onKeyDown={(e) => e.key === "Enter" && loginByPin("motoloc", motoPin)}
+                placeholder="••••"
+                className="text-center text-2xl tracking-[0.5em] h-14"
+              />
+            </div>
+            <Button onClick={() => loginByPin("motoloc", motoPin)} className="w-full cgps-btn-primary">
+              Entrar como Motoloc <ArrowRight className="h-4 w-4 ml-1" />
             </Button>
           </TabsContent>
 
