@@ -793,16 +793,12 @@ function OsDetailDialog({ os, onClose, onUpdate, onDelete, onRequestClose, compa
             Peças / Itens
             <Badge variant="secondary">{parts.length}</Badge>
           </h3>
-          <div className="grid grid-cols-[1fr_80px_120px_auto] gap-2 mb-2">
+          <div className="grid grid-cols-[1fr_80px_auto] gap-2 mb-2">
             <Input
               list="parts-catalog"
               placeholder="Peça/serviço"
               value={partName}
-              onChange={e => {
-                setPartName(e.target.value);
-                const found = partsCatalog.find(p => p.name === e.target.value);
-                if (found) setPrice(String(found.default_price));
-              }}
+              onChange={e => setPartName(e.target.value)}
               onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); handleAddPart(); } }}
             />
             <datalist id="parts-catalog">{partsCatalog.map(p => <option key={p.id} value={p.name} />)}</datalist>
@@ -812,15 +808,6 @@ function OsDetailDialog({ os, onClose, onUpdate, onDelete, onRequestClose, compa
               min="0"
               value={qty}
               onChange={e => setQty(e.target.value)}
-              onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); handleAddPart(); } }}
-            />
-            <Input
-              type="number"
-              step="0.01"
-              min="0"
-              value={price}
-              onChange={e => setPrice(e.target.value)}
-              placeholder="Valor"
               onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); handleAddPart(); } }}
             />
             <Button onClick={handleAddPart}>
@@ -839,15 +826,11 @@ function OsDetailDialog({ os, onClose, onUpdate, onDelete, onRequestClose, compa
                     {PART_STATUS_FLOW.map(s => <SelectItem key={s} value={s}>{PART_STATUS_INFO[s].label}</SelectItem>)}
                   </SelectContent>
                 </Select>
-                <div className="w-24 text-right text-xs">{fmtMoney(Number(p.unit_price))}</div>
-                <div className="w-24 text-right font-medium">{fmtMoney(Number(p.quantity) * Number(p.unit_price))}</div>
                 <Button variant="ghost" size="icon" onClick={() => removePart(p.id)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
               </div>
             ))}
-            {parts.length > 0 && (
-              <div className="p-2 flex justify-end font-semibold bg-muted/30">Total: {fmtMoney(total)}</div>
-            )}
           </div>
+
         </div>
 
         <div className="border-t pt-3">
