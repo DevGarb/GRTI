@@ -25,7 +25,6 @@ export default function OficinaNav() {
       : [
           { to: "/op/oficina", label: "Quadro Kanban", icon: LayoutGrid },
           { to: "/op/oficina/agenda", label: "Agenda", icon: Calendar },
-          { to: "/op/oficina/acompanhamento", label: "Acompanhamento", icon: Gauge },
           { to: "/op/oficina/historico", label: "Histórico", icon: History },
           { to: "/op/oficina/alertas", label: "Alertas", icon: ShieldAlert },
           { to: "/op/oficina/premiacoes", label: "Premiações", icon: Award },
