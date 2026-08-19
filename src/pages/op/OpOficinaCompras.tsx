@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { useServiceOrders, useMechanics, type ServiceOrder, type ServiceOrderPart } from "@/hooks/useOficina";
 import { useCompanies } from "@/hooks/useOperacional";
 import OficinaNav from "./OficinaNav";
-import { PART_STATUS_FLOW, PART_STATUS_INFO, STAGE_ENTREGUE, stageInfo } from "@/lib/oficinaStages";
+import { PART_STATUS_FLOW, PART_STATUS_INFO, stageInfo } from "@/lib/oficinaStages";
 import { cn } from "@/lib/utils";
 
 function todayISO() { return new Date().toISOString().slice(0, 10); }
