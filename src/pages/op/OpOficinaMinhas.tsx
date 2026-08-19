@@ -172,6 +172,41 @@ export default function OpOficinaMinhas() {
   );
   const agendaHoje = agendaGroups.find(g => g.isToday)?.orders.length || 0;
 
+  // Motos na oficina sem mecânico atribuído
+  const [availSearch, setAvailSearch] = useState("");
+  const [pulling, setPulling] = useState<string | null>(null);
+
+  const availableGroups = useMemo(() => {
+    const q = availSearch.trim().toLowerCase();
+    const free = items
+      .filter(o => !o.mechanic_id && !DONE_STAGES.includes(o.stage))
+      .filter(o => !q || `${o.vehicle_plate || ""} ${o.vehicle_model || ""} ${o.customer_name || ""} ${o.os_number}`.toLowerCase().includes(q));
+    return STAGE_PRIORITY.concat(free.map(o => o.stage).filter(s => !STAGE_PRIORITY.includes(s)))
+      .filter((s, i, arr) => arr.indexOf(s) === i)
+      .map(id => ({ ...stageInfo(id), id, orders: free.filter(o => o.stage === id) }))
+      .filter(g => g.orders.length > 0);
+  }, [items, availSearch]);
+
+  const availableCount = useMemo(
+    () => items.filter(o => !o.mechanic_id && !DONE_STAGES.includes(o.stage)).length,
+    [items],
+  );
+
+  const pullOs = async (o: ServiceOrder) => {
+    if (!profile?.id) return toast.error("Perfil de mecânico não identificado");
+    setPulling(o.id);
+    try {
+      await update(o.id, { mechanic_id: profile.id } as any);
+      toast.success(`${o.vehicle_plate || `OS #${o.os_number}`} atribuída a você`);
+      refetch();
+    } catch (e: any) {
+      toast.error(e?.message || "Não foi possível puxar o serviço");
+    } finally {
+      setPulling(null);
+    }
+  };
+
+
 
   const [onlyMine, setOnlyMine] = useState(false);
   const [doneSearch, setDoneSearch] = useState("");
