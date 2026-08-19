@@ -14,11 +14,17 @@ export default function OficinaNav() {
   const type = profile?.type;
   const TABS =
     type === "mecanico"
-      ? [{ to: "/op/oficina/minhas", label: "Meus serviços", icon: ClipboardList }]
+      ? [
+          { to: "/op/oficina/minhas", label: "Meus serviços", icon: ClipboardList },
+          { to: "/op/oficina/agenda", label: "Minha agenda", icon: Calendar },
+        ]
       : type === "compras"
       ? [{ to: "/op/oficina/compras", label: "Compras & Peças", icon: ShoppingCart }]
+      : type === "motoloc"
+      ? [{ to: "/op/oficina/agendar", label: "Agendar manutenção", icon: CalendarPlus }]
       : [
           { to: "/op/oficina", label: "Quadro Kanban", icon: LayoutGrid },
+          { to: "/op/oficina/agenda", label: "Agenda", icon: Calendar },
           { to: "/op/oficina/acompanhamento", label: "Acompanhamento", icon: Gauge },
           { to: "/op/oficina/historico", label: "Histórico", icon: History },
           { to: "/op/oficina/alertas", label: "Alertas", icon: ShieldAlert },
