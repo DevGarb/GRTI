@@ -94,12 +94,8 @@ export default function OpOficina() {
 
   const kpis = useMemo(() => {
     const ativas = baseFiltered.filter(o => !isDelivered(o));
-    const media = ativas.length
-      ? Math.round(ativas.reduce((s, o) => s + daysInWorkshop(o.opened_at), 0) / ativas.length)
-      : 0;
     return {
       total: ativas.length,
-      media,
       atrasadas: baseFiltered.filter(isOverdue).length,
       aguardPeca: ativas.filter(o => o.stage === "aguardando_peca").length,
       entregues: baseFiltered.filter(isDelivered).length,
