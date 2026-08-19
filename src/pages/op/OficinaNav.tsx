@@ -1,5 +1,5 @@
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
-import { Wrench, LogOut, LayoutGrid, ShoppingCart, ClipboardList, Award, ShieldAlert, History, Calendar, CalendarPlus } from "lucide-react";
+import { Wrench, LogOut, LayoutGrid, ShoppingCart, ClipboardList, Award, ShieldAlert, Calendar, CalendarPlus } from "lucide-react";
 import { useOficinaProfile } from "@/contexts/OficinaProfileContext";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -25,7 +25,6 @@ export default function OficinaNav() {
       : [
           { to: "/op/oficina", label: "Quadro Kanban", icon: LayoutGrid },
           { to: "/op/oficina/agenda", label: "Agenda", icon: Calendar },
-          { to: "/op/oficina/historico", label: "Histórico", icon: History },
           { to: "/op/oficina/alertas", label: "Alertas", icon: ShieldAlert },
           { to: "/op/oficina/premiacoes", label: "Premiações", icon: Award },
           { to: "/op/oficina/compras", label: "Compras", icon: ShoppingCart },
