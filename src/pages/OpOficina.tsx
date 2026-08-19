@@ -29,6 +29,7 @@ import {
   CHECKLIST_PARTS_LABEL, maxDeadlineFrom,
 } from "@/lib/oficinaStages";
 import { SCHEDULE_PERIODS, periodInfo, formatDateBRShort } from "@/lib/oficinaAgenda";
+import { useWorkshopBookings } from "@/hooks/useWorkshopBookings";
 
 
 const TERMINAL = "Finalizado";
@@ -352,14 +353,19 @@ export default function OpOficina() {
       </Tabs>
 
       {view === "kanban" && (
-        <OpKanbanBoard<ServiceOrder>
-          columns={columns}
-          itemsByColumn={itemsByCol}
-          renderCard={renderCard}
-          resolveItem={(id) => filtered.find(o => o.id === id)}
-          onMove={(item, _from, to) => handleStageChange(item, to)}
-          emptyText="— sem motos —"
-        />
+        <div className="flex gap-3 items-start">
+          <ConfirmedBookingsColumn />
+          <div className="flex-1 min-w-0">
+            <OpKanbanBoard<ServiceOrder>
+              columns={columns}
+              itemsByColumn={itemsByCol}
+              renderCard={renderCard}
+              resolveItem={(id) => filtered.find(o => o.id === id)}
+              onMove={(item, _from, to) => handleStageChange(item, to)}
+              emptyText="— sem motos —"
+            />
+          </div>
+        </div>
       )}
 
       {view === "lista" && (
@@ -925,5 +931,52 @@ function OsDetailDialog({ os, onClose, onUpdate, onDelete, onRequestClose, compa
         </DialogFooter>
       </DialogContent>
     </Dialog>
+  );
+}
+
+/* ---------- Coluna de agendamentos confirmados (antes da Análise/Triagem) ---------- */
+function ConfirmedBookingsColumn() {
+  const { items, loading } = useWorkshopBookings();
+  const list = useMemo(
+    () => items
+      .filter(b => b.status === "agendado" && !b.service_order_id)
+      .sort((a, b) => (a.scheduled_date || "").localeCompare(b.scheduled_date || "")),
+    [items],
+  );
+
+  return (
+    <div className="flex-shrink-0 w-[300px] flex flex-col">
+      <div className="bg-teal-600 text-white rounded-t-lg px-3 py-2 flex items-center justify-between">
+        <span className="text-xs font-semibold truncate">Agendamentos confirmados</span>
+        <span className="text-xs font-bold bg-white/20 rounded-full px-2 py-0.5">{list.length}</span>
+      </div>
+      <div className="flex-1 rounded-b-lg border border-t-0 border-border bg-background p-2 space-y-2 overflow-y-auto max-h-[70vh]">
+        {loading && <div className="text-center py-8 text-xs text-muted-foreground">Carregando…</div>}
+        {!loading && list.length === 0 && (
+          <div className="text-center py-8 text-xs text-muted-foreground">— sem agendamentos —</div>
+        )}
+        {list.map(b => {
+          const per = periodInfo(b.scheduled_period);
+          const isToday = b.scheduled_date === todayISO();
+          return (
+            <div key={b.id} className="rounded-lg border border-border bg-card p-3 space-y-1.5">
+              <div className="flex items-center justify-between gap-2">
+                <span className="font-mono text-sm font-semibold">{b.vehicle_plate}</span>
+                <Badge variant="secondary" className={per.chip}>{per.label}</Badge>
+              </div>
+              <div className="text-xs text-muted-foreground truncate">{b.vehicle_model || "—"}</div>
+              <div className="flex items-center gap-1.5 text-xs">
+                <Calendar className="h-3 w-3 text-muted-foreground" />
+                <span className={cn(isToday && "font-semibold text-primary")}>
+                  {formatDateBRShort(b.scheduled_date)}{isToday ? " · hoje" : ""}
+                </span>
+              </div>
+              {b.service_type && <div className="text-[11px] text-muted-foreground truncate">{b.service_type}</div>}
+              {b.requester_name && <div className="text-[11px] text-muted-foreground truncate">Solic.: {b.requester_name}</div>}
+            </div>
+          );
+        })}
+      </div>
+    </div>
   );
 }
