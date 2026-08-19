@@ -772,6 +772,25 @@ function OsDetailDialog({ os, onClose, onUpdate, onDelete, onRequestClose, compa
           </div>
 
           <div>
+            <Label>Data de execução</Label>
+            <Input
+              type="date"
+              value={scheduledDate}
+              onChange={e => setScheduledDate(e.target.value)}
+            />
+            <div className="text-[11px] mt-1 text-muted-foreground">
+              Dia em que a moto deve entrar na oficina para execução.
+            </div>
+          </div>
+          <div>
+            <Label>Período de execução</Label>
+            <Select value={scheduledPeriod} onValueChange={v => setScheduledPeriod(v)}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>{SCHEDULE_PERIODS.map(p => <SelectItem key={p.id} value={p.id}>{p.label}</SelectItem>)}</SelectContent>
+            </Select>
+          </div>
+
+          <div>
             <Label>Empresa</Label>
             <Select value={companyId} onValueChange={setCompanyId}>
               <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
