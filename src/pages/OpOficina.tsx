@@ -948,7 +948,7 @@ function ConfirmedBookingsColumn({ onCreated }: { onCreated?: () => void }) {
   const [opening, setOpening] = useState<string | null>(null);
   const list = useMemo(
     () => items
-      .filter(b => b.status === "agendado" && !b.service_order_id)
+      .filter(b => b.status === "agendado")
       .sort((a, b) => (a.scheduled_date || "").localeCompare(b.scheduled_date || "")),
     [items],
   );
@@ -956,12 +956,24 @@ function ConfirmedBookingsColumn({ onCreated }: { onCreated?: () => void }) {
   const handleOpen = async (b: typeof list[number]) => {
     setOpening(b.id);
     try {
+      if (b.service_order_id) {
+        // OS já criada no momento do agendamento: apenas marca a chegada
+        const { error } = await supabase
+          .from("op_workshop_bookings" as any)
+          .update({ status: "em_atendimento" } as any)
+          .eq("id", b.id);
+        if (error) { toast.error(error.message); return; }
+        toast.success(`Chegada registrada para ${b.vehicle_plate}`);
+        refetch(); onCreated?.();
+        return;
+      }
       const os = await openOsFromBooking(b, { userId: user?.id });
       if (os) { refetch(); onCreated?.(); }
     } finally {
       setOpening(null);
     }
   };
+
 
   const handleDelete = async (b: typeof list[number]) => {
     if (!confirm(`Excluir o agendamento da moto ${b.vehicle_plate}? Use quando o veículo não comparecer.`)) return;
