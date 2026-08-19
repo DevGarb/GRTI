@@ -131,6 +131,16 @@ export default function OpOficinaMinhas() {
     [items, profile?.id],
   );
 
+  // Ordem de prioridade das etapas na visão do mecânico
+  const STAGE_PRIORITY = ["execucao", "desempeno", "pintura", "analise"];
+  const mineGroups = useMemo(
+    () =>
+      STAGE_PRIORITY
+        .map(id => ({ ...stageInfo(id), orders: mine.filter(o => o.stage === id) }))
+        .filter(g => g.orders.length > 0),
+    [mine],
+  );
+
   const [onlyMine, setOnlyMine] = useState(false);
   const [doneSearch, setDoneSearch] = useState("");
 
