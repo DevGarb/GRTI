@@ -258,22 +258,12 @@ export default function OpOficinaAgenda() {
           mechanics={mecs}
           onClose={() => setBooking(null)}
           onConfirm={async ({ date, period, mechanic_id, notes }) => {
-            const created = await addOrder({
-              company_id: booking.company_id,
-              vehicle_plate: booking.vehicle_plate,
-              vehicle_model: booking.vehicle_model,
-              description: booking.description || booking.service_type,
-              mechanic_id: mechanic_id || null,
-              stage: "analise",
+            await updateBooking(booking.id, {
+              status: "agendado", scheduled_date: date, scheduled_period: period,
+              mechanic_id: mechanic_id || null, admin_notes: notes || null,
             });
-            if (created) {
-              await update((created as any).id, { scheduled_date: date, scheduled_period: period, schedule_notes: notes || null } as any);
-              await updateBooking(booking.id, {
-                status: "agendado", scheduled_date: date, scheduled_period: period,
-                mechanic_id: mechanic_id || null, service_order_id: (created as any).id, admin_notes: notes || null,
-              });
-              setDay(date);
-            }
+            setDay(date);
+            toast.success("Agendamento confirmado. A OS será aberta quando a moto chegar.");
             setBooking(null);
           }}
         />
@@ -285,38 +275,27 @@ export default function OpOficinaAgenda() {
           mechanics={mecs}
           onClose={() => setCreating(false)}
           onConfirm={async (v) => {
-            const created = await addOrder({
-              vehicle_plate: v.plate.toUpperCase(),
+            const b = await addBooking({
+              vehicle_plate: v.plate,
               vehicle_model: v.model || null,
-              description: [v.serviceType, v.notes].filter(Boolean).join(" — ") || "Serviço agendado",
-              mechanic_id: v.mechanic_id,
-              stage: "analise",
-            } as any);
-            if (created) {
-              await update((created as any).id, {
-                scheduled_date: v.date, scheduled_period: v.period, schedule_notes: v.notes || null,
-              } as any);
-              const b = await addBooking({
-                vehicle_plate: v.plate,
-                vehicle_model: v.model || null,
-                service_type: v.serviceType || null,
-                description: v.notes || null,
-                preferred_date: v.date,
-                preferred_period: v.period,
+              service_type: v.serviceType || null,
+              description: v.notes || null,
+              preferred_date: v.date,
+              preferred_period: v.period,
+            });
+            if (b) {
+              await updateBooking((b as any).id, {
+                status: "agendado", scheduled_date: v.date, scheduled_period: v.period,
+                mechanic_id: v.mechanic_id === "none" ? null : v.mechanic_id, admin_notes: v.notes || null,
               });
-              if (b) {
-                await updateBooking((b as any).id, {
-                  status: "agendado", scheduled_date: v.date, scheduled_period: v.period,
-                  mechanic_id: v.mechanic_id, service_order_id: (created as any).id, admin_notes: v.notes || null,
-                });
-              }
               setDay(v.date);
-              toast.success("Agendamento criado");
+              toast.success("Agendamento criado. A OS será aberta quando a moto chegar.");
             }
             setCreating(false);
           }}
         />
       )}
+
     </div>
 
   );
