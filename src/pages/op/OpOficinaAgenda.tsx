@@ -58,6 +58,10 @@ export default function OpOficinaAgenda() {
   );
   const unscheduled = useMemo(() => actives.filter((o) => !(o as any).scheduled_date).filter(matches), [actives, q]);
   const pending = useMemo(() => bookings.filter((b) => b.status === "pendente"), [bookings]);
+  const awaiting = useMemo(
+    () => bookings.filter((b) => b.status === "agendado" && !b.service_order_id && b.scheduled_date === day),
+    [bookings, day],
+  );
 
   const columns = useMemo(() => {
     const cols = (readOnly && profile?.id ? mecs.filter((m) => m.id === profile.id) : mecs)
@@ -217,6 +221,27 @@ export default function OpOficinaAgenda() {
             ))}
           </div>
 
+          <div className="space-y-4">
+            <Card className="p-3 h-fit">
+              <h2 className="font-semibold text-sm text-slate-800 mb-2">Aguardando chegada ({awaiting.length})</h2>
+              <p className="text-[11px] text-slate-500 mb-2">Motos agendadas para este dia que ainda não estão na oficina. A OS é aberta no Kanban ao clicar em "Moto chegou · abrir OS".</p>
+              <div className="space-y-2 max-h-[260px] overflow-y-auto">
+                {awaiting.length === 0 && <p className="text-xs text-slate-400">Nenhuma moto aguardando chegada.</p>}
+                {awaiting.map((b) => (
+                  <div key={b.id} className="rounded-lg border p-2.5">
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="font-bold text-sm text-slate-800">{b.vehicle_plate}</span>
+                      <Badge className={periodInfo(b.scheduled_period).chip + " border-0 text-[10px]"}>
+                        {periodInfo(b.scheduled_period).label}
+                      </Badge>
+                    </div>
+                    <div className="text-xs text-slate-500">{b.vehicle_model || "—"} · {mecName(b.mechanic_id)}</div>
+                    {b.service_type && <div className="text-[11px] text-slate-400 mt-1">{b.service_type}</div>}
+                  </div>
+                ))}
+              </div>
+            </Card>
+
           {!readOnly && (
             <Card className="p-3 h-fit">
               <h2 className="font-semibold text-sm text-slate-800 mb-2">Sem data de execução ({unscheduled.length})</h2>
@@ -238,6 +263,7 @@ export default function OpOficinaAgenda() {
               </div>
             </Card>
           )}
+          </div>
         </div>
       </div>
 
@@ -258,22 +284,12 @@ export default function OpOficinaAgenda() {
           mechanics={mecs}
           onClose={() => setBooking(null)}
           onConfirm={async ({ date, period, mechanic_id, notes }) => {
-            const created = await addOrder({
-              company_id: booking.company_id,
-              vehicle_plate: booking.vehicle_plate,
-              vehicle_model: booking.vehicle_model,
-              description: booking.description || booking.service_type,
-              mechanic_id: mechanic_id || null,
-              stage: "analise",
+            await updateBooking(booking.id, {
+              status: "agendado", scheduled_date: date, scheduled_period: period,
+              mechanic_id: mechanic_id || null, admin_notes: notes || null,
             });
-            if (created) {
-              await update((created as any).id, { scheduled_date: date, scheduled_period: period, schedule_notes: notes || null } as any);
-              await updateBooking(booking.id, {
-                status: "agendado", scheduled_date: date, scheduled_period: period,
-                mechanic_id: mechanic_id || null, service_order_id: (created as any).id, admin_notes: notes || null,
-              });
-              setDay(date);
-            }
+            setDay(date);
+            toast.success("Agendamento confirmado. A OS será aberta quando a moto chegar.");
             setBooking(null);
           }}
         />
@@ -285,38 +301,27 @@ export default function OpOficinaAgenda() {
           mechanics={mecs}
           onClose={() => setCreating(false)}
           onConfirm={async (v) => {
-            const created = await addOrder({
-              vehicle_plate: v.plate.toUpperCase(),
+            const b = await addBooking({
+              vehicle_plate: v.plate,
               vehicle_model: v.model || null,
-              description: [v.serviceType, v.notes].filter(Boolean).join(" — ") || "Serviço agendado",
-              mechanic_id: v.mechanic_id,
-              stage: "analise",
-            } as any);
-            if (created) {
-              await update((created as any).id, {
-                scheduled_date: v.date, scheduled_period: v.period, schedule_notes: v.notes || null,
-              } as any);
-              const b = await addBooking({
-                vehicle_plate: v.plate,
-                vehicle_model: v.model || null,
-                service_type: v.serviceType || null,
-                description: v.notes || null,
-                preferred_date: v.date,
-                preferred_period: v.period,
+              service_type: v.serviceType || null,
+              description: v.notes || null,
+              preferred_date: v.date,
+              preferred_period: v.period,
+            });
+            if (b) {
+              await updateBooking((b as any).id, {
+                status: "agendado", scheduled_date: v.date, scheduled_period: v.period,
+                mechanic_id: v.mechanic_id === "none" ? null : v.mechanic_id, admin_notes: v.notes || null,
               });
-              if (b) {
-                await updateBooking((b as any).id, {
-                  status: "agendado", scheduled_date: v.date, scheduled_period: v.period,
-                  mechanic_id: v.mechanic_id, service_order_id: (created as any).id, admin_notes: v.notes || null,
-                });
-              }
               setDay(v.date);
-              toast.success("Agendamento criado");
+              toast.success("Agendamento criado. A OS será aberta quando a moto chegar.");
             }
             setCreating(false);
           }}
         />
       )}
+
     </div>
 
   );
@@ -457,7 +462,7 @@ function NewBookingDialog({ defaultDate, mechanics, onClose, onConfirm }: {
     <Dialog open onOpenChange={onClose}>
       <DialogContent>
         <DialogHeader><DialogTitle>Novo agendamento</DialogTitle></DialogHeader>
-        <p className="text-xs text-slate-500 -mt-2">Cria a OS em Análise / Triagem já com data de execução.</p>
+        <p className="text-xs text-slate-500 -mt-2">Reserva a data na oficina. A OS só é aberta quando a moto chegar.</p>
         <div className="space-y-3">
           <div className="grid grid-cols-2 gap-3">
             <div>
