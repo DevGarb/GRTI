@@ -58,6 +58,10 @@ export default function OpOficinaAgenda() {
   );
   const unscheduled = useMemo(() => actives.filter((o) => !(o as any).scheduled_date).filter(matches), [actives, q]);
   const pending = useMemo(() => bookings.filter((b) => b.status === "pendente"), [bookings]);
+  const awaiting = useMemo(
+    () => bookings.filter((b) => b.status === "agendado" && !b.service_order_id && b.scheduled_date === day),
+    [bookings, day],
+  );
 
   const columns = useMemo(() => {
     const cols = (readOnly && profile?.id ? mecs.filter((m) => m.id === profile.id) : mecs)
@@ -217,6 +221,27 @@ export default function OpOficinaAgenda() {
             ))}
           </div>
 
+          <div className="space-y-4">
+            <Card className="p-3 h-fit">
+              <h2 className="font-semibold text-sm text-slate-800 mb-2">Aguardando chegada ({awaiting.length})</h2>
+              <p className="text-[11px] text-slate-500 mb-2">Motos agendadas para este dia que ainda não estão na oficina. A OS é aberta no Kanban ao clicar em "Moto chegou · abrir OS".</p>
+              <div className="space-y-2 max-h-[260px] overflow-y-auto">
+                {awaiting.length === 0 && <p className="text-xs text-slate-400">Nenhuma moto aguardando chegada.</p>}
+                {awaiting.map((b) => (
+                  <div key={b.id} className="rounded-lg border p-2.5">
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="font-bold text-sm text-slate-800">{b.vehicle_plate}</span>
+                      <Badge className={periodInfo(b.scheduled_period).chip + " border-0 text-[10px]"}>
+                        {periodInfo(b.scheduled_period).label}
+                      </Badge>
+                    </div>
+                    <div className="text-xs text-slate-500">{b.vehicle_model || "—"} · {mecName(b.mechanic_id)}</div>
+                    {b.service_type && <div className="text-[11px] text-slate-400 mt-1">{b.service_type}</div>}
+                  </div>
+                ))}
+              </div>
+            </Card>
+
           {!readOnly && (
             <Card className="p-3 h-fit">
               <h2 className="font-semibold text-sm text-slate-800 mb-2">Sem data de execução ({unscheduled.length})</h2>
@@ -238,6 +263,7 @@ export default function OpOficinaAgenda() {
               </div>
             </Card>
           )}
+          </div>
         </div>
       </div>
 
@@ -436,7 +462,7 @@ function NewBookingDialog({ defaultDate, mechanics, onClose, onConfirm }: {
     <Dialog open onOpenChange={onClose}>
       <DialogContent>
         <DialogHeader><DialogTitle>Novo agendamento</DialogTitle></DialogHeader>
-        <p className="text-xs text-slate-500 -mt-2">Cria a OS em Análise / Triagem já com data de execução.</p>
+        <p className="text-xs text-slate-500 -mt-2">Reserva a data na oficina. A OS só é aberta quando a moto chegar.</p>
         <div className="space-y-3">
           <div className="grid grid-cols-2 gap-3">
             <div>
