@@ -299,7 +299,7 @@ export default function OpOficinaMinhas() {
       await update(finishOs.id, {
         stage: "pronto",
         closure_summary: summary.trim(),
-        finished_at: new Date().toISOString(),
+        finished_at: todayISO(),
       });
       toast.success("Serviço finalizado");
       setFinishOs(null);
@@ -950,7 +950,7 @@ export default function OpOficinaMinhas() {
 
                     {o.finished_at && (
                       <span className="ml-auto text-xs text-muted-foreground">
-                        Finalizado em {new Date(o.finished_at).toLocaleDateString("pt-BR")}
+                        Finalizado em {formatDateBRShort(o.finished_at)}
                       </span>
                     )}
                   </div>
