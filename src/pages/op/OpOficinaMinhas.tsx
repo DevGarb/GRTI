@@ -302,7 +302,7 @@ export default function OpOficinaMinhas() {
       }
       await update(finishOs.id, {
         stage: "entregue",
-        status: "Concluída",
+        status: "Finalizado",
         closure_summary: summary.trim(),
         finished_at: todayISO(),
         finish_km: km,
