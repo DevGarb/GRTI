@@ -102,6 +102,7 @@ export default function OpOficinaAgenda() {
             </h1>
             <p className="text-sm text-slate-500 capitalize">
               {weekdayLabel(day)} · {formatDateBRShort(day)} · {ofDay.length} serviço(s) programado(s)
+              {rolledCount > 0 && <span className="text-rose-600 normal-case"> · {rolledCount} adiado(s) de dias anteriores</span>}
             </p>
           </div>
           <div className="flex items-center gap-2 flex-wrap">
