@@ -75,11 +75,10 @@ export default function OpOficinaAgendar() {
               <Input value={model} onChange={(e) => setModel(e.target.value)} placeholder="Honda Biz 125" />
             </div>
             <div>
-              <Label>Empresa / cliente</Label>
+              <Label>Empresa / cliente *</Label>
               <Select value={companyId} onValueChange={setCompanyId}>
-                <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
+                <SelectTrigger><SelectValue placeholder="Selecione a empresa" /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="none">Não informar</SelectItem>
                   {filterOficinaCompanies(companies as any[]).map((c: any) => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
                 </SelectContent>
               </Select>
