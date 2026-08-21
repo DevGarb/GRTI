@@ -8,6 +8,7 @@ import { Card } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useServiceOrders, useServiceOrderDetails, useServiceChecklists, type ServiceOrder } from "@/hooks/useOficina";
 import { useCompanies } from "@/hooks/useOperacional";
+import { filterOficinaCompanies } from "@/lib/oficinaCompanies";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useCardNotes } from "@/hooks/useCardNotes";
 import { STAGE_ENTREGUE, osSlaInfo, checklistProgress } from "@/lib/oficinaStages";
@@ -152,7 +153,8 @@ function OsDetailsDialog({ order, onClose }: { order: ServiceOrder | null; onClo
 
 export default function OpOficinaFinalizadas() {
   const { items } = useServiceOrders();
-  const { items: companies } = useCompanies();
+  const { items: allCompanies } = useCompanies();
+  const companies = useMemo(() => filterOficinaCompanies(allCompanies), [allCompanies]);
   const companyName = useMemo(() => Object.fromEntries(companies.map((c) => [c.id, c.name])), [companies]);
   const [company, setCompany] = useState("all");
   const [q, setQ] = useState("");

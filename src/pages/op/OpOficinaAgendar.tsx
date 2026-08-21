@@ -10,6 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useWorkshopBookings } from "@/hooks/useWorkshopBookings";
 import { useCompanies } from "@/hooks/useOperacional";
+import { filterOficinaCompanies } from "@/lib/oficinaCompanies";
 import { useOficinaProfile } from "@/contexts/OficinaProfileContext";
 import {
   SCHEDULE_PERIODS, periodInfo, BOOKING_STATUS_INFO, SERVICE_TYPES,
@@ -78,7 +79,7 @@ export default function OpOficinaAgendar() {
                 <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="none">Não informar</SelectItem>
-                  {companies.map((c: any) => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
+                  {filterOficinaCompanies(companies as any[]).map((c: any) => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
                 </SelectContent>
               </Select>
             </div>
