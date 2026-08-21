@@ -1066,8 +1066,13 @@ function ConfirmedBookingsColumn({ onCreated }: { onCreated?: () => void }) {
         {list.map(b => {
           const per = periodInfo(b.scheduled_period);
           const isToday = b.scheduled_date === todayISO();
+          const isOpen = !!expanded[b.id];
           return (
-            <div key={b.id} className="rounded-lg border border-border bg-card p-3 space-y-1.5">
+            <div
+              key={b.id}
+              className="rounded-lg border border-border bg-card p-3 space-y-1.5 cursor-pointer"
+              onClick={() => setExpanded(p => ({ ...p, [b.id]: !p[b.id] }))}
+            >
               <div className="flex items-center justify-between gap-2">
                 <span className="font-mono text-sm font-semibold">{b.vehicle_plate}</span>
                 <Badge variant="secondary" className={per.chip}>{per.label}</Badge>
@@ -1079,26 +1084,31 @@ function ConfirmedBookingsColumn({ onCreated }: { onCreated?: () => void }) {
                   {formatDateBRShort(b.scheduled_date)}{isToday ? " · hoje" : ""}
                 </span>
               </div>
-              {b.service_type && <div className="text-[11px] text-muted-foreground truncate">{b.service_type}</div>}
-              {b.requester_name && <div className="text-[11px] text-muted-foreground truncate">Solic.: {b.requester_name}</div>}
-              <Button
-                size="sm"
-                className="w-full h-7 text-xs mt-1"
-                disabled={opening === b.id}
-                onClick={() => handleOpen(b)}
-              >
-                {opening === b.id ? "Abrindo..." : "Abrir OS (chegou)"}
-              </Button>
-              <Button
-                size="sm"
-                variant="outline"
-                className="w-full h-7 text-xs text-destructive hover:text-destructive"
-                onClick={() => handleDelete(b)}
-              >
-                <Trash2 className="h-3 w-3 mr-1" /> Não compareceu · excluir
-              </Button>
+              {isOpen && (
+                <>
+                  {b.service_type && <div className="text-[11px] text-muted-foreground truncate">{b.service_type}</div>}
+                  {b.requester_name && <div className="text-[11px] text-muted-foreground truncate">Solic.: {b.requester_name}</div>}
+                  <Button
+                    size="sm"
+                    className="w-full h-7 text-xs mt-1"
+                    disabled={opening === b.id}
+                    onClick={(e) => { e.stopPropagation(); handleOpen(b); }}
+                  >
+                    {opening === b.id ? "Abrindo..." : "Abrir OS (chegou)"}
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="w-full h-7 text-xs text-destructive hover:text-destructive"
+                    onClick={(e) => { e.stopPropagation(); handleDelete(b); }}
+                  >
+                    <Trash2 className="h-3 w-3 mr-1" /> Não compareceu · excluir
+                  </Button>
+                </>
+              )}
             </div>
           );
+
         })}
       </div>
     </div>
