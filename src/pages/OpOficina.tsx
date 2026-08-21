@@ -184,6 +184,15 @@ export default function OpOficina() {
     setClosing(null);
   };
 
+  const toggleExpanded = (id: string) => {
+    setExpandedIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
   const renderCard = (o: ServiceOrder) => {
 
     const overdue = isOverdue(o);
