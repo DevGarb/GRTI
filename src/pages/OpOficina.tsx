@@ -561,9 +561,9 @@ function NewOsDialog({ onClose, onCreate }: { onClose: () => void; onCreate: (in
         <DialogHeader><DialogTitle>Nova entrada na oficina</DialogTitle></DialogHeader>
         <div className="grid gap-3 md:grid-cols-2">
           <div>
-            <Label>Empresa</Label>
+            <Label>Empresa *</Label>
             <Select value={form.company_id || ""} onValueChange={v => setF({ company_id: v })}>
-              <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
+              <SelectTrigger><SelectValue placeholder="Selecione a empresa" /></SelectTrigger>
               <SelectContent>{filterOficinaCompanies(companies).map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}</SelectContent>
             </Select>
           </div>
