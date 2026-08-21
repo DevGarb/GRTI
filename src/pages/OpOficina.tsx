@@ -622,7 +622,10 @@ function NewOsDialog({ onClose, onCreate }: { onClose: () => void; onCreate: (in
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={onClose}>Cancelar</Button>
-          <Button onClick={() => onCreate(form)}>Criar OS</Button>
+          <Button onClick={() => {
+            if (!form.company_id) return toast.error("Selecione a empresa");
+            onCreate(form);
+          }}>Criar OS</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
