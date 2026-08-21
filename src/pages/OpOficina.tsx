@@ -73,7 +73,7 @@ export default function OpOficina() {
   const [dateTo, setDateTo] = useState(todayStr());
   const [mechFilter, setMechFilter] = useState<string>("all");
   const [search, setSearch] = useState("");
-  const [onlyLate, setOnlyLate] = useState(false);
+  const [kpiFilter, setKpiFilter] = useState<"all" | "active" | "in_workshop" | "late" | "waiting_part" | "delivered" | "with_customer">("all");
   const [openNew, setOpenNew] = useState(false);
   const [selected, setSelected] = useState<ServiceOrder | null>(null);
   const [closing, setClosing] = useState<ServiceOrder | null>(null);
@@ -93,10 +93,19 @@ export default function OpOficina() {
     });
   }, [items, dateFrom, dateTo, mechFilter, search]);
 
-  const filtered = useMemo(
-    () => baseFiltered.filter(o => (onlyLate ? isOverdue(o) : true)),
-    [baseFiltered, onlyLate],
-  );
+  const filtered = useMemo(() => {
+    return baseFiltered.filter(o => {
+      switch (kpiFilter) {
+        case "active": return !isDelivered(o);
+        case "in_workshop": return !isDelivered(o) && !o.with_customer;
+        case "late": return isOverdue(o);
+        case "waiting_part": return !isDelivered(o) && o.stage === "aguardando_peca";
+        case "delivered": return isDelivered(o);
+        case "with_customer": return !isDelivered(o) && !!o.with_customer;
+        default: return true;
+      }
+    });
+  }, [baseFiltered, kpiFilter]);
 
   const kpis = useMemo(() => {
     const ativas = baseFiltered.filter(o => !isDelivered(o));
@@ -320,12 +329,12 @@ export default function OpOficina() {
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-6 gap-3">
-        <Kpi label="Motos ativas" value={kpis.total} icon={Wrench} />
-        <Kpi label="Motos fisicamente na oficina" value={kpis.total - kpis.comCliente} icon={Gauge} />
-        <Kpi label="Em alerta / atrasadas" value={kpis.atrasadas} icon={AlertTriangle} active={onlyLate} onClick={() => setOnlyLate(v => !v)} />
-        <Kpi label="Aguardando peça" value={kpis.aguardPeca} icon={Package} />
-        <Kpi label="Entregues no período" value={kpis.entregues} icon={Truck} />
-        <Kpi label="Com o cliente" value={kpis.comCliente} icon={Home} />
+        <Kpi label="Motos ativas" value={kpis.total} icon={Wrench} active={kpiFilter === "active"} onClick={() => setKpiFilter(f => f === "active" ? "all" : "active")} />
+        <Kpi label="Motos fisicamente na oficina" value={kpis.total - kpis.comCliente} icon={Gauge} active={kpiFilter === "in_workshop"} onClick={() => setKpiFilter(f => f === "in_workshop" ? "all" : "in_workshop")} />
+        <Kpi label="Em alerta / atrasadas" value={kpis.atrasadas} icon={AlertTriangle} active={kpiFilter === "late"} onClick={() => setKpiFilter(f => f === "late" ? "all" : "late")} />
+        <Kpi label="Aguardando peça" value={kpis.aguardPeca} icon={Package} active={kpiFilter === "waiting_part"} onClick={() => setKpiFilter(f => f === "waiting_part" ? "all" : "waiting_part")} />
+        <Kpi label="Entregues no período" value={kpis.entregues} icon={Truck} active={kpiFilter === "delivered"} onClick={() => setKpiFilter(f => f === "delivered" ? "all" : "delivered")} />
+        <Kpi label="Com o cliente" value={kpis.comCliente} icon={Home} active={kpiFilter === "with_customer"} onClick={() => setKpiFilter(f => f === "with_customer" ? "all" : "with_customer")} />
       </div>
 
       <div className="bg-card border rounded-lg p-3 flex flex-wrap gap-3 items-end">
@@ -337,7 +346,7 @@ export default function OpOficina() {
             <Input value={search} onChange={e => setSearch(e.target.value)} placeholder="OS, placa, modelo, descrição" className="pl-8" />
           </div>
         </div>
-        <Button size="sm" variant={onlyLate ? "destructive" : "outline"} onClick={() => setOnlyLate(v => !v)}>
+        <Button size="sm" variant={kpiFilter === "late" ? "destructive" : "outline"} onClick={() => setKpiFilter(f => f === "late" ? "all" : "late")}>
           <AlertTriangle className="h-3 w-3 mr-1" /> Só atrasadas
         </Button>
         {view === "kanban" && (
