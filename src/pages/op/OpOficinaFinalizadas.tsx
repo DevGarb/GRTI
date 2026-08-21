@@ -158,13 +158,14 @@ export default function OpOficinaFinalizadas() {
     return items
       .filter(isDelivered)
       .filter((o) => {
+        if (!o.finished_at) return false;
         if (term && !`${o.os_number} ${o.vehicle_plate || ""} ${o.vehicle_model || ""}`.toLowerCase().includes(term)) return false;
-        const d = (o.finished_at || o.opened_at || "").slice(0, 10);
+        const d = o.finished_at.slice(0, 10);
         if (from && d < from) return false;
         if (to && d > to) return false;
         return true;
       })
-      .sort((a, b) => (b.finished_at || b.opened_at).localeCompare(a.finished_at || a.opened_at));
+      .sort((a, b) => (b.finished_at || "").localeCompare(a.finished_at || ""));
   }, [items, q, from, to]);
 
   return (
