@@ -304,7 +304,8 @@ export default function OpOficinaMinhas() {
         stage: "pronto",
         closure_summary: summary.trim(),
         finished_at: todayISO(),
-      });
+        finish_km: km,
+      } as any);
       toast.success("Serviço finalizado");
       setFinishOs(null);
       setExpanded(null);
