@@ -54,7 +54,7 @@ export default function OpOficinaMinhas() {
   const [openNew, setOpenNew] = useState(false);
   const [plate, setPlate] = useState("");
   const [model, setModel] = useState("");
-  const [companyId, setCompanyId] = useState("none");
+  const [companyId, setCompanyId] = useState("");
   const [customerName, setCustomerName] = useState("");
 
   const [desc, setDesc] = useState("");
@@ -319,6 +319,7 @@ export default function OpOficinaMinhas() {
 
   const createEntry = async () => {
     if (!plate.trim()) return toast.error("Informe a placa da moto");
+    if (!companyId) return toast.error("Selecione a empresa");
     setSaving(true);
     const receivedText = newItems.length
       ? `Itens recebidos na entrada:\n${newItems.map(i => `- ${i.name} (x${i.qty})`).join("\n")}`
@@ -326,7 +327,7 @@ export default function OpOficinaMinhas() {
     const res = await add({
       vehicle_plate: plate.trim().toUpperCase(),
       vehicle_model: model.trim() || null,
-      company_id: companyId === "none" ? null : companyId,
+      company_id: companyId,
       customer_name: customerName.trim() || null,
 
       description: desc.trim() || null,
@@ -353,7 +354,7 @@ export default function OpOficinaMinhas() {
     setSaving(false);
     if (res) {
       setOpenNew(false);
-      setPlate(""); setModel(""); setCompanyId("none"); setDesc(""); setCustomerName("");
+      setPlate(""); setModel(""); setCompanyId(""); setDesc(""); setCustomerName("");
       setNewItems([]); setItemName(""); setItemQty(1); setEntryFiles([]);
     }
   };
@@ -406,11 +407,10 @@ export default function OpOficinaMinhas() {
                     </div>
                   </div>
                   <div>
-                    <Label>Empresa</Label>
+                    <Label>Empresa *</Label>
                     <Select value={companyId} onValueChange={setCompanyId}>
-                      <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
+                      <SelectTrigger><SelectValue placeholder="Selecione a empresa" /></SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="none">Nenhuma</SelectItem>
                         {filterOficinaCompanies(companies).map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
                       </SelectContent>
                     </Select>

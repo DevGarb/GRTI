@@ -26,7 +26,7 @@ export default function OpOficinaAgendar() {
 
   const [plate, setPlate] = useState("");
   const [model, setModel] = useState("");
-  const [companyId, setCompanyId] = useState("none");
+  const [companyId, setCompanyId] = useState("");
   const [serviceType, setServiceType] = useState(SERVICE_TYPES[0]);
   const [date, setDate] = useState(todayISO());
   const [period, setPeriod] = useState("dia");
@@ -37,11 +37,12 @@ export default function OpOficinaAgendar() {
 
   const submit = async () => {
     if (!plate.trim()) return toast.error("Informe a placa");
+    if (!companyId) return toast.error("Selecione a empresa / cliente");
     setSaving(true);
     const ok = await add({
       vehicle_plate: plate.trim(),
       vehicle_model: model.trim() || null,
-      company_id: companyId === "none" ? null : companyId,
+      company_id: companyId,
       service_type: serviceType,
       preferred_date: date,
       preferred_period: period,
@@ -49,7 +50,7 @@ export default function OpOficinaAgendar() {
       requester_name: profile?.name || null,
     });
     setSaving(false);
-    if (ok) { setPlate(""); setModel(""); setDescription(""); }
+    if (ok) { setPlate(""); setModel(""); setCompanyId(""); setDescription(""); }
   };
 
   return (
@@ -74,11 +75,10 @@ export default function OpOficinaAgendar() {
               <Input value={model} onChange={(e) => setModel(e.target.value)} placeholder="Honda Biz 125" />
             </div>
             <div>
-              <Label>Empresa / cliente</Label>
+              <Label>Empresa / cliente *</Label>
               <Select value={companyId} onValueChange={setCompanyId}>
-                <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
+                <SelectTrigger><SelectValue placeholder="Selecione a empresa" /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="none">Não informar</SelectItem>
                   {filterOficinaCompanies(companies as any[]).map((c: any) => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
                 </SelectContent>
               </Select>
