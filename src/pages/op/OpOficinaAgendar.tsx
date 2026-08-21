@@ -26,7 +26,7 @@ export default function OpOficinaAgendar() {
 
   const [plate, setPlate] = useState("");
   const [model, setModel] = useState("");
-  const [companyId, setCompanyId] = useState("none");
+  const [companyId, setCompanyId] = useState("");
   const [serviceType, setServiceType] = useState(SERVICE_TYPES[0]);
   const [date, setDate] = useState(todayISO());
   const [period, setPeriod] = useState("dia");
@@ -37,11 +37,12 @@ export default function OpOficinaAgendar() {
 
   const submit = async () => {
     if (!plate.trim()) return toast.error("Informe a placa");
+    if (!companyId) return toast.error("Selecione a empresa / cliente");
     setSaving(true);
     const ok = await add({
       vehicle_plate: plate.trim(),
       vehicle_model: model.trim() || null,
-      company_id: companyId === "none" ? null : companyId,
+      company_id: companyId,
       service_type: serviceType,
       preferred_date: date,
       preferred_period: period,
@@ -49,7 +50,7 @@ export default function OpOficinaAgendar() {
       requester_name: profile?.name || null,
     });
     setSaving(false);
-    if (ok) { setPlate(""); setModel(""); setDescription(""); }
+    if (ok) { setPlate(""); setModel(""); setCompanyId(""); setDescription(""); }
   };
 
   return (
