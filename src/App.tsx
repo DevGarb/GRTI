@@ -66,6 +66,7 @@ import OficinaGuard from "@/pages/op/OficinaGuard";
 import OpOficinaMinhas from "@/pages/op/OpOficinaMinhas";
 import OpOficinaAgenda from "@/pages/op/OpOficinaAgenda";
 import OpOficinaAgendar from "@/pages/op/OpOficinaAgendar";
+import OpOficinaFinalizadas from "@/pages/op/OpOficinaFinalizadas";
 import OpOficinaCompras from "@/pages/op/OpOficinaCompras";
 import OpOficinaPremiacoes from "@/pages/op/OpOficinaPremiacoes";
 import OpOficinaAlertas from "@/pages/op/OpOficinaAlertas";
@@ -260,6 +261,7 @@ const App = () => (
                       <Route path="/op/oficina/alertas" element={<MenuGuard menuKey="op-oficina"><OficinaProfileProvider><OficinaGuard allow={["admin"]}><OpOficinaAlertas /></OficinaGuard></OficinaProfileProvider></MenuGuard>} />
                       <Route path="/op/oficina/agenda" element={<MenuGuard menuKey="op-oficina"><OficinaProfileProvider><OficinaGuard allow={["admin","mecanico"]}><OpOficinaAgenda /></OficinaGuard></OficinaProfileProvider></MenuGuard>} />
                       <Route path="/op/oficina/agendar" element={<MenuGuard menuKey="op-oficina"><OficinaProfileProvider><OficinaGuard allow={["admin","motoloc"]}><OpOficinaAgendar /></OficinaGuard></OficinaProfileProvider></MenuGuard>} />
+                      <Route path="/op/oficina/finalizadas" element={<MenuGuard menuKey="op-oficina"><OficinaProfileProvider><OficinaGuard allow={["admin","motoloc"]}><OpOficinaFinalizadas /></OficinaGuard></OficinaProfileProvider></MenuGuard>} />
                       <Route path="/op/oficina" element={<MenuGuard menuKey="op-oficina"><OficinaProfileProvider><OficinaGuard allow={["admin"]}><OpOficina /></OficinaGuard></OficinaProfileProvider></MenuGuard>} />
                       <Route path="/op/manutencao/pin" element={<MenuGuard menuKey="op-manutencao"><ManutencaoProfileProvider><ManutencaoPin /></ManutencaoProfileProvider></MenuGuard>} />
                       <Route path="/op/manutencao/minhas" element={<MenuGuard menuKey="op-manutencao"><ManutencaoProfileProvider><ManutencaoGuard><OpManutencaoMinhas /></ManutencaoGuard></ManutencaoProfileProvider></MenuGuard>} />
