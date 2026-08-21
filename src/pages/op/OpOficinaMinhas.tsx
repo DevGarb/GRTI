@@ -28,7 +28,7 @@ import { openOsFromBooking } from "@/lib/openOsFromBooking";
 
 
 const MY_STAGES = ["analise", "desempeno", "pintura", "execucao"];
-const DONE_STAGES = ["pronto", "entregue"];
+const DONE_STAGES = ["pronto", "entregue"]; // "pronto" é legado
 const ALERT_REASONS = [
   "Falta de peça",
   "Peça errada / avariada",
@@ -301,7 +301,8 @@ export default function OpOficinaMinhas() {
         });
       }
       await update(finishOs.id, {
-        stage: "pronto",
+        stage: "entregue",
+        status: "Finalizado",
         closure_summary: summary.trim(),
         finished_at: todayISO(),
         finish_km: km,

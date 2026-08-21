@@ -16,13 +16,18 @@ export const STAGES: OficinaStage[] = [
   { id: "desempeno", label: "Desempeno / Chassi", dot: "bg-violet-500", bar: "bg-violet-500", chip: "bg-violet-500/10 text-violet-700 dark:text-violet-300" },
   { id: "pintura", label: "Aguardando para iniciar reparo", dot: "bg-fuchsia-500", bar: "bg-fuchsia-500", chip: "bg-fuchsia-500/10 text-fuchsia-700 dark:text-fuchsia-300" },
   { id: "execucao", label: "Em Execução", dot: "bg-blue-500", bar: "bg-blue-500", chip: "bg-blue-500/10 text-blue-700 dark:text-blue-300" },
-  { id: "pronto", label: "Pronto p/ Entrega", dot: "bg-emerald-500", bar: "bg-emerald-500", chip: "bg-emerald-500/10 text-emerald-700 dark:text-emerald-300" },
+  
 ];
 
 export const STAGE_ENTREGUE = "entregue";
 
+/** Etapas legadas que já contam como finalizadas (a etapa "pronto" foi removida do fluxo). */
+export const LEGACY_DONE_STAGES = ["pronto"];
+export const isDoneStage = (stage?: string | null) =>
+  stage === STAGE_ENTREGUE || LEGACY_DONE_STAGES.includes(stage || "");
+
 export const stageInfo = (id: string): OficinaStage =>
-  STAGES.find((s) => s.id === id) || { id, label: id === STAGE_ENTREGUE ? "Entregue" : id, dot: "bg-slate-400", bar: "bg-slate-400", chip: "bg-slate-500/10 text-slate-700" };
+  STAGES.find((s) => s.id === id) || { id, label: isDoneStage(id) ? "Entregue" : id, dot: "bg-emerald-700", bar: "bg-emerald-700", chip: "bg-emerald-500/10 text-emerald-700 dark:text-emerald-300" };
 
 export const PART_STATUS_FLOW = ["solicitada", "orcamento", "comprada", "recebida"] as const;
 export type PartStatus = (typeof PART_STATUS_FLOW)[number];
