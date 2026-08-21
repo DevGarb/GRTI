@@ -1,6 +1,6 @@
 import DateRangeFilter, { currentMonthStart, todayStr, inDateRange } from "@/components/shared/DateRangeFilter";
 import { filterOficinaCompanies } from "@/lib/oficinaCompanies";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Wrench, Plus, Search, Trash2, Upload, FileText, X, LayoutGrid, List, Eye, EyeOff, AlertTriangle, ShoppingCart, Package, Gauge, ChevronUp, ChevronDown, Truck, Check, Home, Calendar } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -32,6 +32,8 @@ import { SCHEDULE_PERIODS, periodInfo, formatDateBRShort } from "@/lib/oficinaAg
 import { useWorkshopBookings } from "@/hooks/useWorkshopBookings";
 import { openOsFromBooking } from "@/lib/openOsFromBooking";
 import { supabase } from "@/integrations/supabase/client";
+import { Fancybox } from "@fancyapps/ui/dist/fancybox/fancybox.js";
+import "@fancyapps/ui/dist/fancybox/fancybox.css";
 
 
 
