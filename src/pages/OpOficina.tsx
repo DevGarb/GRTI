@@ -1015,6 +1015,8 @@ function ConfirmedBookingsColumn({ onCreated }: { onCreated?: () => void }) {
   const { items, loading, refetch, remove } = useWorkshopBookings();
   const { user } = useAuth();
   const [opening, setOpening] = useState<string | null>(null);
+  const [expanded, setExpanded] = useState<Record<string, boolean>>({});
+
   const list = useMemo(
     () => items
       .filter(b => b.status === "agendado")
