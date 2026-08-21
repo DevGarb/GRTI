@@ -25,6 +25,8 @@ import {
 import { periodInfo, todayISO, formatDateBRShort, weekdayLabel } from "@/lib/oficinaAgenda";
 import { useWorkshopBookings, type WorkshopBooking } from "@/hooks/useWorkshopBookings";
 import { openOsFromBooking } from "@/lib/openOsFromBooking";
+import { Fancybox } from "@fancyapps/ui/dist/fancybox/fancybox.js";
+import "@fancyapps/ui/dist/fancybox/fancybox.css";
 
 
 const MY_STAGES = ["analise", "desempeno", "pintura", "execucao"];
@@ -64,6 +66,10 @@ export default function OpOficinaMinhas() {
   const [itemQty, setItemQty] = useState(1);
   const [entryFiles, setEntryFiles] = useState<File[]>([]);
 
+  useEffect(() => {
+    Fancybox.bind("[data-fancybox='minhas-finalizadas']", {});
+    return () => Fancybox.destroy();
+  }, []);
 
   // Adicionar peça em OS existente
   const [addPartFor, setAddPartFor] = useState<string | null>(null);
@@ -970,9 +976,9 @@ export default function OpOficinaMinhas() {
                   {photos.length > 0 && (
                     <div className="flex gap-2 flex-wrap pt-1">
                       {photos.map(p => (
-                        <a key={p.id} href={p.photo_url} target="_blank" rel="noreferrer">
+                        <a key={p.id} href={p.photo_url} data-fancybox="minhas-finalizadas" data-caption={`${p.photo_type} · OS #${o.os_number}`}>
                           <img src={p.photo_url} alt={`Foto do serviço ${o.vehicle_plate || o.os_number}`} loading="lazy"
-                            className="h-20 w-20 object-cover rounded-md border" />
+                            className="h-20 w-20 object-cover rounded-md border cursor-pointer" />
                         </a>
                       ))}
                     </div>

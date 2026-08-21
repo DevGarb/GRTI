@@ -1,6 +1,6 @@
 import DateRangeFilter, { currentMonthStart, todayStr, inDateRange } from "@/components/shared/DateRangeFilter";
 import { filterOficinaCompanies } from "@/lib/oficinaCompanies";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Wrench, Plus, Search, Trash2, Upload, FileText, X, LayoutGrid, List, Eye, EyeOff, AlertTriangle, ShoppingCart, Package, Gauge, ChevronUp, ChevronDown, Truck, Check, Home, Calendar } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -32,6 +32,8 @@ import { SCHEDULE_PERIODS, periodInfo, formatDateBRShort } from "@/lib/oficinaAg
 import { useWorkshopBookings } from "@/hooks/useWorkshopBookings";
 import { openOsFromBooking } from "@/lib/openOsFromBooking";
 import { supabase } from "@/integrations/supabase/client";
+import { Fancybox } from "@fancyapps/ui/dist/fancybox/fancybox.js";
+import "@fancyapps/ui/dist/fancybox/fancybox.css";
 
 
 
@@ -667,6 +669,11 @@ function OsDetailDialog({ os, onClose, onUpdate, onDelete, onRequestClose, compa
 
   const [partName, setPartName] = useState(""); const [qty, setQty] = useState("1");
 
+  useEffect(() => {
+    Fancybox.bind("[data-fancybox='os-detail']", {});
+    return () => Fancybox.destroy();
+  }, [photos.length]);
+
   const handleAddPart = () => {
     if (!partName) return;
     addPart({ part_name: partName, quantity: Number(qty), unit_price: 0 });
@@ -929,8 +936,10 @@ function OsDetailDialog({ os, onClose, onUpdate, onDelete, onRequestClose, compa
           <div className="grid grid-cols-3 md:grid-cols-5 gap-2">
             {photos.map(p => (
               <div key={p.id} className="relative group">
-                <img src={p.photo_url} alt={p.photo_type} className="w-full h-24 object-cover rounded border" />
-                <span className="absolute bottom-1 left-1 text-[10px] bg-black/70 text-white px-1 rounded">{p.photo_type}</span>
+                <a href={p.photo_url} data-fancybox="os-detail" data-caption={`${p.photo_type} · OS #${os.os_number}`}>
+                  <img src={p.photo_url} alt={p.photo_type} className="w-full h-24 object-cover rounded border cursor-pointer" />
+                </a>
+                <span className="absolute bottom-1 left-1 text-[10px] bg-black/70 text-white px-1 rounded pointer-events-none">{p.photo_type}</span>
                 <button onClick={() => removePhoto(p.id)} className="absolute top-1 right-1 bg-black/70 text-white rounded p-0.5 opacity-0 group-hover:opacity-100">
                   <X className="h-3 w-3" />
                 </button>
