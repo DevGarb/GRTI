@@ -35,6 +35,8 @@ function OsDetailsDialog({ order, onClose }: { order: ServiceOrder | null; onClo
   const after = photos.filter((p) => p.photo_type !== "antes");
 
   const obs: { label: string; body: string; meta?: string }[] = [];
+  if ((order as any)?.finish_km)
+    obs.push({ label: "KM na finalização", body: `${Number((order as any).finish_km).toLocaleString("pt-BR")} km` });
   if (order?.diagnosis) obs.push({ label: "Diagnóstico", body: order.diagnosis });
   if (order?.notes) obs.push({ label: "Observações da OS", body: order.notes });
   if (order?.schedule_notes) obs.push({ label: "Observações do agendamento", body: order.schedule_notes });
