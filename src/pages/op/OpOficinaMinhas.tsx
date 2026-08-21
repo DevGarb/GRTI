@@ -54,7 +54,7 @@ export default function OpOficinaMinhas() {
   const [openNew, setOpenNew] = useState(false);
   const [plate, setPlate] = useState("");
   const [model, setModel] = useState("");
-  const [companyId, setCompanyId] = useState("none");
+  const [companyId, setCompanyId] = useState("");
   const [customerName, setCustomerName] = useState("");
 
   const [desc, setDesc] = useState("");
