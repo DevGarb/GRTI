@@ -989,6 +989,16 @@ export default function OpOficinaMinhas() {
             </DialogHeader>
             <div className="space-y-3">
               <div>
+                <Label>KM atual da moto *</Label>
+                <Input
+                  type="text"
+                  inputMode="numeric"
+                  value={finishKm}
+                  onChange={e => setFinishKm(e.target.value.replace(/\D/g, ""))}
+                  placeholder="Ex: 24500"
+                />
+              </div>
+              <div>
                 <Label>O que foi feito? *</Label>
                 <Textarea value={summary} onChange={e => setSummary(e.target.value)} rows={4}
                   placeholder="Descreva os serviços executados, peças trocadas, observações..." />
