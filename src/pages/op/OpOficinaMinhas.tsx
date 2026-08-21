@@ -90,6 +90,7 @@ export default function OpOficinaMinhas() {
   const [finishOs, setFinishOs] = useState<ServiceOrder | null>(null);
   const [summary, setSummary] = useState("");
   const [files, setFiles] = useState<File[]>([]);
+  const [finishKm, setFinishKm] = useState("");
   const [finishing, setFinishing] = useState(false);
 
   // Acionar supervisor (observação / intercorrência)
@@ -277,11 +278,14 @@ export default function OpOficinaMinhas() {
     setFinishOs(o);
     setSummary("");
     setFiles([]);
+    setFinishKm("");
   };
 
   const confirmFinish = async () => {
     if (!finishOs) return;
     if (!summary.trim()) return toast.error("Descreva o que foi feito no serviço");
+    const km = Number(String(finishKm).replace(/\D/g, ""));
+    if (!finishKm.trim() || !Number.isFinite(km) || km <= 0) return toast.error("Informe o KM atual da moto");
     setFinishing(true);
     try {
       for (const file of files) {
@@ -300,7 +304,8 @@ export default function OpOficinaMinhas() {
         stage: "pronto",
         closure_summary: summary.trim(),
         finished_at: todayISO(),
-      });
+        finish_km: km,
+      } as any);
       toast.success("Serviço finalizado");
       setFinishOs(null);
       setExpanded(null);
@@ -983,6 +988,16 @@ export default function OpOficinaMinhas() {
               <DialogTitle>Finalizar serviço · {finishOs?.vehicle_plate || `OS #${finishOs?.os_number}`}</DialogTitle>
             </DialogHeader>
             <div className="space-y-3">
+              <div>
+                <Label>KM atual da moto *</Label>
+                <Input
+                  type="text"
+                  inputMode="numeric"
+                  value={finishKm}
+                  onChange={e => setFinishKm(e.target.value.replace(/\D/g, ""))}
+                  placeholder="Ex: 24500"
+                />
+              </div>
               <div>
                 <Label>O que foi feito? *</Label>
                 <Textarea value={summary} onChange={e => setSummary(e.target.value)} rows={4}
