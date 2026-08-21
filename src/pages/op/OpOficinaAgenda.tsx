@@ -49,18 +49,24 @@ export default function OpOficinaAgenda() {
   );
   const mecName = (id?: string | null) => mecs.find((m) => m.id === id)?.name || "A definir";
 
+  const today = todayISO();
+  // Serviço não finalizado no dia agendado rola automaticamente para o dia seguinte,
+  // até a finalização: a data efetiva é sempre >= hoje.
+  const effectiveDate = (d?: string | null) => (!d ? null : d < today ? today : d);
+  const isRolled = (d?: string | null) => !!d && d < today;
+
   const actives = useMemo(() => orders.filter(isActive), [orders]);
   const ofDay = useMemo(
-    () => actives.filter((o) => (o as any).scheduled_date === day)
+    () => actives.filter((o) => effectiveDate((o as any).scheduled_date) === day)
       .filter((o) => (readOnly && profile?.id ? o.mechanic_id === profile.id : true))
       .filter(matches),
-    [actives, day, readOnly, profile?.id, q],
+    [actives, day, today, readOnly, profile?.id, q],
   );
   const unscheduled = useMemo(() => actives.filter((o) => !(o as any).scheduled_date).filter(matches), [actives, q]);
   const pending = useMemo(() => bookings.filter((b) => b.status === "pendente"), [bookings]);
   const awaiting = useMemo(
-    () => bookings.filter((b) => b.status === "agendado" && !b.service_order_id && b.scheduled_date === day),
-    [bookings, day],
+    () => bookings.filter((b) => b.status === "agendado" && !b.service_order_id && effectiveDate(b.scheduled_date) === day),
+    [bookings, day, today],
   );
 
   const columns = useMemo(() => {
@@ -74,9 +80,11 @@ export default function OpOficinaAgenda() {
   const weekCounts = useMemo(() => {
     return Array.from({ length: 7 }, (_, i) => {
       const d = shiftDay(day, i - 3);
-      return { d, count: actives.filter((o) => (o as any).scheduled_date === d).length };
+      return { d, count: actives.filter((o) => effectiveDate((o as any).scheduled_date) === d).length };
     });
-  }, [actives, day]);
+  }, [actives, day, today]);
+
+  const rolledCount = ofDay.filter((o) => isRolled((o as any).scheduled_date)).length;
 
   const unschedule = async (o: ServiceOrder) => {
     await update(o.id, { scheduled_date: null, scheduled_period: null } as any);
@@ -94,6 +102,7 @@ export default function OpOficinaAgenda() {
             </h1>
             <p className="text-sm text-slate-500 capitalize">
               {weekdayLabel(day)} · {formatDateBRShort(day)} · {ofDay.length} serviço(s) programado(s)
+              {rolledCount > 0 && <span className="text-rose-600 normal-case"> · {rolledCount} adiado(s) de dias anteriores</span>}
             </p>
           </div>
           <div className="flex items-center gap-2 flex-wrap">
@@ -202,6 +211,11 @@ export default function OpOficinaAgenda() {
                             <span className="text-xs text-slate-500 truncate">{o.vehicle_model}</span>
                           </div>
                           <Badge variant="secondary" className={st.chip + " mt-2 text-[10px]"}>{st.label}</Badge>
+                          {isRolled((o as any).scheduled_date) && (
+                            <div className="text-[10px] text-rose-600 mt-1">
+                              Adiado de {formatDateBRShort((o as any).scheduled_date)}
+                            </div>
+                          )}
                           {(o as any).schedule_notes && (
                             <p className="text-[11px] text-slate-500 mt-2">{(o as any).schedule_notes}</p>
                           )}
@@ -237,6 +251,9 @@ export default function OpOficinaAgenda() {
                     </div>
                     <div className="text-xs text-slate-500">{b.vehicle_model || "—"} · {mecName(b.mechanic_id)}</div>
                     {b.service_type && <div className="text-[11px] text-slate-400 mt-1">{b.service_type}</div>}
+                    {isRolled(b.scheduled_date) && (
+                      <div className="text-[10px] text-rose-600 mt-1">Adiado de {formatDateBRShort(b.scheduled_date)}</div>
+                    )}
                   </div>
                 ))}
               </div>
