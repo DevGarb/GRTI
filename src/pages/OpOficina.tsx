@@ -194,16 +194,50 @@ export default function OpOficina() {
   };
 
   const renderCard = (o: ServiceOrder) => {
-
+    const expanded = expandedIds.has(o.id);
     const overdue = isOverdue(o);
     const days = daysInWorkshop(o.opened_at, o.finished_at);
     const partsCount = partsCountByOs[o.id] || 0;
     const slaParts = partsSlaRemaining(o.parts_arrived_at);
     const chk = checklist.byOs[o.id] || [];
     const stg = stageInfo(isDelivered(o) ? STAGE_ENTREGUE : o.stage);
+
+    if (!expanded) {
+      return (
+        <div className="cursor-pointer" onClick={() => toggleExpanded(o.id)}>
+          <div className="flex items-start justify-between mb-1 gap-1">
+            <span className="font-mono text-[11px] bg-muted px-1.5 py-0.5 rounded shrink-0">#{o.os_number}</span>
+            <div className="flex items-center gap-1 flex-wrap justify-end">
+              {overdue && <Badge variant="destructive" className="text-[10px]"><AlertTriangle className="h-3 w-3 mr-0.5" />Alerta</Badge>}
+              {partsCount > 0 && (
+                <Badge variant="outline" className="text-[10px] h-5"><Package className="h-3 w-3 mr-0.5" />{partsCount}</Badge>
+              )}
+              {o.with_customer && (
+                <Badge variant="outline" className="text-[10px] h-5 border-sky-300 text-sky-700 dark:text-sky-300">
+                  <Home className="h-3 w-3 mr-0.5" />Com o cliente
+                </Badge>
+              )}
+            </div>
+          </div>
+          <div className="text-sm font-semibold truncate">
+            {[o.vehicle_plate, o.vehicle_model].filter(Boolean).join(" · ") || "Sem veículo"}
+          </div>
+          <div className="text-[11px] text-muted-foreground mt-0.5 truncate">
+            Empresa: {companyName(o.company_id)}
+          </div>
+          <div className="flex items-center gap-2 mt-1">
+            <Badge variant="secondary" className={cn("text-[10px] h-5", days >= DIAS_ALERTA && "bg-rose-500/15 text-rose-700 dark:text-rose-300")}>
+              {days}d na oficina
+            </Badge>
+            <span className="text-[10px] text-muted-foreground italic">Clique para expandir</span>
+          </div>
+        </div>
+      );
+    }
+
     return (
       <div>
-        <div className="flex items-start gap-2 mb-1 flex-wrap" onClick={() => setSelected(o)}>
+        <div className="flex items-start gap-2 mb-1 flex-wrap cursor-pointer" onClick={() => toggleExpanded(o.id)}>
           <span className="font-mono text-[11px] bg-muted px-1.5 py-0.5 rounded">#{o.os_number}</span>
           <Badge variant="secondary" className={cn("text-[10px] h-5", days >= DIAS_ALERTA && "bg-rose-500/15 text-rose-700 dark:text-rose-300")}>
             {days}d na oficina
@@ -218,16 +252,16 @@ export default function OpOficina() {
             </Badge>
           )}
         </div>
-        <div className="text-sm font-semibold truncate" onClick={() => setSelected(o)}>
+        <div className="text-sm font-semibold truncate cursor-pointer" onClick={() => toggleExpanded(o.id)}>
           {[o.vehicle_plate, o.vehicle_model, o.vehicle_color, o.vehicle_year].filter(Boolean).join(" · ") || "Sem veículo"}
         </div>
-        <div className="text-[11px] text-muted-foreground mt-1 truncate" onClick={() => setSelected(o)}>
+        <div className="text-[11px] text-muted-foreground mt-1 truncate cursor-pointer" onClick={() => toggleExpanded(o.id)}>
           Empresa: {companyName(o.company_id)}
         </div>
-        <div className="text-[11px] text-muted-foreground truncate" onClick={() => setSelected(o)}>
+        <div className="text-[11px] text-muted-foreground truncate cursor-pointer" onClick={() => toggleExpanded(o.id)}>
           Mecânico: {mechName(o.mechanic_id)}
         </div>
-        <div className="text-[11px] text-muted-foreground line-clamp-2 mt-1" onClick={() => setSelected(o)}>
+        <div className="text-[11px] text-muted-foreground line-clamp-2 mt-1 cursor-pointer" onClick={() => toggleExpanded(o.id)}>
           {o.description || "Sem descrição"}
         </div>
 
@@ -292,11 +326,13 @@ export default function OpOficina() {
           </Button>
         )}
 
-
-
         <div className="flex items-center justify-between mt-2">
           <span className="text-xs font-semibold">{fmtMoney(Number(o.total_cost || 0))}</span>
           <div className="flex items-center gap-1">
+            <Button variant="ghost" size="icon" className="h-6 w-6" title="Abrir OS"
+              onClick={(e) => { e.stopPropagation(); setSelected(o); }}>
+              <FileText className="h-3.5 w-3.5" />
+            </Button>
             <Button variant="ghost" size="icon" className="h-6 w-6" title="Subir prioridade"
               onClick={(e) => { e.stopPropagation(); movePriority(o, -1); }}>
               <ChevronUp className="h-3.5 w-3.5" />
