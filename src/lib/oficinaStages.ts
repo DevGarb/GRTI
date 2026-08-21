@@ -21,8 +21,13 @@ export const STAGES: OficinaStage[] = [
 
 export const STAGE_ENTREGUE = "entregue";
 
+/** Etapas legadas que já contam como finalizadas (a etapa "pronto" foi removida do fluxo). */
+export const LEGACY_DONE_STAGES = ["pronto"];
+export const isDoneStage = (stage?: string | null) =>
+  stage === STAGE_ENTREGUE || LEGACY_DONE_STAGES.includes(stage || "");
+
 export const stageInfo = (id: string): OficinaStage =>
-  STAGES.find((s) => s.id === id) || { id, label: id === STAGE_ENTREGUE ? "Entregue" : id, dot: "bg-slate-400", bar: "bg-slate-400", chip: "bg-slate-500/10 text-slate-700" };
+  STAGES.find((s) => s.id === id) || { id, label: isDoneStage(id) ? "Entregue" : id, dot: "bg-emerald-700", bar: "bg-emerald-700", chip: "bg-emerald-500/10 text-emerald-700 dark:text-emerald-300" };
 
 export const PART_STATUS_FLOW = ["solicitada", "orcamento", "comprada", "recebida"] as const;
 export type PartStatus = (typeof PART_STATUS_FLOW)[number];
