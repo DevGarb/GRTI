@@ -73,7 +73,7 @@ export default function OpOficina() {
   const [dateTo, setDateTo] = useState(todayStr());
   const [mechFilter, setMechFilter] = useState<string>("all");
   const [search, setSearch] = useState("");
-  const [onlyLate, setOnlyLate] = useState(false);
+  const [kpiFilter, setKpiFilter] = useState<"all" | "active" | "in_workshop" | "late" | "waiting_part" | "delivered" | "with_customer">("all");
   const [openNew, setOpenNew] = useState(false);
   const [selected, setSelected] = useState<ServiceOrder | null>(null);
   const [closing, setClosing] = useState<ServiceOrder | null>(null);
@@ -93,10 +93,19 @@ export default function OpOficina() {
     });
   }, [items, dateFrom, dateTo, mechFilter, search]);
 
-  const filtered = useMemo(
-    () => baseFiltered.filter(o => (onlyLate ? isOverdue(o) : true)),
-    [baseFiltered, onlyLate],
-  );
+  const filtered = useMemo(() => {
+    return baseFiltered.filter(o => {
+      switch (kpiFilter) {
+        case "active": return !isDelivered(o);
+        case "in_workshop": return !isDelivered(o) && !o.with_customer;
+        case "late": return isOverdue(o);
+        case "waiting_part": return !isDelivered(o) && o.stage === "aguardando_peca";
+        case "delivered": return isDelivered(o);
+        case "with_customer": return !isDelivered(o) && !!o.with_customer;
+        default: return true;
+      }
+    });
+  }, [baseFiltered, kpiFilter]);
 
   const kpis = useMemo(() => {
     const ativas = baseFiltered.filter(o => !isDelivered(o));
