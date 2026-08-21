@@ -25,6 +25,8 @@ import {
 import { periodInfo, todayISO, formatDateBRShort, weekdayLabel } from "@/lib/oficinaAgenda";
 import { useWorkshopBookings, type WorkshopBooking } from "@/hooks/useWorkshopBookings";
 import { openOsFromBooking } from "@/lib/openOsFromBooking";
+import { Fancybox } from "@fancyapps/ui/dist/fancybox/fancybox.js";
+import "@fancyapps/ui/dist/fancybox/fancybox.css";
 
 
 const MY_STAGES = ["analise", "desempeno", "pintura", "execucao"];
