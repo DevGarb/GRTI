@@ -11,14 +11,14 @@ import { useCompanies } from "@/hooks/useOperacional";
 import { filterOficinaCompanies } from "@/lib/oficinaCompanies";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useCardNotes } from "@/hooks/useCardNotes";
-import { STAGE_ENTREGUE, osSlaInfo, checklistProgress } from "@/lib/oficinaStages";
+import { isDoneStage, osSlaInfo, checklistProgress } from "@/lib/oficinaStages";
 import { formatDateBRShort } from "@/lib/oficinaAgenda";
 import { Fancybox } from "@fancyapps/ui/dist/fancybox/fancybox.js";
 import "@fancyapps/ui/dist/fancybox/fancybox.css";
 import "./cearagps.css";
 
 const TERMINAL = "Finalizado";
-const isDelivered = (o: ServiceOrder) => o.stage === STAGE_ENTREGUE || o.status === TERMINAL;
+const isDelivered = (o: ServiceOrder) => isDoneStage(o.stage) || o.status === TERMINAL;
 
 const dateTimeBR = (iso?: string | null) =>
   iso ? new Date(iso).toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo", day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" }) : "—";

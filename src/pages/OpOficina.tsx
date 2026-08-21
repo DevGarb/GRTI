@@ -24,7 +24,7 @@ import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { formatDateBR } from "@/lib/dateFormat";
 import {
-  STAGES, STAGE_ENTREGUE, stageInfo, DIAS_ALERTA, SLA_PECAS,
+  STAGES, STAGE_ENTREGUE, isDoneStage, stageInfo, DIAS_ALERTA, SLA_PECAS,
   PART_STATUS_FLOW, PART_STATUS_INFO, daysInWorkshop, partsSlaRemaining,
   CHECKLIST_PARTS_LABEL, maxDeadlineFrom,
 } from "@/lib/oficinaStages";
@@ -44,7 +44,7 @@ function fmtMoney(v: number) {
 function todayISO() { return new Date().toISOString().slice(0, 10); }
 
 function isDelivered(o: ServiceOrder) {
-  return o.stage === STAGE_ENTREGUE || o.status === TERMINAL;
+  return isDoneStage(o.stage) || o.status === TERMINAL;
 }
 
 function isOverdue(o: ServiceOrder): boolean {
