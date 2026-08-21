@@ -90,6 +90,7 @@ export default function OpOficinaMinhas() {
   const [finishOs, setFinishOs] = useState<ServiceOrder | null>(null);
   const [summary, setSummary] = useState("");
   const [files, setFiles] = useState<File[]>([]);
+  const [finishKm, setFinishKm] = useState("");
   const [finishing, setFinishing] = useState(false);
 
   // Acionar supervisor (observação / intercorrência)
