@@ -7,6 +7,8 @@ import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useServiceOrders, useServiceOrderDetails, useServiceChecklists, type ServiceOrder } from "@/hooks/useOficina";
+import { useCompanies } from "@/hooks/useOperacional";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useCardNotes } from "@/hooks/useCardNotes";
 import { STAGE_ENTREGUE, osSlaInfo, checklistProgress } from "@/lib/oficinaStages";
 import { formatDateBRShort } from "@/lib/oficinaAgenda";
@@ -150,6 +152,9 @@ function OsDetailsDialog({ order, onClose }: { order: ServiceOrder | null; onClo
 
 export default function OpOficinaFinalizadas() {
   const { items } = useServiceOrders();
+  const { items: companies } = useCompanies();
+  const companyName = useMemo(() => Object.fromEntries(companies.map((c) => [c.id, c.name])), [companies]);
+  const [company, setCompany] = useState("all");
   const [q, setQ] = useState("");
   const [from, setFrom] = useState("");
   const [to, setTo] = useState("");
@@ -161,6 +166,7 @@ export default function OpOficinaFinalizadas() {
       .filter(isDelivered)
       .filter((o) => {
         if (!o.finished_at) return false;
+        if (company !== "all" && o.company_id !== company) return false;
         if (term && !`${o.os_number} ${o.vehicle_plate || ""} ${o.vehicle_model || ""}`.toLowerCase().includes(term)) return false;
         const d = o.finished_at.slice(0, 10);
         if (from && d < from) return false;
@@ -168,7 +174,7 @@ export default function OpOficinaFinalizadas() {
         return true;
       })
       .sort((a, b) => (b.finished_at || "").localeCompare(a.finished_at || ""));
-  }, [items, q, from, to]);
+  }, [items, q, from, to, company]);
 
   return (
     <div className="cgps-scope min-h-screen bg-slate-50">
@@ -181,13 +187,25 @@ export default function OpOficinaFinalizadas() {
           <p className="text-sm text-slate-500">Consulte as OS já entregues pela oficina e veja o detalhamento de cada serviço.</p>
         </div>
 
-        <Card className="p-4 grid md:grid-cols-3 gap-3">
+        <Card className="p-4 grid md:grid-cols-4 gap-3">
           <div>
             <Label>Buscar</Label>
             <div className="relative">
               <Search className="h-4 w-4 absolute left-2 top-1/2 -translate-y-1/2 text-slate-400" />
               <Input className="pl-8" value={q} onChange={(e) => setQ(e.target.value)} placeholder="Placa, modelo ou nº da OS" />
             </div>
+          </div>
+          <div>
+            <Label>Empresa</Label>
+            <Select value={company} onValueChange={setCompany}>
+              <SelectTrigger><SelectValue placeholder="Todas as empresas" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todas as empresas</SelectItem>
+                {companies.map((c) => (
+                  <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
           <div>
             <Label>De</Label>
@@ -216,6 +234,7 @@ export default function OpOficinaFinalizadas() {
                 <div className="text-xs text-slate-500 mt-2 flex items-center gap-2 flex-wrap">
                   <span>Finalizada: <strong>{o.finished_at ? formatDateBRShort(o.finished_at) : "—"}</strong></span>
                   <Badge className={sla.chip + " border-0 text-[10px]"}>{sla.label}</Badge>
+                  {o.company_id && companyName[o.company_id] && <span className="truncate">· {companyName[o.company_id]}</span>}
                 </div>
                 {o.description && <p className="text-xs text-slate-600 mt-2 line-clamp-2">{o.description}</p>}
               </Card>
