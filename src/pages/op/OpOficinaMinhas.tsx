@@ -407,11 +407,10 @@ export default function OpOficinaMinhas() {
                     </div>
                   </div>
                   <div>
-                    <Label>Empresa</Label>
+                    <Label>Empresa *</Label>
                     <Select value={companyId} onValueChange={setCompanyId}>
-                      <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
+                      <SelectTrigger><SelectValue placeholder="Selecione a empresa" /></SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="none">Nenhuma</SelectItem>
                         {filterOficinaCompanies(companies).map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
                       </SelectContent>
                     </Select>
