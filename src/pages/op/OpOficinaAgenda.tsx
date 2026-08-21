@@ -211,6 +211,11 @@ export default function OpOficinaAgenda() {
                             <span className="text-xs text-slate-500 truncate">{o.vehicle_model}</span>
                           </div>
                           <Badge variant="secondary" className={st.chip + " mt-2 text-[10px]"}>{st.label}</Badge>
+                          {isRolled((o as any).scheduled_date) && (
+                            <div className="text-[10px] text-rose-600 mt-1">
+                              Adiado de {formatDateBRShort((o as any).scheduled_date)}
+                            </div>
+                          )}
                           {(o as any).schedule_notes && (
                             <p className="text-[11px] text-slate-500 mt-2">{(o as any).schedule_notes}</p>
                           )}
