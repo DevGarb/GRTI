@@ -669,6 +669,11 @@ function OsDetailDialog({ os, onClose, onUpdate, onDelete, onRequestClose, compa
 
   const [partName, setPartName] = useState(""); const [qty, setQty] = useState("1");
 
+  useEffect(() => {
+    Fancybox.bind("[data-fancybox='os-detail']", {});
+    return () => Fancybox.destroy();
+  }, [photos.length]);
+
   const handleAddPart = () => {
     if (!partName) return;
     addPart({ part_name: partName, quantity: Number(qty), unit_price: 0 });
