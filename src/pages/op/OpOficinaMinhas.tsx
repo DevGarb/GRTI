@@ -66,6 +66,10 @@ export default function OpOficinaMinhas() {
   const [itemQty, setItemQty] = useState(1);
   const [entryFiles, setEntryFiles] = useState<File[]>([]);
 
+  useEffect(() => {
+    Fancybox.bind("[data-fancybox='minhas-finalizadas']", {});
+    return () => Fancybox.destroy();
+  }, []);
 
   // Adicionar peça em OS existente
   const [addPartFor, setAddPartFor] = useState<string | null>(null);
