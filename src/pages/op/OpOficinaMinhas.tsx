@@ -278,11 +278,14 @@ export default function OpOficinaMinhas() {
     setFinishOs(o);
     setSummary("");
     setFiles([]);
+    setFinishKm("");
   };
 
   const confirmFinish = async () => {
     if (!finishOs) return;
     if (!summary.trim()) return toast.error("Descreva o que foi feito no serviço");
+    const km = Number(String(finishKm).replace(/\D/g, ""));
+    if (!finishKm.trim() || !Number.isFinite(km) || km <= 0) return toast.error("Informe o KM atual da moto");
     setFinishing(true);
     try {
       for (const file of files) {
