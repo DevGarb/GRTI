@@ -1,5 +1,5 @@
-import { useMemo, useState } from "react";
-import { CheckCircle2, Bike, Search, Wrench, Camera, ListChecks } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { CheckCircle2, Bike, Search, Wrench, Camera, ListChecks, MessageSquare, ShieldAlert } from "lucide-react";
 import OficinaNav from "./OficinaNav";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -7,17 +7,59 @@ import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useServiceOrders, useServiceOrderDetails, useServiceChecklists, type ServiceOrder } from "@/hooks/useOficina";
+import { useCardNotes } from "@/hooks/useCardNotes";
 import { STAGE_ENTREGUE, osSlaInfo, checklistProgress } from "@/lib/oficinaStages";
 import { formatDateBRShort } from "@/lib/oficinaAgenda";
+import { Fancybox } from "@fancyapps/ui/dist/fancybox/fancybox.js";
+import "@fancyapps/ui/dist/fancybox/fancybox.css";
 import "./cearagps.css";
 
 const TERMINAL = "Finalizado";
 const isDelivered = (o: ServiceOrder) => o.stage === STAGE_ENTREGUE || o.status === TERMINAL;
 
+const dateTimeBR = (iso?: string | null) =>
+  iso ? new Date(iso).toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo", day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" }) : "—";
+
 function OsDetailsDialog({ order, onClose }: { order: ServiceOrder | null; onClose: () => void }) {
   const { parts, photos } = useServiceOrderDetails(order?.id || null);
   const { byOs } = useServiceChecklists();
+  const { notes } = useCardNotes("service_order", order?.id || null);
   const check = checklistProgress(byOs[order?.id || ""] || []);
+
+  useEffect(() => {
+    Fancybox.bind("[data-fancybox='os-fotos']", {});
+    return () => Fancybox.destroy();
+  }, [order?.id, photos.length]);
+
+  const before = photos.filter((p) => p.photo_type === "antes");
+  const after = photos.filter((p) => p.photo_type !== "antes");
+
+  const obs: { label: string; body: string; meta?: string }[] = [];
+  if (order?.diagnosis) obs.push({ label: "Diagnóstico", body: order.diagnosis });
+  if (order?.notes) obs.push({ label: "Observações da OS", body: order.notes });
+  if (order?.schedule_notes) obs.push({ label: "Observações do agendamento", body: order.schedule_notes });
+  if (order?.closure_summary) obs.push({ label: "Resumo de encerramento", body: order.closure_summary });
+  if (order?.supervisor_alert_reason || order?.supervisor_alert_note)
+    obs.push({
+      label: "Acionamento do supervisor",
+      body: [order?.supervisor_alert_reason, order?.supervisor_alert_note].filter(Boolean).join(" — "),
+      meta: dateTimeBR(order?.supervisor_alert_at),
+    });
+  if (order?.supervisor_action_plan)
+    obs.push({ label: "Plano de ação do supervisor", body: order.supervisor_action_plan, meta: dateTimeBR(order?.supervisor_action_at) });
+
+  const PhotoGrid = ({ list, title }: { list: typeof photos; title: string }) => (
+    <div>
+      <p className="text-xs font-medium text-muted-foreground mb-1">{title} ({list.length})</p>
+      <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
+        {list.map((ph) => (
+          <a key={ph.id} href={ph.photo_url} data-fancybox="os-fotos" data-caption={`${title} · ${dateTimeBR(ph.created_at)}`}>
+            <img src={ph.photo_url} alt={`Foto ${ph.photo_type} da OS ${order?.os_number}`} className="rounded-md object-cover w-full h-24" loading="lazy" />
+          </a>
+        ))}
+      </div>
+    </div>
+  );
 
   return (
     <Dialog open={!!order} onOpenChange={(v) => !v && onClose()}>
@@ -39,12 +81,33 @@ function OsDetailsDialog({ order, onClose }: { order: ServiceOrder | null; onClo
                 <p className="text-muted-foreground whitespace-pre-wrap">{order.description}</p>
               </div>
             )}
-            {order.closure_summary && (
-              <div>
-                <p className="font-semibold mb-1">Resumo de encerramento</p>
-                <p className="text-muted-foreground whitespace-pre-wrap">{order.closure_summary}</p>
+
+            <div>
+              <p className="font-semibold mb-1 flex items-center gap-1"><MessageSquare className="h-4 w-4" /> Observações</p>
+              <div className="space-y-2">
+                {obs.map((o, i) => (
+                  <div key={i} className="rounded-md border border-border p-2">
+                    <div className="flex items-center gap-2">
+                      {o.label.includes("supervisor") ? <ShieldAlert className="h-3.5 w-3.5 text-amber-600" /> : null}
+                      <span className="text-xs font-semibold">{o.label}</span>
+                      {o.meta && o.meta !== "—" && <span className="text-[10px] text-muted-foreground">{o.meta}</span>}
+                    </div>
+                    <p className="text-muted-foreground whitespace-pre-wrap mt-1">{o.body}</p>
+                  </div>
+                ))}
+                {notes.map((n) => (
+                  <div key={n.id} className="rounded-md border border-border p-2">
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-semibold">{n.author_name || "Usuário"}</span>
+                      <span className="text-[10px] text-muted-foreground">{dateTimeBR(n.created_at)}</span>
+                    </div>
+                    <p className="text-muted-foreground whitespace-pre-wrap mt-1">{n.body}</p>
+                  </div>
+                ))}
+                {obs.length === 0 && notes.length === 0 && <p className="text-muted-foreground">Nenhuma observação registrada.</p>}
               </div>
-            )}
+            </div>
+
             <div>
               <p className="font-semibold mb-1 flex items-center gap-1"><ListChecks className="h-4 w-4" /> Checklist ({check.done}/{check.total})</p>
               <div className="space-y-1">
@@ -67,24 +130,21 @@ function OsDetailsDialog({ order, onClose }: { order: ServiceOrder | null; onClo
                 </div>
               ))}
             </div>
-            {photos.length > 0 && (
-              <div>
-                <p className="font-semibold mb-1 flex items-center gap-1"><Camera className="h-4 w-4" /> Fotos</p>
-                <div className="grid grid-cols-3 gap-2">
-                  {photos.map((ph) => (
-                    <a key={ph.id} href={ph.photo_url} target="_blank" rel="noreferrer">
-                      <img src={ph.photo_url} alt={`Foto ${ph.photo_type} da OS ${order.os_number}`} className="rounded-md object-cover w-full h-24" loading="lazy" />
-                    </a>
-                  ))}
-                </div>
+            <div>
+              <p className="font-semibold mb-1 flex items-center gap-1"><Camera className="h-4 w-4" /> Fotos ({photos.length})</p>
+              {photos.length === 0 && <p className="text-muted-foreground">Nenhuma foto registrada.</p>}
+              <div className="space-y-3">
+                {before.length > 0 && <PhotoGrid list={before} title="Antes" />}
+                {after.length > 0 && <PhotoGrid list={after} title="Depois" />}
               </div>
-            )}
+            </div>
           </div>
         )}
       </DialogContent>
     </Dialog>
   );
 }
+
 
 export default function OpOficinaFinalizadas() {
   const { items } = useServiceOrders();
