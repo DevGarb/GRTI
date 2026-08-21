@@ -251,6 +251,9 @@ export default function OpOficinaAgenda() {
                     </div>
                     <div className="text-xs text-slate-500">{b.vehicle_model || "—"} · {mecName(b.mechanic_id)}</div>
                     {b.service_type && <div className="text-[11px] text-slate-400 mt-1">{b.service_type}</div>}
+                    {isRolled(b.scheduled_date) && (
+                      <div className="text-[10px] text-rose-600 mt-1">Adiado de {formatDateBRShort(b.scheduled_date)}</div>
+                    )}
                   </div>
                 ))}
               </div>
