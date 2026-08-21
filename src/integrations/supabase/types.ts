@@ -2096,6 +2096,7 @@ export type Database = {
           deadline: string | null
           description: string | null
           diagnosis: string | null
+          finish_km: number | null
           finished_at: string | null
           id: string
           kanban_position: number
@@ -2147,6 +2148,7 @@ export type Database = {
           deadline?: string | null
           description?: string | null
           diagnosis?: string | null
+          finish_km?: number | null
           finished_at?: string | null
           id?: string
           kanban_position?: number
@@ -2198,6 +2200,7 @@ export type Database = {
           deadline?: string | null
           description?: string | null
           diagnosis?: string | null
+          finish_km?: number | null
           finished_at?: string | null
           id?: string
           kanban_position?: number
