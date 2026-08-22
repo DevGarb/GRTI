@@ -561,7 +561,7 @@ export default function OpOficinaMinhas() {
                       <div className="text-sm text-muted-foreground mt-0.5">
                         {[o.vehicle_model, (o as any).vehicle_color, (o as any).vehicle_year].filter(Boolean).join(" · ") || "—"}
                       </div>
-                      <OsProgressBar items={checklist.byOs[o.id] || []} barClass={st.bar} className="mt-2 max-w-xs" compact />
+                      <OsProgressBar items={(osItems.byOs[o.id]?.length ? osItems.byOs[o.id] : checklist.byOs[o.id]) || []} barClass={st.bar} className="mt-2 max-w-xs" compact />
                     </div>
 
                     {open ? <ChevronUp className="h-5 w-5 text-muted-foreground" /> : <ChevronDown className="h-5 w-5 text-muted-foreground" />}

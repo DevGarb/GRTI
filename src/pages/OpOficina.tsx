@@ -19,8 +19,9 @@ import OpQuickActions from "@/components/operacional/OpQuickActions";
 import OpNotesPanel from "@/components/operacional/OpNotesPanel";
 import OsProgressBar from "@/components/operacional/OsProgressBar";
 import OsChecklist from "@/components/operacional/OsChecklist";
+import OsScoredChecklist from "@/components/operacional/OsScoredChecklist";
 import OsAuditPanel from "@/components/operacional/OsAuditPanel";
-import { useServiceTypes, useOsServiceItems } from "@/hooks/useOficinaScoring";
+import { useServiceTypes, useOsServiceItems, useExtraServices } from "@/hooks/useOficinaScoring";
 import OficinaNav from "@/pages/op/OficinaNav";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -66,6 +67,8 @@ export default function OpOficina() {
   const { user } = useAuth();
   const { items, partsByOs, partsCountByOs, add, update, remove, setPartStatus, movePriority, refetch } = useServiceOrders();
   const checklist = useServiceChecklists();
+  const osItemsMain = useOsServiceItems();
+
 
   const { items: mechanics } = useMechanics();
   const { items: companies } = useCompanies();
@@ -201,7 +204,7 @@ export default function OpOficina() {
     const days = daysInWorkshop(o.opened_at, o.finished_at);
     const partsCount = partsCountByOs[o.id] || 0;
     const slaParts = partsSlaRemaining(o.parts_arrived_at);
-    const chk = checklist.byOs[o.id] || [];
+    const chk = (osItemsMain.byOs[o.id]?.length ? osItemsMain.byOs[o.id] : checklist.byOs[o.id]) || [];
     const stg = stageInfo(isDelivered(o) ? STAGE_ENTREGUE : o.stage);
 
     if (!expanded) {
@@ -491,9 +494,6 @@ export default function OpOficina() {
           onRequestClose={(o) => { setSelected(null); setClosing(o); }}
           companyPhone={companyPhone(selected.company_id)}
           checklistItems={checklist.byOs[selected.id] || []}
-          onToggleChecklist={checklist.toggle}
-          onAddChecklist={(label) => checklist.addItem(selected.id, label)}
-          onRemoveChecklist={checklist.removeItem}
           onPartsAvailable={() => handlePartsAvailable(selected)}
         />
       )}
@@ -695,7 +695,7 @@ function NewOsDialog({ onClose, onCreate }: { onClose: () => void; onCreate: (in
   );
 }
 
-function OsDetailDialog({ os, onClose, onUpdate, onDelete, onRequestClose, companyPhone, checklistItems, onToggleChecklist, onAddChecklist, onRemoveChecklist, onPartsAvailable }: {
+function OsDetailDialog({ os, onClose, onUpdate, onDelete, onRequestClose, companyPhone, checklistItems, onPartsAvailable }: {
   os: ServiceOrder;
   onClose: () => void;
   onUpdate: (p: Partial<ServiceOrder>) => void;
@@ -703,9 +703,6 @@ function OsDetailDialog({ os, onClose, onUpdate, onDelete, onRequestClose, compa
   onRequestClose: (o: ServiceOrder) => void;
   companyPhone: string | null;
   checklistItems: ServiceChecklistItem[];
-  onToggleChecklist: (item: ServiceChecklistItem) => void;
-  onAddChecklist: (label: string) => void;
-  onRemoveChecklist: (id: string) => void;
   onPartsAvailable: () => void;
 }) {
 
@@ -715,6 +712,7 @@ function OsDetailDialog({ os, onClose, onUpdate, onDelete, onRequestClose, compa
   const { items: companies } = useCompanies();
   const stHook = useServiceTypes();
   const osItems = useOsServiceItems();
+  const extrasHook = useExtraServices();
 
   const [stage, setStage] = useState(os.stage || "analise");
   const [diagnosis, setDiagnosis] = useState(os.diagnosis || "");
@@ -958,14 +956,20 @@ function OsDetailDialog({ os, onClose, onUpdate, onDelete, onRequestClose, compa
 
         </div>
 
-        <OsChecklist
-          items={checklistItems}
-          readOnly={os.stage === STAGE_ENTREGUE || os.status === TERMINAL}
-          barClass={stageInfo(stage).bar}
-          onToggle={onToggleChecklist}
-          onAdd={onAddChecklist}
-          onRemove={onRemoveChecklist}
-        />
+        {(osItems.byOs[os.id] || []).length > 0 ? (
+          <OsScoredChecklist
+            items={osItems.byOs[os.id] || []}
+            availableExtras={extrasHook.extrasForCompany(companyId || os.company_id)}
+            readOnly={os.stage === STAGE_ENTREGUE || os.status === TERMINAL}
+            barClass={stageInfo(stage).bar}
+            onToggle={osItems.toggle}
+            onAddExtra={(extra) => osItems.addExtraItem(os, extra)}
+            onAddCustom={(label) => osItems.addCustomItem(os, label)}
+          />
+        ) : checklistItems.length > 0 ? (
+          /* OS antiga: checklist legado preservado somente para visualização */
+          <OsChecklist items={checklistItems} readOnly barClass={stageInfo(stage).bar} />
+        ) : null}
 
         <OsAuditPanel
           items={osItems.byOs[os.id] || []}

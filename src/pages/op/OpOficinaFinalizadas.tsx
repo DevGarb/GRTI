@@ -7,6 +7,8 @@ import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useServiceOrders, useServiceOrderDetails, useServiceChecklists, type ServiceOrder } from "@/hooks/useOficina";
+import { useOsServiceItems } from "@/hooks/useOficinaScoring";
+import { formatPoints } from "@/lib/oficinaScoring";
 import { useCompanies } from "@/hooks/useOperacional";
 import { filterOficinaCompanies } from "@/lib/oficinaCompanies";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -26,8 +28,11 @@ const dateTimeBR = (iso?: string | null) =>
 function OsDetailsDialog({ order, onClose }: { order: ServiceOrder | null; onClose: () => void }) {
   const { parts, photos } = useServiceOrderDetails(order?.id || null);
   const { byOs } = useServiceChecklists();
+  const osItems = useOsServiceItems();
   const { notes } = useCardNotes("service_order", order?.id || null);
-  const check = checklistProgress(byOs[order?.id || ""] || []);
+  const scored = osItems.byOs[order?.id || ""] || [];
+  const legacy = byOs[order?.id || ""] || [];
+  const check = checklistProgress(scored.length ? scored : legacy);
 
   useEffect(() => {
     Fancybox.bind("[data-fancybox='os-fotos']", {});
@@ -116,13 +121,28 @@ function OsDetailsDialog({ order, onClose }: { order: ServiceOrder | null; onClo
             <div>
               <p className="font-semibold mb-1 flex items-center gap-1"><ListChecks className="h-4 w-4" /> Checklist ({check.done}/{check.total})</p>
               <div className="space-y-1">
-                {(byOs[order.id] || []).map((i) => (
-                  <div key={i.id} className="flex items-center gap-2">
-                    <CheckCircle2 className={`h-3.5 w-3.5 ${i.done ? "text-emerald-600" : "text-muted-foreground/40"}`} />
-                    <span className={i.done ? "" : "text-muted-foreground"}>{i.label}</span>
-                  </div>
-                ))}
-                {(byOs[order.id] || []).length === 0 && <p className="text-muted-foreground">Sem checklist.</p>}
+                {scored.length > 0 ? (
+                  scored.map((i) => (
+                    <div key={i.id} className="flex items-center gap-2">
+                      <CheckCircle2 className={`h-3.5 w-3.5 ${i.done ? "text-emerald-600" : "text-muted-foreground/40"}`} />
+                      <span className={i.done ? "" : "text-muted-foreground"}>{i.label}</span>
+                      {i.done && (
+                        <span className="ml-auto text-[10px] font-semibold text-primary tabular-nums">
+                          +{formatPoints(Number(i.points_approved ?? i.points ?? 0))} pts
+                        </span>
+                      )}
+                    </div>
+                  ))
+                ) : legacy.length > 0 ? (
+                  legacy.map((i) => (
+                    <div key={i.id} className="flex items-center gap-2">
+                      <CheckCircle2 className={`h-3.5 w-3.5 ${i.done ? "text-emerald-600" : "text-muted-foreground/40"}`} />
+                      <span className={i.done ? "" : "text-muted-foreground"}>{i.label}</span>
+                    </div>
+                  ))
+                ) : (
+                  <p className="text-muted-foreground">Sem checklist.</p>
+                )}
               </div>
             </div>
             <div>
