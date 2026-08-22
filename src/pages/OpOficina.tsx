@@ -968,12 +968,12 @@ function OsDetailDialog({ os, onClose, onUpdate, onDelete, onRequestClose, compa
         />
 
         <OsAuditPanel
-          os={os}
           items={osItems.byOs[os.id] || []}
-          readOnly={os.points_status === "auditado"}
-          onSetApproval={osItems.setItemApproval}
-          onSetAuditPoints={osItems.setItemAuditPoints}
-          onFinalize={(total) => osItems.finalizeAudit(os, total)}
+          readOnly={os.points_status === "aprovada" || os.points_status === "ajustada"}
+          showFinalize
+          onApprove={(item, approved) => osItems.setItemApproval(item, approved)}
+          onAdjust={(item, pts) => osItems.setItemAuditPoints(item, pts)}
+          onFinalize={() => { void osItems.finalizeAudit(os.id, osItems.byOs[os.id] || [], null); }}
         />
 
 
