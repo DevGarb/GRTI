@@ -11,7 +11,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useServiceOrders, useServiceChecklists, type ServiceOrder, type ServiceOrderPhoto, type ServiceOrderPart } from "@/hooks/useOficina";
 import OsProgressBar from "@/components/operacional/OsProgressBar";
-import OsChecklist from "@/components/operacional/OsChecklist";
+import OsScoredChecklist from "@/components/operacional/OsScoredChecklist";
+import { useOsServiceItems, useServiceTypes, useExtraServices } from "@/hooks/useOficinaScoring";
 import { useCompanies } from "@/hooks/useOperacional";
 import { useOficinaProfile } from "@/contexts/OficinaProfileContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -46,6 +47,9 @@ export default function OpOficinaMinhas() {
   const { items, partsByOs, update, add, refetch } = useServiceOrders();
   const checklist = useServiceChecklists();
   const { items: companies } = useCompanies();
+  const osItems = useOsServiceItems();
+  const stHook = useServiceTypes();
+  const extrasHook = useExtraServices();
   const [tab, setTab] = useState("servicos");
   const [expanded, setExpanded] = useState<string | null>(null);
   const [hiddenStages, setHiddenStages] = useState<string[]>([]);
@@ -58,6 +62,7 @@ export default function OpOficinaMinhas() {
   const [model, setModel] = useState("");
   const [companyId, setCompanyId] = useState("");
   const [customerName, setCustomerName] = useState("");
+  const [entryTypeId, setEntryTypeId] = useState("");
 
   const [desc, setDesc] = useState("");
   const [saving, setSaving] = useState(false);
@@ -341,6 +346,7 @@ export default function OpOficinaMinhas() {
       notes: receivedText,
       mechanic_id: profile?.id || null,
       stage: "analise",
+      service_type_id: entryTypeId || null,
     });
     if (res && entryFiles.length) {
       const osId = (res as any).id as string;
@@ -363,6 +369,7 @@ export default function OpOficinaMinhas() {
       setOpenNew(false);
       setPlate(""); setModel(""); setCompanyId(""); setDesc(""); setCustomerName("");
       setNewItems([]); setItemName(""); setItemQty(1); setEntryFiles([]);
+      setEntryTypeId("");
     }
   };
 
@@ -421,6 +428,18 @@ export default function OpOficinaMinhas() {
                         {filterOficinaCompanies(companies).map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
                       </SelectContent>
                     </Select>
+                  </div>
+                  <div>
+                    <Label>Checklist do serviço *</Label>
+                    <Select value={entryTypeId} onValueChange={setEntryTypeId}>
+                      <SelectTrigger><SelectValue placeholder="Selecione o tipo de serviço" /></SelectTrigger>
+                      <SelectContent>
+                        {stHook.typesForCompany(companyId || null).map(t => (
+                          <SelectItem key={t.id} value={t.id}>{t.name} · {t.maxPoints ?? "—"} pts</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <p className="text-[11px] text-muted-foreground mt-1">Define os itens pontuados da OS para a premiação.</p>
                   </div>
                   <div>
                     <Label>Cliente / Associado</Label>
@@ -621,12 +640,13 @@ export default function OpOficinaMinhas() {
                         </div>
                       )}
 
-                      <OsChecklist
-                        items={checklist.byOs[o.id] || []}
+                      <OsScoredChecklist
+                        items={osItems.byOs[o.id] || []}
+                        availableExtras={extrasHook.extrasForCompany(o.company_id)}
                         barClass={st.bar}
-                        onToggle={checklist.toggle}
-                        onAdd={(label) => checklist.addItem(o.id, label)}
-                        onRemove={checklist.removeItem}
+                        onToggle={osItems.toggle}
+                        onAddExtra={(extra) => osItems.addExtraItem(o, extra)}
+                        onAddCustom={(label) => osItems.addCustomItem(o, label)}
                       />
 
 
