@@ -1,6 +1,6 @@
 import { filterOficinaCompanies } from "@/lib/oficinaCompanies";
 import { useEffect, useMemo, useState } from "react";
-import { Wrench, Package, CheckCircle2, ClipboardList, ShoppingCart, AlertTriangle, Plus, ChevronDown, ChevronUp, Camera, X, MessageSquareWarning, Eye, EyeOff, CalendarDays } from "lucide-react";
+import { Wrench, Package, CheckCircle2, ClipboardList, AlertTriangle, Plus, ChevronDown, ChevronUp, Camera, X, MessageSquareWarning, Eye, EyeOff, CalendarDays } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -55,7 +55,7 @@ export default function OpOficinaMinhas() {
   const [hiddenStages, setHiddenStages] = useState<string[]>([]);
   const toggleStage = (id: string) =>
     setHiddenStages(prev => prev.includes(id) ? prev.filter(s => s !== id) : [...prev, id]);
-  const [expandedPartOs, setExpandedPartOs] = useState<string | null>(null);
+  
 
   const [openNew, setOpenNew] = useState(false);
   const [plate, setPlate] = useState("");
@@ -271,19 +271,6 @@ export default function OpOficinaMinhas() {
     return () => { active = false; };
   }, [doneIds]);
 
-  const myParts = useMemo(
-    () => mine.flatMap(o => (partsByOs[o.id] || []).map(p => ({ ...p, os: o }))),
-    [mine, partsByOs],
-  );
-
-  const partsByMoto = useMemo(() => {
-    const map: Record<string, { os: ServiceOrder; parts: (ServiceOrderPart & { os: ServiceOrder })[] }> = {};
-    myParts.forEach(p => {
-      if (!map[p.os.id]) map[p.os.id] = { os: p.os, parts: [] };
-      map[p.os.id].parts.push(p);
-    });
-    return Object.values(map).sort((a, b) => String(a.os.vehicle_plate || a.os.os_number).localeCompare(String(b.os.vehicle_plate || b.os.os_number)));
-  }, [myParts]);
 
   const openFinish = (o: ServiceOrder) => {
     setFinishOs(o);
@@ -385,7 +372,6 @@ export default function OpOficinaMinhas() {
             <TabsTrigger value="servicos"><ClipboardList className="h-4 w-4 mr-1" />Meus Serviços</TabsTrigger>
             <TabsTrigger value="agenda"><CalendarDays className="h-4 w-4 mr-1" />Agenda{agendaHoje ? ` (${agendaHoje} hoje)` : ""}</TabsTrigger>
             <TabsTrigger value="disponiveis"><Wrench className="h-4 w-4 mr-1" />Disponíveis{availableCount ? ` (${availableCount})` : ""}</TabsTrigger>
-            <TabsTrigger value="pecas"><ShoppingCart className="h-4 w-4 mr-1" />Minhas Peças</TabsTrigger>
             <TabsTrigger value="finalizadas"><CheckCircle2 className="h-4 w-4 mr-1" />Finalizadas ({done.length})</TabsTrigger>
 
           </TabsList>
