@@ -1,5 +1,5 @@
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
-import { Wrench, LogOut, LayoutGrid, ShoppingCart, ClipboardList, Award, ShieldAlert, Calendar, CalendarPlus, CheckCircle2, ShieldCheck, Settings2, Star } from "lucide-react";
+import { Wrench, LogOut, LayoutGrid, ShoppingCart, ClipboardList, Award, ShieldAlert, Calendar, CalendarPlus, CheckCircle2, ShieldCheck, Settings2, Star, ChevronLeft, Menu } from "lucide-react";
 import { useOficinaProfile } from "@/contexts/OficinaProfileContext";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -38,10 +38,21 @@ export default function OficinaNav() {
         ];
 
   const logout = () => { clear(); navigate("/op/oficina/pin"); };
+  const menuPath = TABS[0]?.to || "/op/oficina";
 
   return (
     <div className="cgps-scope border-b bg-white">
       <div className="max-w-[1400px] mx-auto px-4 md:px-6 flex items-center gap-4 flex-wrap">
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => navigate(menuPath)}
+          className="text-slate-600 -ml-2"
+          aria-label="Voltar para o menu"
+        >
+          <ChevronLeft className="h-4 w-4 mr-1" />
+          <Menu className="h-4 w-4" />
+        </Button>
         <div className="flex items-center gap-2 py-3 mr-2">
           <div className="h-8 w-8 rounded-md flex items-center justify-center" style={{ background: "hsl(191 74% 20%)" }}>
             <Wrench className="h-4 w-4 text-white" />
