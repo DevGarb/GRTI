@@ -1,5 +1,5 @@
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
-import { Wrench, LogOut, LayoutGrid, ShoppingCart, ClipboardList, Award, ShieldAlert, Calendar, CalendarPlus, CheckCircle2, ShieldCheck, Settings2, Star } from "lucide-react";
+import { Wrench, LogOut, LayoutGrid, ShoppingCart, ClipboardList, Award, ShieldAlert, Calendar, CalendarPlus, CheckCircle2, ShieldCheck, Settings2, Star, ChevronLeft, Menu } from "lucide-react";
 import { useOficinaProfile } from "@/contexts/OficinaProfileContext";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
