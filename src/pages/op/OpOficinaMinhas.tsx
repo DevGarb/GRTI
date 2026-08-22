@@ -21,7 +21,7 @@ import OficinaNav from "./OficinaNav";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import {
-  stageInfo, PART_STATUS_INFO, daysInWorkshop, partsSlaRemaining, DIAS_ALERTA, SLA_PECAS,
+  stageInfo, PART_STATUS_INFO, daysInWorkshop, DIAS_ALERTA,
 } from "@/lib/oficinaStages";
 import { periodInfo, todayISO, formatDateBRShort, weekdayLabel } from "@/lib/oficinaAgenda";
 import { useWorkshopBookings, type WorkshopBooking } from "@/hooks/useWorkshopBookings";
@@ -529,7 +529,6 @@ export default function OpOficinaMinhas() {
               const st = stageInfo(o.stage);
               const parts = partsByOs[o.id] || [];
               const days = daysInWorkshop(o.opened_at);
-              const sla = partsSlaRemaining(o.parts_arrived_at);
               const open = expanded === o.id;
               return (
                 <div key={o.id} className="bg-card border rounded-lg overflow-hidden">
@@ -570,12 +569,9 @@ export default function OpOficinaMinhas() {
                   {open && (
                     <div className="px-4 pb-4 space-y-3 border-t pt-3">
                       <div className="flex items-center gap-2 flex-wrap">
-                        <Badge variant="secondary" className={cn(days >= DIAS_ALERTA && "bg-rose-500/15 text-rose-700")}>
+                        <Badge variant="secondary" className={cn(days >= DIAS_ALERTA && !(o as any).with_customer && "bg-rose-500/15 text-rose-700")}>
                           {days}d na oficina
                         </Badge>
-                        {sla != null && sla < 0 && (
-                          <Badge variant="destructive"><AlertTriangle className="h-3 w-3 mr-0.5" />SLA peças estourado</Badge>
-                        )}
                         {o.supervisor_alert && (
                           <Badge variant="secondary" className="bg-amber-500/15 text-amber-700">
                             <AlertTriangle className="h-3 w-3 mr-0.5" />Supervisor acionado
@@ -847,7 +843,7 @@ export default function OpOficinaMinhas() {
                                 <MessageSquareWarning className="h-3 w-3" /> Alerta
                               </Badge>
                             )}
-                            {typeof dias === "number" && dias >= DIAS_ALERTA && (
+                            {typeof dias === "number" && dias >= DIAS_ALERTA && !(o as any).with_customer && (
                               <Badge variant="destructive">{dias} dias na oficina</Badge>
                             )}
                           </div>
@@ -992,7 +988,7 @@ export default function OpOficinaMinhas() {
 
         <div className="text-center text-xs text-muted-foreground py-4 flex items-center justify-center gap-1">
           <Wrench className="h-3 w-3" />
-          Gestão de Oficina · Regras de alerta em {DIAS_ALERTA} dias · SLA de {SLA_PECAS} dias para montagem após chegada de peças
+          Gestão de Oficina · Alerta após {DIAS_ALERTA} dias na oficina · motos com o cliente não geram alerta
         </div>
 
         {/* Acionar supervisor */}

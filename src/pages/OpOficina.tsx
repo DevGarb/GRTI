@@ -27,9 +27,9 @@ import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { formatDateBR } from "@/lib/dateFormat";
 import {
-  STAGES, STAGE_ENTREGUE, isDoneStage, stageInfo, DIAS_ALERTA, SLA_PECAS,
-  PART_STATUS_FLOW, PART_STATUS_INFO, daysInWorkshop, partsSlaRemaining,
-  CHECKLIST_PARTS_LABEL, maxDeadlineFrom,
+  STAGES, STAGE_ENTREGUE, isDoneStage, stageInfo, DIAS_ALERTA,
+  PART_STATUS_FLOW, PART_STATUS_INFO, daysInWorkshop,
+  CHECKLIST_PARTS_LABEL,
 } from "@/lib/oficinaStages";
 import { SCHEDULE_PERIODS, periodInfo, formatDateBRShort } from "@/lib/oficinaAgenda";
 import { useWorkshopBookings } from "@/hooks/useWorkshopBookings";
@@ -52,12 +52,11 @@ function isDelivered(o: ServiceOrder) {
   return isDoneStage(o.stage) || o.status === TERMINAL;
 }
 
+/** Alerta único: mais de DIAS_ALERTA dias na oficina. Motos com o cliente não geram alerta. */
 function isOverdue(o: ServiceOrder): boolean {
   if (isDelivered(o) || o.status === "Cancelada") return false;
-  if (o.deadline && o.deadline < todayISO()) return true;
-  if (daysInWorkshop(o.opened_at) >= DIAS_ALERTA) return true;
-  const rest = partsSlaRemaining(o.parts_arrived_at);
-  return rest != null && rest < 0;
+  if (o.with_customer) return false;
+  return daysInWorkshop(o.opened_at) >= DIAS_ALERTA;
 }
 
 const KANBAN_COLUMNS: KanbanColumn[] = STAGES.map(s => ({ id: s.id, label: s.label, color: s.bar }));
@@ -155,12 +154,11 @@ export default function OpOficina() {
     update(o.id, patch);
   };
 
-  /** Peças disponíveis: registra a chegada e ativa o prazo de entrega (hoje + SLA de peças). */
+  /** Peças disponíveis: registra a chegada e libera a definição do prazo de entrega. */
   const handlePartsAvailable = async (o: ServiceOrder) => {
     const arrived = todayISO();
     await update(o.id, {
       parts_arrived_at: arrived,
-      deadline: o.deadline || maxDeadlineFrom(arrived),
       stage: o.stage === "aguardando_peca" ? "execucao" : o.stage,
     });
     await checklist.markLabelDone(o.id, CHECKLIST_PARTS_LABEL);
@@ -203,7 +201,7 @@ export default function OpOficina() {
     const overdue = isOverdue(o);
     const days = daysInWorkshop(o.opened_at, o.finished_at);
     const partsCount = partsCountByOs[o.id] || 0;
-    const slaParts = partsSlaRemaining(o.parts_arrived_at);
+    
     const chk = (osItemsMain.byOs[o.id]?.length ? osItemsMain.byOs[o.id] : checklist.byOs[o.id]) || [];
     const stg = stageInfo(isDelivered(o) ? STAGE_ENTREGUE : o.stage);
 
@@ -231,7 +229,7 @@ export default function OpOficina() {
             Empresa: {companyName(o.company_id)}
           </div>
           <div className="flex items-center gap-2 mt-1">
-            <Badge variant="secondary" className={cn("text-[10px] h-5", days >= DIAS_ALERTA && "bg-rose-500/15 text-rose-700 dark:text-rose-300")}>
+            <Badge variant="secondary" className={cn("text-[10px] h-5", days >= DIAS_ALERTA && !o.with_customer && "bg-rose-500/15 text-rose-700 dark:text-rose-300")}>
               {days}d na oficina
             </Badge>
             <span className="text-[10px] text-muted-foreground italic">Clique para expandir</span>
@@ -244,7 +242,7 @@ export default function OpOficina() {
       <div>
         <div className="flex items-start gap-2 mb-1 flex-wrap cursor-pointer" onClick={() => toggleExpanded(o.id)}>
           <span className="font-mono text-[11px] bg-muted px-1.5 py-0.5 rounded">#{o.os_number}</span>
-          <Badge variant="secondary" className={cn("text-[10px] h-5", days >= DIAS_ALERTA && "bg-rose-500/15 text-rose-700 dark:text-rose-300")}>
+          <Badge variant="secondary" className={cn("text-[10px] h-5", days >= DIAS_ALERTA && !o.with_customer && "bg-rose-500/15 text-rose-700 dark:text-rose-300")}>
             {days}d na oficina
           </Badge>
           {partsCount > 0 && (
@@ -299,11 +297,6 @@ export default function OpOficina() {
 
         {chk.length > 0 && (
           <OsProgressBar items={chk} barClass={stg.bar} className="mt-2" compact />
-        )}
-        {slaParts != null && !isDelivered(o) && (
-          <div className={cn("text-[11px] mt-1", slaParts < 0 ? "text-rose-600 font-medium" : "text-muted-foreground")}>
-            SLA peças: {slaParts < 0 ? `${Math.abs(slaParts)}d em atraso` : `${slaParts}d restantes`}
-          </div>
         )}
         {o.parts_arrived_at ? (
           <div className={cn("text-[11px] mt-0.5", o.deadline && o.deadline < todayISO() && !isDelivered(o) ? "text-rose-600 font-medium" : "text-muted-foreground")}>
@@ -365,7 +358,7 @@ export default function OpOficina() {
           <div>
             <h1 className="text-2xl font-bold">Oficina</h1>
             <p className="text-sm text-muted-foreground">
-              Fluxo por etapas · alerta em {DIAS_ALERTA} dias na oficina · SLA de {SLA_PECAS} dias após a chegada das peças
+              Fluxo por etapas · alerta após {DIAS_ALERTA} dias na oficina · motos com o cliente não geram alerta
             </p>
           </div>
         </div>
@@ -810,7 +803,7 @@ function OsDetailDialog({ os, onClose, onUpdate, onDelete, onRequestClose, compa
           <DialogTitle className="flex items-center gap-2 flex-wrap">
             <span className="font-mono bg-muted px-2 py-1 rounded text-sm">#{os.os_number}</span>
             Ordem de Serviço
-            <Badge variant="secondary" className={cn(days >= DIAS_ALERTA && "bg-rose-500/15 text-rose-700 dark:text-rose-300")}>{days}d na oficina</Badge>
+            <Badge variant="secondary" className={cn(days >= DIAS_ALERTA && !os.with_customer && "bg-rose-500/15 text-rose-700 dark:text-rose-300")}>{days}d na oficina</Badge>
             <div className="ml-auto"><OpQuickActions phone={companyPhone} /></div>
           </DialogTitle>
         </DialogHeader>
@@ -843,21 +836,13 @@ function OsDetailDialog({ os, onClose, onUpdate, onDelete, onRequestClose, compa
             <Input
               type="date"
               value={deadline}
-              max={os.parts_arrived_at ? maxDeadlineFrom(os.parts_arrived_at) : undefined}
-              onChange={e => {
-                const v = e.target.value;
-                if (os.parts_arrived_at && v && v > maxDeadlineFrom(os.parts_arrived_at)) {
-                  toast.error(`O prazo não pode passar de ${formatDateBR(maxDeadlineFrom(os.parts_arrived_at))} (${SLA_PECAS} dias após a chegada das peças)`);
-                  return;
-                }
-                setDeadline(v);
-              }}
+              onChange={e => setDeadline(e.target.value)}
               disabled={!os.parts_arrived_at}
             />
             <div className="text-[11px] mt-1 text-muted-foreground">
               {os.parts_arrived_at
-                ? `Peças recebidas em ${formatDateBR(os.parts_arrived_at)} · máximo ${formatDateBR(maxDeadlineFrom(os.parts_arrived_at))}`
-                : "Clique em “Peças disponíveis” para liberar o prazo (máx. 10 dias)"}
+                ? `Peças recebidas em ${formatDateBR(os.parts_arrived_at)}`
+                : "Clique em “Peças disponíveis” para liberar o prazo"}
             </div>
             {!os.parts_arrived_at && (
               <Button size="sm" variant="outline" className="mt-2" onClick={onPartsAvailable}>
