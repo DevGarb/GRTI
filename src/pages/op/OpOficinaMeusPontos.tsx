@@ -129,34 +129,34 @@ export default function OpOficinaMeusPontos() {
         </div>
 
         {sortedTiers.length > 0 && (
-          <Card className="cgps-header border-none overflow-hidden" style={{ background: "hsl(var(--cgps-primary))" }}>
+          <Card className="bg-transparent border-none shadow-none overflow-hidden">
             <CardContent className="p-5 md:p-6 space-y-6">
               <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-3">
                 <div>
-                  <h2 className="text-lg font-semibold" style={{ color: "hsl(var(--cgps-accent))" }}>Progresso Atualizado vs Metas Operacionais</h2>
-                  <p className="text-sm text-white/80">Sua classificação e distância líquida para a conquista de novas metas.</p>
+                  <h2 className="text-lg font-semibold text-[hsl(var(--cgps-primary))]">Progresso Atualizado vs Metas Operacionais</h2>
+                  <p className="text-sm text-muted-foreground">Sua classificação e distância líquida para a conquista de novas metas.</p>
                 </div>
                 {progress.next && (
                   <div className="text-right">
-                    <p className="text-[10px] uppercase tracking-wider text-white/70">Restante para próxima meta ({progress.next.label || "Próxima"})</p>
-                    <p className="text-2xl font-bold" style={{ color: "hsl(var(--cgps-accent))" }}>{formatPoints(progress.missing)} pontos líquidos</p>
+                    <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Restante para próxima meta ({progress.next.label || "Próxima"})</p>
+                    <p className="text-2xl font-bold text-[hsl(var(--cgps-accent))]">{formatPoints(progress.missing)} pontos líquidos</p>
                   </div>
                 )}
               </div>
 
               <div className="relative pt-8 pb-2">
-                <div className="h-3 w-full rounded-full bg-white/10 overflow-hidden">
+                <div className="h-3 w-full rounded-full bg-black/10 overflow-hidden">
                   <div
                     className="h-full rounded-full transition-all"
                     style={{ width: `${progress.progress}%`, background: "hsl(var(--cgps-accent))" }}
                   />
                 </div>
                 <div
-                  className="absolute top-5 h-6 w-1 rounded bg-white/80 shadow-[0_0_8px_rgba(255,255,255,0.4)]"
+                  className="absolute top-5 h-6 w-1 rounded bg-[hsl(var(--cgps-primary))] shadow-[0_0_8px_rgba(13,74,86,0.4)]"
                   style={{ left: `${progress.progress}%` }}
                 />
                 <div
-                  className="absolute top-1 text-xs font-bold tabular-nums text-white"
+                  className="absolute top-1 text-xs font-bold tabular-nums text-[hsl(var(--cgps-primary))]"
                   style={{ left: `${progress.progress}%`, transform: "translateX(-50%)" }}
                 >
                   {formatPoints(approvedPts)} pts
@@ -171,8 +171,8 @@ export default function OpOficinaMeusPontos() {
                         className="absolute top-0 flex flex-col items-center"
                         style={{ left: `${left}%`, transform: "translateX(-50%)" }}
                       >
-                        <div className="h-3 w-px bg-white/30" />
-                        <div className="text-[10px] text-white/90 text-center leading-tight mt-1">
+                        <div className="h-3 w-px bg-[hsl(var(--cgps-primary))]/30" />
+                        <div className="text-[10px] text-foreground text-center leading-tight mt-1">
                           <div>{tier.label || "Faixa"}</div>
                           <div className="font-semibold tabular-nums">{formatPoints(Number(tier.from_points))} pts</div>
                         </div>
