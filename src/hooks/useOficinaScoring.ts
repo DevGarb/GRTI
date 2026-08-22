@@ -229,10 +229,10 @@ export function useAwardTiers() {
   }, [orgId]);
   useEffect(() => { fetch(); }, [fetch]);
 
-  const addTier = async (input: { from_points: number; to_points: number | null; rate_brl: number }) => {
+  const addTier = async (input: { label: string; from_points: number; to_points: number | null; rate_brl: number }) => {
     if (!orgId) return;
     const position = (tiers.slice(-1)[0]?.position ?? 0) + 1;
-    const { error } = await supabase.from("op_award_tiers").insert({ organization_id: orgId, ...input, position });
+    const { error } = await supabase.from("op_award_tiers").insert({ organization_id: orgId, ...input, position } as any);
     if (error) toast.error(error.message); else fetch();
   };
 
