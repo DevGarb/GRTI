@@ -1,5 +1,5 @@
-import { useMemo, useState } from "react";
-import { Trophy, Pencil, Loader2, ClipboardCheck } from "lucide-react";
+import { Fragment, useEffect, useMemo, useState } from "react";
+import { Trophy, Pencil, Loader2, ClipboardCheck, Camera, ChevronDown, ChevronUp } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -7,8 +7,11 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
-import { useServiceOrders, useMechanics, type ServiceOrder } from "@/hooks/useOficina";
+import { useServiceOrders, useMechanics, useServiceOrderDetails, type ServiceOrder } from "@/hooks/useOficina";
 import { useOsServiceItems, useAwardTiers } from "@/hooks/useOficinaScoring";
+import OsAuditPanel from "@/components/operacional/OsAuditPanel";
+import { Fancybox } from "@fancyapps/ui/dist/fancybox/fancybox.js";
+import "@fancyapps/ui/dist/fancybox/fancybox.css";
 import {
   requestedPoints, approvedPoints, calcAward, tierProgress, formatPoints, POINTS_STATUS_INFO,
   type AwardTier,
@@ -23,6 +26,57 @@ const MESES = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julh
 const formatBRL = (v: number) => v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 
 interface OsRow { os: ServiceOrder; requested: number; approved: number }
+
+type OsItemsApi = ReturnType<typeof useOsServiceItems>;
+
+/** Área expansível da OS: auditoria de serviços (aprovar/ajustar/finalizar) + fotos. */
+function AuditExpand({ os, readOnly, osItems, onFinalized }: {
+  os: ServiceOrder;
+  readOnly: boolean;
+  osItems: OsItemsApi;
+  onFinalized: () => void;
+}) {
+  const [finalizing, setFinalizing] = useState(false);
+  const { photos } = useServiceOrderDetails(os.id);
+  const items = osItems.byOs[os.id] || [];
+
+  const finalize = async () => {
+    setFinalizing(true);
+    const ok = await osItems.finalizeAudit(os.id, items, null);
+    setFinalizing(false);
+    if (ok) onFinalized();
+  };
+
+  return (
+    <div className="space-y-3 py-1">
+      <OsAuditPanel
+        items={items}
+        readOnly={readOnly}
+        showFinalize={!readOnly}
+        finalizing={finalizing}
+        onApprove={(item, approved) => osItems.setItemApproval(item, approved)}
+        onAdjust={(item, pts) => osItems.setItemAuditPoints(item, pts)}
+        onFinalize={finalize}
+      />
+      <div>
+        <p className="text-xs font-medium text-muted-foreground flex items-center gap-1 mb-1.5">
+          <Camera className="h-3.5 w-3.5" /> Fotos da OS ({photos.length})
+        </p>
+        {photos.length > 0 ? (
+          <div className="flex gap-2 flex-wrap">
+            {photos.map((p: any) => (
+              <a key={p.id} href={p.photo_url} data-fancybox={`prem-fotos-${os.id}`} data-caption={`OS #${os.os_number}`}>
+                <img src={p.photo_url} alt={`Foto da OS #${os.os_number}`} className="h-16 w-16 object-cover rounded-md border" loading="lazy" />
+              </a>
+            ))}
+          </div>
+        ) : (
+          <p className="text-xs text-muted-foreground">Nenhuma foto anexada.</p>
+        )}
+      </div>
+    </div>
+  );
+}
 
 export default function OpOficinaPremiacoes() {
   const now = new Date();
