@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useOficinaProfile } from "@/contexts/OficinaProfileContext";
-import { useCompanies } from "@/hooks/useOficina";
+import { useCompanies } from "@/hooks/useOperacional";
 import { useServiceTypes, useAwardTiers } from "@/hooks/useOficinaScoring";
 import { filterOficinaCompanies } from "@/lib/oficinaCompanies";
 import { calcAward, tierProgress, formatPoints, POINTS_STATUS_INFO } from "@/lib/oficinaScoring";

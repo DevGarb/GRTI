@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useCompanies } from "@/hooks/useOficina";
+import { useCompanies } from "@/hooks/useOperacional";
 import { useServiceTypes, useExtraServices, useAwardTiers } from "@/hooks/useOficinaScoring";
 import { filterOficinaCompanies } from "@/lib/oficinaCompanies";
 import { calcAward, formatPoints } from "@/lib/oficinaScoring";

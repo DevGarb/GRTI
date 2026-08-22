@@ -6,12 +6,12 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { useCompanies } from "@/hooks/useOficina";
+import { useCompanies } from "@/hooks/useOperacional";
+import { useServiceOrderDetails } from "@/hooks/useOficina";
 import { useServiceTypes, useOsServiceItems } from "@/hooks/useOficinaScoring";
-import { getOsPhotos } from "@/hooks/useOperacional";
 import { filterOficinaCompanies } from "@/lib/oficinaCompanies";
 import { formatPoints, POINTS_STATUS_INFO, type OsServiceItem } from "@/lib/oficinaScoring";
-import { DateRangeFilter, emptyRange, type DateRange, inRange } from "@/components/operacional/DateRangeFilter";
+import DateRangeFilter, { todayStr, inDateRange } from "@/components/shared/DateRangeFilter";
 import OsAuditPanel from "@/components/operacional/OsAuditPanel";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Fancybox } from "@fancyapps/ui/dist/fancybox/fancybox.js";
@@ -33,10 +33,85 @@ interface AuditOs {
   points_audited_at: string | null;
 }
 
+type OsItemsApi = ReturnType<typeof useOsServiceItems>;
+
+/** Card de uma OS na auditoria: dados, painel de aprovação e fotos. */
+function AuditOsCard({ os, isQueue, names, osItems, onFinalized }: {
+  os: AuditOs;
+  isQueue: boolean;
+  names: { company: (id?: string | null) => string; type: (id?: string | null) => string; mech: (id?: string | null) => string };
+  osItems: OsItemsApi;
+  onFinalized: () => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [finalizing, setFinalizing] = useState(false);
+  const { photos } = useServiceOrderDetails(open ? os.id : null);
+  const items = osItems.byOs[os.id] || [];
+  const stInfo = POINTS_STATUS_INFO[os.points_status || "pendente"] || POINTS_STATUS_INFO.pendente;
+
+  const finalize = async () => {
+    setFinalizing(true);
+    const ok = await osItems.finalizeAudit(os.id, items, null);
+    setFinalizing(false);
+    if (ok) onFinalized();
+  };
+
+  return (
+    <Card>
+      <CardContent className="p-3 space-y-3">
+        <button type="button" className="w-full flex items-center gap-3 flex-wrap text-left" onClick={() => setOpen(!open)}>
+          <div className="min-w-0 flex-1">
+            <p className="text-sm font-medium">{os.plate} {os.model ? `· ${os.model}` : ""}</p>
+            <p className="text-xs text-muted-foreground">
+              {names.company(os.company_id)} · {os.service_type_id ? names.type(os.service_type_id) : "Sem checklist"}
+              {" · "}{names.mech(os.mechanic_id)}
+              {" · "}{os.finished_at ? new Date(os.finished_at).toLocaleDateString("pt-BR") : "—"}
+            </p>
+          </div>
+          <span className="text-xs text-muted-foreground tabular-nums">{formatPoints(Number(os.points_requested || 0))} solicitados</span>
+          <span className="text-sm font-bold text-emerald-600 tabular-nums">{formatPoints(Number(os.points_approved || 0))} aprovados</span>
+          <Badge variant="secondary" className={cn("text-[10px]", stInfo.chip)}>{stInfo.label}</Badge>
+          {open ? <ChevronUp className="h-4 w-4 text-muted-foreground" /> : <ChevronDown className="h-4 w-4 text-muted-foreground" />}
+        </button>
+
+        {open && (
+          <div className="space-y-3 pt-2 border-t">
+            <OsAuditPanel
+              items={items}
+              readOnly={!isQueue}
+              showFinalize={isQueue}
+              finalizing={finalizing}
+              onApprove={(item, approved) => osItems.setItemApproval(item, approved)}
+              onAdjust={(item, pts) => osItems.setItemAuditPoints(item, pts)}
+              onFinalize={finalize}
+            />
+            <div>
+              <p className="text-xs font-medium text-muted-foreground flex items-center gap-1 mb-1.5">
+                <Camera className="h-3.5 w-3.5" /> Fotos da OS ({photos.length})
+              </p>
+              {photos.length > 0 ? (
+                <div className="flex gap-2 flex-wrap">
+                  {photos.map((p: any) => (
+                    <a key={p.id} href={p.photo_url} data-fancybox={`audit-fotos-${os.id}`} data-caption={`OS ${os.plate}`}>
+                      <img src={p.photo_url} alt={`Foto da OS ${os.plate}`} className="h-16 w-16 object-cover rounded-md border" loading="lazy" />
+                    </a>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-xs text-muted-foreground">Nenhuma foto anexada.</p>
+              )}
+            </div>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
 export default function OpOficinaAuditoria() {
   const { profile, user } = useAuth();
   const orgId = profile?.organization_id;
-  const { data: allCompanies = [] } = useCompanies();
+  const { items: allCompanies } = useCompanies();
   const companies = filterOficinaCompanies(allCompanies);
   const { types } = useServiceTypes();
   const osItems = useOsServiceItems();
@@ -44,13 +119,11 @@ export default function OpOficinaAuditoria() {
   const [orders, setOrders] = useState<AuditOs[]>([]);
   const [mechanics, setMechanics] = useState<{ id: string; name: string }[]>([]);
   const [loading, setLoading] = useState(true);
-  const [expanded, setExpanded] = useState<string | null>(null);
-  const [photos, setPhotos] = useState<Record<string, string[]>>({});
-  const [finalizing, setFinalizing] = useState<string | null>(null);
 
   const [mechanicFilter, setMechanicFilter] = useState("all");
   const [companyFilter, setCompanyFilter] = useState("all");
-  const [range, setRange] = useState<DateRange>(emptyRange());
+  const [dateFrom, setDateFrom] = useState("1990-01-01");
+  const [dateTo, setDateTo] = useState(todayStr());
 
   const fetch = useCallback(async () => {
     if (!orgId) return;
@@ -72,99 +145,25 @@ export default function OpOficinaAuditoria() {
   useEffect(() => { fetch(); }, [fetch]);
 
   useEffect(() => {
-    Fancybox.bind(document.body, "[data-fancybox='audit-fotos']", {});
+    Fancybox.bind(document.body, "[data-fancybox]", {});
     return () => Fancybox.destroy();
   }, []);
 
-  useEffect(() => {
-    if (!expanded || photos[expanded]) return;
-    let cancelled = false;
-    getOsPhotos(expanded).then((urls) => {
-      if (!cancelled) setPhotos((p) => ({ ...p, [expanded]: urls }));
-    });
-    return () => { cancelled = true; };
-  }, [expanded, photos]);
-
-  const companyName = useMemo(() => Object.fromEntries(companies.map((c) => [c.id, c.name])), [companies]);
-  const typeName = useMemo(() => Object.fromEntries(types.map((t) => [t.id, t.name])), [types]);
-  const mechName = useMemo(() => Object.fromEntries(mechanics.map((m) => [m.id, m.name])), [mechanics]);
+  const names = useMemo(() => ({
+    company: (id?: string | null) => companies.find((c) => c.id === id)?.name || "—",
+    type: (id?: string | null) => types.find((t) => t.id === id)?.name || "—",
+    mech: (id?: string | null) => (id ? mechanics.find((m) => m.id === id)?.name || "—" : "Sem mecânico"),
+  }), [companies, types, mechanics]);
 
   const filtered = useMemo(() => orders.filter((o) => {
     if (mechanicFilter !== "all" && o.mechanic_id !== mechanicFilter) return false;
     if (companyFilter !== "all" && o.company_id !== companyFilter) return false;
-    if (!inRange(o.finished_at, range)) return false;
+    if (!inDateRange(o.finished_at, dateFrom, dateTo)) return false;
     return true;
-  }), [orders, mechanicFilter, companyFilter, range]);
+  }), [orders, mechanicFilter, companyFilter, dateFrom, dateTo]);
 
   const queue = filtered.filter((o) => o.points_status === "pendente");
   const audited = filtered.filter((o) => o.points_status === "aprovada" || o.points_status === "ajustada");
-
-  const finalize = async (osId: string, items: OsServiceItem[]) => {
-    setFinalizing(osId);
-    const ok = await osItems.finalizeAudit(osId, items, user?.id);
-    setFinalizing(null);
-    if (ok) fetch();
-  };
-
-  const renderOs = (o: AuditOs, isQueue: boolean) => {
-    const items = osItems.byOs[o.id] || [];
-    const stInfo = POINTS_STATUS_INFO[o.points_status || "pendente"] || POINTS_STATUS_INFO.pendente;
-    const open = expanded === o.id;
-    return (
-      <Card key={o.id}>
-        <CardContent className="p-3 space-y-3">
-          <button
-            type="button"
-            className="w-full flex items-center gap-3 flex-wrap text-left"
-            onClick={() => setExpanded(open ? null : o.id)}
-          >
-            <div className="min-w-0 flex-1">
-              <p className="text-sm font-medium">{o.plate} {o.model ? `· ${o.model}` : ""}</p>
-              <p className="text-xs text-muted-foreground">
-                {companyName[o.company_id || ""] || "—"} · {o.service_type_id ? typeName[o.service_type_id] || "—" : "Sem checklist"}
-                {" · "}{o.mechanic_id ? mechName[o.mechanic_id] || "—" : "Sem mecânico"}
-                {" · "}{o.finished_at ? new Date(o.finished_at).toLocaleDateString("pt-BR") : "—"}
-              </p>
-            </div>
-            <span className="text-xs text-muted-foreground tabular-nums">{formatPoints(Number(o.points_requested || 0))} solicitados</span>
-            <span className="text-sm font-bold text-emerald-600 tabular-nums">{formatPoints(Number(o.points_approved || 0))} aprovados</span>
-            <Badge variant="secondary" className={cn("text-[10px]", stInfo.chip)}>{stInfo.label}</Badge>
-            {open ? <ChevronUp className="h-4 w-4 text-muted-foreground" /> : <ChevronDown className="h-4 w-4 text-muted-foreground" />}
-          </button>
-
-          {open && (
-            <div className="space-y-3 pt-2 border-t">
-              <OsAuditPanel
-                items={items}
-                readOnly={!isQueue}
-                showFinalize={isQueue}
-                finalizing={finalizing === o.id}
-                onApprove={(item, approved) => osItems.setItemApproval(item, approved)}
-                onAdjust={(item, pts) => osItems.setItemAuditPoints(item, pts)}
-                onFinalize={() => finalize(o.id, items)}
-              />
-              <div>
-                <p className="text-xs font-medium text-muted-foreground flex items-center gap-1 mb-1.5">
-                  <Camera className="h-3.5 w-3.5" /> Fotos da OS ({(photos[o.id] || []).length})
-                </p>
-                {(photos[o.id] || []).length > 0 ? (
-                  <div className="flex gap-2 flex-wrap">
-                    {(photos[o.id] || []).map((u, i) => (
-                      <a key={i} href={u} data-fancybox="audit-fotos" data-caption={`OS ${o.plate}`}>
-                        <img src={u} alt={`Foto ${i + 1} da OS ${o.plate}`} className="h-16 w-16 object-cover rounded-md border" loading="lazy" />
-                      </a>
-                    ))}
-                  </div>
-                ) : (
-                  <p className="text-xs text-muted-foreground">Nenhuma foto anexada.</p>
-                )}
-              </div>
-            </div>
-          )}
-        </CardContent>
-      </Card>
-    );
-  };
 
   return (
     <div className="space-y-4">
@@ -196,7 +195,7 @@ export default function OpOficinaAuditoria() {
             </SelectContent>
           </Select>
         </div>
-        <DateRangeFilter value={range} onChange={setRange} />
+        <DateRangeFilter from={dateFrom} to={dateTo} onFromChange={setDateFrom} onToChange={setDateTo} />
       </div>
 
       {loading ? (
@@ -211,13 +210,17 @@ export default function OpOficinaAuditoria() {
             {queue.length === 0 && (
               <p className="text-sm text-muted-foreground text-center py-10">Nenhuma OS aguardando auditoria.</p>
             )}
-            {queue.map((o) => renderOs(o, true))}
+            {queue.map((o) => (
+              <AuditOsCard key={o.id} os={o} isQueue names={names} osItems={osItems} onFinalized={fetch} />
+            ))}
           </TabsContent>
           <TabsContent value="auditadas" className="space-y-3 mt-4">
             {audited.length === 0 && (
               <p className="text-sm text-muted-foreground text-center py-10">Nenhuma OS auditada no período.</p>
             )}
-            {audited.map((o) => renderOs(o, false))}
+            {audited.map((o) => (
+              <AuditOsCard key={o.id} os={o} isQueue={false} names={names} osItems={osItems} onFinalized={fetch} />
+            ))}
           </TabsContent>
         </Tabs>
       )}
