@@ -235,6 +235,8 @@ export default function OpOficinaPontuacao() {
                       <Plus className="h-3.5 w-3.5 mr-1" /> Incluir
                     </Button>
                   </div>
+                  </>
+                  )}
                 </CardContent>
               </Card>
             );
