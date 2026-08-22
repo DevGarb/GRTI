@@ -22,6 +22,8 @@ export interface OsServiceItem {
 
 export interface AwardTier {
   id: string;
+  organization_id: string;
+  label: string;
   from_points: number;
   to_points: number | null;
   rate_brl: number;
