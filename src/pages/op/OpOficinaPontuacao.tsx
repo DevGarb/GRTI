@@ -62,7 +62,7 @@ export default function OpOficinaPontuacao() {
   const [newExtraPoints, setNewExtraPoints] = useState("0.25");
   const [newExtraCompanies, setNewExtraCompanies] = useState<string[]>([]);
   // nova faixa
-  const [newTier, setNewTier] = useState({ from: "", to: "", rate: "" });
+  const [newTier, setNewTier] = useState({ label: "", from: "", to: "", rate: "" });
   // simulador
   const [simPoints, setSimPoints] = useState("70");
   const sim = calcAward(Number(simPoints) || 0, tiers);
