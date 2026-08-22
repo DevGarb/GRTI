@@ -1038,7 +1038,7 @@ function ConfirmedBookingsColumn({ onCreated }: { onCreated?: () => void }) {
         refetch(); onCreated?.();
         return;
       }
-      const os = await openOsFromBooking(b, { userId: user?.id });
+      const os = await openOsFromBooking(b, { userId: user?.id, serviceTypeId: (b as any).service_type_id || null });
       if (os) { refetch(); onCreated?.(); }
     } finally {
       setOpening(null);

@@ -194,7 +194,7 @@ export default function OpOficinaMinhas() {
   const handleOpenBooking = async (b: WorkshopBooking) => {
     setOpeningBooking(b.id);
     try {
-      const os = await openOsFromBooking(b, { userId: user?.id, mechanicId: profile?.id || null });
+      const os = await openOsFromBooking(b, { userId: user?.id, mechanicId: profile?.id || null, serviceTypeId: (b as any).service_type_id || null });
       if (os) { refetchBookings(); refetch(); setTab("servicos"); }
     } finally {
       setOpeningBooking(null);
