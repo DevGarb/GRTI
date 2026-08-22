@@ -12,6 +12,8 @@ import { useServiceTypes, useAwardTiers } from "@/hooks/useOficinaScoring";
 import { filterOficinaCompanies } from "@/lib/oficinaCompanies";
 import { calcAward, tierProgress, formatPoints, POINTS_STATUS_INFO } from "@/lib/oficinaScoring";
 import { cn } from "@/lib/utils";
+import OficinaNav from "./OficinaNav";
+import "./cearagps.css";
 
 interface MyOs {
   id: string;
