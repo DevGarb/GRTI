@@ -13,6 +13,7 @@ import { filterOficinaCompanies } from "@/lib/oficinaCompanies";
 import { formatPoints, POINTS_STATUS_INFO, type OsServiceItem } from "@/lib/oficinaScoring";
 import DateRangeFilter, { todayStr, inDateRange } from "@/components/shared/DateRangeFilter";
 import OsAuditPanel from "@/components/operacional/OsAuditPanel";
+import OficinaNav from "./OficinaNav";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Fancybox } from "@fancyapps/ui/dist/fancybox/fancybox.js";
 import "@fancyapps/ui/dist/fancybox/fancybox.css";
@@ -133,8 +134,7 @@ export default function OpOficinaAuditoria() {
         .from("op_service_orders")
         .select("id, plate, model, company_id, mechanic_id, service_type_id, status, finished_at, points_requested, points_approved, points_status, points_audited_at")
         .eq("organization_id", orgId)
-        .eq("status", "entregue")
-        .not("points_status", "is", null)
+        .not("finished_at", "is", null)
         .order("finished_at", { ascending: false }),
       supabase.from("op_mechanics").select("id, name").eq("organization_id", orgId),
     ]);
@@ -166,7 +166,9 @@ export default function OpOficinaAuditoria() {
   const audited = filtered.filter((o) => o.points_status === "aprovada" || o.points_status === "ajustada");
 
   return (
-    <div className="space-y-4">
+    <div className="min-h-screen bg-muted/30">
+      <OficinaNav />
+      <div className="max-w-6xl mx-auto p-4 space-y-4">
       <div>
         <h1 className="text-2xl font-bold flex items-center gap-2"><ShieldCheck className="h-6 w-6" /> Auditoria de Pontos</h1>
         <p className="text-sm text-muted-foreground">
@@ -224,6 +226,7 @@ export default function OpOficinaAuditoria() {
           </TabsContent>
         </Tabs>
       )}
+      </div>
     </div>
   );
 }
