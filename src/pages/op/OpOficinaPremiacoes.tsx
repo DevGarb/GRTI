@@ -85,8 +85,15 @@ export default function OpOficinaPremiacoes() {
   const [mechanicId, setMechanicId] = useState("all");
   const [companyId, setCompanyId] = useState("all");
 
-  const { items: orders, loading } = useServiceOrders();
-  const { byOs } = useOsServiceItems();
+  const { items: orders, loading, refetch } = useServiceOrders();
+  const osItems = useOsServiceItems();
+  const { byOs } = osItems;
+  const [expandedId, setExpandedId] = useState<string | null>(null);
+
+  useEffect(() => {
+    Fancybox.bind(document.body, "[data-fancybox]", {});
+    return () => Fancybox.destroy();
+  }, []);
   const { tiers, updateTier } = useAwardTiers();
   const { items: mechanics } = useMechanics();
   const { items: companies } = useCompanies();
@@ -165,7 +172,7 @@ export default function OpOficinaPremiacoes() {
           <div>
             <h1 className="text-xl font-bold">Premiações por pontos</h1>
             <p className="text-sm text-muted-foreground">
-              Pontos vêm do checklist da OS (solicitados pelo mecânico) e só valem após a auditoria do administrador.
+              Pontos vêm do checklist da OS (solicitados pelo mecânico). Clique em uma OS para conferir os serviços e confirmar os pontos.
             </p>
           </div>
         </div>
@@ -236,18 +243,44 @@ export default function OpOficinaPremiacoes() {
                     <tbody className="divide-y">
                       {rows.map(({ os, requested, approved }) => {
                         const st = POINTS_STATUS_INFO[os.points_status || "pendente"] || POINTS_STATUS_INFO.pendente;
+                        const audited = isAudited(os);
+                        const expanded = expandedId === os.id;
                         return (
-                          <tr key={os.id} className="hover:bg-muted/30">
-                            <td className="px-3 py-2 font-mono">#{os.os_number}</td>
-                            <td className="px-3 py-2">{formatDateBR(os.finished_at)}</td>
-                            <td className="px-3 py-2">{mechName(os.mechanic_id)}</td>
-                            <td className="px-3 py-2">{compName(os.company_id)}</td>
-                            <td className="px-3 py-2 text-right tabular-nums">{formatPoints(requested)}</td>
-                            <td className="px-3 py-2 text-right tabular-nums font-semibold text-emerald-600">
-                              {isAudited(os) ? formatPoints(approved) : "—"}
-                            </td>
-                            <td className="px-3 py-2"><Badge variant="secondary" className={st.chip}>{st.label}</Badge></td>
-                          </tr>
+                          <Fragment key={os.id}>
+                            <tr
+                              className={cn("hover:bg-muted/30 cursor-pointer", expanded && "bg-muted/30")}
+                              onClick={() => setExpandedId(expanded ? null : os.id)}
+                            >
+                              <td className="px-3 py-2 font-mono">#{os.os_number}</td>
+                              <td className="px-3 py-2">{formatDateBR(os.finished_at)}</td>
+                              <td className="px-3 py-2">{mechName(os.mechanic_id)}</td>
+                              <td className="px-3 py-2">{compName(os.company_id)}</td>
+                              <td className="px-3 py-2 text-right tabular-nums">{formatPoints(requested)}</td>
+                              <td className="px-3 py-2 text-right tabular-nums font-semibold text-emerald-600">
+                                {audited ? formatPoints(approved) : "—"}
+                              </td>
+                              <td className="px-3 py-2">
+                                <div className="flex items-center gap-1.5">
+                                  <Badge variant="secondary" className={st.chip}>{st.label}</Badge>
+                                  {expanded
+                                    ? <ChevronUp className="h-4 w-4 text-muted-foreground" />
+                                    : <ChevronDown className="h-4 w-4 text-muted-foreground" />}
+                                </div>
+                              </td>
+                            </tr>
+                            {expanded && (
+                              <tr>
+                                <td colSpan={7} className="px-3 pb-3 bg-muted/20">
+                                  <AuditExpand
+                                    os={os}
+                                    readOnly={audited}
+                                    osItems={osItems}
+                                    onFinalized={() => { setExpandedId(null); refetch(); }}
+                                  />
+                                </td>
+                              </tr>
+                            )}
+                          </Fragment>
                         );
                       })}
                     </tbody>
