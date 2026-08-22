@@ -1,6 +1,6 @@
 import { filterOficinaCompanies } from "@/lib/oficinaCompanies";
 import { useEffect, useMemo, useState } from "react";
-import { Wrench, Package, CheckCircle2, ClipboardList, ShoppingCart, AlertTriangle, Plus, ChevronDown, ChevronUp, Camera, X, MessageSquareWarning, Eye, EyeOff, CalendarDays } from "lucide-react";
+import { Wrench, Package, CheckCircle2, ClipboardList, AlertTriangle, Plus, ChevronDown, ChevronUp, Camera, X, MessageSquareWarning, Eye, EyeOff, CalendarDays } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -55,7 +55,7 @@ export default function OpOficinaMinhas() {
   const [hiddenStages, setHiddenStages] = useState<string[]>([]);
   const toggleStage = (id: string) =>
     setHiddenStages(prev => prev.includes(id) ? prev.filter(s => s !== id) : [...prev, id]);
-  const [expandedPartOs, setExpandedPartOs] = useState<string | null>(null);
+  
 
   const [openNew, setOpenNew] = useState(false);
   const [plate, setPlate] = useState("");
@@ -271,19 +271,6 @@ export default function OpOficinaMinhas() {
     return () => { active = false; };
   }, [doneIds]);
 
-  const myParts = useMemo(
-    () => mine.flatMap(o => (partsByOs[o.id] || []).map(p => ({ ...p, os: o }))),
-    [mine, partsByOs],
-  );
-
-  const partsByMoto = useMemo(() => {
-    const map: Record<string, { os: ServiceOrder; parts: (ServiceOrderPart & { os: ServiceOrder })[] }> = {};
-    myParts.forEach(p => {
-      if (!map[p.os.id]) map[p.os.id] = { os: p.os, parts: [] };
-      map[p.os.id].parts.push(p);
-    });
-    return Object.values(map).sort((a, b) => String(a.os.vehicle_plate || a.os.os_number).localeCompare(String(b.os.vehicle_plate || b.os.os_number)));
-  }, [myParts]);
 
   const openFinish = (o: ServiceOrder) => {
     setFinishOs(o);
@@ -385,7 +372,6 @@ export default function OpOficinaMinhas() {
             <TabsTrigger value="servicos"><ClipboardList className="h-4 w-4 mr-1" />Meus Serviços</TabsTrigger>
             <TabsTrigger value="agenda"><CalendarDays className="h-4 w-4 mr-1" />Agenda{agendaHoje ? ` (${agendaHoje} hoje)` : ""}</TabsTrigger>
             <TabsTrigger value="disponiveis"><Wrench className="h-4 w-4 mr-1" />Disponíveis{availableCount ? ` (${availableCount})` : ""}</TabsTrigger>
-            <TabsTrigger value="pecas"><ShoppingCart className="h-4 w-4 mr-1" />Minhas Peças</TabsTrigger>
             <TabsTrigger value="finalizadas"><CheckCircle2 className="h-4 w-4 mr-1" />Finalizadas ({done.length})</TabsTrigger>
 
           </TabsList>
@@ -893,64 +879,6 @@ export default function OpOficinaMinhas() {
 
 
 
-          <TabsContent value="pecas" className="space-y-3 mt-4">
-            {myParts.length === 0 && (
-              <div className="bg-card border rounded-lg p-12 text-center text-muted-foreground">
-                Nenhuma peça vinculada às suas motos.
-              </div>
-            )}
-
-            {partsByMoto.map(({ os, parts }) => {
-              const open = expandedPartOs === os.id;
-              return (
-                <div key={os.id} className="bg-card border rounded-lg overflow-hidden">
-                  <button
-                    onClick={() => setExpandedPartOs(open ? null : os.id)}
-                    className="w-full flex items-center justify-between gap-3 px-4 py-3 hover:bg-muted/40 transition-colors"
-                  >
-                    <div className="flex-1 min-w-0 text-left">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <span className="text-base font-bold tracking-wide uppercase">
-                          {os.vehicle_plate || `OS #${os.os_number}`}
-                        </span>
-                        <span className="text-sm text-muted-foreground">{os.vehicle_model || "—"}</span>
-                      </div>
-                      <div className="text-xs text-muted-foreground mt-0.5">
-                        {parts.length} peça(s) — {os.customer_name}
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs hidden sm:inline text-muted-foreground">
-                        {open ? "Recolher" : "Ver peças"}
-                      </span>
-                      {open ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-                    </div>
-                  </button>
-
-                  {open && (
-                    <div className="px-4 pb-4 space-y-2 border-t border-border/60 pt-3">
-                      {parts.map(part => {
-                        const info = PART_STATUS_INFO[part.part_status] || { label: part.part_status, chip: "" };
-                        return (
-                          <div
-                            key={part.id}
-                            className="flex items-center justify-between gap-3 bg-muted/40 rounded-md px-3 py-2"
-                          >
-                            <span className="text-sm font-medium truncate">
-                              {part.part_name} <span className="text-muted-foreground">(x{part.quantity})</span>
-                            </span>
-                            <Badge variant="secondary" className={cn("text-xs shrink-0", info.chip)}>
-                              {info.label}
-                            </Badge>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-          </TabsContent>
 
           <TabsContent value="finalizadas" className="space-y-3 mt-4">
             <div className="bg-card border rounded-lg p-3 flex items-center gap-2 flex-wrap">
