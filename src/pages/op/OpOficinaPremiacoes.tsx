@@ -1,5 +1,5 @@
-import { useMemo, useState } from "react";
-import { Trophy, Pencil, Loader2, ClipboardCheck } from "lucide-react";
+import { Fragment, useEffect, useMemo, useState } from "react";
+import { Trophy, Pencil, Loader2, ClipboardCheck, Camera, ChevronDown, ChevronUp } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -7,8 +7,11 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
-import { useServiceOrders, useMechanics, type ServiceOrder } from "@/hooks/useOficina";
+import { useServiceOrders, useMechanics, useServiceOrderDetails, type ServiceOrder } from "@/hooks/useOficina";
 import { useOsServiceItems, useAwardTiers } from "@/hooks/useOficinaScoring";
+import OsAuditPanel from "@/components/operacional/OsAuditPanel";
+import { Fancybox } from "@fancyapps/ui/dist/fancybox/fancybox.js";
+import "@fancyapps/ui/dist/fancybox/fancybox.css";
 import {
   requestedPoints, approvedPoints, calcAward, tierProgress, formatPoints, POINTS_STATUS_INFO,
   type AwardTier,
@@ -24,6 +27,57 @@ const formatBRL = (v: number) => v.toLocaleString("pt-BR", { style: "currency", 
 
 interface OsRow { os: ServiceOrder; requested: number; approved: number }
 
+type OsItemsApi = ReturnType<typeof useOsServiceItems>;
+
+/** Área expansível da OS: auditoria de serviços (aprovar/ajustar/finalizar) + fotos. */
+function AuditExpand({ os, readOnly, osItems, onFinalized }: {
+  os: ServiceOrder;
+  readOnly: boolean;
+  osItems: OsItemsApi;
+  onFinalized: () => void;
+}) {
+  const [finalizing, setFinalizing] = useState(false);
+  const { photos } = useServiceOrderDetails(os.id);
+  const items = osItems.byOs[os.id] || [];
+
+  const finalize = async () => {
+    setFinalizing(true);
+    const ok = await osItems.finalizeAudit(os.id, items, null);
+    setFinalizing(false);
+    if (ok) onFinalized();
+  };
+
+  return (
+    <div className="space-y-3 py-1">
+      <OsAuditPanel
+        items={items}
+        readOnly={readOnly}
+        showFinalize={!readOnly}
+        finalizing={finalizing}
+        onApprove={(item, approved) => osItems.setItemApproval(item, approved)}
+        onAdjust={(item, pts) => osItems.setItemAuditPoints(item, pts)}
+        onFinalize={finalize}
+      />
+      <div>
+        <p className="text-xs font-medium text-muted-foreground flex items-center gap-1 mb-1.5">
+          <Camera className="h-3.5 w-3.5" /> Fotos da OS ({photos.length})
+        </p>
+        {photos.length > 0 ? (
+          <div className="flex gap-2 flex-wrap">
+            {photos.map((p: any) => (
+              <a key={p.id} href={p.photo_url} data-fancybox={`prem-fotos-${os.id}`} data-caption={`OS #${os.os_number}`}>
+                <img src={p.photo_url} alt={`Foto da OS #${os.os_number}`} className="h-16 w-16 object-cover rounded-md border" loading="lazy" />
+              </a>
+            ))}
+          </div>
+        ) : (
+          <p className="text-xs text-muted-foreground">Nenhuma foto anexada.</p>
+        )}
+      </div>
+    </div>
+  );
+}
+
 export default function OpOficinaPremiacoes() {
   const now = new Date();
   const [year, setYear] = useState(now.getFullYear());
@@ -31,8 +85,15 @@ export default function OpOficinaPremiacoes() {
   const [mechanicId, setMechanicId] = useState("all");
   const [companyId, setCompanyId] = useState("all");
 
-  const { items: orders, loading } = useServiceOrders();
-  const { byOs } = useOsServiceItems();
+  const { items: orders, loading, refetch } = useServiceOrders();
+  const osItems = useOsServiceItems();
+  const { byOs } = osItems;
+  const [expandedId, setExpandedId] = useState<string | null>(null);
+
+  useEffect(() => {
+    Fancybox.bind(document.body, "[data-fancybox]", {});
+    return () => Fancybox.destroy();
+  }, []);
   const { tiers, updateTier } = useAwardTiers();
   const { items: mechanics } = useMechanics();
   const { items: companies } = useCompanies();
@@ -111,7 +172,7 @@ export default function OpOficinaPremiacoes() {
           <div>
             <h1 className="text-xl font-bold">Premiações por pontos</h1>
             <p className="text-sm text-muted-foreground">
-              Pontos vêm do checklist da OS (solicitados pelo mecânico) e só valem após a auditoria do administrador.
+              Pontos vêm do checklist da OS (solicitados pelo mecânico). Clique em uma OS para conferir os serviços e confirmar os pontos.
             </p>
           </div>
         </div>
@@ -182,18 +243,44 @@ export default function OpOficinaPremiacoes() {
                     <tbody className="divide-y">
                       {rows.map(({ os, requested, approved }) => {
                         const st = POINTS_STATUS_INFO[os.points_status || "pendente"] || POINTS_STATUS_INFO.pendente;
+                        const audited = isAudited(os);
+                        const expanded = expandedId === os.id;
                         return (
-                          <tr key={os.id} className="hover:bg-muted/30">
-                            <td className="px-3 py-2 font-mono">#{os.os_number}</td>
-                            <td className="px-3 py-2">{formatDateBR(os.finished_at)}</td>
-                            <td className="px-3 py-2">{mechName(os.mechanic_id)}</td>
-                            <td className="px-3 py-2">{compName(os.company_id)}</td>
-                            <td className="px-3 py-2 text-right tabular-nums">{formatPoints(requested)}</td>
-                            <td className="px-3 py-2 text-right tabular-nums font-semibold text-emerald-600">
-                              {isAudited(os) ? formatPoints(approved) : "—"}
-                            </td>
-                            <td className="px-3 py-2"><Badge variant="secondary" className={st.chip}>{st.label}</Badge></td>
-                          </tr>
+                          <Fragment key={os.id}>
+                            <tr
+                              className={cn("hover:bg-muted/30 cursor-pointer", expanded && "bg-muted/30")}
+                              onClick={() => setExpandedId(expanded ? null : os.id)}
+                            >
+                              <td className="px-3 py-2 font-mono">#{os.os_number}</td>
+                              <td className="px-3 py-2">{formatDateBR(os.finished_at)}</td>
+                              <td className="px-3 py-2">{mechName(os.mechanic_id)}</td>
+                              <td className="px-3 py-2">{compName(os.company_id)}</td>
+                              <td className="px-3 py-2 text-right tabular-nums">{formatPoints(requested)}</td>
+                              <td className="px-3 py-2 text-right tabular-nums font-semibold text-emerald-600">
+                                {audited ? formatPoints(approved) : "—"}
+                              </td>
+                              <td className="px-3 py-2">
+                                <div className="flex items-center gap-1.5">
+                                  <Badge variant="secondary" className={st.chip}>{st.label}</Badge>
+                                  {expanded
+                                    ? <ChevronUp className="h-4 w-4 text-muted-foreground" />
+                                    : <ChevronDown className="h-4 w-4 text-muted-foreground" />}
+                                </div>
+                              </td>
+                            </tr>
+                            {expanded && (
+                              <tr>
+                                <td colSpan={7} className="px-3 pb-3 bg-muted/20">
+                                  <AuditExpand
+                                    os={os}
+                                    readOnly={audited}
+                                    osItems={osItems}
+                                    onFinalized={() => { setExpandedId(null); refetch(); }}
+                                  />
+                                </td>
+                              </tr>
+                            )}
+                          </Fragment>
                         );
                       })}
                     </tbody>

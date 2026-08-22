@@ -70,7 +70,6 @@ import OpOficinaFinalizadas from "@/pages/op/OpOficinaFinalizadas";
 import OpOficinaCompras from "@/pages/op/OpOficinaCompras";
 import OpOficinaPremiacoes from "@/pages/op/OpOficinaPremiacoes";
 import OpOficinaAlertas from "@/pages/op/OpOficinaAlertas";
-import OpOficinaAuditoria from "@/pages/op/OpOficinaAuditoria";
 import OpOficinaPontuacao from "@/pages/op/OpOficinaPontuacao";
 import OpOficinaMeusPontos from "@/pages/op/OpOficinaMeusPontos";
 import { OficinaProfileProvider } from "@/contexts/OficinaProfileContext";
@@ -265,7 +264,6 @@ const App = () => (
                       <Route path="/op/oficina/agenda" element={<MenuGuard menuKey="op-oficina"><OficinaProfileProvider><OficinaGuard allow={["admin","mecanico"]}><OpOficinaAgenda /></OficinaGuard></OficinaProfileProvider></MenuGuard>} />
                       <Route path="/op/oficina/agendar" element={<MenuGuard menuKey="op-oficina"><OficinaProfileProvider><OficinaGuard allow={["admin","motoloc"]}><OpOficinaAgendar /></OficinaGuard></OficinaProfileProvider></MenuGuard>} />
                       <Route path="/op/oficina/finalizadas" element={<MenuGuard menuKey="op-oficina"><OficinaProfileProvider><OficinaGuard allow={["admin","motoloc"]}><OpOficinaFinalizadas /></OficinaGuard></OficinaProfileProvider></MenuGuard>} />
-                      <Route path="/op/oficina/auditoria" element={<MenuGuard menuKey="op-oficina"><OficinaProfileProvider><OficinaGuard allow={["admin"]}><OpOficinaAuditoria /></OficinaGuard></OficinaProfileProvider></MenuGuard>} />
                       <Route path="/op/oficina/pontuacao" element={<MenuGuard menuKey="op-oficina"><OficinaProfileProvider><OficinaGuard allow={["admin"]}><OpOficinaPontuacao /></OficinaGuard></OficinaProfileProvider></MenuGuard>} />
                       <Route path="/op/oficina/meus-pontos" element={<MenuGuard menuKey="op-oficina"><OficinaProfileProvider><OficinaGuard allow={["mecanico"]}><OpOficinaMeusPontos /></OficinaGuard></OficinaProfileProvider></MenuGuard>} />
                       <Route path="/op/oficina" element={<MenuGuard menuKey="op-oficina"><OficinaProfileProvider><OficinaGuard allow={["admin"]}><OpOficina /></OficinaGuard></OficinaProfileProvider></MenuGuard>} />
