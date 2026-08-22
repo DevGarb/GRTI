@@ -494,9 +494,6 @@ export default function OpOficina() {
           onRequestClose={(o) => { setSelected(null); setClosing(o); }}
           companyPhone={companyPhone(selected.company_id)}
           checklistItems={checklist.byOs[selected.id] || []}
-          onToggleChecklist={checklist.toggle}
-          onAddChecklist={(label) => checklist.addItem(selected.id, label)}
-          onRemoveChecklist={checklist.removeItem}
           onPartsAvailable={() => handlePartsAvailable(selected)}
         />
       )}
@@ -698,7 +695,7 @@ function NewOsDialog({ onClose, onCreate }: { onClose: () => void; onCreate: (in
   );
 }
 
-function OsDetailDialog({ os, onClose, onUpdate, onDelete, onRequestClose, companyPhone, checklistItems, onToggleChecklist, onAddChecklist, onRemoveChecklist, onPartsAvailable }: {
+function OsDetailDialog({ os, onClose, onUpdate, onDelete, onRequestClose, companyPhone, checklistItems, onPartsAvailable }: {
   os: ServiceOrder;
   onClose: () => void;
   onUpdate: (p: Partial<ServiceOrder>) => void;
@@ -706,9 +703,6 @@ function OsDetailDialog({ os, onClose, onUpdate, onDelete, onRequestClose, compa
   onRequestClose: (o: ServiceOrder) => void;
   companyPhone: string | null;
   checklistItems: ServiceChecklistItem[];
-  onToggleChecklist: (item: ServiceChecklistItem) => void;
-  onAddChecklist: (label: string) => void;
-  onRemoveChecklist: (id: string) => void;
   onPartsAvailable: () => void;
 }) {
 
