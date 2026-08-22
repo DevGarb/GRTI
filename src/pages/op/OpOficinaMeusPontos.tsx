@@ -78,7 +78,10 @@ export default function OpOficinaMeusPontos() {
   const prog = tierProgress(approvedPts, tiers);
 
   return (
-    <div className="space-y-4">
+    <div className="cgps-scope min-h-screen bg-slate-50">
+      <OficinaNav />
+      <div className="max-w-[1400px] mx-auto p-4 md:p-6 space-y-5">
+        <div className="space-y-4">
       <div className="flex items-center justify-between gap-3 flex-wrap">
         <div>
           <h1 className="text-2xl font-bold">Meus Pontos</h1>
