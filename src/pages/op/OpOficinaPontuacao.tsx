@@ -124,11 +124,20 @@ export default function OpOficinaPontuacao() {
             const items = st.itemsByType[t.id] || [];
             const maxPts = st.maxPointsOf(t.id);
             const draft = newItem[t.id] || { label: "", points: "" };
+            const open = !!expanded[t.id];
             return (
               <Card key={t.id} className={cn(!t.active && "opacity-60")}>
                 <CardContent className="p-4 space-y-3">
                   <div className="flex items-center justify-between gap-2 flex-wrap">
                     <div className="flex items-center gap-2 min-w-0">
+                      <button
+                        type="button"
+                        onClick={() => toggleExpanded(t.id)}
+                        className="h-8 w-8 shrink-0 rounded-md border flex items-center justify-center hover:bg-muted transition"
+                        aria-label={open ? `Ocultar itens de ${t.name}` : `Mostrar itens de ${t.name}`}
+                      >
+                        {open ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+                      </button>
                       <Input
                         defaultValue={t.name}
                         key={t.id + t.name}
@@ -136,6 +145,7 @@ export default function OpOficinaPontuacao() {
                         onBlur={(e) => e.target.value.trim() && e.target.value !== t.name && st.updateType(t.id, { name: e.target.value.trim() })}
                       />
                       <Badge variant="secondary">{formatPoints(maxPts)} pts máx.</Badge>
+                      <Badge variant="outline" className="text-[10px]">{items.length} {items.length === 1 ? "item" : "itens"}</Badge>
                       <button
                         type="button"
                         onClick={() => st.updateType(t.id, { active: !t.active })}
@@ -147,8 +157,23 @@ export default function OpOficinaPontuacao() {
                         {t.active ? "Ativo" : "Inativo"}
                       </button>
                     </div>
+                    <Button
+                      size="sm" variant="ghost"
+                      className="h-8 text-destructive hover:text-destructive"
+                      onClick={() => {
+                        if (window.confirm(`Excluir o checklist "${t.name}" e todos os seus ${items.length} itens?`)) st.removeType(t.id);
+                      }}
+                    >
+                      <Trash2 className="h-3.5 w-3.5 mr-1" /> Excluir
+                    </Button>
                   </div>
 
+                  {!open && t.description && (
+                    <p className="text-xs text-muted-foreground truncate">{t.description}</p>
+                  )}
+
+                  {open && (
+                  <>
                   <div>
                     <Label className="text-xs">Empresas</Label>
                     <CompanyPicker
