@@ -7,6 +7,8 @@ import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useServiceOrders, useServiceOrderDetails, useServiceChecklists, type ServiceOrder } from "@/hooks/useOficina";
+import { useOsServiceItems } from "@/hooks/useOficinaScoring";
+import { formatPoints } from "@/lib/oficinaScoring";
 import { useCompanies } from "@/hooks/useOperacional";
 import { filterOficinaCompanies } from "@/lib/oficinaCompanies";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -26,8 +28,11 @@ const dateTimeBR = (iso?: string | null) =>
 function OsDetailsDialog({ order, onClose }: { order: ServiceOrder | null; onClose: () => void }) {
   const { parts, photos } = useServiceOrderDetails(order?.id || null);
   const { byOs } = useServiceChecklists();
+  const osItems = useOsServiceItems();
   const { notes } = useCardNotes("service_order", order?.id || null);
-  const check = checklistProgress(byOs[order?.id || ""] || []);
+  const scored = osItems.byOs[order?.id || ""] || [];
+  const legacy = byOs[order?.id || ""] || [];
+  const check = checklistProgress(scored.length ? scored : legacy);
 
   useEffect(() => {
     Fancybox.bind("[data-fancybox='os-fotos']", {});
