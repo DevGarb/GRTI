@@ -1,0 +1,1 @@
+DROP TRIGGER IF EXISTS trg_op_seed_service_order_checklist ON public.op_service_orders;
