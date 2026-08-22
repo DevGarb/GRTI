@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { forwardRef, useState } from "react";
 import { ClipboardList, Plus, Trash2, Star, Layers, Calculator } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -12,6 +12,7 @@ import { filterOficinaCompanies } from "@/lib/oficinaCompanies";
 import { calcAward, formatPoints } from "@/lib/oficinaScoring";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import OficinaNav from "./OficinaNav";
 
 /** Seletor de empresas (checkboxes) usado nos formulários desta página. */
 function CompanyPicker({ companies, selected, onChange }: {
