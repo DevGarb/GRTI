@@ -10,6 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useWorkshopBookings } from "@/hooks/useWorkshopBookings";
 import { useCompanies } from "@/hooks/useOperacional";
+import { useServiceTypes } from "@/hooks/useOficinaScoring";
 import { filterOficinaCompanies } from "@/lib/oficinaCompanies";
 import { useOficinaProfile } from "@/contexts/OficinaProfileContext";
 import {
@@ -23,15 +24,19 @@ export default function OpOficinaAgendar() {
   const { profile } = useOficinaProfile();
   const { items, add } = useWorkshopBookings();
   const { items: companies } = useCompanies();
+  const stHook = useServiceTypes();
 
   const [plate, setPlate] = useState("");
   const [model, setModel] = useState("");
   const [companyId, setCompanyId] = useState("");
   const [serviceType, setServiceType] = useState(SERVICE_TYPES[0]);
+  const [checklistTypeId, setChecklistTypeId] = useState("");
   const [date, setDate] = useState(todayISO());
   const [period, setPeriod] = useState("dia");
   const [description, setDescription] = useState("");
   const [saving, setSaving] = useState(false);
+
+  const checklistTypes = stHook.typesForCompany(companyId || null);
 
   const mine = useMemo(() => items.slice(0, 30), [items]);
 
@@ -44,13 +49,14 @@ export default function OpOficinaAgendar() {
       vehicle_model: model.trim() || null,
       company_id: companyId,
       service_type: serviceType,
+      service_type_id: checklistTypeId || null,
       preferred_date: date,
       preferred_period: period,
       description: description.trim() || null,
       requester_name: profile?.name || null,
     });
     setSaving(false);
-    if (ok) { setPlate(""); setModel(""); setCompanyId(""); setDescription(""); }
+    if (ok) { setPlate(""); setModel(""); setCompanyId(""); setChecklistTypeId(""); setDescription(""); }
   };
 
   return (
@@ -104,6 +110,22 @@ export default function OpOficinaAgendar() {
               </Select>
             </div>
           </div>
+          {companyId && checklistTypes.length > 0 && (
+            <div>
+              <Label>Checklist da OS (pontuação do mecânico)</Label>
+              <Select value={checklistTypeId} onValueChange={setChecklistTypeId}>
+                <SelectTrigger><SelectValue placeholder="Selecionar checklist (opcional)" /></SelectTrigger>
+                <SelectContent>
+                  {checklistTypes.map((t) => (
+                    <SelectItem key={t.id} value={t.id}>
+                      {t.name} ({stHook.maxPointsOf(t.id).toFixed(2).replace(".", ",")} pts)
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <p className="text-[11px] text-slate-400 mt-1">Define os serviços e pontos que nascerão na OS quando ela for aberta.</p>
+            </div>
+          )}
           <div>
             <Label>Descrição do problema</Label>
             <Textarea rows={3} value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Descreva o que a moto apresenta..." />

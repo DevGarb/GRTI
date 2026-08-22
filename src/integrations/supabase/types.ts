@@ -2640,6 +2640,7 @@ export type Database = {
           scheduled_period: string | null
           service_order_id: string | null
           service_type: string | null
+          service_type_id: string | null
           status: string
           updated_at: string
           vehicle_model: string | null
@@ -2661,6 +2662,7 @@ export type Database = {
           scheduled_period?: string | null
           service_order_id?: string | null
           service_type?: string | null
+          service_type_id?: string | null
           status?: string
           updated_at?: string
           vehicle_model?: string | null
@@ -2682,6 +2684,7 @@ export type Database = {
           scheduled_period?: string | null
           service_order_id?: string | null
           service_type?: string | null
+          service_type_id?: string | null
           status?: string
           updated_at?: string
           vehicle_model?: string | null

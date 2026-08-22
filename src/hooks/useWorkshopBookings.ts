@@ -11,6 +11,7 @@ export interface WorkshopBooking {
   vehicle_plate: string;
   vehicle_model: string | null;
   service_type: string | null;
+  service_type_id: string | null;
   description: string | null;
   preferred_date: string | null;
   preferred_period: string | null;
@@ -56,6 +57,7 @@ export function useWorkshopBookings() {
         vehicle_plate: (input.vehicle_plate || "").toUpperCase(),
         vehicle_model: input.vehicle_model || null,
         service_type: input.service_type || null,
+        service_type_id: input.service_type_id || null,
         description: input.description || null,
         preferred_date: input.preferred_date || null,
         preferred_period: input.preferred_period || null,

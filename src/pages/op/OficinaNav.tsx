@@ -1,5 +1,5 @@
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
-import { Wrench, LogOut, LayoutGrid, ShoppingCart, ClipboardList, Award, ShieldAlert, Calendar, CalendarPlus, CheckCircle2 } from "lucide-react";
+import { Wrench, LogOut, LayoutGrid, ShoppingCart, ClipboardList, Award, ShieldAlert, Calendar, CalendarPlus, CheckCircle2, ShieldCheck, Settings2, Star } from "lucide-react";
 import { useOficinaProfile } from "@/contexts/OficinaProfileContext";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -17,6 +17,7 @@ export default function OficinaNav() {
       ? [
           { to: "/op/oficina/minhas", label: "Meus serviços", icon: ClipboardList },
           { to: "/op/oficina/agenda", label: "Minha agenda", icon: Calendar },
+          { to: "/op/oficina/meus-pontos", label: "Meus pontos", icon: Star },
         ]
       : type === "compras"
       ? [{ to: "/op/oficina/compras", label: "Compras & Peças", icon: ShoppingCart }]
@@ -29,7 +30,9 @@ export default function OficinaNav() {
           { to: "/op/oficina", label: "Quadro Kanban", icon: LayoutGrid },
           { to: "/op/oficina/agenda", label: "Agenda", icon: Calendar },
           { to: "/op/oficina/alertas", label: "Alertas", icon: ShieldAlert },
+          { to: "/op/oficina/auditoria", label: "Auditoria", icon: ShieldCheck },
           { to: "/op/oficina/premiacoes", label: "Premiações", icon: Award },
+          { to: "/op/oficina/pontuacao", label: "Pontuação", icon: Settings2 },
           { to: "/op/oficina/compras", label: "Compras", icon: ShoppingCart },
           { to: "/op/oficina/finalizadas", label: "Finalizadas", icon: CheckCircle2 },
         ];

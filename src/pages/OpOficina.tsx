@@ -19,6 +19,8 @@ import OpQuickActions from "@/components/operacional/OpQuickActions";
 import OpNotesPanel from "@/components/operacional/OpNotesPanel";
 import OsProgressBar from "@/components/operacional/OsProgressBar";
 import OsChecklist from "@/components/operacional/OsChecklist";
+import OsAuditPanel from "@/components/operacional/OsAuditPanel";
+import { useServiceTypes, useOsServiceItems } from "@/hooks/useOficinaScoring";
 import OficinaNav from "@/pages/op/OficinaNav";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -596,6 +598,7 @@ function NewOsDialog({ onClose, onCreate }: { onClose: () => void; onCreate: (in
   const { items: companies } = useCompanies();
   const { items: vehicles } = useVehicles();
   const { items: mechanics } = useMechanics();
+  const stHook = useServiceTypes();
   const [form, setForm] = useState<Partial<ServiceOrder>>({
     status: "Pendente",
     stage: "analise",
@@ -636,6 +639,18 @@ function NewOsDialog({ onClose, onCreate }: { onClose: () => void; onCreate: (in
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>{STAGES.map(s => <SelectItem key={s.id} value={s.id}>{s.label}</SelectItem>)}</SelectContent>
             </Select>
+          </div>
+          <div>
+            <Label>Checklist do serviço</Label>
+            <Select value={form.service_type_id || ""} onValueChange={v => setF({ service_type_id: v })}>
+              <SelectTrigger><SelectValue placeholder="Selecione o tipo" /></SelectTrigger>
+              <SelectContent>
+                {stHook.typesForCompany(form.company_id || null).map(t => (
+                  <SelectItem key={t.id} value={t.id}>{t.name} · {t.maxPoints ?? "—"} pts</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <div className="text-[11px] mt-1 text-muted-foreground">Itens pontuados que valem para a premiação do mecânico.</div>
           </div>
           <div>
             <Label>Veículo (frota)</Label>
@@ -698,6 +713,8 @@ function OsDetailDialog({ os, onClose, onUpdate, onDelete, onRequestClose, compa
   const { items: partsCatalog } = useParts();
   const { items: mechanics } = useMechanics();
   const { items: companies } = useCompanies();
+  const stHook = useServiceTypes();
+  const osItems = useOsServiceItems();
 
   const [stage, setStage] = useState(os.stage || "analise");
   const [diagnosis, setDiagnosis] = useState(os.diagnosis || "");
@@ -893,6 +910,36 @@ function OsDetailDialog({ os, onClose, onUpdate, onDelete, onRequestClose, compa
             </Select>
           </div>
           <div>
+            <Label>Checklist do serviço</Label>
+            {(() => {
+              const hasItems = (osItems.byOs[os.id] || []).length > 0;
+              return (
+                <>
+                  <Select
+                    value={os.service_type_id || "__none__"}
+                    disabled={hasItems}
+                    onValueChange={async (v) => {
+                      const typeId = v === "__none__" ? null : v;
+                      onUpdate({ service_type_id: typeId });
+                      if (typeId) await osItems.seedFromType(os, typeId);
+                    }}
+                  >
+                    <SelectTrigger><SelectValue placeholder="Sem checklist" /></SelectTrigger>
+                    <SelectContent>
+                      {!hasItems && <SelectItem value="__none__">Sem checklist</SelectItem>}
+                      {stHook.typesForCompany(companyId || null).map(t => (
+                        <SelectItem key={t.id} value={t.id}>{t.name} · {t.maxPoints ?? "—"} pts</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {hasItems && (
+                    <div className="text-[11px] mt-1 text-muted-foreground">Checklist já gerado para esta OS.</div>
+                  )}
+                </>
+              );
+            })()}
+          </div>
+          <div>
             <Label>Placa</Label>
             <Input value={vehiclePlate} onChange={e => setVehiclePlate(e.target.value.toUpperCase())} />
           </div>
@@ -918,6 +965,15 @@ function OsDetailDialog({ os, onClose, onUpdate, onDelete, onRequestClose, compa
           onToggle={onToggleChecklist}
           onAdd={onAddChecklist}
           onRemove={onRemoveChecklist}
+        />
+
+        <OsAuditPanel
+          items={osItems.byOs[os.id] || []}
+          readOnly={os.points_status === "aprovada" || os.points_status === "ajustada"}
+          showFinalize
+          onApprove={(item, approved) => osItems.setItemApproval(item, approved)}
+          onAdjust={(item, pts) => osItems.setItemAuditPoints(item, pts)}
+          onFinalize={() => { void osItems.finalizeAudit(os.id, osItems.byOs[os.id] || [], null); }}
         />
 
 
@@ -1038,7 +1094,7 @@ function ConfirmedBookingsColumn({ onCreated }: { onCreated?: () => void }) {
         refetch(); onCreated?.();
         return;
       }
-      const os = await openOsFromBooking(b, { userId: user?.id });
+      const os = await openOsFromBooking(b, { userId: user?.id, serviceTypeId: (b as any).service_type_id || null });
       if (os) { refetch(); onCreated?.(); }
     } finally {
       setOpening(null);

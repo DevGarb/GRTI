@@ -1,0 +1,1 @@
+ALTER TABLE public.op_workshop_bookings ADD COLUMN IF NOT EXISTS service_type_id uuid;
