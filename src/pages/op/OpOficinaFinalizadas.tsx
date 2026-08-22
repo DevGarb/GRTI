@@ -121,13 +121,28 @@ function OsDetailsDialog({ order, onClose }: { order: ServiceOrder | null; onClo
             <div>
               <p className="font-semibold mb-1 flex items-center gap-1"><ListChecks className="h-4 w-4" /> Checklist ({check.done}/{check.total})</p>
               <div className="space-y-1">
-                {(byOs[order.id] || []).map((i) => (
-                  <div key={i.id} className="flex items-center gap-2">
-                    <CheckCircle2 className={`h-3.5 w-3.5 ${i.done ? "text-emerald-600" : "text-muted-foreground/40"}`} />
-                    <span className={i.done ? "" : "text-muted-foreground"}>{i.label}</span>
-                  </div>
-                ))}
-                {(byOs[order.id] || []).length === 0 && <p className="text-muted-foreground">Sem checklist.</p>}
+                {scored.length > 0 ? (
+                  scored.map((i) => (
+                    <div key={i.id} className="flex items-center gap-2">
+                      <CheckCircle2 className={`h-3.5 w-3.5 ${i.done ? "text-emerald-600" : "text-muted-foreground/40"}`} />
+                      <span className={i.done ? "" : "text-muted-foreground"}>{i.label}</span>
+                      {i.done && (
+                        <span className="ml-auto text-[10px] font-semibold text-primary tabular-nums">
+                          +{formatPoints(Number(i.points_approved ?? i.points ?? 0))} pts
+                        </span>
+                      )}
+                    </div>
+                  ))
+                ) : legacy.length > 0 ? (
+                  legacy.map((i) => (
+                    <div key={i.id} className="flex items-center gap-2">
+                      <CheckCircle2 className={`h-3.5 w-3.5 ${i.done ? "text-emerald-600" : "text-muted-foreground/40"}`} />
+                      <span className={i.done ? "" : "text-muted-foreground"}>{i.label}</span>
+                    </div>
+                  ))
+                ) : (
+                  <p className="text-muted-foreground">Sem checklist.</p>
+                )}
               </div>
             </div>
             <div>
