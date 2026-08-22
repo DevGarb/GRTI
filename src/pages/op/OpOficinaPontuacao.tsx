@@ -15,13 +15,13 @@ import { cn } from "@/lib/utils";
 import OficinaNav from "./OficinaNav";
 
 /** Seletor de empresas (checkboxes) usado nos formulários desta página. */
-function CompanyPicker({ companies, selected, onChange }: {
+const CompanyPicker = forwardRef<HTMLDivElement, {
   companies: { id: string; name: string }[];
   selected: string[];
   onChange: (ids: string[]) => void;
-}) {
+}>(function CompanyPicker({ companies, selected, onChange }, ref) {
   return (
-    <div className="flex flex-wrap gap-2">
+    <div ref={ref} className="flex flex-wrap gap-2">
       {companies.map((c) => {
         const on = selected.includes(c.id);
         return (
@@ -41,7 +41,7 @@ function CompanyPicker({ companies, selected, onChange }: {
       {companies.length === 0 && <span className="text-xs text-muted-foreground">Nenhuma empresa da oficina cadastrada.</span>}
     </div>
   );
-}
+});
 
 export default function OpOficinaPontuacao() {
   const { items: allCompanies } = useCompanies();
@@ -68,7 +68,9 @@ export default function OpOficinaPontuacao() {
   const sim = calcAward(Number(simPoints) || 0, tiers);
 
   return (
-    <div className="space-y-4">
+    <div className="cgps-scope min-h-screen bg-slate-50">
+      <OficinaNav />
+      <div className="max-w-[1400px] mx-auto p-4 md:p-6 space-y-5">
       <div>
         <h1 className="text-2xl font-bold">Pontuação & Checklists</h1>
         <p className="text-sm text-muted-foreground">
