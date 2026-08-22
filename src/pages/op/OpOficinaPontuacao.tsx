@@ -302,8 +302,18 @@ export default function OpOficinaPontuacao() {
                 A premiação é calculada faixa a faixa: os primeiros pontos valem a taxa da faixa inicial, os seguintes valem a taxa da próxima, e assim por diante. Deixe "até" vazio na última faixa (sem teto).
               </p>
               {tiers.map((t) => (
-                <div key={t.id} className={cn("flex items-center gap-2 border rounded-md p-2", !t.active && "opacity-60")}>
-                  <span className="text-xs text-muted-foreground shrink-0">De</span>
+                <div key={t.id} className={cn("flex items-center gap-2 border rounded-md p-2 flex-wrap", !t.active && "opacity-60")}>
+                  <Input
+                    type="text" placeholder="Nome"
+                    defaultValue={t.label}
+                    key={t.id + "-label-" + t.label}
+                    className="h-8 w-28 text-sm"
+                    onBlur={(e) => {
+                      const v = e.target.value.trim();
+                      if (v && v !== t.label) tiersHook.updateTier(t.id, { label: v });
+                    }}
+                  />
+                  <span className="text-xs text-muted-foreground shrink-0">de</span>
                   <Input
                     type="number" step="1" min={0}
                     defaultValue={t.from_points}
