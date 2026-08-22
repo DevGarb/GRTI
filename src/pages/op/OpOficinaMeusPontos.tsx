@@ -34,7 +34,7 @@ export default function OpOficinaMeusPontos() {
   const { profile } = useOficinaProfile();
   const { profile: authProfile } = useAuth();
   const orgId = authProfile?.organization_id;
-  const { data: allCompanies = [] } = useCompanies();
+  const { items: allCompanies } = useCompanies();
   const companies = filterOficinaCompanies(allCompanies);
   const { types } = useServiceTypes();
   const { tiers } = useAwardTiers();

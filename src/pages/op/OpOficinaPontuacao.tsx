@@ -43,7 +43,7 @@ function CompanyPicker({ companies, selected, onChange }: {
 }
 
 export default function OpOficinaPontuacao() {
-  const { data: allCompanies = [] } = useCompanies();
+  const { items: allCompanies } = useCompanies();
   const companies = filterOficinaCompanies(allCompanies);
   const st = useServiceTypes();
   const ex = useExtraServices();
