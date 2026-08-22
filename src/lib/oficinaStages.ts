@@ -1,5 +1,4 @@
-export const DIAS_ALERTA = 15; // dias na oficina -> alerta
-export const SLA_PECAS = 10; // dias para concluir após a chegada das peças
+export const DIAS_ALERTA = 30; // dias na oficina -> alerta (motos com o cliente não entram em alerta)
 
 export interface OficinaStage {
   id: string;
@@ -49,13 +48,6 @@ export function daysInWorkshop(openedAt: string, finishedAt?: string | null) {
   return Math.max(0, diffDays(openedAt, finishedAt || new Date().toISOString()));
 }
 
-/** Dias restantes do SLA de peças (negativo = estourado). Null se peças não chegaram. */
-export function partsSlaRemaining(partsArrivedAt?: string | null) {
-  if (!partsArrivedAt) return null;
-  const limit = new Date(partsArrivedAt);
-  limit.setDate(limit.getDate() + SLA_PECAS);
-  return diffDays(new Date().toISOString(), limit.toISOString());
-}
 
 /* ---------- Premiação por OS finalizada ---------- */
 
@@ -114,9 +106,3 @@ export function checklistProgress(items: { done: boolean }[]) {
   return { done, total: items.length, percent: Math.round((done / items.length) * 100) };
 }
 
-/** Data máxima de entrega a partir da chegada das peças (chegada + SLA_PECAS). */
-export function maxDeadlineFrom(dateISO: string) {
-  const d = new Date(`${dateISO}T12:00:00`);
-  d.setDate(d.getDate() + SLA_PECAS);
-  return d.toISOString().slice(0, 10);
-}
