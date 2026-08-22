@@ -135,9 +135,19 @@ export function useServiceTypes() {
     if (error) toast.error(error.message); else fetch();
   };
 
+  /** Exclui o checklist (tipo de serviço) junto com itens e vínculos de empresa. */
+  const removeType = async (id: string) => {
+    const { error: itemsErr } = await supabase.from("op_service_type_items").delete().eq("service_type_id", id);
+    if (itemsErr) return toast.error(itemsErr.message);
+    await supabase.from("op_service_type_companies").delete().eq("service_type_id", id);
+    const { error } = await supabase.from("op_service_types").delete().eq("id", id);
+    if (error) toast.error(error.message);
+    else { toast.success("Checklist excluído"); fetch(); }
+  };
+
   return {
     types, itemsByType, companyIdsByType, loading, typesForCompany, maxPointsOf,
-    addType, updateType, setTypeCompanies, addItem, updateItem, removeItem, refetch: fetch,
+    addType, updateType, setTypeCompanies, addItem, updateItem, removeItem, removeType, refetch: fetch,
   };
 }
 
