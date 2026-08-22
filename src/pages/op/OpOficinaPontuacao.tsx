@@ -397,6 +397,7 @@ export default function OpOficinaPontuacao() {
           </Card>
         </TabsContent>
       </Tabs>
+      </div>
     </div>
   );
 }
