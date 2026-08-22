@@ -1,5 +1,5 @@
 import { forwardRef, useState } from "react";
-import { ClipboardList, Plus, Trash2, Star, Layers, Calculator } from "lucide-react";
+import { ClipboardList, Plus, Trash2, Star, Layers, Calculator, ChevronDown, ChevronRight } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -57,6 +57,9 @@ export default function OpOficinaPontuacao() {
   const [newTypeCompanies, setNewTypeCompanies] = useState<string[]>([]);
   // novo item (por tipo)
   const [newItem, setNewItem] = useState<Record<string, { label: string; points: string }>>({});
+  // checklists expandidos (por padrão, ocultos)
+  const [expanded, setExpanded] = useState<Record<string, boolean>>({});
+  const toggleExpanded = (id: string) => setExpanded((p) => ({ ...p, [id]: !p[id] }));
   // novo adicional
   const [newExtraName, setNewExtraName] = useState("");
   const [newExtraPoints, setNewExtraPoints] = useState("0.25");
