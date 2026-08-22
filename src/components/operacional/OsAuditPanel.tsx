@@ -1,155 +1,136 @@
-import { useMemo, useState } from "react";
-import { Check, ListChecks, Plus, Star } from "lucide-react";
+import { Check, ShieldCheck, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import {
-  requestedPoints, maxOsPoints, isDuplicateLabel, formatPoints,
+  requestedPoints, approvedPoints, formatPoints,
   type OsServiceItem,
 } from "@/lib/oficinaScoring";
-import type { ExtraService } from "@/hooks/useOficinaScoring";
 
 interface Props {
   items: OsServiceItem[];
-  availableExtras: ExtraService[];
   readOnly?: boolean;
-  barClass?: string;
-  onToggle?: (item: OsServiceItem) => void;
-  onAddExtra?: (extra: ExtraService) => void;
-  onAddCustom?: (label: string) => void;
+  onApprove?: (item: OsServiceItem, approved: boolean) => void;
+  onAdjust?: (item: OsServiceItem, points: number) => void;
+  onFinalize?: () => void;
+  finalizing?: boolean;
+  showFinalize?: boolean;
   className?: string;
 }
 
-const TYPE_TAG: Record<string, { label: string; chip: string } | null> = {
-  checklist: null,
-  adicional: { label: "Adicional", chip: "bg-violet-500/15 text-violet-700 dark:text-violet-300" },
-  nao_cadastrado: { label: "Não cadastrado", chip: "bg-amber-500/15 text-amber-700 dark:text-amber-300" },
-};
-
-/** Checklist pontuado da OS: execução pelo mecânico + inclusão de serviços extras. */
-export default function OsScoredChecklist({
-  items, availableExtras, readOnly, barClass, onToggle, onAddExtra, onAddCustom, className,
+/** Painel de auditoria: admin confere os serviços executados e aprova/ajusta os pontos. */
+export default function OsAuditPanel({
+  items, readOnly, onApprove, onAdjust, onFinalize, finalizing, showFinalize, className,
 }: Props) {
-  const [extraId, setExtraId] = useState("");
-  const [customLabel, setCustomLabel] = useState("");
-
-  const done = items.filter((i) => i.done).length;
+  const done = items.filter((i) => i.done);
   const requested = requestedPoints(items);
-  const max = maxOsPoints(items);
+  const approved = approvedPoints(items);
+  const pendingCount = done.filter((i) => i.approved === null || i.approved === undefined).length;
 
-  // Extras disponíveis excluindo os que já estão na OS (anti-duplicidade)
-  const selectableExtras = useMemo(
-    () => availableExtras.filter((e) => !isDuplicateLabel(items, e.name)),
-    [availableExtras, items],
-  );
+  if (!items.length) {
+    return (
+      <div className={cn("border rounded-md p-3 bg-muted/30 text-xs text-muted-foreground", className)}>
+        Nenhum serviço pontuado nesta OS.
+      </div>
+    );
+  }
 
   return (
     <div className={cn("border rounded-md p-3 bg-muted/30 space-y-3", className)}>
       <div className="flex items-center justify-between gap-2 flex-wrap">
         <span className="text-sm font-medium flex items-center gap-1">
-          <ListChecks className="h-4 w-4" /> Serviços executados
+          <ShieldCheck className="h-4 w-4" /> Auditoria de serviços
         </span>
         <span className="text-xs text-muted-foreground">
-          {done}/{items.length} · {formatPoints(requested)} pts solicitados de {formatPoints(max)}
+          {formatPoints(requested)} pts solicitados · <span className="font-semibold text-emerald-600">{formatPoints(approved)} aprovados</span>
+          {pendingCount > 0 && ` · ${pendingCount} pendente(s)`}
         </span>
       </div>
 
-      <div className="h-1.5 w-full rounded-full bg-muted overflow-hidden">
-        <div
-          className={cn("h-full rounded-full transition-all", barClass || "bg-emerald-500")}
-          style={{ width: `${items.length ? Math.round((done / items.length) * 100) : 0}%` }}
-        />
-      </div>
-
-      <div className="space-y-1">
-        {items.length === 0 && (
-          <p className="text-xs text-muted-foreground">Nenhum serviço vinculado a esta OS.</p>
+      <div className="space-y-1.5">
+        {done.length === 0 && (
+          <p className="text-xs text-muted-foreground">O mecânico ainda não marcou nenhum serviço como executado.</p>
         )}
-        {items.map((it) => {
-          const tag = TYPE_TAG[it.item_type];
+        {done.map((it) => {
+          const state = it.approved === true ? "ok" : it.approved === false ? "no" : "pending";
+          const effPoints = Number(it.points_approved ?? it.points ?? 0);
           return (
-            <div key={it.id} className="flex items-center gap-2">
-              <button
-                type="button"
-                disabled={readOnly}
-                onClick={() => onToggle?.(it)}
-                className={cn(
-                  "h-5 w-5 shrink-0 rounded border flex items-center justify-center transition",
-                  it.done ? "bg-emerald-500 border-emerald-500 text-white" : "bg-background",
-                  !readOnly && "hover:border-primary",
-                )}
-                aria-label={it.done ? `Desmarcar ${it.label}` : `Marcar ${it.label}`}
-              >
-                {it.done && <Check className="h-3.5 w-3.5" />}
-              </button>
-              <span className={cn("text-sm flex-1 min-w-0 truncate", it.done && "text-muted-foreground line-through")}>
-                {it.label}
-              </span>
-              {tag && (
-                <Badge variant="secondary" className={cn("text-[9px] px-1 py-0 shrink-0", tag.chip)}>{tag.label}</Badge>
+            <div
+              key={it.id}
+              className={cn(
+                "flex items-center gap-2 rounded border bg-card px-2 py-1.5",
+                state === "ok" && "border-emerald-500/40",
+                state === "no" && "border-red-500/40 opacity-70",
               )}
-              <span className="text-[10px] font-semibold text-primary shrink-0 tabular-nums">
-                +{formatPoints(it.points)}
-              </span>
-              {it.done && it.done_at && (
-                <span className="text-[10px] text-muted-foreground shrink-0">
-                  {new Date(it.done_at).toLocaleDateString("pt-BR")}
-                </span>
+            >
+              <div className="flex-1 min-w-0">
+                <p className={cn("text-sm truncate", state === "no" && "line-through text-muted-foreground")}>
+                  {it.label}
+                </p>
+                <p className="text-[10px] text-muted-foreground">
+                  solicitado {formatPoints(it.points)}
+                  {it.item_type === "nao_cadastrado" && " · serviço não cadastrado"}
+                  {state === "ok" && effPoints !== Number(it.points) && ` · ajustado para ${formatPoints(effPoints)}`}
+                </p>
+              </div>
+
+              {!readOnly && (
+                <Input
+                  type="number" step="0.05" min={0}
+                  defaultValue={effPoints}
+                  key={`${it.id}-${effPoints}`}
+                  disabled={state === "no"}
+                  className="h-7 w-20 text-xs text-right"
+                  onBlur={(e) => {
+                    const v = Number(e.target.value);
+                    if (Number.isFinite(v) && v >= 0 && v !== effPoints) onAdjust?.(it, v);
+                  }}
+                  aria-label={`Pontos aprovados para ${it.label}`}
+                />
+              )}
+
+              {state === "ok" ? (
+                <Badge variant="secondary" className="bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 text-[10px] shrink-0">
+                  <Check className="h-3 w-3 mr-0.5" /> {formatPoints(effPoints)}
+                </Badge>
+              ) : state === "no" ? (
+                <Badge variant="secondary" className="bg-red-500/15 text-red-700 dark:text-red-300 text-[10px] shrink-0">
+                  <X className="h-3 w-3 mr-0.5" /> Reprovado
+                </Badge>
+              ) : (
+                <Badge variant="secondary" className="text-[10px] shrink-0">Pendente</Badge>
+              )}
+
+              {!readOnly && (
+                <div className="flex gap-1 shrink-0">
+                  <Button
+                    size="icon" variant={state === "ok" ? "default" : "outline"} className="h-7 w-7"
+                    onClick={() => onApprove?.(it, true)}
+                    aria-label={`Aprovar ${it.label}`}
+                  >
+                    <Check className="h-3.5 w-3.5" />
+                  </Button>
+                  <Button
+                    size="icon" variant={state === "no" ? "destructive" : "outline"} className="h-7 w-7"
+                    onClick={() => onApprove?.(it, false)}
+                    aria-label={`Reprovar ${it.label}`}
+                  >
+                    <X className="h-3.5 w-3.5" />
+                  </Button>
+                </div>
               )}
             </div>
           );
         })}
       </div>
 
-      {!readOnly && (onAddExtra || onAddCustom) && (
-        <div className="space-y-2 pt-1 border-t">
-          {onAddExtra && selectableExtras.length > 0 && (
-            <div className="flex items-center gap-2">
-              <Select value={extraId} onValueChange={setExtraId}>
-                <SelectTrigger className="h-8 text-xs">
-                  <SelectValue placeholder="Serviço extra da biblioteca" />
-                </SelectTrigger>
-                <SelectContent>
-                  {selectableExtras.map((e) => (
-                    <SelectItem key={e.id} value={e.id}>
-                      {e.name} (+{formatPoints(e.points)})
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <Button
-                size="sm" variant="outline"
-                disabled={!extraId}
-                onClick={() => {
-                  const extra = selectableExtras.find((e) => e.id === extraId);
-                  if (extra) { onAddExtra(extra); setExtraId(""); }
-                }}
-              >
-                <Plus className="h-3.5 w-3.5 mr-1" /> Incluir
-              </Button>
-            </div>
-          )}
-          {onAddCustom && (
-            <div className="flex items-center gap-2">
-              <Input
-                value={customLabel}
-                onChange={(e) => setCustomLabel(e.target.value)}
-                placeholder="Serviço não cadastrado (admin define os pontos)"
-                className="h-8 text-xs"
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" && customLabel.trim()) { onAddCustom(customLabel); setCustomLabel(""); }
-                }}
-              />
-              <Button
-                size="sm" variant="outline"
-                onClick={() => { if (customLabel.trim()) { onAddCustom(customLabel); setCustomLabel(""); } }}
-              >
-                <Star className="h-3.5 w-3.5 mr-1" /> Registrar
-              </Button>
-            </div>
-          )}
+      {showFinalize && !readOnly && (
+        <div className="flex justify-end pt-1 border-t">
+          <Button size="sm" onClick={onFinalize} disabled={finalizing}>
+            <ShieldCheck className="h-4 w-4 mr-1" />
+            {finalizing ? "Salvando..." : "Aprovar pontuação"}
+          </Button>
         </div>
       )}
     </div>
