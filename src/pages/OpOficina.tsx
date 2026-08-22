@@ -803,7 +803,7 @@ function OsDetailDialog({ os, onClose, onUpdate, onDelete, onRequestClose, compa
           <DialogTitle className="flex items-center gap-2 flex-wrap">
             <span className="font-mono bg-muted px-2 py-1 rounded text-sm">#{os.os_number}</span>
             Ordem de Serviço
-            <Badge variant="secondary" className={cn(days >= DIAS_ALERTA && "bg-rose-500/15 text-rose-700 dark:text-rose-300")}>{days}d na oficina</Badge>
+            <Badge variant="secondary" className={cn(days >= DIAS_ALERTA && !os.with_customer && "bg-rose-500/15 text-rose-700 dark:text-rose-300")}>{days}d na oficina</Badge>
             <div className="ml-auto"><OpQuickActions phone={companyPhone} /></div>
           </DialogTitle>
         </DialogHeader>
