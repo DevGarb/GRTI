@@ -13,6 +13,7 @@ export interface ServiceType {
   name: string;
   description: string | null;
   active: boolean;
+  maxPoints?: number; // soma dos pontos dos itens ativos (calculado no cliente)
 }
 
 export interface ServiceTypeItem {
