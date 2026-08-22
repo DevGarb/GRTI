@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Loader2, TrendingUp, ClipboardList, Wallet } from "lucide-react";
+import { Loader2, TrendingUp, ClipboardList } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -10,7 +10,7 @@ import { useOficinaProfile } from "@/contexts/OficinaProfileContext";
 import { useCompanies } from "@/hooks/useOperacional";
 import { useServiceTypes, useAwardTiers } from "@/hooks/useOficinaScoring";
 import { filterOficinaCompanies } from "@/lib/oficinaCompanies";
-import { calcAward, tierProgress, formatPoints, POINTS_STATUS_INFO } from "@/lib/oficinaScoring";
+import { formatPoints, POINTS_STATUS_INFO } from "@/lib/oficinaScoring";
 import { cn } from "@/lib/utils";
 import OficinaNav from "./OficinaNav";
 import "./cearagps.css";
@@ -74,8 +74,29 @@ export default function OpOficinaMeusPontos() {
     () => monthOrders.filter((o) => o.points_status === "pendente").reduce((s, o) => s + Number(o.points_requested || 0), 0),
     [monthOrders],
   );
-  const award = calcAward(approvedPts, tiers);
-  const prog = tierProgress(approvedPts, tiers);
+
+  const sortedTiers = useMemo(
+    () => [...tiers].filter((t) => t.active).sort((a, b) => Number(a.from_points) - Number(b.from_points)),
+    [tiers],
+  );
+
+  const progress = useMemo(() => {
+    if (!sortedTiers.length) return { current: null as typeof sortedTiers[0] | null, next: null as typeof sortedTiers[0] | null, missing: 0, progress: 0, maxVisible: 0 };
+    const maxVisible = Math.max(
+      approvedPts,
+      ...sortedTiers.map((t) => Number(t.to_points || t.from_points)),
+    );
+    for (let i = 0; i < sortedTiers.length; i++) {
+      const t = sortedTiers[i];
+      const upper = t.to_points == null ? Infinity : Number(t.to_points);
+      if (approvedPts <= upper || i === sortedTiers.length - 1) {
+        const next = t.to_points == null ? null : sortedTiers[i + 1] ?? null;
+        const missing = next ? Math.max(0, Number(next.from_points) - approvedPts) : 0;
+        return { current: t, next, missing, progress: Math.min(100, (approvedPts / maxVisible) * 100), maxVisible };
+      }
+    }
+    return { current: sortedTiers[sortedTiers.length - 1], next: null, missing: 0, progress: 100, maxVisible };
+  }, [sortedTiers, approvedPts]);
 
   return (
     <div className="cgps-scope min-h-screen bg-slate-50">
@@ -84,7 +105,7 @@ export default function OpOficinaMeusPontos() {
         <div className="flex items-center justify-between gap-3 flex-wrap">
           <div>
             <h1 className="text-2xl font-bold">Meus Pontos</h1>
-            <p className="text-sm text-muted-foreground">Acompanhe sua pontuação e a projeção da premiação do mês.</p>
+            <p className="text-sm text-muted-foreground">Acompanhe sua pontuação e a distância para a próxima meta.</p>
           </div>
           <div>
             <Label className="text-xs">Mês</Label>
@@ -92,7 +113,7 @@ export default function OpOficinaMeusPontos() {
           </div>
         </div>
 
-        <div className="grid gap-3 sm:grid-cols-4">
+        <div className="grid gap-3 sm:grid-cols-3">
           <Card><CardContent className="p-4">
             <p className="text-xs text-muted-foreground flex items-center gap-1"><TrendingUp className="h-3.5 w-3.5" /> Pontos aprovados</p>
             <p className="text-2xl font-bold text-emerald-600">{formatPoints(approvedPts)}</p>
@@ -105,28 +126,60 @@ export default function OpOficinaMeusPontos() {
             <p className="text-xs text-muted-foreground flex items-center gap-1"><ClipboardList className="h-3.5 w-3.5" /> OS finalizadas</p>
             <p className="text-2xl font-bold">{monthOrders.length}</p>
           </CardContent></Card>
-          <Card><CardContent className="p-4">
-            <p className="text-xs text-muted-foreground flex items-center gap-1"><Wallet className="h-3.5 w-3.5" /> Premiação projetada</p>
-            <p className="text-2xl font-bold text-primary">R$ {award.total.toFixed(2)}</p>
-          </CardContent></Card>
         </div>
 
-        {prog.current && (
-          <Card>
-            <CardContent className="p-4 space-y-2">
-              <div className="flex items-center justify-between text-sm">
-                <span>
-                  Faixa atual: <strong>R$ {Number(prog.current.rate_brl).toFixed(2)}/ponto</strong>
-                  {" "}({prog.current.from_points}–{prog.current.to_points ?? "∞"} pts)
-                </span>
-                {prog.next && (
-                  <span className="text-xs text-muted-foreground">
-                    Faltam <strong>{formatPoints(prog.missing)} pts</strong> para R$ {Number(prog.next.rate_brl).toFixed(2)}/ponto
-                  </span>
+        {sortedTiers.length > 0 && (
+          <Card className="bg-[#0d4a56] text-white border-none overflow-hidden">
+            <CardContent className="p-5 md:p-6 space-y-6">
+              <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-3">
+                <div>
+                  <h2 className="text-lg font-semibold text-cyan-300">Progresso Atualizado vs Metas Operacionais</h2>
+                  <p className="text-sm text-cyan-100/80">Sua classificação e distância líquida para a conquista de novas metas.</p>
+                </div>
+                {progress.next && (
+                  <div className="text-right">
+                    <p className="text-[10px] uppercase tracking-wider text-cyan-100/70">Restante para próxima meta ({progress.next.label || "Próxima"})</p>
+                    <p className="text-2xl font-bold text-cyan-300">{formatPoints(progress.missing)} pontos líquidos</p>
+                  </div>
                 )}
               </div>
-              <div className="h-2 w-full rounded-full bg-muted overflow-hidden">
-                <div className="h-full rounded-full bg-primary transition-all" style={{ width: `${prog.progress}%` }} />
+
+              <div className="relative pt-8 pb-2">
+                <div className="h-3 w-full rounded-full bg-white/10 overflow-hidden">
+                  <div
+                    className="h-full rounded-full bg-cyan-400 transition-all"
+                    style={{ width: `${progress.progress}%` }}
+                  />
+                </div>
+                <div
+                  className="absolute top-5 h-6 w-1 rounded bg-cyan-300 shadow-[0_0_8px_rgba(34,211,238,0.8)]"
+                  style={{ left: `${progress.progress}%` }}
+                />
+                <div
+                  className="absolute top-1 text-xs font-bold text-cyan-300 tabular-nums"
+                  style={{ left: `${progress.progress}%`, transform: "translateX(-50%)" }}
+                >
+                  {formatPoints(approvedPts)} pts
+                </div>
+
+                <div className="relative mt-4 h-16">
+                  {sortedTiers.map((tier) => {
+                    const left = Math.min(100, (Number(tier.from_points) / progress.maxVisible) * 100);
+                    return (
+                      <div
+                        key={tier.id}
+                        className="absolute top-0 flex flex-col items-center"
+                        style={{ left: `${left}%`, transform: "translateX(-50%)" }}
+                      >
+                        <div className="h-3 w-px bg-white/30" />
+                        <div className="text-[10px] text-cyan-100/90 text-center leading-tight mt-1">
+                          <div>{tier.label || "Faixa"}</div>
+                          <div className="font-semibold tabular-nums">{formatPoints(Number(tier.from_points))} pts</div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
             </CardContent>
           </Card>

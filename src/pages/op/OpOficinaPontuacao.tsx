@@ -62,7 +62,7 @@ export default function OpOficinaPontuacao() {
   const [newExtraPoints, setNewExtraPoints] = useState("0.25");
   const [newExtraCompanies, setNewExtraCompanies] = useState<string[]>([]);
   // nova faixa
-  const [newTier, setNewTier] = useState({ from: "", to: "", rate: "" });
+  const [newTier, setNewTier] = useState({ label: "", from: "", to: "", rate: "" });
   // simulador
   const [simPoints, setSimPoints] = useState("70");
   const sim = calcAward(Number(simPoints) || 0, tiers);
@@ -302,8 +302,18 @@ export default function OpOficinaPontuacao() {
                 A premiação é calculada faixa a faixa: os primeiros pontos valem a taxa da faixa inicial, os seguintes valem a taxa da próxima, e assim por diante. Deixe "até" vazio na última faixa (sem teto).
               </p>
               {tiers.map((t) => (
-                <div key={t.id} className={cn("flex items-center gap-2 border rounded-md p-2", !t.active && "opacity-60")}>
-                  <span className="text-xs text-muted-foreground shrink-0">De</span>
+                <div key={t.id} className={cn("flex items-center gap-2 border rounded-md p-2 flex-wrap", !t.active && "opacity-60")}>
+                  <Input
+                    type="text" placeholder="Nome"
+                    defaultValue={t.label}
+                    key={t.id + "-label-" + t.label}
+                    className="h-8 w-28 text-sm"
+                    onBlur={(e) => {
+                      const v = e.target.value.trim();
+                      if (v && v !== t.label) tiersHook.updateTier(t.id, { label: v });
+                    }}
+                  />
+                  <span className="text-xs text-muted-foreground shrink-0">de</span>
                   <Input
                     type="number" step="1" min={0}
                     defaultValue={t.from_points}
@@ -355,19 +365,21 @@ export default function OpOficinaPontuacao() {
               ))}
               <div className="flex items-center gap-2 pt-2 border-t">
                 <span className="text-xs text-muted-foreground">Nova:</span>
+                <Input type="text" placeholder="Nome" value={newTier.label} onChange={(e) => setNewTier((p) => ({ ...p, label: e.target.value }))} className="h-8 w-28 text-sm" />
                 <Input type="number" placeholder="de" value={newTier.from} onChange={(e) => setNewTier((p) => ({ ...p, from: e.target.value }))} className="h-8 w-20 text-right" />
                 <Input type="number" placeholder="até (∞ vazio)" value={newTier.to} onChange={(e) => setNewTier((p) => ({ ...p, to: e.target.value }))} className="h-8 w-24 text-right" />
                 <Input type="number" placeholder="R$/ponto" value={newTier.rate} onChange={(e) => setNewTier((p) => ({ ...p, rate: e.target.value }))} className="h-8 w-24 text-right" />
                 <Button
                   size="sm" variant="outline"
-                  disabled={!newTier.from || !newTier.rate}
+                  disabled={!newTier.label || !newTier.from || !newTier.rate}
                   onClick={() => {
                     tiersHook.addTier({
+                      label: newTier.label.trim(),
                       from_points: Number(newTier.from),
                       to_points: newTier.to === "" ? null : Number(newTier.to),
                       rate_brl: Number(newTier.rate),
                     });
-                    setNewTier({ from: "", to: "", rate: "" });
+                    setNewTier({ label: "", from: "", to: "", rate: "" });
                   }}
                 >
                   <Plus className="h-3.5 w-3.5 mr-1" /> Incluir faixa

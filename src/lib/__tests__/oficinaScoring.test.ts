@@ -12,9 +12,9 @@ import {
 } from "../oficinaScoring";
 
 const TIERS: AwardTier[] = [
-  { id: "1", from_points: 1, to_points: 50, rate_brl: 10, position: 1, active: true },
-  { id: "2", from_points: 51, to_points: 99, rate_brl: 15, position: 2, active: true },
-  { id: "3", from_points: 100, to_points: null, rate_brl: 20, position: 3, active: true },
+  { id: "1", organization_id: "org-1", label: "Bronze", from_points: 1, to_points: 50, rate_brl: 10, position: 1, active: true },
+  { id: "2", organization_id: "org-1", label: "Prata", from_points: 51, to_points: 99, rate_brl: 15, position: 2, active: true },
+  { id: "3", organization_id: "org-1", label: "Ouro", from_points: 100, to_points: null, rate_brl: 20, position: 3, active: true },
 ];
 
 describe("calcAward (premiação progressiva)", () => {
