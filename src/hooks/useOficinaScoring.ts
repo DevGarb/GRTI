@@ -343,7 +343,8 @@ export function useOsServiceItems() {
 
   const removeItem = async (id: string) => {
     const { error } = await supabase.from("op_os_service_items").delete().eq("id", id);
-    if (error) toast.error(error.message); else fetch();
+    if (error) toast.error(error.message);
+    else { toast.success("Item removido da OS"); fetch(); }
   };
 
   /** Semeia o checklist pontuado de um tipo em uma OS sem itens (mudança manual de tipo). */

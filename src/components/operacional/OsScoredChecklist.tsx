@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { Check, ListChecks, Plus, Star } from "lucide-react";
+import { Check, ListChecks, Plus, Star, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -19,6 +19,7 @@ interface Props {
   onToggle?: (item: OsServiceItem) => void;
   onAddExtra?: (extra: ExtraService) => void;
   onAddCustom?: (label: string) => void;
+  onRemove?: (item: OsServiceItem) => void;
   className?: string;
 }
 
@@ -30,7 +31,7 @@ const TYPE_TAG: Record<string, { label: string; chip: string } | null> = {
 
 /** Checklist pontuado da OS: execução pelo mecânico + inclusão de serviços extras. */
 export default function OsScoredChecklist({
-  items, availableExtras, readOnly, barClass, onToggle, onAddExtra, onAddCustom, className,
+  items, availableExtras, readOnly, barClass, onToggle, onAddExtra, onAddCustom, onRemove, className,
 }: Props) {
   const [extraId, setExtraId] = useState("");
   const [customLabel, setCustomLabel] = useState("");
@@ -97,6 +98,19 @@ export default function OsScoredChecklist({
                 <span className="text-[10px] text-muted-foreground shrink-0">
                   {new Date(it.done_at).toLocaleDateString("pt-BR")}
                 </span>
+              )}
+              {!readOnly && onRemove && (
+                <button
+                  type="button"
+                  title={`Excluir ${it.label}`}
+                  aria-label={`Excluir ${it.label}`}
+                  className="shrink-0 text-muted-foreground hover:text-destructive transition-colors"
+                  onClick={() => {
+                    if (window.confirm(`Excluir o item "${it.label}" desta OS?`)) onRemove(it);
+                  }}
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                </button>
               )}
             </div>
           );

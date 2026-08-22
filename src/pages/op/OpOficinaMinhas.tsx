@@ -629,6 +629,7 @@ export default function OpOficinaMinhas() {
                         onToggle={osItems.toggle}
                         onAddExtra={(extra) => osItems.addExtraItem(o, extra)}
                         onAddCustom={(label) => osItems.addCustomItem(o, label)}
+                        onRemove={(item) => osItems.removeItem(item.id)}
                       />
 
 
