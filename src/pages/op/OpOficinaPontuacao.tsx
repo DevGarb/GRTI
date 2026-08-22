@@ -365,19 +365,21 @@ export default function OpOficinaPontuacao() {
               ))}
               <div className="flex items-center gap-2 pt-2 border-t">
                 <span className="text-xs text-muted-foreground">Nova:</span>
+                <Input type="text" placeholder="Nome" value={newTier.label} onChange={(e) => setNewTier((p) => ({ ...p, label: e.target.value }))} className="h-8 w-28 text-sm" />
                 <Input type="number" placeholder="de" value={newTier.from} onChange={(e) => setNewTier((p) => ({ ...p, from: e.target.value }))} className="h-8 w-20 text-right" />
                 <Input type="number" placeholder="até (∞ vazio)" value={newTier.to} onChange={(e) => setNewTier((p) => ({ ...p, to: e.target.value }))} className="h-8 w-24 text-right" />
                 <Input type="number" placeholder="R$/ponto" value={newTier.rate} onChange={(e) => setNewTier((p) => ({ ...p, rate: e.target.value }))} className="h-8 w-24 text-right" />
                 <Button
                   size="sm" variant="outline"
-                  disabled={!newTier.from || !newTier.rate}
+                  disabled={!newTier.label || !newTier.from || !newTier.rate}
                   onClick={() => {
                     tiersHook.addTier({
+                      label: newTier.label.trim(),
                       from_points: Number(newTier.from),
                       to_points: newTier.to === "" ? null : Number(newTier.to),
                       rate_brl: Number(newTier.rate),
                     });
-                    setNewTier({ from: "", to: "", rate: "" });
+                    setNewTier({ label: "", from: "", to: "", rate: "" });
                   }}
                 >
                   <Plus className="h-3.5 w-3.5 mr-1" /> Incluir faixa
