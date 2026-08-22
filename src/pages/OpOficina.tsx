@@ -962,14 +962,20 @@ function OsDetailDialog({ os, onClose, onUpdate, onDelete, onRequestClose, compa
 
         </div>
 
-        <OsChecklist
-          items={checklistItems}
-          readOnly={os.stage === STAGE_ENTREGUE || os.status === TERMINAL}
-          barClass={stageInfo(stage).bar}
-          onToggle={onToggleChecklist}
-          onAdd={onAddChecklist}
-          onRemove={onRemoveChecklist}
-        />
+        {(osItems.byOs[os.id] || []).length > 0 ? (
+          <OsScoredChecklist
+            items={osItems.byOs[os.id] || []}
+            availableExtras={extrasHook.extrasForCompany(companyId || os.company_id)}
+            readOnly={os.stage === STAGE_ENTREGUE || os.status === TERMINAL}
+            barClass={stageInfo(stage).bar}
+            onToggle={osItems.toggle}
+            onAddExtra={(extra) => osItems.addExtraItem(os, extra)}
+            onAddCustom={(label) => osItems.addCustomItem(os, label)}
+          />
+        ) : checklistItems.length > 0 ? (
+          /* OS antiga: checklist legado preservado somente para visualização */
+          <OsChecklist items={checklistItems} readOnly barClass={stageInfo(stage).bar} />
+        ) : null}
 
         <OsAuditPanel
           items={osItems.byOs[os.id] || []}
