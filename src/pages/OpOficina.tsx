@@ -229,7 +229,7 @@ export default function OpOficina() {
             Empresa: {companyName(o.company_id)}
           </div>
           <div className="flex items-center gap-2 mt-1">
-            <Badge variant="secondary" className={cn("text-[10px] h-5", days >= DIAS_ALERTA && "bg-rose-500/15 text-rose-700 dark:text-rose-300")}>
+            <Badge variant="secondary" className={cn("text-[10px] h-5", days >= DIAS_ALERTA && !o.with_customer && "bg-rose-500/15 text-rose-700 dark:text-rose-300")}>
               {days}d na oficina
             </Badge>
             <span className="text-[10px] text-muted-foreground italic">Clique para expandir</span>
@@ -242,7 +242,7 @@ export default function OpOficina() {
       <div>
         <div className="flex items-start gap-2 mb-1 flex-wrap cursor-pointer" onClick={() => toggleExpanded(o.id)}>
           <span className="font-mono text-[11px] bg-muted px-1.5 py-0.5 rounded">#{o.os_number}</span>
-          <Badge variant="secondary" className={cn("text-[10px] h-5", days >= DIAS_ALERTA && "bg-rose-500/15 text-rose-700 dark:text-rose-300")}>
+          <Badge variant="secondary" className={cn("text-[10px] h-5", days >= DIAS_ALERTA && !o.with_customer && "bg-rose-500/15 text-rose-700 dark:text-rose-300")}>
             {days}d na oficina
           </Badge>
           {partsCount > 0 && (

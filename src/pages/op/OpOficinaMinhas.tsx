@@ -843,7 +843,7 @@ export default function OpOficinaMinhas() {
                                 <MessageSquareWarning className="h-3 w-3" /> Alerta
                               </Badge>
                             )}
-                            {typeof dias === "number" && dias >= DIAS_ALERTA && (
+                            {typeof dias === "number" && dias >= DIAS_ALERTA && !(o as any).with_customer && (
                               <Badge variant="destructive">{dias} dias na oficina</Badge>
                             )}
                           </div>
@@ -988,7 +988,7 @@ export default function OpOficinaMinhas() {
 
         <div className="text-center text-xs text-muted-foreground py-4 flex items-center justify-center gap-1">
           <Wrench className="h-3 w-3" />
-          Gestão de Oficina · Regras de alerta em {DIAS_ALERTA} dias · SLA de {SLA_PECAS} dias para montagem após chegada de peças
+          Gestão de Oficina · Alerta após {DIAS_ALERTA} dias na oficina · motos com o cliente não geram alerta
         </div>
 
         {/* Acionar supervisor */}
