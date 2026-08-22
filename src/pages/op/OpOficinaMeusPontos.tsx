@@ -169,5 +169,7 @@ export default function OpOficinaMeusPontos() {
         </CardContent>
       </Card>
     </div>
+      </div>
+    </div>
   );
 }
