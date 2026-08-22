@@ -1196,6 +1196,47 @@ export type Database = {
         }
         Relationships: []
       }
+      op_award_tiers: {
+        Row: {
+          active: boolean
+          created_at: string
+          from_points: number
+          id: string
+          organization_id: string
+          position: number
+          rate_brl: number
+          to_points: number | null
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          from_points: number
+          id?: string
+          organization_id: string
+          position?: number
+          rate_brl: number
+          to_points?: number | null
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          from_points?: number
+          id?: string
+          organization_id?: string
+          position?: number
+          rate_brl?: number
+          to_points?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "op_award_tiers_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       op_card_notes: {
         Row: {
           author_id: string
@@ -1644,6 +1685,74 @@ export type Database = {
         }
         Relationships: []
       }
+      op_extra_service_companies: {
+        Row: {
+          company_id: string
+          extra_service_id: string
+          id: string
+        }
+        Insert: {
+          company_id: string
+          extra_service_id: string
+          id?: string
+        }
+        Update: {
+          company_id?: string
+          extra_service_id?: string
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "op_extra_service_companies_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "op_companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "op_extra_service_companies_extra_service_id_fkey"
+            columns: ["extra_service_id"]
+            isOneToOne: false
+            referencedRelation: "op_extra_services"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      op_extra_services: {
+        Row: {
+          active: boolean
+          created_at: string
+          id: string
+          name: string
+          organization_id: string
+          points: number
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          id?: string
+          name: string
+          organization_id: string
+          points?: number
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          id?: string
+          name?: string
+          organization_id?: string
+          points?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "op_extra_services_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       op_maint_technicians: {
         Row: {
           created_at: string
@@ -1920,6 +2029,72 @@ export type Database = {
         }
         Relationships: []
       }
+      op_os_service_items: {
+        Row: {
+          approved: boolean | null
+          audit_note: string | null
+          created_at: string
+          done: boolean
+          done_at: string | null
+          done_by: string | null
+          id: string
+          item_type: string
+          label: string
+          organization_id: string
+          points: number
+          points_approved: number | null
+          position: number
+          service_order_id: string
+        }
+        Insert: {
+          approved?: boolean | null
+          audit_note?: string | null
+          created_at?: string
+          done?: boolean
+          done_at?: string | null
+          done_by?: string | null
+          id?: string
+          item_type?: string
+          label: string
+          organization_id: string
+          points?: number
+          points_approved?: number | null
+          position?: number
+          service_order_id: string
+        }
+        Update: {
+          approved?: boolean | null
+          audit_note?: string | null
+          created_at?: string
+          done?: boolean
+          done_at?: string | null
+          done_by?: string | null
+          id?: string
+          item_type?: string
+          label?: string
+          organization_id?: string
+          points?: number
+          points_approved?: number | null
+          position?: number
+          service_order_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "op_os_service_items_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "op_os_service_items_service_order_id_fkey"
+            columns: ["service_order_id"]
+            isOneToOne: false
+            referencedRelation: "op_service_orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       op_parts: {
         Row: {
           code: string | null
@@ -2106,10 +2281,16 @@ export type Database = {
           organization_id: string
           os_number: number
           parts_arrived_at: string | null
+          points_approved: number | null
+          points_audited_at: string | null
+          points_audited_by: string | null
+          points_requested: number | null
+          points_status: string
           schedule_notes: string | null
           schedule_order: number
           scheduled_date: string | null
           scheduled_period: string | null
+          service_type_id: string | null
           stage: string
           status: string
           supervisor_action_at: string | null
@@ -2158,10 +2339,16 @@ export type Database = {
           organization_id: string
           os_number?: number
           parts_arrived_at?: string | null
+          points_approved?: number | null
+          points_audited_at?: string | null
+          points_audited_by?: string | null
+          points_requested?: number | null
+          points_status?: string
           schedule_notes?: string | null
           schedule_order?: number
           scheduled_date?: string | null
           scheduled_period?: string | null
+          service_type_id?: string | null
           stage?: string
           status?: string
           supervisor_action_at?: string | null
@@ -2210,10 +2397,16 @@ export type Database = {
           organization_id?: string
           os_number?: number
           parts_arrived_at?: string | null
+          points_approved?: number | null
+          points_audited_at?: string | null
+          points_audited_by?: string | null
+          points_requested?: number | null
+          points_status?: string
           schedule_notes?: string | null
           schedule_order?: number
           scheduled_date?: string | null
           scheduled_period?: string | null
+          service_type_id?: string | null
           stage?: string
           status?: string
           supervisor_action_at?: string | null
@@ -2236,7 +2429,124 @@ export type Database = {
           with_customer?: boolean
           with_customer_at?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "op_service_orders_service_type_id_fkey"
+            columns: ["service_type_id"]
+            isOneToOne: false
+            referencedRelation: "op_service_types"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      op_service_type_companies: {
+        Row: {
+          company_id: string
+          id: string
+          service_type_id: string
+        }
+        Insert: {
+          company_id: string
+          id?: string
+          service_type_id: string
+        }
+        Update: {
+          company_id?: string
+          id?: string
+          service_type_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "op_service_type_companies_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "op_companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "op_service_type_companies_service_type_id_fkey"
+            columns: ["service_type_id"]
+            isOneToOne: false
+            referencedRelation: "op_service_types"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      op_service_type_items: {
+        Row: {
+          active: boolean
+          created_at: string
+          id: string
+          is_required: boolean
+          label: string
+          points: number
+          position: number
+          service_type_id: string
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          id?: string
+          is_required?: boolean
+          label: string
+          points?: number
+          position?: number
+          service_type_id: string
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          id?: string
+          is_required?: boolean
+          label?: string
+          points?: number
+          position?: number
+          service_type_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "op_service_type_items_service_type_id_fkey"
+            columns: ["service_type_id"]
+            isOneToOne: false
+            referencedRelation: "op_service_types"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      op_service_types: {
+        Row: {
+          active: boolean
+          created_at: string
+          description: string | null
+          id: string
+          name: string
+          organization_id: string
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          description?: string | null
+          id?: string
+          name: string
+          organization_id: string
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          description?: string | null
+          id?: string
+          name?: string
+          organization_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "op_service_types_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       op_sites: {
         Row: {
