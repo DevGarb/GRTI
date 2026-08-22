@@ -718,6 +718,7 @@ function OsDetailDialog({ os, onClose, onUpdate, onDelete, onRequestClose, compa
   const { items: companies } = useCompanies();
   const stHook = useServiceTypes();
   const osItems = useOsServiceItems();
+  const extrasHook = useExtraServices();
 
   const [stage, setStage] = useState(os.stage || "analise");
   const [diagnosis, setDiagnosis] = useState(os.diagnosis || "");
