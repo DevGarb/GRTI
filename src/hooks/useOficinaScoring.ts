@@ -335,6 +335,25 @@ export function useOsServiceItems() {
     if (error) toast.error(error.message); else fetch();
   };
 
+  /** Semeia o checklist pontuado de um tipo em uma OS sem itens (mudança manual de tipo). */
+  const seedFromType = async (os: { id: string; organization_id: string }, typeId: string) => {
+    if ((byOs[os.id] || []).length > 0) return;
+    const { data: tItems } = await supabase
+      .from("op_service_type_items").select("*")
+      .eq("service_type_id", typeId).eq("active", true).order("position");
+    if (!tItems?.length) return;
+    const rows = (tItems as ServiceTypeItem[]).map((t, i) => ({
+      organization_id: os.organization_id,
+      service_order_id: os.id,
+      item_type: "checklist",
+      label: t.label,
+      points: t.points,
+      position: i + 1,
+    }));
+    const { error } = await supabase.from("op_os_service_items").insert(rows);
+    if (error) toast.error(error.message); else fetch();
+  };
+
   /* ---------- Auditoria ---------- */
 
   const setItemApproval = async (item: OsServiceItem, approved: boolean, pointsApproved?: number) => {
@@ -387,5 +406,5 @@ export function useOsServiceItems() {
     return !error;
   };
 
-  return { byOs, toggle, addExtraItem, addCustomItem, removeItem, setItemApproval, setItemAuditPoints, finalizeAudit, refetch: fetch };
+  return { byOs, toggle, addExtraItem, addCustomItem, removeItem, seedFromType, setItemApproval, setItemAuditPoints, finalizeAudit, refetch: fetch };
 }

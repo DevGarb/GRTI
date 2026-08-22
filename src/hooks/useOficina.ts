@@ -44,6 +44,13 @@ export interface ServiceOrder {
   award_sent_at?: string | null;
   with_customer?: boolean | null;
   with_customer_at?: string | null;
+  service_type_id?: string | null;
+  finish_km?: number | null;
+  points_requested?: number | null;
+  points_approved?: number | null;
+  points_status?: string | null;
+  points_audited_by?: string | null;
+  points_audited_at?: string | null;
   supervisor_alert?: boolean | null;
   supervisor_alert_reason?: string | null;
   supervisor_alert_note?: string | null;
@@ -181,7 +188,8 @@ export function useServiceOrders() {
       deadline: input.deadline || null,
       opened_at: input.opened_at || new Date().toISOString().slice(0, 10),
       notes: input.notes || null,
-    }).select().single();
+      service_type_id: input.service_type_id || null,
+    } as any).select().single();
     if (error) { toast.error(error.message); return null; }
     toast.success("OS criada");
     fetch();
