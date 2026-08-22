@@ -910,6 +910,36 @@ function OsDetailDialog({ os, onClose, onUpdate, onDelete, onRequestClose, compa
             </Select>
           </div>
           <div>
+            <Label>Checklist do serviço</Label>
+            {(() => {
+              const hasItems = (osItems.byOs[os.id] || []).length > 0;
+              return (
+                <>
+                  <Select
+                    value={os.service_type_id || "__none__"}
+                    disabled={hasItems}
+                    onValueChange={async (v) => {
+                      const typeId = v === "__none__" ? null : v;
+                      onUpdate({ service_type_id: typeId });
+                      if (typeId) await osItems.seedFromType(os, typeId);
+                    }}
+                  >
+                    <SelectTrigger><SelectValue placeholder="Sem checklist" /></SelectTrigger>
+                    <SelectContent>
+                      {!hasItems && <SelectItem value="__none__">Sem checklist</SelectItem>}
+                      {stHook.typesForCompany(companyId || null).map(t => (
+                        <SelectItem key={t.id} value={t.id}>{t.name} · {t.maxPoints ?? "—"} pts</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {hasItems && (
+                    <div className="text-[11px] mt-1 text-muted-foreground">Checklist já gerado para esta OS.</div>
+                  )}
+                </>
+              );
+            })()}
+          </div>
+          <div>
             <Label>Placa</Label>
             <Input value={vehiclePlate} onChange={e => setVehiclePlate(e.target.value.toUpperCase())} />
           </div>
