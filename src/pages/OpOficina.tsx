@@ -950,6 +950,7 @@ function OsDetailDialog({ os, onClose, onUpdate, onDelete, onRequestClose, compa
             onToggle={osItems.toggle}
             onAddExtra={(extra) => osItems.addExtraItem(os, extra)}
             onAddCustom={(label) => osItems.addCustomItem(os, label)}
+            onRemove={(item) => osItems.removeItem(item.id)}
           />
         ) : checklistItems.length > 0 ? (
           /* OS antiga: checklist legado preservado somente para visualização */
