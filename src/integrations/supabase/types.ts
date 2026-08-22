@@ -1202,6 +1202,7 @@ export type Database = {
           created_at: string
           from_points: number
           id: string
+          label: string
           organization_id: string
           position: number
           rate_brl: number
@@ -1212,6 +1213,7 @@ export type Database = {
           created_at?: string
           from_points: number
           id?: string
+          label: string
           organization_id: string
           position?: number
           rate_brl: number
@@ -1222,6 +1224,7 @@ export type Database = {
           created_at?: string
           from_points?: number
           id?: string
+          label?: string
           organization_id?: string
           position?: number
           rate_brl?: number
