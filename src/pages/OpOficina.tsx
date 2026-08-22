@@ -67,6 +67,8 @@ export default function OpOficina() {
   const { user } = useAuth();
   const { items, partsByOs, partsCountByOs, add, update, remove, setPartStatus, movePriority, refetch } = useServiceOrders();
   const checklist = useServiceChecklists();
+  const osItemsMain = useOsServiceItems();
+
 
   const { items: mechanics } = useMechanics();
   const { items: companies } = useCompanies();
@@ -202,7 +204,7 @@ export default function OpOficina() {
     const days = daysInWorkshop(o.opened_at, o.finished_at);
     const partsCount = partsCountByOs[o.id] || 0;
     const slaParts = partsSlaRemaining(o.parts_arrived_at);
-    const chk = checklist.byOs[o.id] || [];
+    const chk = (osItemsMain.byOs[o.id]?.length ? osItemsMain.byOs[o.id] : checklist.byOs[o.id]) || [];
     const stg = stageInfo(isDelivered(o) ? STAGE_ENTREGUE : o.stage);
 
     if (!expanded) {
