@@ -967,6 +967,15 @@ function OsDetailDialog({ os, onClose, onUpdate, onDelete, onRequestClose, compa
           onRemove={onRemoveChecklist}
         />
 
+        <OsAuditPanel
+          os={os}
+          items={osItems.byOs[os.id] || []}
+          readOnly={os.points_status === "auditado"}
+          onSetApproval={osItems.setItemApproval}
+          onSetAuditPoints={osItems.setItemAuditPoints}
+          onFinalize={(total) => osItems.finalizeAudit(os, total)}
+        />
+
 
 
         <div className="border-t pt-3">
