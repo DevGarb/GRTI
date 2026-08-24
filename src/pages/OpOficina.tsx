@@ -42,6 +42,17 @@ import "@fancyapps/ui/dist/fancybox/fancybox.css";
 
 const TERMINAL = "Finalizado";
 
+/** Apenas cadastros com função "mecânico" entram nos filtros/seletores de mecânico. */
+const onlyMechanics = <T extends { is_active?: boolean; role?: string }>(list: T[]): T[] =>
+  list.filter((m) => m.is_active !== false && (m.role || "mecanico") === "mecanico");
+
+/** Opções do seletor de mecânico: só mecânicos, mantendo o responsável atual se já estiver atribuído. */
+const mechanicOptions = <T extends { id: string; is_active?: boolean; role?: string }>(list: T[], currentId?: string | null): T[] => {
+  const opts = onlyMechanics(list);
+  const cur = list.find((m) => m.id === currentId);
+  return cur && !opts.some((o) => o.id === cur.id) ? [...opts, cur] : opts;
+};
+
 function fmtMoney(v: number) {
   return v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 }
@@ -410,7 +421,7 @@ export default function OpOficina() {
       <Tabs value={mechFilter} onValueChange={setMechFilter}>
         <TabsList className="flex-wrap h-auto">
           <TabsTrigger value="all">Todos</TabsTrigger>
-          {mechanics.filter(m => m.is_active).map(m => (
+          {onlyMechanics(mechanics).map(m => (
             <TabsTrigger key={m.id} value={m.id}>{m.name}</TabsTrigger>
           ))}
         </TabsList>
@@ -622,7 +633,7 @@ function NewOsDialog({ onClose, onCreate }: { onClose: () => void; onCreate: (in
               <SelectTrigger><SelectValue placeholder="A definir" /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="__none__">A definir</SelectItem>
-                {mechanics.map(m => <SelectItem key={m.id} value={m.id}>{m.name}</SelectItem>)}
+                {mechanicOptions(mechanics, form.mechanic_id).map(m => <SelectItem key={m.id} value={m.id}>{m.name}</SelectItem>)}
               </SelectContent>
             </Select>
           </div>
@@ -888,7 +899,7 @@ function OsDetailDialog({ os, onClose, onUpdate, onDelete, onRequestClose, compa
               <SelectTrigger><SelectValue placeholder="A definir" /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="__none__">A definir</SelectItem>
-                {mechanics.map(m => <SelectItem key={m.id} value={m.id}>{m.name}</SelectItem>)}
+                {mechanicOptions(mechanics, mechanicId).map(m => <SelectItem key={m.id} value={m.id}>{m.name}</SelectItem>)}
               </SelectContent>
             </Select>
           </div>
