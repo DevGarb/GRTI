@@ -203,7 +203,7 @@ export default function OpOficinaPremiacoes() {
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">Todos</SelectItem>
-                    {mechanics.map(m => <SelectItem key={m.id} value={m.id}>{m.name}</SelectItem>)}
+                    {mechanics.filter(m => m.is_active !== false && (m.role || "mecanico") === "mecanico").map(m => <SelectItem key={m.id} value={m.id}>{m.name}</SelectItem>)}
                   </SelectContent>
                 </Select>
               </div>
