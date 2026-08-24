@@ -47,6 +47,7 @@ export default function OpOficinaMinhas() {
   const { items, partsByOs, update, add, refetch } = useServiceOrders();
   const checklist = useServiceChecklists();
   const { items: companies } = useCompanies();
+  const companyName = (id?: string | null) => companies.find(c => c.id === id)?.name || null;
   const osItems = useOsServiceItems();
   const stHook = useServiceTypes();
   const extrasHook = useExtraServices();
@@ -558,7 +559,7 @@ export default function OpOficinaMinhas() {
                       </div>
 
                       <div className="text-sm text-muted-foreground mt-0.5">
-                        {[o.vehicle_model, (o as any).vehicle_color, (o as any).vehicle_year].filter(Boolean).join(" · ") || "—"}
+                        {[companyName(o.company_id), o.vehicle_model, (o as any).vehicle_color, (o as any).vehicle_year].filter(Boolean).join(" · ") || "—"}
                       </div>
                       <OsProgressBar items={(osItems.byOs[o.id]?.length ? osItems.byOs[o.id] : checklist.byOs[o.id]) || []} barClass={st.bar} className="mt-2 max-w-xs" compact />
                     </div>
@@ -757,7 +758,7 @@ export default function OpOficinaMinhas() {
                             )}
                           </div>
                           <div className="text-sm text-muted-foreground mt-0.5">
-                            {[o.vehicle_model, o.customer_name].filter(Boolean).join(" · ") || "—"}
+                            {[companyName(o.company_id), o.vehicle_model, o.customer_name].filter(Boolean).join(" · ") || "—"}
                           </div>
                           {(o as any).schedule_notes && (
                             <div className="text-xs text-muted-foreground mt-1">
@@ -849,7 +850,7 @@ export default function OpOficinaMinhas() {
                             )}
                           </div>
                           <div className="text-sm text-muted-foreground mt-0.5">
-                            {[o.vehicle_model, o.customer_name].filter(Boolean).join(" · ") || "—"}
+                            {[companyName(o.company_id), o.vehicle_model, o.customer_name].filter(Boolean).join(" · ") || "—"}
                           </div>
                           {o.description && (
                             <div className="text-xs text-muted-foreground mt-1 line-clamp-2">{o.description}</div>
