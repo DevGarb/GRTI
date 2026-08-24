@@ -227,12 +227,10 @@ Deno.serve(async (req) => {
         }
       }
 
-      // Agenda tickets: created in range OR closed in range
+      // Agenda tickets: apenas chamados CRIADOS no período selecionado
       const createdInRange = createdAt >= agendaStart && createdAt < agendaEnd;
-      const closedInRange = t.closed_at && new Date(t.closed_at) >= agendaStart && new Date(t.closed_at) < agendaEnd;
-      if (createdInRange || closedInRange) {
-        const refDate = closedInRange ? new Date(t.closed_at!) : createdAt;
-        const wp = wallPartsInTz(refDate);
+      if (createdInRange) {
+        const wp = wallPartsInTz(createdAt);
         const mo = String(wp.m).padStart(2, "0");
         const da = String(wp.d).padStart(2, "0");
         const hh = String(wp.hh).padStart(2, "0");
