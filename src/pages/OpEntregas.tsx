@@ -18,6 +18,7 @@ import OpKanbanBoard, { type KanbanColumn } from "@/components/operacional/OpKan
 import OpClosureDialog from "@/components/operacional/OpClosureDialog";
 import OpQuickActions from "@/components/operacional/OpQuickActions";
 import OpNotesPanel from "@/components/operacional/OpNotesPanel";
+import OpMoveLogPanel from "@/components/operacional/OpMoveLogPanel";
 import EntregasNav from "./op/EntregasNav";
 import { useEntregasProfile } from "@/contexts/EntregasProfileContext";
 import "./op/cearagps.css";
@@ -728,6 +729,9 @@ function DeliveryModal({ open, onOpenChange, editing, drivers, companies, vehicl
           <div className="border-t pt-3 mt-3">
             <div className="font-medium text-sm mb-2">Observações da equipe</div>
             <OpNotesPanel module="delivery" cardId={editing.id} />
+            <div className="border-t pt-3 mt-3">
+              <OpMoveLogPanel module="delivery" cardId={editing.id} />
+            </div>
           </div>
         )}
 

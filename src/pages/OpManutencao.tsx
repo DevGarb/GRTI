@@ -25,6 +25,7 @@ import OpKanbanBoard, { type KanbanColumn } from "@/components/operacional/OpKan
 import OpClosureDialog from "@/components/operacional/OpClosureDialog";
 import OpQuickActions from "@/components/operacional/OpQuickActions";
 import OpNotesPanel from "@/components/operacional/OpNotesPanel";
+import OpMoveLogPanel from "@/components/operacional/OpMoveLogPanel";
 import { cn } from "@/lib/utils";
 import ManutencaoNav from "@/pages/op/ManutencaoNav";
 
@@ -645,6 +646,11 @@ function OmModal({ open, onOpenChange, editing, sites, mechanics, requesters, mo
             <Label>Observações</Label>
             <Textarea rows={2} value={form.notes || ""} onChange={e => setForm({ ...form, notes: e.target.value })} />
           </div>
+          {editing && (
+            <div className="col-span-2 border-t pt-3">
+              <OpMoveLogPanel module="maintenance" cardId={editing.id} />
+            </div>
+          )}
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>Fechar</Button>

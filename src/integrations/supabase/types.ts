@@ -1240,6 +1240,39 @@ export type Database = {
           },
         ]
       }
+      op_card_moves: {
+        Row: {
+          card_id: string
+          created_at: string
+          from_column: string | null
+          id: string
+          module: string
+          moved_by: string | null
+          organization_id: string
+          to_column: string
+        }
+        Insert: {
+          card_id: string
+          created_at?: string
+          from_column?: string | null
+          id?: string
+          module: string
+          moved_by?: string | null
+          organization_id: string
+          to_column: string
+        }
+        Update: {
+          card_id?: string
+          created_at?: string
+          from_column?: string | null
+          id?: string
+          module?: string
+          moved_by?: string | null
+          organization_id?: string
+          to_column?: string
+        }
+        Relationships: []
+      }
       op_card_notes: {
         Row: {
           author_id: string
