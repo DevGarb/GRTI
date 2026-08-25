@@ -729,6 +729,9 @@ function DeliveryModal({ open, onOpenChange, editing, drivers, companies, vehicl
           <div className="border-t pt-3 mt-3">
             <div className="font-medium text-sm mb-2">Observações da equipe</div>
             <OpNotesPanel module="delivery" cardId={editing.id} />
+            <div className="border-t pt-3 mt-3">
+              <OpMoveLogPanel module="delivery" cardId={editing.id} />
+            </div>
           </div>
         )}
 
