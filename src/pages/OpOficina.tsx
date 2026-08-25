@@ -240,6 +240,10 @@ export default function OpOficina() {
           <div className="text-[11px] text-muted-foreground mt-0.5 truncate">
             Empresa: {companyName(o.company_id)}
           </div>
+          <div className="text-[11px] text-muted-foreground truncate">
+            Mecânico: {mechName(o.mechanic_id)}
+          </div>
+
           <div className="flex items-center gap-2 mt-1">
             <Badge variant="secondary" className={cn("text-[10px] h-5", days >= DIAS_ALERTA && !o.with_customer && "bg-rose-500/15 text-rose-700 dark:text-rose-300")}>
               {days}d na oficina
