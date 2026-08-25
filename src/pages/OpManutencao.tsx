@@ -646,6 +646,11 @@ function OmModal({ open, onOpenChange, editing, sites, mechanics, requesters, mo
             <Label>Observações</Label>
             <Textarea rows={2} value={form.notes || ""} onChange={e => setForm({ ...form, notes: e.target.value })} />
           </div>
+          {editing && (
+            <div className="col-span-2 border-t pt-3">
+              <OpMoveLogPanel module="maintenance" cardId={editing.id} />
+            </div>
+          )}
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>Fechar</Button>
