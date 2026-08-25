@@ -227,7 +227,17 @@ export default function OpOficina() {
             <span className="font-mono text-[11px] bg-muted px-1.5 py-0.5 rounded shrink-0">#{o.os_number}</span>
             <div className="flex items-center gap-1 flex-wrap justify-end">
               {overdue && <Badge variant="destructive" className="text-[10px]"><AlertTriangle className="h-3 w-3 mr-0.5" />Alerta</Badge>}
-              {partsCount > 0 && (
+              {hasAlert && (
+                <Badge className="text-[10px] h-5 bg-amber-500/15 text-amber-700 dark:text-amber-300 border border-amber-400/40">
+                  <AlertTriangle className="h-3 w-3 mr-0.5" />Resolver alerta
+                </Badge>
+              )}
+              {pendingParts > 0 && (
+                <Badge className="text-[10px] h-5 bg-orange-500/15 text-orange-700 dark:text-orange-300 border border-orange-400/40">
+                  <Package className="h-3 w-3 mr-0.5" />{pendingParts} a receber
+                </Badge>
+              )}
+              {partsCount > 0 && pendingParts === 0 && (
                 <Badge variant="outline" className="text-[10px] h-5"><Package className="h-3 w-3 mr-0.5" />{partsCount}</Badge>
               )}
               {o.with_customer && (
