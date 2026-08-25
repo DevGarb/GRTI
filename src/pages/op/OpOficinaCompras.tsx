@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { Package, Truck, Check, Search, ChevronDown, ChevronUp, Eye, EyeOff } from "lucide-react";
+import { Package, ShoppingCart, Check, Search, ChevronDown, ChevronUp, Eye, EyeOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
