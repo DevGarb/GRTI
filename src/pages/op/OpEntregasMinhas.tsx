@@ -76,10 +76,22 @@ export default function OpEntregasMinhas() {
     return items;
   }, [items, profile, isMotorista, isSolicitante]);
 
-  const active = useMemo(
-    () => mine.filter((d) => d.status !== "Finalizado" && d.status !== "Cancelado"),
-    [mine]
-  );
+  // Mesma sequência do Kanban do admin: posição manual → período → data
+  const active = useMemo(() => {
+    const periodRank = (p: string) => (p === "Manhã" ? 0 : p === "Tarde" ? 1 : p === "Noite" ? 2 : 3);
+    return mine
+      .filter((d) => d.status !== "Finalizado" && d.status !== "Cancelado")
+      .sort((a, b) => {
+        const pa = (a as any).kanban_position ?? Number.MAX_SAFE_INTEGER;
+        const pb = (b as any).kanban_position ?? Number.MAX_SAFE_INTEGER;
+        if (pa !== pb) return pa - pb;
+        const pra = periodRank(a.period);
+        const prb = periodRank(b.period);
+        if (pra !== prb) return pra - prb;
+        return a.scheduled_date.localeCompare(b.scheduled_date);
+      });
+  }, [mine]);
+
   const finished = useMemo(
     () => mine
       .filter((d) => d.status === "Finalizado" || d.status === "Cancelado")
