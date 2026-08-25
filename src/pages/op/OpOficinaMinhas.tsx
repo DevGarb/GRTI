@@ -952,6 +952,36 @@ export default function OpOficinaMinhas() {
           </TabsContent>
         </Tabs>
 
+        <Dialog open={!!pullTarget} onOpenChange={v => !v && setPullTarget(null)}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle>Puxar {pullTarget?.vehicle_plate || `OS #${pullTarget?.os_number}`} pra mim</DialogTitle>
+            </DialogHeader>
+            <p className="text-sm text-muted-foreground">
+              Você quer mover essa moto para a coluna <strong>Em Execução</strong> ou apenas adiantar algum serviço,
+              mantendo o cartão em <strong>{pullTarget ? stageInfo(pullTarget.stage).label : "—"}</strong>?
+            </p>
+            <DialogFooter className="flex-col gap-2 sm:flex-col">
+              <Button
+                className="w-full"
+                disabled={!!pulling}
+                onClick={() => pullTarget && pullOs(pullTarget, true)}
+              >
+                Mover para Em Execução
+              </Button>
+              <Button
+                variant="outline"
+                className="w-full"
+                disabled={!!pulling}
+                onClick={() => pullTarget && pullOs(pullTarget, false)}
+              >
+                Só adiantar serviço (manter na coluna)
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+
         <Dialog open={!!finishOs} onOpenChange={v => !v && setFinishOs(null)}>
           <DialogContent className="max-w-md">
             <DialogHeader>
