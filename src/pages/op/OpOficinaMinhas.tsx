@@ -879,7 +879,7 @@ export default function OpOficinaMinhas() {
                           )}
 
                         </div>
-                        <Button size="sm" disabled={pulling === o.id} onClick={() => pullOs(o)}>
+                        <Button size="sm" disabled={pulling === o.id} onClick={() => setPullTarget(o)}>
                           {pulling === o.id ? "Puxando..." : "Puxar pra mim"}
                         </Button>
                       </div>
