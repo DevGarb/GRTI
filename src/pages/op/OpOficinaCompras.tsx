@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { Package, Truck, Check, Search, ChevronDown, ChevronUp, Eye, EyeOff } from "lucide-react";
+import { Package, ShoppingCart, Check, Search, ChevronDown, ChevronUp, Eye, EyeOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -61,9 +61,11 @@ export default function OpOficinaCompras() {
     });
   }, [items, pendingByOs, search]);
 
-  const registerArrival = (o: ServiceOrder) => {
-    (partsByOs[o.id] || []).forEach(p => { if (p.part_status !== "recebida") setPartStatus(p.id, "recebida"); });
-    update(o.id, { parts_arrived_at: todayISO(), stage: o.stage === "aguardando_peca" ? "execucao" : o.stage });
+  const registerPurchase = (o: ServiceOrder) => {
+    (partsByOs[o.id] || []).forEach(p => {
+      if (p.part_status !== "recebida" && p.part_status !== "comprada") setPartStatus(p.id, "comprada");
+    });
+    update(o.id, { stage: "aguardando_peca" });
   };
 
   const totalOrders = columns.reduce((acc, c) => acc + c.orders.length, 0);
@@ -148,8 +150,8 @@ export default function OpOficinaCompras() {
                                   (pendentes: {brl(osTotal(pending))})
                                 </span>
                               </div>
-                              <Button size="sm" onClick={() => registerArrival(o)}>
-                                <Truck className="h-4 w-4 mr-1" /> Chegada total da OS
+                              <Button size="sm" onClick={() => registerPurchase(o)}>
+                                <ShoppingCart className="h-4 w-4 mr-1" /> Peças Compradas
                               </Button>
                             </div>
                             {pending.map(p => (
