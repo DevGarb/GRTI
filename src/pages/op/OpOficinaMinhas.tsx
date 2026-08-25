@@ -234,19 +234,29 @@ export default function OpOficinaMinhas() {
     [items],
   );
 
-  const pullOs = async (o: ServiceOrder) => {
+  const [pullTarget, setPullTarget] = useState<ServiceOrder | null>(null);
+
+  const pullOs = async (o: ServiceOrder, moveToExecucao: boolean) => {
     if (!profile?.id) return toast.error("Perfil de mecânico não identificado");
     setPulling(o.id);
     try {
-      await update(o.id, { mechanic_id: profile.id } as any);
-      toast.success(`${o.vehicle_plate || `OS #${o.os_number}`} atribuída a você`);
+      const patch: any = { mechanic_id: profile.id };
+      if (moveToExecucao && o.stage !== "execucao") patch.stage = "execucao";
+      await update(o.id, patch);
+      toast.success(
+        moveToExecucao
+          ? `${o.vehicle_plate || `OS #${o.os_number}`} atribuída a você e movida para Em Execução`
+          : `${o.vehicle_plate || `OS #${o.os_number}`} atribuída a você (permaneceu em ${stageInfo(o.stage).label})`,
+      );
       refetch();
+      setPullTarget(null);
     } catch (e: any) {
       toast.error(e?.message || "Não foi possível puxar o serviço");
     } finally {
       setPulling(null);
     }
   };
+
 
 
 
