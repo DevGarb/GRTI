@@ -17,6 +17,7 @@ import OpKanbanBoard, { type KanbanColumn } from "@/components/operacional/OpKan
 import OpClosureDialog from "@/components/operacional/OpClosureDialog";
 import OpQuickActions from "@/components/operacional/OpQuickActions";
 import OpNotesPanel from "@/components/operacional/OpNotesPanel";
+import OpMoveLogPanel from "@/components/operacional/OpMoveLogPanel";
 import OsProgressBar from "@/components/operacional/OsProgressBar";
 import OsChecklist from "@/components/operacional/OsChecklist";
 import OsScoredChecklist from "@/components/operacional/OsScoredChecklist";
