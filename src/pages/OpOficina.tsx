@@ -489,7 +489,6 @@ export default function OpOficina() {
           onRequestClose={(o) => { setSelected(null); setClosing(o); }}
           companyPhone={companyPhone(selected.company_id)}
           checklistItems={checklist.byOs[selected.id] || []}
-          onPartsAvailable={() => handlePartsAvailable(selected)}
         />
       )}
 
