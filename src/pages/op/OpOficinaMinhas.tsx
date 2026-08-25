@@ -234,19 +234,29 @@ export default function OpOficinaMinhas() {
     [items],
   );
 
-  const pullOs = async (o: ServiceOrder) => {
+  const [pullTarget, setPullTarget] = useState<ServiceOrder | null>(null);
+
+  const pullOs = async (o: ServiceOrder, moveToExecucao: boolean) => {
     if (!profile?.id) return toast.error("Perfil de mecânico não identificado");
     setPulling(o.id);
     try {
-      await update(o.id, { mechanic_id: profile.id } as any);
-      toast.success(`${o.vehicle_plate || `OS #${o.os_number}`} atribuída a você`);
+      const patch: any = { mechanic_id: profile.id };
+      if (moveToExecucao && o.stage !== "execucao") patch.stage = "execucao";
+      await update(o.id, patch);
+      toast.success(
+        moveToExecucao
+          ? `${o.vehicle_plate || `OS #${o.os_number}`} atribuída a você e movida para Em Execução`
+          : `${o.vehicle_plate || `OS #${o.os_number}`} atribuída a você (permaneceu em ${stageInfo(o.stage).label})`,
+      );
       refetch();
+      setPullTarget(null);
     } catch (e: any) {
       toast.error(e?.message || "Não foi possível puxar o serviço");
     } finally {
       setPulling(null);
     }
   };
+
 
 
 
@@ -869,7 +879,7 @@ export default function OpOficinaMinhas() {
                           )}
 
                         </div>
-                        <Button size="sm" disabled={pulling === o.id} onClick={() => pullOs(o)}>
+                        <Button size="sm" disabled={pulling === o.id} onClick={() => setPullTarget(o)}>
                           {pulling === o.id ? "Puxando..." : "Puxar pra mim"}
                         </Button>
                       </div>
@@ -941,6 +951,36 @@ export default function OpOficinaMinhas() {
             })}
           </TabsContent>
         </Tabs>
+
+        <Dialog open={!!pullTarget} onOpenChange={v => !v && setPullTarget(null)}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle>Puxar {pullTarget?.vehicle_plate || `OS #${pullTarget?.os_number}`} pra mim</DialogTitle>
+            </DialogHeader>
+            <p className="text-sm text-muted-foreground">
+              Você quer mover essa moto para a coluna <strong>Em Execução</strong> ou apenas adiantar algum serviço,
+              mantendo o cartão em <strong>{pullTarget ? stageInfo(pullTarget.stage).label : "—"}</strong>?
+            </p>
+            <DialogFooter className="flex-col gap-2 sm:flex-col">
+              <Button
+                className="w-full"
+                disabled={!!pulling}
+                onClick={() => pullTarget && pullOs(pullTarget, true)}
+              >
+                Mover para Em Execução
+              </Button>
+              <Button
+                variant="outline"
+                className="w-full"
+                disabled={!!pulling}
+                onClick={() => pullTarget && pullOs(pullTarget, false)}
+              >
+                Só adiantar serviço (manter na coluna)
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
 
         <Dialog open={!!finishOs} onOpenChange={v => !v && setFinishOs(null)}>
           <DialogContent className="max-w-md">
