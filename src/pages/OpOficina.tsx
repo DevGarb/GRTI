@@ -213,7 +213,10 @@ export default function OpOficina() {
     const overdue = isOverdue(o);
     const days = daysInWorkshop(o.opened_at, o.finished_at);
     const partsCount = partsCountByOs[o.id] || 0;
-    
+    const osParts = partsByOs[o.id] || [];
+    const pendingParts = osParts.filter((p: any) => (p.part_status || "solicitada") !== "recebida").length;
+    const hasAlert = !!o.supervisor_alert;
+
     const chk = (osItemsMain.byOs[o.id]?.length ? osItemsMain.byOs[o.id] : checklist.byOs[o.id]) || [];
     const stg = stageInfo(isDelivered(o) ? STAGE_ENTREGUE : o.stage);
 
@@ -224,7 +227,17 @@ export default function OpOficina() {
             <span className="font-mono text-[11px] bg-muted px-1.5 py-0.5 rounded shrink-0">#{o.os_number}</span>
             <div className="flex items-center gap-1 flex-wrap justify-end">
               {overdue && <Badge variant="destructive" className="text-[10px]"><AlertTriangle className="h-3 w-3 mr-0.5" />Alerta</Badge>}
-              {partsCount > 0 && (
+              {hasAlert && (
+                <Badge className="text-[10px] h-5 bg-amber-500/15 text-amber-700 dark:text-amber-300 border border-amber-400/40">
+                  <AlertTriangle className="h-3 w-3 mr-0.5" />Resolver alerta
+                </Badge>
+              )}
+              {pendingParts > 0 && (
+                <Badge className="text-[10px] h-5 bg-orange-500/15 text-orange-700 dark:text-orange-300 border border-orange-400/40">
+                  <Package className="h-3 w-3 mr-0.5" />{pendingParts} a receber
+                </Badge>
+              )}
+              {partsCount > 0 && pendingParts === 0 && (
                 <Badge variant="outline" className="text-[10px] h-5"><Package className="h-3 w-3 mr-0.5" />{partsCount}</Badge>
               )}
               {o.with_customer && (
@@ -283,6 +296,39 @@ export default function OpOficina() {
         <div className="text-[11px] text-muted-foreground line-clamp-2 mt-1 cursor-pointer" onClick={() => toggleExpanded(o.id)}>
           {o.description || "Sem descrição"}
         </div>
+
+        {pendingParts > 0 && (
+          <div className="mt-2 rounded border border-orange-400/40 bg-orange-500/10 p-2 text-[11px] text-orange-800 dark:text-orange-300">
+            <div className="flex items-center gap-1 font-medium">
+              <Package className="h-3 w-3" /> {pendingParts} de {partsCount} peça(s) sem recebimento
+            </div>
+            <div className="mt-0.5 truncate">
+              {osParts.filter((p: any) => (p.part_status || "solicitada") !== "recebida").map((p: any) => p.part_name).join(", ")}
+            </div>
+          </div>
+        )}
+
+        {hasAlert && (
+          <div className="mt-2 rounded border border-amber-400/40 bg-amber-500/10 p-2 text-[11px]">
+            <div className="flex items-center gap-1 font-medium text-amber-800 dark:text-amber-300">
+              <AlertTriangle className="h-3 w-3" /> {o.supervisor_alert_reason || "Alerta do mecânico"}
+            </div>
+            {o.supervisor_alert_note && (
+              <div className="mt-0.5 whitespace-pre-wrap text-amber-900/80 dark:text-amber-200/80">{o.supervisor_alert_note}</div>
+            )}
+            <Button
+              size="sm"
+              variant="outline"
+              className="mt-2 h-7 text-[11px] w-full"
+              onClick={(e) => {
+                e.stopPropagation();
+                update(o.id, { supervisor_alert: false, supervisor_alert_resolved_at: new Date().toISOString() } as any);
+              }}
+            >
+              <Check className="h-3 w-3 mr-1" /> Marcar alerta como resolvido
+            </Button>
+          </div>
+        )}
 
         {!isDelivered(o) && (
           <div className="flex items-center gap-2 mt-2">
