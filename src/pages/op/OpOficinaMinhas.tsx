@@ -157,8 +157,15 @@ export default function OpOficinaMinhas() {
   const mineGroups = useMemo(
     () =>
       STAGE_PRIORITY
-        .map(id => ({ ...stageInfo(id), orders: mine.filter(o => o.stage === id) }))
+        .map(id => ({
+          ...stageInfo(id),
+          // Mesma sequência do Kanban do admin: posição manual → nº da OS
+          orders: mine
+            .filter(o => o.stage === id)
+            .sort((a, b) => ((a.kanban_position ?? 0) - (b.kanban_position ?? 0)) || (a.os_number - b.os_number)),
+        }))
         .filter(g => g.orders.length > 0),
+
     [mine],
   );
 
