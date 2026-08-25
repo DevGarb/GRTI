@@ -1,0 +1,1 @@
+REVOKE ALL ON FUNCTION public.op_log_card_move() FROM PUBLIC, anon, authenticated;
