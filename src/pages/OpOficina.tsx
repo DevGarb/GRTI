@@ -697,7 +697,6 @@ function OsDetailDialog({ os, onClose, onUpdate, onDelete, onRequestClose, compa
   onRequestClose: (o: ServiceOrder) => void;
   companyPhone: string | null;
   checklistItems: ServiceChecklistItem[];
-  onPartsAvailable: () => void;
 }) {
 
   const { parts, photos, addPart, updatePart, removePart, uploadPhoto, removePhoto } = useServiceOrderDetails(os.id);
