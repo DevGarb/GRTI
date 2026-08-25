@@ -314,20 +314,6 @@ export default function OpOficina() {
         {chk.length > 0 && (
           <OsProgressBar items={chk} barClass={stg.bar} className="mt-2" compact />
         )}
-        {o.parts_arrived_at ? (
-          <div className={cn("text-[11px] mt-0.5", o.deadline && o.deadline < todayISO() && !isDelivered(o) ? "text-rose-600 font-medium" : "text-muted-foreground")}>
-            Entrega até: {o.deadline ? formatDateBR(o.deadline) : "—"}
-          </div>
-        ) : !isDelivered(o) ? (
-          <Button
-            size="sm"
-            variant="outline"
-            className="mt-1.5 h-7 w-full text-[11px]"
-            onClick={(e) => { e.stopPropagation(); handlePartsAvailable(o); }}
-          >
-            <Check className="h-3.5 w-3.5 mr-1" /> Peças disponíveis
-          </Button>
-        ) : null}
         {!isDelivered(o) && (
           <Button
             size="sm"
@@ -503,7 +489,6 @@ export default function OpOficina() {
           onRequestClose={(o) => { setSelected(null); setClosing(o); }}
           companyPhone={companyPhone(selected.company_id)}
           checklistItems={checklist.byOs[selected.id] || []}
-          onPartsAvailable={() => handlePartsAvailable(selected)}
         />
       )}
 
@@ -704,7 +689,7 @@ function NewOsDialog({ onClose, onCreate }: { onClose: () => void; onCreate: (in
   );
 }
 
-function OsDetailDialog({ os, onClose, onUpdate, onDelete, onRequestClose, companyPhone, checklistItems, onPartsAvailable }: {
+function OsDetailDialog({ os, onClose, onUpdate, onDelete, onRequestClose, companyPhone, checklistItems }: {
   os: ServiceOrder;
   onClose: () => void;
   onUpdate: (p: Partial<ServiceOrder>) => void;
@@ -712,7 +697,6 @@ function OsDetailDialog({ os, onClose, onUpdate, onDelete, onRequestClose, compa
   onRequestClose: (o: ServiceOrder) => void;
   companyPhone: string | null;
   checklistItems: ServiceChecklistItem[];
-  onPartsAvailable: () => void;
 }) {
 
   const { parts, photos, addPart, updatePart, removePart, uploadPhoto, removePhoto } = useServiceOrderDetails(os.id);
@@ -858,13 +842,8 @@ function OsDetailDialog({ os, onClose, onUpdate, onDelete, onRequestClose, compa
             <div className="text-[11px] mt-1 text-muted-foreground">
               {os.parts_arrived_at
                 ? `Peças recebidas em ${formatDateBR(os.parts_arrived_at)}`
-                : "Clique em “Peças disponíveis” para liberar o prazo"}
+                : "Prazo liberado após confirmação de peças"}
             </div>
-            {!os.parts_arrived_at && (
-              <Button size="sm" variant="outline" className="mt-2" onClick={onPartsAvailable}>
-                <Check className="h-3.5 w-3.5 mr-1" /> Peças disponíveis
-              </Button>
-            )}
           </div>
 
           <div>
