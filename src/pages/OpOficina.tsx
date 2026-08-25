@@ -297,6 +297,39 @@ export default function OpOficina() {
           {o.description || "Sem descrição"}
         </div>
 
+        {pendingParts > 0 && (
+          <div className="mt-2 rounded border border-orange-400/40 bg-orange-500/10 p-2 text-[11px] text-orange-800 dark:text-orange-300">
+            <div className="flex items-center gap-1 font-medium">
+              <Package className="h-3 w-3" /> {pendingParts} de {partsCount} peça(s) sem recebimento
+            </div>
+            <div className="mt-0.5 truncate">
+              {osParts.filter((p: any) => (p.part_status || "solicitada") !== "recebida").map((p: any) => p.part_name).join(", ")}
+            </div>
+          </div>
+        )}
+
+        {hasAlert && (
+          <div className="mt-2 rounded border border-amber-400/40 bg-amber-500/10 p-2 text-[11px]">
+            <div className="flex items-center gap-1 font-medium text-amber-800 dark:text-amber-300">
+              <AlertTriangle className="h-3 w-3" /> {o.supervisor_alert_reason || "Alerta do mecânico"}
+            </div>
+            {o.supervisor_alert_note && (
+              <div className="mt-0.5 whitespace-pre-wrap text-amber-900/80 dark:text-amber-200/80">{o.supervisor_alert_note}</div>
+            )}
+            <Button
+              size="sm"
+              variant="outline"
+              className="mt-2 h-7 text-[11px] w-full"
+              onClick={(e) => {
+                e.stopPropagation();
+                update(o.id, { supervisor_alert: false, supervisor_alert_resolved_at: new Date().toISOString() } as any);
+              }}
+            >
+              <Check className="h-3 w-3 mr-1" /> Marcar alerta como resolvido
+            </Button>
+          </div>
+        )}
+
         {!isDelivered(o) && (
           <div className="flex items-center gap-2 mt-2">
             <div className="flex items-center gap-1.5 flex-1 min-w-0">
