@@ -150,8 +150,8 @@ export default function OpOficinaCompras() {
                                   (pendentes: {brl(osTotal(pending))})
                                 </span>
                               </div>
-                              <Button size="sm" onClick={() => registerArrival(o)}>
-                                <Truck className="h-4 w-4 mr-1" /> Chegada total da OS
+                              <Button size="sm" onClick={() => registerPurchase(o)}>
+                                <ShoppingCart className="h-4 w-4 mr-1" /> Peças Compradas
                               </Button>
                             </div>
                             {pending.map(p => (
