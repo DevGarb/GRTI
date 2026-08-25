@@ -213,7 +213,10 @@ export default function OpOficina() {
     const overdue = isOverdue(o);
     const days = daysInWorkshop(o.opened_at, o.finished_at);
     const partsCount = partsCountByOs[o.id] || 0;
-    
+    const osParts = partsByOs[o.id] || [];
+    const pendingParts = osParts.filter((p: any) => (p.part_status || "solicitada") !== "recebida").length;
+    const hasAlert = !!o.supervisor_alert;
+
     const chk = (osItemsMain.byOs[o.id]?.length ? osItemsMain.byOs[o.id] : checklist.byOs[o.id]) || [];
     const stg = stageInfo(isDelivered(o) ? STAGE_ENTREGUE : o.stage);
 
