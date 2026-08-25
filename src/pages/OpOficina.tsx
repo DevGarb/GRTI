@@ -1120,12 +1120,13 @@ function OsDetailDialog({ os, onClose, onUpdate, onDelete, onRequestClose, compa
   );
 }
 
-/* ---------- Coluna de agendamentos confirmados (antes da Análise/Triagem) ---------- */
+/* ---------- Coluna de agendamentos confirmados (vertical colapsada / expandida) ---------- */
 function ConfirmedBookingsColumn({ onCreated }: { onCreated?: () => void }) {
   const { items, loading, refetch, remove } = useWorkshopBookings();
   const { user } = useAuth();
   const [opening, setOpening] = useState<string | null>(null);
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
+  const [panelOpen, setPanelOpen] = useState(false);
 
   const list = useMemo(
     () => items
@@ -1162,11 +1163,41 @@ function ConfirmedBookingsColumn({ onCreated }: { onCreated?: () => void }) {
     refetch();
   };
 
+  if (!panelOpen) {
+    return (
+      <button
+        type="button"
+        onClick={() => setPanelOpen(true)}
+        className="flex-shrink-0 w-14 flex flex-col items-center py-3 rounded-lg border border-border bg-card hover:border-primary/60 hover:bg-primary/5 transition text-center"
+        title="Agendamentos confirmados"
+      >
+        <Calendar className="h-5 w-5 text-primary mb-2" />
+        <span className="text-lg font-bold leading-none">{list.length}</span>
+        <span
+          className="text-[10px] font-medium text-muted-foreground mt-2 tracking-wide"
+          style={{ writingMode: "vertical-rl", transform: "rotate(180deg)" }}
+        >
+          Agendamentos
+        </span>
+      </button>
+    );
+  }
+
   return (
     <div className="flex-shrink-0 w-[300px] flex flex-col">
       <div className="bg-teal-600 text-white rounded-t-lg px-3 py-2 flex items-center justify-between">
         <span className="text-xs font-semibold truncate">Agendamentos confirmados</span>
-        <span className="text-xs font-bold bg-white/20 rounded-full px-2 py-0.5">{list.length}</span>
+        <div className="flex items-center gap-2">
+          <span className="text-xs font-bold bg-white/20 rounded-full px-2 py-0.5">{list.length}</span>
+          <button
+            type="button"
+            onClick={() => setPanelOpen(false)}
+            className="text-white/80 hover:text-white"
+            title="Recolher"
+          >
+            <ChevronDown className="h-4 w-4" />
+          </button>
+        </div>
       </div>
       <div className="flex-1 rounded-b-lg border border-t-0 border-border bg-background p-2 space-y-2 overflow-y-auto max-h-[70vh]">
         {loading && <div className="text-center py-8 text-xs text-muted-foreground">Carregando…</div>}
