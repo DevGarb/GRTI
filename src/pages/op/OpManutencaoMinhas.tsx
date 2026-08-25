@@ -79,7 +79,19 @@ export default function OpManutencaoMinhas() {
     return orders.items;
   }, [orders.items, isTecnico, isSolicitante, maintProfile.mechanicId, maintProfile.requesterId]);
 
-  const active = useMemo(() => mine.filter((o) => o.status !== "Concluída" && o.status !== "Cancelada"), [mine]);
+  // Mesma sequência do Kanban do admin: posição manual (nulos por último) → mais recentes
+  const active = useMemo(
+    () => mine
+      .filter((o) => o.status !== "Concluída" && o.status !== "Cancelada")
+      .sort((a, b) => {
+        const pa = (a as any).kanban_position ?? Number.MAX_SAFE_INTEGER;
+        const pb = (b as any).kanban_position ?? Number.MAX_SAFE_INTEGER;
+        if (pa !== pb) return pa - pb;
+        return (b.created_at || "").localeCompare(a.created_at || "");
+      }),
+    [mine]
+  );
+
   const finished = useMemo(
     () => mine.filter((o) => o.status === "Concluída" || o.status === "Cancelada")
       .sort((a, b) => (b.finished_at || b.opened_at).localeCompare(a.finished_at || a.opened_at)),
