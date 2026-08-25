@@ -689,7 +689,7 @@ function NewOsDialog({ onClose, onCreate }: { onClose: () => void; onCreate: (in
   );
 }
 
-function OsDetailDialog({ os, onClose, onUpdate, onDelete, onRequestClose, companyPhone, checklistItems, onPartsAvailable }: {
+function OsDetailDialog({ os, onClose, onUpdate, onDelete, onRequestClose, companyPhone, checklistItems }: {
   os: ServiceOrder;
   onClose: () => void;
   onUpdate: (p: Partial<ServiceOrder>) => void;
@@ -842,13 +842,8 @@ function OsDetailDialog({ os, onClose, onUpdate, onDelete, onRequestClose, compa
             <div className="text-[11px] mt-1 text-muted-foreground">
               {os.parts_arrived_at
                 ? `Peças recebidas em ${formatDateBR(os.parts_arrived_at)}`
-                : "Clique em “Peças disponíveis” para liberar o prazo"}
+                : "Prazo liberado após confirmação de peças"}
             </div>
-            {!os.parts_arrived_at && (
-              <Button size="sm" variant="outline" className="mt-2" onClick={onPartsAvailable}>
-                <Check className="h-3.5 w-3.5 mr-1" /> Peças disponíveis
-              </Button>
-            )}
           </div>
 
           <div>
