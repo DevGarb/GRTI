@@ -314,20 +314,6 @@ export default function OpOficina() {
         {chk.length > 0 && (
           <OsProgressBar items={chk} barClass={stg.bar} className="mt-2" compact />
         )}
-        {o.parts_arrived_at ? (
-          <div className={cn("text-[11px] mt-0.5", o.deadline && o.deadline < todayISO() && !isDelivered(o) ? "text-rose-600 font-medium" : "text-muted-foreground")}>
-            Entrega até: {o.deadline ? formatDateBR(o.deadline) : "—"}
-          </div>
-        ) : !isDelivered(o) ? (
-          <Button
-            size="sm"
-            variant="outline"
-            className="mt-1.5 h-7 w-full text-[11px]"
-            onClick={(e) => { e.stopPropagation(); handlePartsAvailable(o); }}
-          >
-            <Check className="h-3.5 w-3.5 mr-1" /> Peças disponíveis
-          </Button>
-        ) : null}
         {!isDelivered(o) && (
           <Button
             size="sm"
