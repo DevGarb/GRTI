@@ -1056,6 +1056,10 @@ function OsDetailDialog({ os, onClose, onUpdate, onDelete, onRequestClose, compa
           <OpNotesPanel module="service_order" cardId={os.id} />
         </div>
 
+        <div className="border-t pt-3">
+          <OpMoveLogPanel module="service_order" cardId={os.id} />
+        </div>
+
         <DialogFooter className="flex-wrap gap-2">
           <Button variant="outline" onClick={exportPdf}><FileText className="h-4 w-4 mr-1" /> Exportar PDF</Button>
           <Button variant="destructive" onClick={() => { if (confirm("Excluir esta OS?")) onDelete(); }}>Excluir</Button>
