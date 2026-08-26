@@ -222,8 +222,8 @@ Deno.serve(async (req) => {
       return corsJson({ error: "organization_id e action são obrigatórios" }, 400);
     }
 
-    const apiKey = Deno.env.get("OPEN_AI") ?? Deno.env.get("OPENAI_API_KEY");
-    if (!apiKey) return corsJson({ error: "IA não configurada (OPEN_AI secret ausente)." }, 500);
+    const apiKey = Deno.env.get("LOVABLE_API_KEY");
+    if (!apiKey) return corsJson({ error: "IA não configurada (LOVABLE_API_KEY secret ausente)." }, 500);
 
     if (action === "preview") {
       // Se ticket_ids for enviado, classifica exatamente esses chamados (qualquer status —
