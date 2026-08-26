@@ -104,35 +104,30 @@ REGRAS:
 
 Responda APENAS um JSON: {"insights": ["frase 1", "frase 2", ...]}`;
 
-    const res = await fetch("https://api.openai.com/v1/chat/completions", {
-      method: "POST",
-      headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
-      body: JSON.stringify({
-        model: "gpt-4o-mini",
-        messages: [
-          {
-            role: "system",
-            content:
-              "Você é um analista sênior de performance e metas de equipes de TI. Escreva em português, tom executivo, direto e específico. Sempre combine número com interpretação. Nunca elogios vazios.",
-          },
-          { role: "user", content: prompt },
-        ],
-        response_format: { type: "json_object" },
-        temperature: 0.4,
-      }),
+    const aiRes = await streamLovableResponse({
+      apiKey,
+      model: "openai/gpt-5.6-terra",
+      input: [
+        {
+          role: "system",
+          content:
+            "Você é um analista sênior de performance e metas de equipes de TI. Escreva em português, tom executivo, direto e específico. Sempre combine número com interpretação. Nunca elogios vazios.",
+        },
+        { role: "user", content: prompt },
+      ],
+      textFormat: { type: "json_object" },
     });
 
-    if (!res.ok) {
-      const txt = await res.text();
-      console.warn("OpenAI non-ok", res.status, txt);
-      return new Response(JSON.stringify({ insights: [], error: `AI ${res.status}` }), {
-        status: res.status === 429 ? 429 : 200,
+    if (!aiRes.ok) {
+      const txt = aiRes.body;
+      console.warn("Lovable AI gateway non-ok", aiRes.status, txt);
+      return new Response(JSON.stringify({ insights: [], error: `AI ${aiRes.status}` }), {
+        status: aiRes.status === 429 ? 429 : 200,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    const data = await res.json();
-    const content = data?.choices?.[0]?.message?.content;
+    const content = aiRes.text;
     const parsed = content ? JSON.parse(content) : {};
     const insights = Array.isArray(parsed?.insights) ? parsed.insights.slice(0, 8) : [];
 
