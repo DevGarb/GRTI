@@ -56,6 +56,14 @@ interface TvData {
   goals_summary: GoalsSummary | null;
 }
 
+class HttpError extends Error {
+  status: number;
+  constructor(status: number) {
+    super(`HTTP ${status}`);
+    this.status = status;
+  }
+}
+
 function fmtHoursMin(minutes: number) {
   if (!minutes || minutes <= 0) return "—";
   const h = Math.floor(minutes / 60);
@@ -89,12 +97,17 @@ export default function TvDashboard() {
     enabled: !!orgSlug && !!token,
     refetchInterval: 60_000,
     refetchOnWindowFocus: false,
-    retry: 1,
+    retry: (failureCount, error) => {
+      const status = (error as HttpError)?.status;
+      if (status === 401 || status === 403 || status === 404) return false;
+      return failureCount < 3;
+    },
+    retryDelay: (attempt) => Math.min(2000 * 2 ** attempt, 15000),
     queryFn: async () => {
       const r = await fetch(`${FUNCTIONS_URL}?org=${encodeURIComponent(orgSlug!)}&token=${encodeURIComponent(token)}`, {
         headers: { apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY as string },
       });
-      if (!r.ok) throw new Error(`HTTP ${r.status}`);
+      if (!r.ok) throw new HttpError(r.status);
       return r.json();
     },
   });
@@ -105,13 +118,18 @@ export default function TvDashboard() {
     enabled: !!orgSlug && !!token && agendaFilter.type !== "today",
     refetchInterval: 60_000,
     refetchOnWindowFocus: false,
-    retry: 1,
+    retry: (failureCount, error) => {
+      const status = (error as HttpError)?.status;
+      if (status === 401 || status === 403 || status === 404) return false;
+      return failureCount < 3;
+    },
+    retryDelay: (attempt) => Math.min(2000 * 2 ** attempt, 15000),
     queryFn: async () => {
       const r = await fetch(
         `${FUNCTIONS_URL}?org=${encodeURIComponent(orgSlug!)}&token=${encodeURIComponent(token)}&from=${agendaFilter.from}&to=${agendaFilter.to}`,
         { headers: { apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY as string } },
       );
-      if (!r.ok) throw new Error(`HTTP ${r.status}`);
+      if (!r.ok) throw new HttpError(r.status);
       return r.json();
     },
   });
@@ -275,13 +293,24 @@ export default function TvDashboard() {
     );
   }
 
-  if (query.isError) {
+  if (query.isError && !query.data) {
+    const status = (query.error as HttpError | null)?.status;
+    const denied = status === 401 || status === 403 || status === 404;
     return (
       <div className="min-h-screen flex items-center justify-center text-center p-8"
         style={{ background: "hsl(var(--tv-bg))", color: "hsl(var(--tv-text))" }}>
         <div>
-          <h1 className="font-tv-display text-2xl font-bold mb-2 text-[hsl(var(--tv-accent-magenta))]">Acesso negado</h1>
-          <p className="text-[hsl(var(--tv-text-dim))]">Token inválido ou organização inexistente.</p>
+          <h1
+            className="font-tv-display text-2xl font-bold mb-2"
+            style={{ color: denied ? "hsl(var(--tv-accent-magenta))" : "hsl(var(--tv-accent-amber))" }}
+          >
+            {denied ? "Acesso negado" : "Falha temporária ao carregar"}
+          </h1>
+          <p className="text-[hsl(var(--tv-text-dim))]">
+            {denied
+              ? "Token inválido ou organização inexistente."
+              : `Tentando reconectar automaticamente${status ? ` (erro ${status})` : ""}…`}
+          </p>
         </div>
       </div>
     );

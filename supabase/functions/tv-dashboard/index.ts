@@ -7,7 +7,8 @@ import {
   addDaysInTz,
   addMonthsInTz,
   wallPartsInTz,
-  weekdayInTz,
+  civilDayNumber,
+  weekdayOfDayNumber,
 } from "./tz.ts";
 
 const corsHeaders = {
@@ -18,26 +19,57 @@ const corsHeaders = {
 
 const BUSINESS_START = 8;
 const BUSINESS_END = 18;
+const BUSINESS_START_MIN = BUSINESS_START * 60;
+const BUSINESS_END_MIN = BUSINESS_END * 60;
+const FULL_DAY_MIN = BUSINESS_END_MIN - BUSINESS_START_MIN;
 
+/** Quantidade de dias úteis (seg-sex) no intervalo inclusivo [a, b] de dias civis. */
+function weekdaysBetween(a: number, b: number): number {
+  if (b < a) return 0;
+  const total = b - a + 1;
+  const fullWeeks = Math.floor(total / 7);
+  let count = fullWeeks * 5;
+  const rest = total - fullWeeks * 7;
+  for (let i = 0; i < rest; i++) {
+    const dw = weekdayOfDayNumber(a + fullWeeks * 7 + i);
+    if (dw >= 1 && dw <= 5) count++;
+  }
+  return count;
+}
+
+/**
+ * Minutos úteis (08:00-18:00, seg-sex, fuso da organização) entre dois instantes.
+ * Aritmética pura sobre dias civis — sem conversões de fuso por dia (custo de CPU).
+ */
 function calcBusinessMinutes(start: Date, end: Date): number {
   if (end <= start) return 0;
-  let total = 0;
-  let cur = startOfDayInTz(start);
-  const endDay = startOfDayInTz(end);
-  while (cur.getTime() <= endDay.getTime()) {
-    const dw = weekdayInTz(cur);
-    if (dw >= 1 && dw <= 5) {
-      const { y, m, d } = wallPartsInTz(cur);
-      const ds = localDateInTz(y, m, d, BUSINESS_START, 0, 0, 0);
-      const de = localDateInTz(y, m, d, BUSINESS_END, 0, 0, 0);
-      const os = start > ds ? start : ds;
-      const oe = end < de ? end : de;
-      if (os < oe) total += (oe.getTime() - os.getTime()) / 60000;
-    }
-    cur = addDaysInTz(cur, 1);
+
+  const sp = wallPartsInTz(start);
+  const ep = wallPartsInTz(end);
+  const sDay = civilDayNumber(sp.y, sp.m, sp.d);
+  const eDay = civilDayNumber(ep.y, ep.m, ep.d);
+  const sMin = sp.hh * 60 + sp.mm + sp.ss / 60;
+  const eMin = ep.hh * 60 + ep.mm + ep.ss / 60;
+
+  const clamp = (m: number) => Math.min(Math.max(m, BUSINESS_START_MIN), BUSINESS_END_MIN);
+  const isWorkday = (day: number) => {
+    const dw = weekdayOfDayNumber(day);
+    return dw >= 1 && dw <= 5;
+  };
+
+  if (sDay === eDay) {
+    if (!isWorkday(sDay)) return 0;
+    return Math.max(0, clamp(eMin) - clamp(sMin));
   }
-  return total;
+
+  let total = 0;
+  if (isWorkday(sDay)) total += BUSINESS_END_MIN - clamp(sMin);
+  if (isWorkday(eDay)) total += clamp(eMin) - BUSINESS_START_MIN;
+  const middle = weekdaysBetween(sDay + 1, eDay - 1);
+  total += middle * FULL_DAY_MIN;
+  return Math.max(0, total);
 }
+
 
 const SLA_THRESHOLDS: Record<string, { warn: number; crit: number }> = {
   Urgente: { warn: 4, crit: 8 },
@@ -162,6 +194,8 @@ Deno.serve(async (req) => {
     }
 
     // KPIs
+    // Cache do tempo útil de espera por chamado (reusado nas listas abaixo)
+    const agingOf = new Map<string, number>();
     let closed_today = 0, closed_month = 0, opened_today = 0;
     let in_progress = 0, open_count = 0, awaiting = 0, backlog = 0;
     let tmaSum = 0, tmaN = 0;
@@ -217,6 +251,7 @@ Deno.serve(async (req) => {
         else if (t.status === "Aberto") open_count++;
         else if (t.status === "Aguardando Aprovação") awaiting++;
         const am = calcBusinessMinutes(createdAt, now);
+        agingOf.set(t.id, am);
         if (am > 0) { agingSum += am; agingN++; }
       }
       if (t.started_at) {
@@ -270,7 +305,7 @@ Deno.serve(async (req) => {
     const openList = list.filter(t => t.status === "Aberto")
       .map(t => {
         const created = new Date(t.created_at);
-        const waitingMin = calcBusinessMinutes(created, now);
+        const waitingMin = agingOf.get(t.id) ?? calcBusinessMinutes(created, now);
         return {
           id: t.id, title: t.title, priority: t.priority,
           category: catOf.get(t.category_id) ?? "—",
