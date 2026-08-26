@@ -308,7 +308,7 @@ function CloseSprintDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-lg">
+      <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Encerrar sprint — {sprint?.name}</DialogTitle>
           <DialogDescription>
@@ -433,7 +433,7 @@ function CloseSprintDialog({
           </Select>
         </div>
 
-        <div className="space-y-2 py-1 max-h-[45vh] overflow-y-auto">
+        <div className="space-y-2 py-1">
           {CHECKLIST.map((it) => {
             const ev = evidences[it.key];
             const checked = checks[it.key];
