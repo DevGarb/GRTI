@@ -82,33 +82,27 @@ ${ticketList}
 Responda APENAS um JSON no formato: {"assignments":[{"ticket_id":"...","category_id":"..."}]}
 Um item por chamado, na mesma ordem. category_id deve ser exatamente um dos IDs listados acima.`;
 
-  let res: Response;
+  let aiRes;
   try {
-    res = await fetch("https://api.openai.com/v1/chat/completions", {
-      method: "POST",
-      headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
-      body: JSON.stringify({
-        model: "gpt-4o-mini",
-        messages: [
-          { role: "system", content: "Você é um classificador de chamados de helpdesk de TI. Responda apenas com o JSON pedido, sem texto extra." },
-          { role: "user", content: prompt },
-        ],
-        response_format: { type: "json_object" },
-        temperature: 0.1,
-      }),
-      signal: AbortSignal.timeout(45_000),
+    aiRes = await streamLovableResponse({
+      apiKey,
+      model: "openai/gpt-5.6-terra",
+      input: [
+        { role: "system", content: "Você é um classificador de chamados de helpdesk de TI. Responda apenas com o JSON pedido, sem texto extra." },
+        { role: "user", content: prompt },
+      ],
+      textFormat: { type: "json_object" },
     });
   } catch (e) {
-    console.error("OpenAI fetch failed (timeout/network)", e);
+    console.error("Lovable AI gateway fetch failed (timeout/network)", e);
     return new Map();
   }
 
-  if (!res.ok) {
-    console.error("OpenAI error", res.status, await res.text());
+  if (!aiRes.ok) {
+    console.error("Lovable AI gateway error", aiRes.status, aiRes.body);
     return new Map();
   }
-  const data = await res.json();
-  const content = data?.choices?.[0]?.message?.content;
+  const content = aiRes.text;
   if (!content) return new Map();
   try {
     const parsed = JSON.parse(content);
