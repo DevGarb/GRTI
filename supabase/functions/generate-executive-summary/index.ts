@@ -3,6 +3,7 @@
 // Cacheia em daily_insights_cache por (org, from, to).
 
 import { createClient } from "npm:@supabase/supabase-js@2";
+import { streamLovableResponse } from "../_shared/openaiResponses.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
