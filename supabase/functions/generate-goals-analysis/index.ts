@@ -1,6 +1,8 @@
 // Gera insights de IA sobre o atingimento das METAS do mês.
 // Recebe o payload já calculado pelo frontend (mesma fonte da tela de Metas).
 
+import { streamLovableResponse } from "../_shared/openaiResponses.ts";
+
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
@@ -49,7 +51,7 @@ Deno.serve(async (req) => {
 
   try {
     const body = (await req.json()) as Body;
-    const apiKey = Deno.env.get("OPEN_AI") ?? Deno.env.get("OPENAI_API_KEY");
+    const apiKey = Deno.env.get("LOVABLE_API_KEY");
     if (!apiKey) {
       return new Response(JSON.stringify({ insights: [], error: "AI key não configurada" }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -102,35 +104,30 @@ REGRAS:
 
 Responda APENAS um JSON: {"insights": ["frase 1", "frase 2", ...]}`;
 
-    const res = await fetch("https://api.openai.com/v1/chat/completions", {
-      method: "POST",
-      headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
-      body: JSON.stringify({
-        model: "gpt-4o-mini",
-        messages: [
-          {
-            role: "system",
-            content:
-              "Você é um analista sênior de performance e metas de equipes de TI. Escreva em português, tom executivo, direto e específico. Sempre combine número com interpretação. Nunca elogios vazios.",
-          },
-          { role: "user", content: prompt },
-        ],
-        response_format: { type: "json_object" },
-        temperature: 0.4,
-      }),
+    const aiRes = await streamLovableResponse({
+      apiKey,
+      model: "openai/gpt-5.6-terra",
+      input: [
+        {
+          role: "system",
+          content:
+            "Você é um analista sênior de performance e metas de equipes de TI. Escreva em português, tom executivo, direto e específico. Sempre combine número com interpretação. Nunca elogios vazios.",
+        },
+        { role: "user", content: prompt },
+      ],
+      textFormat: { type: "json_object" },
     });
 
-    if (!res.ok) {
-      const txt = await res.text();
-      console.warn("OpenAI non-ok", res.status, txt);
-      return new Response(JSON.stringify({ insights: [], error: `AI ${res.status}` }), {
-        status: res.status === 429 ? 429 : 200,
+    if (!aiRes.ok) {
+      const txt = aiRes.body;
+      console.warn("Lovable AI gateway non-ok", aiRes.status, txt);
+      return new Response(JSON.stringify({ insights: [], error: `AI ${aiRes.status}` }), {
+        status: aiRes.status === 429 ? 429 : 200,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    const data = await res.json();
-    const content = data?.choices?.[0]?.message?.content;
+    const content = aiRes.text;
     const parsed = content ? JSON.parse(content) : {};
     const insights = Array.isArray(parsed?.insights) ? parsed.insights.slice(0, 8) : [];
 
