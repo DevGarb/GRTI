@@ -13,6 +13,7 @@
 // Só admin/super_admin pode chamar (checado via role do usuário autenticado).
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.98.0";
+import { streamLovableResponse } from "../_shared/openaiResponses.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
