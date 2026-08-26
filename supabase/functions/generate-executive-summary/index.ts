@@ -298,25 +298,20 @@ ${techSummary || "sem atividade"}
 Responda APENAS um JSON: {"insights": ["frase 1", "frase 2", ...]}`;
 
   try {
-    const res = await fetch("https://api.openai.com/v1/chat/completions", {
-      method: "POST",
-      headers: { "Content-Type": "application/json", "Authorization": `Bearer ${apiKey}` },
-      body: JSON.stringify({
-        model: "gpt-4o-mini",
-        messages: [
-          { role: "system", content: "Você é um analista executivo sênior de operações de TI. Escreva em português, tom executivo, direto e específico. Combine sempre número com interpretação. Nunca elogios vazios." },
-          { role: "user", content: prompt },
-        ],
-        response_format: { type: "json_object" },
-        temperature: 0.4,
-      }),
+    const aiRes = await streamLovableResponse({
+      apiKey,
+      model: "openai/gpt-5.6-terra",
+      input: [
+        { role: "system", content: "Você é um analista executivo sênior de operações de TI. Escreva em português, tom executivo, direto e específico. Combine sempre número com interpretação. Nunca elogios vazios." },
+        { role: "user", content: prompt },
+      ],
+      textFormat: { type: "json_object" },
     });
-    if (!res.ok) {
-      console.warn("OpenAI non-ok", res.status, await res.text());
+    if (!aiRes.ok) {
+      console.warn("Lovable AI gateway non-ok", aiRes.status, aiRes.body);
       return [];
     }
-    const data = await res.json();
-    const content = data?.choices?.[0]?.message?.content;
+    const content = aiRes.text;
     if (!content) return [];
     const parsed = JSON.parse(content);
     return Array.isArray(parsed?.insights) ? parsed.insights.slice(0, 8) : [];
