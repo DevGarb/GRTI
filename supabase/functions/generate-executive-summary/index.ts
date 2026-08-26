@@ -239,9 +239,9 @@ async function generateAiInsights(opts: {
   topCategories: { name: string; count: number }[];
   avgStoryPoints: number;
 }): Promise<string[]> {
-  const apiKey = Deno.env.get("OPEN_AI") ?? Deno.env.get("OPENAI_API_KEY");
+  const apiKey = Deno.env.get("LOVABLE_API_KEY");
   if (!apiKey) {
-    console.warn("OPEN_AI secret não configurado");
+    console.warn("LOVABLE_API_KEY secret não configurado");
     return [];
   }
 
