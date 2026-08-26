@@ -51,7 +51,7 @@ Deno.serve(async (req) => {
 
   try {
     const body = (await req.json()) as Body;
-    const apiKey = Deno.env.get("OPEN_AI") ?? Deno.env.get("OPENAI_API_KEY");
+    const apiKey = Deno.env.get("LOVABLE_API_KEY");
     if (!apiKey) {
       return new Response(JSON.stringify({ insights: [], error: "AI key não configurada" }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
