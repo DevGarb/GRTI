@@ -1,6 +1,8 @@
 // Gera insights de IA sobre o atingimento das METAS do mês.
 // Recebe o payload já calculado pelo frontend (mesma fonte da tela de Metas).
 
+import { streamLovableResponse } from "../_shared/openaiResponses.ts";
+
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
