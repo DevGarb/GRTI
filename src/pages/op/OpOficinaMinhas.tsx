@@ -998,6 +998,36 @@ export default function OpOficinaMinhas() {
         </Dialog>
 
 
+        {/* Moto chegou: escolher destino da OS */}
+        <Dialog open={!!bookingTarget} onOpenChange={v => !v && !openingBooking && setBookingTarget(null)}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle>Abrir OS · {bookingTarget?.vehicle_plate}</DialogTitle>
+            </DialogHeader>
+            <p className="text-sm text-muted-foreground">
+              A moto chegou. Você quer abrir a OS já em <strong>Em Execução</strong> (vai começar o serviço agora)
+              ou abrir em <strong>Em Análise</strong> e mover depois?
+            </p>
+            <DialogFooter className="flex-col gap-2 sm:flex-col">
+              <Button
+                className="w-full"
+                disabled={!!openingBooking}
+                onClick={() => bookingTarget && handleOpenBooking(bookingTarget, true)}
+              >
+                {openingBooking ? "Abrindo..." : "Abrir OS e mover para Em Execução"}
+              </Button>
+              <Button
+                variant="outline"
+                className="w-full"
+                disabled={!!openingBooking}
+                onClick={() => bookingTarget && handleOpenBooking(bookingTarget, false)}
+              >
+                Só abrir a OS (manter em Em Análise)
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
         <Dialog open={!!finishOs} onOpenChange={v => !v && setFinishOs(null)}>
           <DialogContent className="max-w-md">
             <DialogHeader>
