@@ -77,14 +77,49 @@ export default function OpOficinaAgenda() {
   }, [mecs, ofDay, readOnly, profile?.id]);
 
 
-  const weekCounts = useMemo(() => {
-    return Array.from({ length: 7 }, (_, i) => {
-      const d = shiftDay(day, i - 3);
-      return { d, count: actives.filter((o) => effectiveDate((o as any).scheduled_date) === d).length };
-    });
-  }, [actives, day, today]);
+  // Calendário mensal: contagem de serviços + agendamentos aguardando chegada por dia
+  const [monthCursor, setMonthCursor] = useState(() => day.slice(0, 7));
+
+  const monthDays = useMemo(() => {
+    const [y, m] = monthCursor.split("-").map(Number);
+    const first = new Date(y, m - 1, 1);
+    const last = new Date(y, m, 0);
+    const cells: (string | null)[] = Array.from({ length: first.getDay() }, () => null);
+    for (let i = 1; i <= last.getDate(); i++) {
+      cells.push(`${monthCursor}-${String(i).padStart(2, "0")}`);
+    }
+    while (cells.length % 7 !== 0) cells.push(null);
+    return cells;
+  }, [monthCursor]);
+
+  const dayCounts = useMemo(() => {
+    const map = new Map<string, { services: number; bookings: number }>();
+    const bump = (d: string | null, key: "services" | "bookings") => {
+      if (!d) return;
+      const cur = map.get(d) || { services: 0, bookings: 0 };
+      cur[key] += 1;
+      map.set(d, cur);
+    };
+    actives.forEach((o) => bump(effectiveDate((o as any).scheduled_date), "services"));
+    bookings
+      .filter((b) => b.status === "agendado" && !b.service_order_id)
+      .forEach((b) => bump(effectiveDate(b.scheduled_date), "bookings"));
+    return map;
+  }, [actives, bookings, today]);
+
+  const shiftMonth = (delta: number) => {
+    const [y, m] = monthCursor.split("-").map(Number);
+    const d = new Date(y, m - 1 + delta, 1);
+    setMonthCursor(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`);
+  };
+
+  const monthLabel = useMemo(() => {
+    const [y, m] = monthCursor.split("-").map(Number);
+    return new Date(y, m - 1, 1).toLocaleDateString("pt-BR", { month: "long", year: "numeric" });
+  }, [monthCursor]);
 
   const rolledCount = ofDay.filter((o) => isRolled((o as any).scheduled_date)).length;
+
 
   const unschedule = async (o: ServiceOrder) => {
     await update(o.id, { scheduled_date: null, scheduled_period: null } as any);
