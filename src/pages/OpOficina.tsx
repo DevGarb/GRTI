@@ -764,8 +764,6 @@ function OsDetailDialog({ os, onClose, onUpdate, onDelete, onRequestClose, compa
   const [vehicleModel, setVehicleModel] = useState<string>(os.vehicle_model || "");
 
   const [partName, setPartName] = useState(""); const [qty, setQty] = useState("1");
-  const [collapsedGroups, setCollapsedGroups] = useState<Record<string, boolean>>({});
-  const toggleGroup = (g: string) => setCollapsedGroups(prev => ({ ...prev, [g]: !prev[g] }));
 
   useEffect(() => {
     Fancybox.bind("[data-fancybox='os-detail']", {});
