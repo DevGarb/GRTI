@@ -343,7 +343,7 @@ export default function OpEntregasMinhas() {
                           : "0 2px 8px -4px rgba(0,0,0,0.08)",
                       }}
                     >
-                      {/* Header row (always visible, tap to expand) */}
+                      {/* Header row (always visible, tap to expand/collapse) */}
                       <button
                         onClick={() => setExpandedId(isExpanded ? null : d.id)}
                         className="w-full text-left p-4"
@@ -372,15 +372,22 @@ export default function OpEntregasMinhas() {
                             <span className={`px-2.5 py-1 rounded-md border text-[10px] font-bold uppercase tracking-wider ${STATUS_STYLES[d.status] || ""}`}>
                               {d.status}
                             </span>
-                            {!isFinished && (
-                              <motion.span animate={{ rotate: isExpanded ? 180 : 0 }} transition={{ duration: 0.2 }}>
-                                <ChevronDown className="h-4 w-4" style={{ color: textMuted }} />
-                              </motion.span>
-                            )}
+                            <motion.span animate={{ rotate: isExpanded ? 180 : 0 }} transition={{ duration: 0.2 }}>
+                              <ChevronDown className="h-4 w-4" style={{ color: textMuted }} />
+                            </motion.span>
                           </div>
                         </div>
 
+                        {/* Resumo das principais informações (visível no estado reduzido) */}
                         <div className="mt-3 space-y-1.5">
+                          {(d.notes || d.address) && (
+                            <div className="flex items-start gap-2 text-sm" style={{ color: textMain }}>
+                              <ClipboardList className="h-4 w-4 mt-0.5 flex-shrink-0" style={{ color: TEAL }} />
+                              <span className="font-medium line-clamp-2">
+                                {d.notes || d.address}
+                              </span>
+                            </div>
+                          )}
                           {reqName && (
                             <div className="flex items-center gap-2 text-sm" style={{ color: textMain }}>
                               <User className="h-4 w-4 flex-shrink-0" style={{ color: TEAL }} />
@@ -389,20 +396,26 @@ export default function OpEntregasMinhas() {
                               </span>
                             </div>
                           )}
-                          {phone && (
+                          <div className="flex items-center justify-between">
                             <div className="flex items-center gap-2 text-sm" style={{ color: textMain }}>
-                              <Phone className="h-4 w-4 flex-shrink-0" style={{ color: "hsl(142 70% 40%)" }} />
+                              <Calendar className="h-4 w-4 flex-shrink-0" style={{ color: TEAL }} />
                               <span className="font-medium">
-                                <span style={{ color: textMuted }}>Recebedor: </span>{phone}
+                                <span style={{ color: textMuted }}>Data: </span>{formatDate(d.scheduled_date)} • {d.period}
                               </span>
                             </div>
-                          )}
-                          {d.address && (
-                            <div className="flex items-start gap-2 text-sm" style={{ color: textMain }}>
-                              <MapPin className="h-4 w-4 mt-0.5 flex-shrink-0" style={{ color: ORANGE }} />
-                              <span className="font-medium">{d.address}</span>
-                            </div>
-                          )}
+                            {d.vehicle_required && (() => {
+                              const v = vehicleLabel(d.vehicle_required);
+                              return (
+                                <span
+                                  className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded"
+                                  style={{ background: "hsl(210 20% 96%)", color: TEAL }}
+                                >
+                                  <v.Icon className="h-3 w-3" />
+                                  {v.label}
+                                </span>
+                              );
+                            })()}
+                          </div>
                         </div>
                       </button>
 
