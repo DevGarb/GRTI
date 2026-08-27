@@ -54,15 +54,24 @@ export default function OpOficinaAgenda() {
   // até a finalização: a data efetiva é sempre >= hoje.
   const effectiveDate = (d?: string | null) => (!d ? null : d < today ? today : d);
   const isRolled = (d?: string | null) => !!d && d < today;
+  // OS sem data mas com mecânico atribuído entra automaticamente na execução do dia atual
+  const effectiveOrderDate = (o: ServiceOrder) => {
+    const d = (o as any).scheduled_date as string | null | undefined;
+    if (d) return effectiveDate(d);
+    return o.mechanic_id ? today : null;
+  };
 
   const actives = useMemo(() => orders.filter(isActive), [orders]);
   const ofDay = useMemo(
-    () => actives.filter((o) => effectiveDate((o as any).scheduled_date) === day)
+    () => actives.filter((o) => effectiveOrderDate(o) === day)
       .filter((o) => (readOnly && profile?.id ? o.mechanic_id === profile.id : true))
       .filter(matches),
     [actives, day, today, readOnly, profile?.id, q],
   );
-  const unscheduled = useMemo(() => actives.filter((o) => !(o as any).scheduled_date).filter(matches), [actives, q]);
+  const unscheduled = useMemo(
+    () => actives.filter((o) => !(o as any).scheduled_date && !o.mechanic_id).filter(matches),
+    [actives, q],
+  );
   const pending = useMemo(() => bookings.filter((b) => b.status === "pendente"), [bookings]);
   const awaiting = useMemo(
     () => bookings.filter((b) => b.status === "agendado" && !b.service_order_id && effectiveDate(b.scheduled_date) === day),
@@ -100,7 +109,7 @@ export default function OpOficinaAgenda() {
       cur[key] += 1;
       map.set(d, cur);
     };
-    actives.forEach((o) => bump(effectiveDate((o as any).scheduled_date), "services"));
+    actives.forEach((o) => bump(effectiveOrderDate(o), "services"));
     bookings
       .filter((b) => b.status === "agendado" && !b.service_order_id)
       .forEach((b) => bump(effectiveDate(b.scheduled_date), "bookings"));
@@ -281,6 +290,9 @@ export default function OpOficinaAgenda() {
                             <div className="text-[10px] text-rose-600 mt-1">
                               Adiado de {formatDateBRShort((o as any).scheduled_date)}
                             </div>
+                          )}
+                          {!(o as any).scheduled_date && (
+                            <div className="text-[10px] text-teal-700 mt-1">Sem data · em execução hoje</div>
                           )}
                           {(o as any).schedule_notes && (
                             <p className="text-[11px] text-slate-500 mt-2">{(o as any).schedule_notes}</p>
