@@ -194,6 +194,7 @@ export default function OpOficinaMinhas() {
   // Agendamentos confirmados aguardando chegada da moto
   const { items: allBookings, refetch: refetchBookings } = useWorkshopBookings();
   const [openingBooking, setOpeningBooking] = useState<string | null>(null);
+  const [bookingTarget, setBookingTarget] = useState<WorkshopBooking | null>(null);
   const bookings = useMemo(
     () => allBookings
       .filter(b => b.status === "agendado" && !b.service_order_id)
@@ -201,13 +202,14 @@ export default function OpOficinaMinhas() {
     [allBookings],
   );
 
-  const handleOpenBooking = async (b: WorkshopBooking) => {
+  const handleOpenBooking = async (b: WorkshopBooking, moveToExecucao: boolean) => {
     setOpeningBooking(b.id);
     try {
-      const os = await openOsFromBooking(b, { userId: user?.id, mechanicId: profile?.id || null, serviceTypeId: (b as any).service_type_id || null });
+      const os = await openOsFromBooking(b, { userId: user?.id, mechanicId: profile?.id || null, serviceTypeId: (b as any).service_type_id || null, moveToExecucao });
       if (os) { refetchBookings(); refetch(); setTab("servicos"); }
     } finally {
       setOpeningBooking(null);
+      setBookingTarget(null);
     }
   };
 
@@ -742,7 +744,7 @@ export default function OpOficinaMinhas() {
                             {[b.vehicle_model, b.service_type, b.requester_name].filter(Boolean).join(" · ") || "—"}
                           </div>
                         </div>
-                        <Button size="sm" disabled={openingBooking === b.id} onClick={() => handleOpenBooking(b)}>
+                        <Button size="sm" disabled={openingBooking === b.id} onClick={() => setBookingTarget(b)}>
                           {openingBooking === b.id ? "Abrindo..." : "Moto chegou · abrir OS"}
                         </Button>
                       </div>
@@ -995,6 +997,36 @@ export default function OpOficinaMinhas() {
           </DialogContent>
         </Dialog>
 
+
+        {/* Moto chegou: escolher destino da OS */}
+        <Dialog open={!!bookingTarget} onOpenChange={v => !v && !openingBooking && setBookingTarget(null)}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle>Abrir OS · {bookingTarget?.vehicle_plate}</DialogTitle>
+            </DialogHeader>
+            <p className="text-sm text-muted-foreground">
+              A moto chegou. Você quer abrir a OS já em <strong>Em Execução</strong> (vai começar o serviço agora)
+              ou abrir em <strong>Em Análise</strong> e mover depois?
+            </p>
+            <DialogFooter className="flex-col gap-2 sm:flex-col">
+              <Button
+                className="w-full"
+                disabled={!!openingBooking}
+                onClick={() => bookingTarget && handleOpenBooking(bookingTarget, true)}
+              >
+                {openingBooking ? "Abrindo..." : "Abrir OS e mover para Em Execução"}
+              </Button>
+              <Button
+                variant="outline"
+                className="w-full"
+                disabled={!!openingBooking}
+                onClick={() => bookingTarget && handleOpenBooking(bookingTarget, false)}
+              >
+                Só abrir a OS (manter em Em Análise)
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
 
         <Dialog open={!!finishOs} onOpenChange={v => !v && setFinishOs(null)}>
           <DialogContent className="max-w-md">

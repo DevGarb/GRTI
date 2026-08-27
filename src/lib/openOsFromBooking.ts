@@ -11,7 +11,7 @@ const fmtDate = (iso: string) => new Date(iso + "T12:00:00").toLocaleDateString(
  */
 export async function openOsFromBooking(
   booking: WorkshopBooking,
-  opts: { userId?: string; mechanicId?: string | null; serviceTypeId?: string | null } = {},
+  opts: { userId?: string; mechanicId?: string | null; serviceTypeId?: string | null; moveToExecucao?: boolean } = {},
 ): Promise<ServiceOrder> {
   const { data: os, error } = await supabase
     .from("op_service_orders")
@@ -22,6 +22,7 @@ export async function openOsFromBooking(
       model: booking.vehicle_model || null,
       customer_name: booking.requester_name || null,
       status: "em_atendimento",
+      ...(opts.moveToExecucao ? { stage: "execucao" } : {}),
       description: booking.description || `Agendamento de ${fmtDate(booking.scheduled_date || booking.preferred_date)}`,
       diagnosis: null,
       assigned_to: opts.userId || null,
