@@ -74,6 +74,7 @@ export interface ServiceOrderPart {
   unit_price: number;
   part_status: string;
   notes: string | null;
+  photo_url?: string | null;
 }
 
 
