@@ -273,7 +273,11 @@ export default function OpOficina() {
           <Badge variant="secondary" className={cn("text-[10px] h-5", days >= DIAS_ALERTA && !o.with_customer && "bg-rose-500/15 text-rose-700 dark:text-rose-300")}>
             {days}d na oficina
           </Badge>
-          {partsCount > 0 && (
+          {pendingParts > 0 ? (
+            <Badge className="text-[10px] h-5 bg-orange-500/15 text-orange-700 dark:text-orange-300 border border-orange-400/40">
+              <Package className="h-3 w-3 mr-0.5" />{pendingParts} a receber
+            </Badge>
+          ) : partsCount > 0 && (
             <Badge variant="outline" className="text-[10px] h-5"><Package className="h-3 w-3 mr-0.5" />{partsCount}</Badge>
           )}
           {overdue && <Badge variant="destructive" className="text-[10px]"><AlertTriangle className="h-3 w-3 mr-0.5" />Alerta</Badge>}
