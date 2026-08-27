@@ -291,6 +291,9 @@ export default function OpOficinaAgenda() {
                               Adiado de {formatDateBRShort((o as any).scheduled_date)}
                             </div>
                           )}
+                          {!(o as any).scheduled_date && (
+                            <div className="text-[10px] text-teal-700 mt-1">Sem data · em execução hoje</div>
+                          )}
                           {(o as any).schedule_notes && (
                             <p className="text-[11px] text-slate-500 mt-2">{(o as any).schedule_notes}</p>
                           )}
