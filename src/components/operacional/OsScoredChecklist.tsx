@@ -160,7 +160,7 @@ export default function OsScoredChecklist({
                 size="sm" variant="outline"
                 onClick={() => { if (customLabel.trim()) { onAddCustom(customLabel); setCustomLabel(""); } }}
               >
-                <Star className="h-3.5 w-3.5 mr-1" /> Registrar
+                <Plus className="h-3.5 w-3.5 mr-1" /> Incluir
               </Button>
             </div>
           )}
