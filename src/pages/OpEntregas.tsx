@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Truck, Plus, Pencil, Trash2, Clock, MapPin, ClipboardList, CheckCircle2, Calendar as CalIcon, Search, LayoutGrid, List, Eye, EyeOff, Phone, MessageCircle, Bike, Car, HelpCircle, Package, PackageOpen, ClipboardCheck, Wrench, Camera, ShoppingBag, Box, User, Star, ChevronDown } from "lucide-react";
+import { Truck, Plus, Pencil, Trash2, Clock, MapPin, ClipboardList, CheckCircle2, Calendar as CalIcon, Search, LayoutGrid, List, Eye, EyeOff, Phone, MessageCircle, Bike, Car, HelpCircle, Package, PackageOpen, ClipboardCheck, Wrench, Camera, ShoppingBag, Box, User, Star, ChevronDown, AlertTriangle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
