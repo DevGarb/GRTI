@@ -109,7 +109,7 @@ export default function OpOficinaAgenda() {
       cur[key] += 1;
       map.set(d, cur);
     };
-    actives.forEach((o) => bump(effectiveDate((o as any).scheduled_date), "services"));
+    actives.forEach((o) => bump(effectiveOrderDate(o), "services"));
     bookings
       .filter((b) => b.status === "agendado" && !b.service_order_id)
       .forEach((b) => bump(effectiveDate(b.scheduled_date), "bookings"));
