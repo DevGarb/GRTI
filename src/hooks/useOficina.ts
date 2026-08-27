@@ -217,14 +217,15 @@ export function useServiceOrders() {
     fetch();
     return data;
   };
-  const addPart = async (serviceOrderId: string, input: { part_name: string; quantity: number; unit_price?: number; part_status?: string }) => {
+  const addPart = async (serviceOrderId: string, input: { part_name: string; quantity: number; unit_price?: number; part_status?: string; photo_url?: string | null }) => {
     const { data, error } = await supabase.from("op_service_order_parts").insert({
       service_order_id: serviceOrderId,
       part_name: input.part_name,
       quantity: input.quantity || 1,
       unit_price: input.unit_price ?? 0,
       part_status: input.part_status || "solicitada",
-    }).select().single();
+      photo_url: input.photo_url ?? null,
+    } as any).select().single();
     if (error) { toast.error(error.message); return null; }
     const row = data as ServiceOrderPart;
     setPartsByOs(prev => ({ ...prev, [serviceOrderId]: [...(prev[serviceOrderId] || []), row] }));
