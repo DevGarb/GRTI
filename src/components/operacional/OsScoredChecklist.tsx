@@ -83,9 +83,7 @@ export default function OsScoredChecklist({
                 Concluídos ({concluded.length})
               </p>
             )}
-          const tag = TYPE_TAG[it.item_type];
-          return (
-            <div key={it.id} className="flex items-center gap-2">
+            <div className="flex items-center gap-2">
               <button
                 type="button"
                 disabled={readOnly}
