@@ -1,5 +1,7 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Package, ShoppingCart, Check, Search, ChevronDown, ChevronUp, Eye, EyeOff } from "lucide-react";
+import { Fancybox } from "@fancyapps/ui/dist/fancybox/fancybox.js";
+import "@fancyapps/ui/dist/fancybox/fancybox.css";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -25,6 +27,11 @@ export default function OpOficinaCompras() {
   const [search, setSearch] = useState("");
   const [openOsId, setOpenOsId] = useState<string | null>(null);
   const [hiddenStages, setHiddenStages] = useState<string[]>([]);
+
+  useEffect(() => {
+    Fancybox.bind("[data-fancybox='compras-pecas']", {});
+    return () => Fancybox.destroy();
+  }, []);
 
   const mechName = (id: string | null) => mechanics.find(m => m.id === id)?.name || "A definir";
   const companyName = (id: string | null) => companies.find(c => c.id === id)?.name || "—";
@@ -154,10 +161,15 @@ export default function OpOficinaCompras() {
                                 <ShoppingCart className="h-4 w-4 mr-1" /> Peças Compradas
                               </Button>
                             </div>
-                            {pending.map(p => (
-                              <div key={p.id} className="bg-card border rounded-md p-3 space-y-2">
-                                <div className="flex items-center gap-2 flex-wrap">
-                                  <span className="font-medium text-sm">{p.part_name}</span>
+                              {pending.map(p => (
+                                <div key={p.id} className="bg-card border rounded-md p-3 space-y-2">
+                                  <div className="flex items-center gap-2 flex-wrap">
+                                    {(p as any).photo_url ? (
+                                      <a href={(p as any).photo_url} data-fancybox="compras-pecas" data-caption={`${p.part_name} · OS #${o.os_number}`} className="shrink-0">
+                                        <img src={(p as any).photo_url} alt={`Foto da peça ${p.part_name}`} className="h-10 w-10 rounded object-cover border" loading="lazy" />
+                                      </a>
+                                    ) : null}
+                                    <span className="font-medium text-sm">{p.part_name}</span>
                                   <span className="text-xs text-muted-foreground">x{p.quantity}</span>
                                   <Badge variant="secondary" className={cn("ml-auto", PART_STATUS_INFO[p.part_status]?.chip)}>
                                     {PART_STATUS_INFO[p.part_status]?.label || p.part_status}
