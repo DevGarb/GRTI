@@ -125,6 +125,7 @@ export default function OsScoredChecklist({
                 </button>
               )}
             </div>
+            </div>
           );
         })}
       </div>
