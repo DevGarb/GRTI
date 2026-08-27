@@ -150,10 +150,21 @@ export function useServiceOrders() {
     setItems(list);
     const ids = list.map(o => o.id);
     if (ids.length) {
-      const { data: pData } = await supabase.from("op_service_order_parts").select("*").in("service_order_id", ids);
+      // busca em lotes para evitar URL muito longa (falha silenciosa com muitas OS)
+      const chunkSize = 25;
+      const rows: ServiceOrderPart[] = [];
+      for (let i = 0; i < ids.length; i += chunkSize) {
+        const chunk = ids.slice(i, i + chunkSize);
+        const { data: pData, error: pErr } = await supabase
+          .from("op_service_order_parts")
+          .select("*")
+          .in("service_order_id", chunk);
+        if (pErr) { console.error("[oficina] falha ao carregar peças", pErr); continue; }
+        rows.push(...((pData || []) as ServiceOrderPart[]));
+      }
       const counts: Record<string, number> = {};
       const byOs: Record<string, ServiceOrderPart[]> = {};
-      ((pData || []) as ServiceOrderPart[]).forEach((r) => {
+      rows.forEach((r) => {
         counts[r.service_order_id] = (counts[r.service_order_id] || 0) + 1;
         (byOs[r.service_order_id] ||= []).push(r);
       });
@@ -163,9 +174,20 @@ export function useServiceOrders() {
       setPartsCountByOs({});
       setPartsByOs({});
     }
+
     setLoading(false);
   }, [profile?.organization_id]);
   useEffect(() => { fetch(); }, [fetch]);
+
+  // realtime: peças incluídas/alteradas pelo admin refletem na tela do mecânico
+  useEffect(() => {
+    const channel = supabase
+      .channel("op-service-order-parts-changes")
+      .on("postgres_changes", { event: "*", schema: "public", table: "op_service_order_parts" }, () => { fetch(); })
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [fetch]);
+
 
   const add = async (input: Partial<ServiceOrder>) => {
     if (!profile?.organization_id || !user) return null;
