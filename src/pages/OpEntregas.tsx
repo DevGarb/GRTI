@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Truck, Plus, Pencil, Trash2, Clock, MapPin, ClipboardList, CheckCircle2, Calendar as CalIcon, Search, LayoutGrid, List, Eye, EyeOff, Phone, MessageCircle, Bike, Car, HelpCircle, Package, PackageOpen, ClipboardCheck, Wrench, Camera, ShoppingBag, Box, User, Star, ChevronDown } from "lucide-react";
+import { Truck, Plus, Pencil, Trash2, Clock, MapPin, ClipboardList, CheckCircle2, Calendar as CalIcon, Search, LayoutGrid, List, Eye, EyeOff, Phone, MessageCircle, Bike, Car, HelpCircle, Package, PackageOpen, ClipboardCheck, Wrench, Camera, ShoppingBag, Box, User, Star, ChevronDown, AlertTriangle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -97,6 +97,14 @@ export default function OpEntregas() {
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [typeFilter, setTypeFilter] = useState<string>("all");
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
+  const toggleExpanded = (id: string) => {
+    setExpandedIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
 
   // Closure flow
   const [closing, setClosing] = useState<Delivery | null>(null);
@@ -260,74 +268,156 @@ export default function OpEntregas() {
     const CatIcon = cat ? (CATEGORY_ICON_MAP[cat.icon] || Package) : Package;
     const vr = VEHICLE_BADGE[d.vehicle_required || "qualquer"] || VEHICLE_BADGE.qualquer;
     const pill = CARD_STATUS_PILL(d);
-    return (
-      <div onClick={() => openEdit(d)} className="space-y-2">
-        {/* Header: company + star */}
-        <div className="flex items-start justify-between gap-2">
-          <div className="font-bold text-[15px] leading-tight truncate">{company?.name || "Sem empresa"}</div>
-          <Star className="h-4 w-4 text-muted-foreground flex-shrink-0" />
-        </div>
+    const driver = drivers.find(x => x.id === d.driver_id);
+    const expanded = expandedIds.has(d.id);
 
-        {/* Category badge */}
-        {cat ? (
-          <div
-            className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-1 rounded"
-            style={{ background: cat.color + "22", color: cat.color }}
-          >
-            <CatIcon className="h-3 w-3" />
-            {cat.name.toUpperCase()}
+    if (!expanded) {
+      return (
+        <div className="cursor-pointer" onClick={() => toggleExpanded(d.id)}>
+          <div className="flex items-start justify-between mb-1 gap-1">
+            {cat ? (
+              <div
+                className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-1 rounded"
+                style={{ background: cat.color + "22", color: cat.color }}
+              >
+                <CatIcon className="h-3 w-3" />
+                {cat.name.toUpperCase()}
+              </div>
+            ) : (
+              <Badge variant="outline" className="text-[10px]">{d.type}</Badge>
+            )}
+            <div className="flex items-center gap-1 flex-wrap justify-end">
+              {carried && (
+                <Badge variant="destructive" className="text-[10px]">
+                  <AlertTriangle className="h-3 w-3 mr-0.5" />Atrasada
+                </Badge>
+              )}
+              <span
+                className="text-[10px] font-bold px-2 py-1 rounded"
+                style={{ background: pill.bg, color: pill.color }}
+              >
+                {pill.label}
+              </span>
+            </div>
           </div>
-        ) : (
-          <Badge variant="outline" className="text-[10px]">{d.type}</Badge>
-        )}
 
-        {/* Address */}
-        {d.address && (
-          <div className="flex items-start gap-1.5 text-[12px] text-muted-foreground">
-            <MapPin className="h-3.5 w-3.5 mt-0.5 flex-shrink-0" />
-            <span className="line-clamp-2">{d.address}</span>
+          <div className="text-sm font-semibold truncate">
+            {company?.name || "Sem empresa"}
           </div>
-        )}
+          <div className="text-[11px] text-muted-foreground truncate">
+            {d.requester_name || "Sem solicitante"}
+          </div>
+          <div className="text-[11px] text-muted-foreground truncate">
+            Motorista: {driver?.name || "—"}
+          </div>
 
-        {/* Info rows */}
-        <div className="space-y-1 pt-1 text-[12px]">
-          {d.requester_name && (
-            <div className="flex justify-between gap-2">
-              <span className="text-muted-foreground">Solicitante:</span>
-              <span className="font-semibold truncate text-right">{d.requester_name}</span>
+          {d.address && (
+            <div className="flex items-start gap-1.5 text-[11px] text-muted-foreground mt-1">
+              <MapPin className="h-3.5 w-3.5 mt-0.5 flex-shrink-0" />
+              <span className="line-clamp-1">{d.address}</span>
             </div>
           )}
-          <div className="flex justify-between gap-2 items-center">
-            <span className="text-muted-foreground">Veículo Necessário:</span>
+
+          <div className="flex items-center gap-2 mt-1.5">
             <span
               className="text-[10px] font-bold px-2 py-0.5 rounded"
               style={{ background: vr.bg, color: vr.color }}
             >
               {vr.label}
             </span>
+            <span className="text-[10px] text-muted-foreground">
+              {formatDateBR(d.scheduled_date)} · {d.period}
+            </span>
           </div>
-          {(d.receiver_phone || d.contact_name) && (
+          <div className="text-[10px] text-muted-foreground italic mt-1">Clique para expandir</div>
+        </div>
+      );
+    }
+
+    return (
+      <div>
+        <div className="flex items-start justify-between mb-1 gap-1 cursor-pointer" onClick={() => toggleExpanded(d.id)}>
+          {cat ? (
+            <div
+              className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-1 rounded"
+              style={{ background: cat.color + "22", color: cat.color }}
+            >
+              <CatIcon className="h-3 w-3" />
+              {cat.name.toUpperCase()}
+            </div>
+          ) : (
+            <Badge variant="outline" className="text-[10px]">{d.type}</Badge>
+          )}
+          <div className="flex items-center gap-1 flex-wrap justify-end">
+            {carried && (
+              <Badge variant="destructive" className="text-[10px]">
+                <AlertTriangle className="h-3 w-3 mr-0.5" />Atrasada
+              </Badge>
+            )}
+            <span
+              className="text-[10px] font-bold px-2 py-1 rounded"
+              style={{ background: pill.bg, color: pill.color }}
+            >
+              {pill.label}
+            </span>
+          </div>
+        </div>
+
+        <div className="text-sm font-semibold truncate cursor-pointer" onClick={() => toggleExpanded(d.id)}>
+          {company?.name || "Sem empresa"}
+        </div>
+        <div className="text-[11px] text-muted-foreground truncate cursor-pointer" onClick={() => toggleExpanded(d.id)}>
+          Motorista: {driver?.name || "—"}
+        </div>
+        <div className="text-[11px] text-muted-foreground truncate cursor-pointer" onClick={() => toggleExpanded(d.id)}>
+          Solicitante: {d.requester_name || "—"}
+        </div>
+        {d.address && (
+          <div className="text-[11px] text-muted-foreground line-clamp-2 mt-1 cursor-pointer" onClick={() => toggleExpanded(d.id)}>
+            {d.address}
+          </div>
+        )}
+
+        <div className="mt-2 rounded border border-border bg-muted/40 p-2 text-[11px] space-y-1">
+          <div className="flex justify-between gap-2">
+            <span className="text-muted-foreground">Data / Período:</span>
+            <span className="font-medium">{formatDateBR(d.scheduled_date)} · {d.period}</span>
+          </div>
+          <div className="flex justify-between gap-2">
+            <span className="text-muted-foreground">Veículo necessário:</span>
+            <span className="font-medium">{vr.label}</span>
+          </div>
+          {(d.contact_name || d.receiver_phone) && (
             <div className="flex justify-between gap-2">
               <span className="text-muted-foreground">Recebedor:</span>
-              <span className="font-semibold truncate text-right">
-                {d.contact_name || d.receiver_phone}
-              </span>
+              <span className="font-medium truncate">{d.contact_name || d.receiver_phone}</span>
+            </div>
+          )}
+          {d.contact_phone && (
+            <div className="flex justify-between gap-2">
+              <span className="text-muted-foreground">Contato:</span>
+              <span className="font-medium truncate">{d.contact_phone}</span>
             </div>
           )}
         </div>
 
-        {/* Footer: date + status pill */}
-        <div className="flex items-center justify-between pt-2 border-t">
-          <div className={cn("flex items-center gap-1.5 text-[11px]", carried ? "text-rose-600 font-semibold" : "text-muted-foreground")}>
-            <CalIcon className="h-3.5 w-3.5" />
-            {formatDateBR(d.scheduled_date)} ({d.period}){carried && " · atrasada"}
+        {d.notes && (
+          <div className="mt-2 rounded bg-muted p-2 text-[11px]">
+            <span className="font-medium">Observações:</span>
+            <p className="italic text-muted-foreground whitespace-pre-wrap">{d.notes}</p>
           </div>
-          <span
-            className="text-[10px] font-bold px-2 py-1 rounded"
-            style={{ background: pill.bg, color: pill.color }}
-          >
-            {pill.label}
-          </span>
+        )}
+
+        <div className="flex items-center gap-2 mt-2 flex-wrap" onClick={(e) => e.stopPropagation()}>
+          <OpQuickActions phone={d.contact_phone} address={d.address} />
+          <Select value={d.status} onValueChange={(v) => handleStatusChange(d, v)}>
+            <SelectTrigger className="w-[130px] h-8 text-[11px]"><SelectValue /></SelectTrigger>
+            <SelectContent>{STATUSES.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
+          </Select>
+          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEdit(d)}><Pencil className="h-4 w-4" /></Button>
+          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => { if (confirm("Excluir entrega?")) remove(d.id); }}>
+            <Trash2 className="h-4 w-4 text-destructive" />
+          </Button>
         </div>
       </div>
     );
