@@ -134,4 +134,7 @@ export const POINTS_STATUS_INFO: Record<string, { label: string; chip: string }>
   ajustada: { label: "Ajustada", chip: "bg-sky-500/15 text-sky-700 dark:text-sky-300" },
 };
 
-export const formatPoints = (n: number) => round2(n).toFixed(2).replace(".", ",");
+export const formatPoints = (n: number) => {
+  const v = round2(n);
+  return Number.isInteger(v) ? String(v) : v.toFixed(2).replace(".", ",");
+};
