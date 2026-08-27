@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Calendar, ChevronLeft, ChevronRight, CalendarPlus, Check, X, Clock, Bike, User, Trash2, Search, Plus } from "lucide-react";
 
 import OficinaNav from "./OficinaNav";
@@ -77,14 +77,51 @@ export default function OpOficinaAgenda() {
   }, [mecs, ofDay, readOnly, profile?.id]);
 
 
-  const weekCounts = useMemo(() => {
-    return Array.from({ length: 7 }, (_, i) => {
-      const d = shiftDay(day, i - 3);
-      return { d, count: actives.filter((o) => effectiveDate((o as any).scheduled_date) === d).length };
-    });
-  }, [actives, day, today]);
+  // Calendário mensal: contagem de serviços + agendamentos aguardando chegada por dia
+  const [monthCursor, setMonthCursor] = useState(() => day.slice(0, 7));
+
+  const monthDays = useMemo(() => {
+    const [y, m] = monthCursor.split("-").map(Number);
+    const first = new Date(y, m - 1, 1);
+    const last = new Date(y, m, 0);
+    const cells: (string | null)[] = Array.from({ length: first.getDay() }, () => null);
+    for (let i = 1; i <= last.getDate(); i++) {
+      cells.push(`${monthCursor}-${String(i).padStart(2, "0")}`);
+    }
+    while (cells.length % 7 !== 0) cells.push(null);
+    return cells;
+  }, [monthCursor]);
+
+  const dayCounts = useMemo(() => {
+    const map = new Map<string, { services: number; bookings: number }>();
+    const bump = (d: string | null, key: "services" | "bookings") => {
+      if (!d) return;
+      const cur = map.get(d) || { services: 0, bookings: 0 };
+      cur[key] += 1;
+      map.set(d, cur);
+    };
+    actives.forEach((o) => bump(effectiveDate((o as any).scheduled_date), "services"));
+    bookings
+      .filter((b) => b.status === "agendado" && !b.service_order_id)
+      .forEach((b) => bump(effectiveDate(b.scheduled_date), "bookings"));
+    return map;
+  }, [actives, bookings, today]);
+
+  useEffect(() => { setMonthCursor(day.slice(0, 7)); }, [day]);
+
+  const shiftMonth = (delta: number) => {
+    const [y, m] = monthCursor.split("-").map(Number);
+    const d = new Date(y, m - 1 + delta, 1);
+    setMonthCursor(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`);
+  };
+
+  const monthLabel = useMemo(() => {
+    const [y, m] = monthCursor.split("-").map(Number);
+    return new Date(y, m - 1, 1).toLocaleDateString("pt-BR", { month: "long", year: "numeric" });
+  }, [monthCursor]);
 
   const rolledCount = ofDay.filter((o) => isRolled((o as any).scheduled_date)).length;
+
 
   const unschedule = async (o: ServiceOrder) => {
     await update(o.id, { scheduled_date: null, scheduled_period: null } as any);
@@ -128,19 +165,48 @@ export default function OpOficinaAgenda() {
 
         </div>
 
-        <div className="flex gap-2 overflow-x-auto pb-1">
-          {weekCounts.map((w) => (
-            <button
-              key={w.d}
-              onClick={() => setDay(w.d)}
-              className={`min-w-[92px] rounded-lg border px-3 py-2 text-left transition ${w.d === day ? "bg-slate-800 text-white border-slate-800" : "bg-white hover:bg-slate-100"}`}
-            >
-              <div className="text-[11px] capitalize opacity-80">{weekdayLabel(w.d).slice(0, 3)}</div>
-              <div className="text-sm font-semibold">{formatDateBRShort(w.d).slice(0, 5)}</div>
-              <div className="text-[11px] opacity-80">{w.count} serviço(s)</div>
-            </button>
-          ))}
-        </div>
+        <Card className="p-3">
+          <div className="flex items-center justify-between mb-2">
+            <Button size="icon" variant="outline" className="h-7 w-7" onClick={() => shiftMonth(-1)}>
+              <ChevronLeft className="h-4 w-4" />
+            </Button>
+            <span className="text-sm font-semibold capitalize text-slate-800">{monthLabel}</span>
+            <Button size="icon" variant="outline" className="h-7 w-7" onClick={() => shiftMonth(1)}>
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+          </div>
+          <div className="grid grid-cols-7 gap-1 text-center text-[10px] text-slate-400 mb-1">
+            {["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"].map((d) => <div key={d}>{d}</div>)}
+          </div>
+          <div className="grid grid-cols-7 gap-1">
+            {monthDays.map((d, i) => {
+              if (!d) return <div key={`e${i}`} />;
+              const c = dayCounts.get(d);
+              const selected = d === day;
+              const isToday = d === today;
+              return (
+                <button
+                  key={d}
+                  onClick={() => setDay(d)}
+                  className={`rounded-lg border px-1 py-1.5 min-h-[52px] text-left transition ${
+                    selected ? "bg-slate-800 text-white border-slate-800" : isToday ? "bg-white border-slate-800 hover:bg-slate-100" : "bg-white hover:bg-slate-100"
+                  }`}
+                >
+                  <div className="text-xs font-semibold">{Number(d.slice(8))}</div>
+                  <div className="flex flex-wrap gap-0.5 mt-0.5">
+                    {!!c?.services && (
+                      <span className={`text-[9px] px-1 rounded ${selected ? "bg-white/20" : "bg-teal-500/15 text-teal-700"}`}>{c.services} serv.</span>
+                    )}
+                    {!!c?.bookings && (
+                      <span className={`text-[9px] px-1 rounded ${selected ? "bg-white/20" : "bg-amber-500/15 text-amber-700"}`}>{c.bookings} ag.</span>
+                    )}
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        </Card>
+
 
         {!readOnly && pending.length > 0 && (
           <Card className="p-4">
