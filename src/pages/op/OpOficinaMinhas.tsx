@@ -84,18 +84,12 @@ export default function OpOficinaMinhas() {
 
   const addPartToOs = async (osId: string) => {
     if (!rowPart.trim()) return toast.error("Informe o nome da peça");
-    const { error } = await supabase.from("op_service_order_parts").insert({
-      service_order_id: osId,
-      part_name: rowPart.trim(),
-      quantity: rowQty || 1,
-      unit_price: 0,
-      part_status: "solicitada",
-    });
-    if (error) return toast.error(error.message);
+    const row = await addPart(osId, { part_name: rowPart.trim(), quantity: rowQty || 1 });
+    if (!row) return;
     toast.success("Peça solicitada");
-    setRowPart(""); setRowQty(1); setAddPartFor(null);
-    refetch();
+    setRowPart(""); setRowQty(1);
   };
+
 
 
   // Finalização
