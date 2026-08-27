@@ -719,11 +719,16 @@ export default function OpOficinaMinhas() {
                           </Button>
                         </div>
                         {addPartFor === o.id && (
-                          <div className="flex gap-2 mb-2">
-                            <Input value={rowPart} onChange={e => setRowPart(e.target.value)} placeholder="Peça / serviço"
-                              onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); addPartToOs(o.id); } }} />
-                            <Input type="number" min={1} value={rowQty} onChange={e => setRowQty(Number(e.target.value))} className="w-16" />
-                            <Button size="sm" onClick={() => addPartToOs(o.id)}>Solicitar</Button>
+                          <div className="space-y-1 mb-2">
+                            <div className="flex gap-2">
+                              <Input value={rowPart} onChange={e => setRowPart(e.target.value)} placeholder="Peça / serviço"
+                                onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); requestPartPhoto(o.id); } }} />
+                              <Input type="number" min={1} value={rowQty} onChange={e => setRowQty(Number(e.target.value))} className="w-16" />
+                              <Button size="sm" disabled={savingPart} onClick={() => requestPartPhoto(o.id)}>
+                                <Camera className="h-4 w-4 mr-1" /> Solicitar
+                              </Button>
+                            </div>
+                            <p className="text-[11px] text-muted-foreground">Ao solicitar, é obrigatório registrar a foto da peça quebrada.</p>
                           </div>
                         )}
 
