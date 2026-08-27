@@ -195,10 +195,26 @@ export function useServiceOrders() {
     fetch();
     return data;
   };
+  const addPart = async (serviceOrderId: string, input: { part_name: string; quantity: number; unit_price?: number; part_status?: string }) => {
+    const { data, error } = await supabase.from("op_service_order_parts").insert({
+      service_order_id: serviceOrderId,
+      part_name: input.part_name,
+      quantity: input.quantity || 1,
+      unit_price: input.unit_price ?? 0,
+      part_status: input.part_status || "solicitada",
+    }).select().single();
+    if (error) { toast.error(error.message); return null; }
+    const row = data as ServiceOrderPart;
+    setPartsByOs(prev => ({ ...prev, [serviceOrderId]: [...(prev[serviceOrderId] || []), row] }));
+    setPartsCountByOs(prev => ({ ...prev, [serviceOrderId]: (prev[serviceOrderId] || 0) + 1 }));
+    fetch();
+    return row;
+  };
   const setPartStatusForOs = async (serviceOrderId: string, part_status: string) => {
     const { error } = await supabase.from("op_service_order_parts").update({ part_status }).eq("service_order_id", serviceOrderId);
     if (error) toast.error(error.message); else fetch();
   };
+
   const setPartStatus = async (partId: string, part_status: string) => {
     const { error } = await supabase.from("op_service_order_parts").update({ part_status }).eq("id", partId);
     if (error) toast.error(error.message); else fetch();
