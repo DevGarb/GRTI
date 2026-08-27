@@ -1,6 +1,6 @@
 import { filterOficinaCompanies } from "@/lib/oficinaCompanies";
 import { useEffect, useMemo, useState } from "react";
-import { Wrench, Package, CheckCircle2, ClipboardList, AlertTriangle, Plus, ChevronDown, ChevronUp, Camera, X, MessageSquareWarning, Eye, EyeOff, CalendarDays } from "lucide-react";
+import { Wrench, Package, CheckCircle2, ClipboardList, AlertTriangle, Plus, ChevronDown, ChevronUp, Camera, X, MessageSquareWarning, Eye, EyeOff, CalendarDays, Trash2 } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+
 import { useServiceOrders, useServiceChecklists, type ServiceOrder, type ServiceOrderPhoto, type ServiceOrderPart } from "@/hooks/useOficina";
 import OsProgressBar from "@/components/operacional/OsProgressBar";
 import OsScoredChecklist from "@/components/operacional/OsScoredChecklist";
@@ -21,8 +22,9 @@ import OficinaNav from "./OficinaNav";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import {
-  stageInfo, PART_STATUS_INFO, daysInWorkshop, DIAS_ALERTA,
+  stageInfo, PART_STATUS_INFO, PART_STATUS_FLOW, daysInWorkshop, DIAS_ALERTA,
 } from "@/lib/oficinaStages";
+
 import { periodInfo, todayISO, formatDateBRShort, weekdayLabel } from "@/lib/oficinaAgenda";
 import { useWorkshopBookings, type WorkshopBooking } from "@/hooks/useWorkshopBookings";
 import { openOsFromBooking } from "@/lib/openOsFromBooking";
@@ -44,7 +46,8 @@ const ALERT_REASONS = [
 export default function OpOficinaMinhas() {
   const { profile } = useOficinaProfile();
   const { user } = useAuth();
-  const { items, partsByOs, update, add, addPart, refetch } = useServiceOrders();
+  const { items, partsByOs, update, add, addPart, setPartStatus, removePart, refetch } = useServiceOrders();
+
   const checklist = useServiceChecklists();
   const { items: companies } = useCompanies();
   const companyName = (id?: string | null) => companies.find(c => c.id === id)?.name || null;
@@ -667,16 +670,27 @@ export default function OpOficinaMinhas() {
                         ) : (
                           <div className="grid sm:grid-cols-2 gap-2">
                             {parts.map(p => {
-                              const info = PART_STATUS_INFO[p.part_status] || { label: p.part_status, chip: "" };
+                              const info = PART_STATUS_INFO[p.part_status || "solicitada"] || PART_STATUS_INFO.solicitada;
                               return (
-                                <div key={p.id} className="bg-card border rounded-md px-3 py-2 flex items-center justify-between gap-2">
-                                  <span className="text-sm truncate">{p.part_name} (x{p.quantity})</span>
-                                  <Badge variant="secondary" className={info.chip}>{info.label}</Badge>
+                                <div key={p.id} className="bg-card border rounded-md px-3 py-2 flex items-center gap-2 group">
+                                  <span className="text-sm truncate flex-1 min-w-0" title={p.part_name}>{p.part_name} (x{p.quantity})</span>
+                                  <Select value={p.part_status || "solicitada"} onValueChange={(v) => setPartStatus(p.id, v)}>
+                                    <SelectTrigger className={cn("h-6 w-auto gap-1 rounded-full border-0 px-2 text-[11px] font-medium [&>svg]:h-3 [&>svg]:w-3", info.chip)}>
+                                      <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      {PART_STATUS_FLOW.map(st => <SelectItem key={st} value={st}>{PART_STATUS_INFO[st].label}</SelectItem>)}
+                                    </SelectContent>
+                                  </Select>
+                                  <Button variant="ghost" size="icon" className="h-6 w-6 shrink-0" onClick={() => removePart(p.id)}>
+                                    <Trash2 className="h-3.5 w-3.5 text-destructive" />
+                                  </Button>
                                 </div>
                               );
                             })}
                           </div>
                         )}
+
                       </div>
                     </div>
                   )}
