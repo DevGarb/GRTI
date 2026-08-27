@@ -12,7 +12,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/contexts/AuthContext";
 import { useServiceOrders, useServiceOrderDetails, useServiceChecklists, useMechanics, useParts, type ServiceOrder, type ServiceChecklistItem } from "@/hooks/useOficina";
-import { useCompanies, useVehicles } from "@/hooks/useOperacional";
+import { useCompanies, useVehicles, type Company } from "@/hooks/useOperacional";
 import OpKanbanBoard, { type KanbanColumn } from "@/components/operacional/OpKanbanBoard";
 import OpClosureDialog from "@/components/operacional/OpClosureDialog";
 import OpQuickActions from "@/components/operacional/OpQuickActions";
@@ -462,7 +462,7 @@ export default function OpOficina() {
 
       {view === "kanban" && (
         <div className="flex gap-3 items-start">
-          <ConfirmedBookingsColumn onCreated={refetch} />
+          <ConfirmedBookingsColumn companies={companies} onCreated={refetch} />
           <div className="flex-1 min-w-0">
             <OpKanbanBoard<ServiceOrder>
               columns={columns}
@@ -1121,12 +1121,14 @@ function OsDetailDialog({ os, onClose, onUpdate, onDelete, onRequestClose, compa
 }
 
 /* ---------- Coluna de agendamentos confirmados (vertical colapsada / expandida) ---------- */
-function ConfirmedBookingsColumn({ onCreated }: { onCreated?: () => void }) {
+function ConfirmedBookingsColumn({ companies, onCreated }: { companies: Company[]; onCreated?: () => void }) {
   const { items, loading, refetch, remove } = useWorkshopBookings();
   const { user } = useAuth();
   const [opening, setOpening] = useState<string | null>(null);
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
   const [panelOpen, setPanelOpen] = useState(false);
+
+  const companyName = (id: string | null) => companies.find(c => c.id === id)?.name || "—";
 
   const list = useMemo(
     () => items
@@ -1219,6 +1221,7 @@ function ConfirmedBookingsColumn({ onCreated }: { onCreated?: () => void }) {
                 <Badge variant="secondary" className={per.chip}>{per.label}</Badge>
               </div>
               <div className="text-xs text-muted-foreground truncate">{b.vehicle_model || "—"}</div>
+              <div className="text-xs text-muted-foreground truncate">Empresa: {companyName(b.company_id)}</div>
               <div className="flex items-center gap-1.5 text-xs">
                 <Calendar className="h-3 w-3 text-muted-foreground" />
                 <span className={cn(isToday && "font-semibold text-primary")}>
