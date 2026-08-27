@@ -669,16 +669,27 @@ export default function OpOficinaMinhas() {
                         ) : (
                           <div className="grid sm:grid-cols-2 gap-2">
                             {parts.map(p => {
-                              const info = PART_STATUS_INFO[p.part_status] || { label: p.part_status, chip: "" };
+                              const info = PART_STATUS_INFO[p.part_status || "solicitada"] || PART_STATUS_INFO.solicitada;
                               return (
-                                <div key={p.id} className="bg-card border rounded-md px-3 py-2 flex items-center justify-between gap-2">
-                                  <span className="text-sm truncate">{p.part_name} (x{p.quantity})</span>
-                                  <Badge variant="secondary" className={info.chip}>{info.label}</Badge>
+                                <div key={p.id} className="bg-card border rounded-md px-3 py-2 flex items-center gap-2 group">
+                                  <span className="text-sm truncate flex-1 min-w-0" title={p.part_name}>{p.part_name} (x{p.quantity})</span>
+                                  <Select value={p.part_status || "solicitada"} onValueChange={(v) => setPartStatus(p.id, v)}>
+                                    <SelectTrigger className={cn("h-6 w-auto gap-1 rounded-full border-0 px-2 text-[11px] font-medium [&>svg]:h-3 [&>svg]:w-3", info.chip)}>
+                                      <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      {PART_STATUS_FLOW.map(st => <SelectItem key={st} value={st}>{PART_STATUS_INFO[st].label}</SelectItem>)}
+                                    </SelectContent>
+                                  </Select>
+                                  <Button variant="ghost" size="icon" className="h-6 w-6 shrink-0" onClick={() => removePart(p.id)}>
+                                    <Trash2 className="h-3.5 w-3.5 text-destructive" />
+                                  </Button>
                                 </div>
                               );
                             })}
                           </div>
                         )}
+
                       </div>
                     </div>
                   )}
