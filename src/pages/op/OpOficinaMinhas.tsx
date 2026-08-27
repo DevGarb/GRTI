@@ -133,6 +133,7 @@ export default function OpOficinaMinhas() {
   const [files, setFiles] = useState<File[]>([]);
   const [finishKm, setFinishKm] = useState("");
   const [finishing, setFinishing] = useState(false);
+  const [finishCameraOpen, setFinishCameraOpen] = useState(false);
 
   // Acionar supervisor (observação / intercorrência)
   const [alertOs, setAlertOs] = useState<ServiceOrder | null>(null);
@@ -342,6 +343,7 @@ export default function OpOficinaMinhas() {
   const confirmFinish = async () => {
     if (!finishOs) return;
     if (!summary.trim()) return toast.error("Descreva o que foi feito no serviço");
+    if (files.length === 0) return toast.error("Tire ou anexe pelo menos uma foto da moto");
     const km = Number(String(finishKm).replace(/\D/g, ""));
     if (!finishKm.trim() || !Number.isFinite(km) || km <= 0) return toast.error("Informe o KM atual da moto");
     setFinishing(true);
@@ -367,6 +369,9 @@ export default function OpOficinaMinhas() {
       } as any);
       toast.success("Serviço finalizado");
       setFinishOs(null);
+      setFiles([]);
+      setSummary("");
+      setFinishKm("");
       setExpanded(null);
       setTab("finalizadas");
       refetch();
@@ -575,6 +580,13 @@ export default function OpOficinaMinhas() {
               <CameraCaptureModal
                 onCapture={file => addPartToOs(partCameraFor, file)}
                 onClose={() => setPartCameraFor(null)}
+              />
+            )}
+
+            {finishCameraOpen && (
+              <CameraCaptureModal
+                onCapture={file => setFiles(prev => [...prev, file])}
+                onClose={() => setFinishCameraOpen(false)}
               />
             )}
 
@@ -1122,9 +1134,14 @@ export default function OpOficinaMinhas() {
                   placeholder="Descreva os serviços executados, peças trocadas, observações..." />
               </div>
               <div>
-                <Label>Fotos do serviço</Label>
-                <Input type="file" accept="image/*" multiple capture="environment"
-                  onChange={e => setFiles(prev => [...prev, ...Array.from(e.target.files || [])])} />
+                <Label>Fotos do serviço *</Label>
+                <div className="flex flex-col sm:flex-row gap-2">
+                  <Input type="file" accept="image/*" multiple capture="environment"
+                    onChange={e => setFiles(prev => [...prev, ...Array.from(e.target.files || [])])} />
+                  <Button type="button" variant="outline" size="sm" onClick={() => setFinishCameraOpen(true)}>
+                    <Camera className="h-4 w-4 mr-1" /> Tirar foto
+                  </Button>
+                </div>
                 {files.length > 0 && (
                   <div className="flex gap-2 flex-wrap mt-2">
                     {files.map((f, i) => (
@@ -1139,7 +1156,7 @@ export default function OpOficinaMinhas() {
                   </div>
                 )}
                 <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
-                  <Camera className="h-3 w-3" /> Você pode tirar a foto na hora pelo celular.
+                  <Camera className="h-3 w-3" /> É obrigatório enviar ao menos uma foto da moto para finalizar.
                 </p>
               </div>
             </div>
