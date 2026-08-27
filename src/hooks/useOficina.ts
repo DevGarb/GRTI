@@ -179,6 +179,16 @@ export function useServiceOrders() {
   }, [profile?.organization_id]);
   useEffect(() => { fetch(); }, [fetch]);
 
+  // realtime: peças incluídas/alteradas pelo admin refletem na tela do mecânico
+  useEffect(() => {
+    const channel = supabase
+      .channel("op-service-order-parts-changes")
+      .on("postgres_changes", { event: "*", schema: "public", table: "op_service_order_parts" }, () => { fetch(); })
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [fetch]);
+
+
   const add = async (input: Partial<ServiceOrder>) => {
     if (!profile?.organization_id || !user) return null;
     const { data, error } = await supabase.from("op_service_orders").insert({
