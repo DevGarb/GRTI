@@ -740,6 +740,11 @@ export default function OpOficinaMinhas() {
                               const info = PART_STATUS_INFO[p.part_status || "solicitada"] || PART_STATUS_INFO.solicitada;
                               return (
                                 <div key={p.id} className="bg-card border rounded-md px-3 py-2 flex items-center gap-2 group">
+                                  {(p as any).photo_url && (
+                                    <a href={(p as any).photo_url} data-fancybox="minhas-pecas" className="shrink-0">
+                                      <img src={(p as any).photo_url} alt={`Foto da peça ${p.part_name}`} className="h-8 w-8 rounded object-cover border" />
+                                    </a>
+                                  )}
                                   <span className="text-sm truncate flex-1 min-w-0" title={p.part_name}>{p.part_name} (x{p.quantity})</span>
                                   <Select value={p.part_status || "solicitada"} onValueChange={(v) => setPartStatus(p.id, v)}>
                                     <SelectTrigger className={cn("h-6 w-auto gap-1 rounded-full border-0 px-2 text-[11px] font-medium [&>svg]:h-3 [&>svg]:w-3", info.chip)}>
