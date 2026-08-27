@@ -1,0 +1,1 @@
+ALTER TABLE public.op_service_order_parts ADD COLUMN IF NOT EXISTS photo_url text;

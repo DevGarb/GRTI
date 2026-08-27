@@ -2219,6 +2219,7 @@ export type Database = {
           part_id: string | null
           part_name: string
           part_status: string
+          photo_url: string | null
           quantity: number
           service_order_id: string
           unit_price: number
@@ -2230,6 +2231,7 @@ export type Database = {
           part_id?: string | null
           part_name: string
           part_status?: string
+          photo_url?: string | null
           quantity?: number
           service_order_id: string
           unit_price?: number
@@ -2241,6 +2243,7 @@ export type Database = {
           part_id?: string | null
           part_name?: string
           part_status?: string
+          photo_url?: string | null
           quantity?: number
           service_order_id?: string
           unit_price?: number
