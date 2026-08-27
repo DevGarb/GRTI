@@ -17,15 +17,16 @@ export async function openOsFromBooking(
     .from("op_service_orders")
     .insert({
       organization_id: booking.organization_id,
+      created_by: opts.userId,
       company_id: booking.company_id,
-      plate: booking.vehicle_plate,
-      model: booking.vehicle_model || null,
+      vehicle_plate: booking.vehicle_plate,
+      vehicle_model: booking.vehicle_model || null,
       customer_name: booking.requester_name || null,
-      status: "em_atendimento",
-      ...(opts.moveToExecucao ? { stage: "execucao" } : {}),
+      status: "Aberta",
+      stage: opts.moveToExecucao ? "execucao" : "analise",
+      opened_at: new Date().toISOString().slice(0, 10),
       description: booking.description || `Agendamento de ${fmtDate(booking.scheduled_date || booking.preferred_date)}`,
       diagnosis: null,
-      assigned_to: opts.userId || null,
       mechanic_id: opts.mechanicId || null,
       service_type_id: opts.serviceTypeId || null,
     } as any)
@@ -35,7 +36,7 @@ export async function openOsFromBooking(
 
   const { error: bErr } = await supabase
     .from("op_workshop_bookings")
-    .update({ status: "concluido" })
+    .update({ status: "concluido", service_order_id: (os as any).id } as any)
     .eq("id", booking.id);
   if (bErr) throw bErr;
 

@@ -206,7 +206,18 @@ export default function OpOficinaMinhas() {
     setOpeningBooking(b.id);
     try {
       const os = await openOsFromBooking(b, { userId: user?.id, mechanicId: profile?.id || null, serviceTypeId: (b as any).service_type_id || null, moveToExecucao });
-      if (os) { refetchBookings(); refetch(); setTab("servicos"); }
+      if (os) {
+        refetchBookings();
+        refetch();
+        setTab("servicos");
+        toast.success(
+          moveToExecucao
+            ? `OS aberta e movida para Em Execução (${b.vehicle_plate})`
+            : `OS aberta em Análise / Triagem (${b.vehicle_plate})`,
+        );
+      }
+    } catch (e: any) {
+      toast.error(e?.message || "Não foi possível abrir a OS");
     } finally {
       setOpeningBooking(null);
       setBookingTarget(null);
