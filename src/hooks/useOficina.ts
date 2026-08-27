@@ -219,6 +219,11 @@ export function useServiceOrders() {
     const { error } = await supabase.from("op_service_order_parts").update({ part_status }).eq("id", partId);
     if (error) toast.error(error.message); else fetch();
   };
+  const removePart = async (partId: string) => {
+    const { error } = await supabase.from("op_service_order_parts").delete().eq("id", partId);
+    if (error) toast.error(error.message); else fetch();
+  };
+
   const setPartPrice = async (partId: string, unit_price: number) => {
     setPartsByOs(prev => {
       const next: Record<string, ServiceOrderPart[]> = {};
