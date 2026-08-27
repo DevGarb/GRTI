@@ -79,6 +79,7 @@ export default function OpOficinaMinhas() {
 
   useEffect(() => {
     Fancybox.bind("[data-fancybox='minhas-finalizadas']", {});
+    Fancybox.bind("[data-fancybox='minhas-pecas']", {});
     return () => Fancybox.destroy();
   }, []);
 
@@ -86,13 +87,42 @@ export default function OpOficinaMinhas() {
   const [addPartFor, setAddPartFor] = useState<string | null>(null);
   const [rowPart, setRowPart] = useState("");
   const [rowQty, setRowQty] = useState(1);
+  const [partCameraFor, setPartCameraFor] = useState<string | null>(null);
+  const [savingPart, setSavingPart] = useState(false);
 
-  const addPartToOs = async (osId: string) => {
+  const uploadPartPhoto = async (osId: string, file: File) => {
+    const path = `${osId}/pecas/${Date.now()}-${file.name.replace(/[^\w.\-]/g, "_")}`;
+    const { error: upErr } = await supabase.storage.from("op-service-orders").upload(path, file);
+    if (upErr) { toast.error(upErr.message); return null; }
+    const { data: { publicUrl } } = supabase.storage.from("op-service-orders").getPublicUrl(path);
+    return publicUrl as string;
+  };
+
+  const requestPartPhoto = (osId: string) => {
     if (!rowPart.trim()) return toast.error("Informe o nome da peça");
-    const row = await addPart(osId, { part_name: rowPart.trim(), quantity: rowQty || 1 });
-    if (!row) return;
-    toast.success("Peça solicitada");
-    setRowPart(""); setRowQty(1);
+    setPartCameraFor(osId);
+  };
+
+  const addPartToOs = async (osId: string, file: File) => {
+    if (!rowPart.trim()) return toast.error("Informe o nome da peça");
+    setSavingPart(true);
+    try {
+      const photoUrl = await uploadPartPhoto(osId, file);
+      if (!photoUrl) return;
+      const row = await addPart(osId, { part_name: rowPart.trim(), quantity: rowQty || 1, photo_url: photoUrl } as any);
+      if (!row) return;
+      await supabase.from("op_service_order_photos").insert({
+        service_order_id: osId,
+        photo_url: photoUrl,
+        photo_type: "antes",
+        uploaded_by: user?.id || null,
+      });
+      toast.success("Peça solicitada com foto");
+      setRowPart(""); setRowQty(1);
+    } finally {
+      setSavingPart(false);
+      setPartCameraFor(null);
+    }
   };
 
 
@@ -541,6 +571,13 @@ export default function OpOficinaMinhas() {
               />
             )}
 
+            {partCameraFor && (
+              <CameraCaptureModal
+                onCapture={file => addPartToOs(partCameraFor, file)}
+                onClose={() => setPartCameraFor(null)}
+              />
+            )}
+
 
             {mine.length === 0 && (
               <div className="bg-card border rounded-lg p-12 text-center text-muted-foreground">
@@ -690,11 +727,16 @@ export default function OpOficinaMinhas() {
                           </Button>
                         </div>
                         {addPartFor === o.id && (
-                          <div className="flex gap-2 mb-2">
-                            <Input value={rowPart} onChange={e => setRowPart(e.target.value)} placeholder="Peça / serviço"
-                              onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); addPartToOs(o.id); } }} />
-                            <Input type="number" min={1} value={rowQty} onChange={e => setRowQty(Number(e.target.value))} className="w-16" />
-                            <Button size="sm" onClick={() => addPartToOs(o.id)}>Solicitar</Button>
+                          <div className="space-y-1 mb-2">
+                            <div className="flex gap-2">
+                              <Input value={rowPart} onChange={e => setRowPart(e.target.value)} placeholder="Peça / serviço"
+                                onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); requestPartPhoto(o.id); } }} />
+                              <Input type="number" min={1} value={rowQty} onChange={e => setRowQty(Number(e.target.value))} className="w-16" />
+                              <Button size="sm" disabled={savingPart} onClick={() => requestPartPhoto(o.id)}>
+                                <Camera className="h-4 w-4 mr-1" /> Solicitar
+                              </Button>
+                            </div>
+                            <p className="text-[11px] text-muted-foreground">Ao solicitar, é obrigatório registrar a foto da peça quebrada.</p>
                           </div>
                         )}
 
@@ -706,6 +748,11 @@ export default function OpOficinaMinhas() {
                               const info = PART_STATUS_INFO[p.part_status || "solicitada"] || PART_STATUS_INFO.solicitada;
                               return (
                                 <div key={p.id} className="bg-card border rounded-md px-3 py-2 flex items-center gap-2 group">
+                                  {(p as any).photo_url && (
+                                    <a href={(p as any).photo_url} data-fancybox="minhas-pecas" className="shrink-0">
+                                      <img src={(p as any).photo_url} alt={`Foto da peça ${p.part_name}`} className="h-8 w-8 rounded object-cover border" />
+                                    </a>
+                                  )}
                                   <span className="text-sm truncate flex-1 min-w-0" title={p.part_name}>{p.part_name} (x{p.quantity})</span>
                                   <Select value={p.part_status || "solicitada"} onValueChange={(v) => setPartStatus(p.id, v)}>
                                     <SelectTrigger className={cn("h-6 w-auto gap-1 rounded-full border-0 px-2 text-[11px] font-medium [&>svg]:h-3 [&>svg]:w-3", info.chip)}>
