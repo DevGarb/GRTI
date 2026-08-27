@@ -529,7 +529,7 @@ export default function OpOficina() {
       {selected && (
         <OsDetailDialog
           os={selected}
-          onClose={() => setSelected(null)}
+          onClose={() => { setSelected(null); refetch(); }}
           onUpdate={(p) => update(selected.id, p)}
           onDelete={() => { remove(selected.id); setSelected(null); }}
           onRequestClose={(o) => { setSelected(null); setClosing(o); }}
