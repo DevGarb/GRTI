@@ -44,7 +44,7 @@ const ALERT_REASONS = [
 export default function OpOficinaMinhas() {
   const { profile } = useOficinaProfile();
   const { user } = useAuth();
-  const { items, partsByOs, update, add, refetch } = useServiceOrders();
+  const { items, partsByOs, update, add, addPart, refetch } = useServiceOrders();
   const checklist = useServiceChecklists();
   const { items: companies } = useCompanies();
   const companyName = (id?: string | null) => companies.find(c => c.id === id)?.name || null;
