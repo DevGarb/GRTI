@@ -86,13 +86,42 @@ export default function OpOficinaMinhas() {
   const [addPartFor, setAddPartFor] = useState<string | null>(null);
   const [rowPart, setRowPart] = useState("");
   const [rowQty, setRowQty] = useState(1);
+  const [partCameraFor, setPartCameraFor] = useState<string | null>(null);
+  const [savingPart, setSavingPart] = useState(false);
 
-  const addPartToOs = async (osId: string) => {
+  const uploadPartPhoto = async (osId: string, file: File) => {
+    const path = `${osId}/pecas/${Date.now()}-${file.name.replace(/[^\w.\-]/g, "_")}`;
+    const { error: upErr } = await supabase.storage.from("op-service-orders").upload(path, file);
+    if (upErr) { toast.error(upErr.message); return null; }
+    const { data: { publicUrl } } = supabase.storage.from("op-service-orders").getPublicUrl(path);
+    return publicUrl as string;
+  };
+
+  const requestPartPhoto = (osId: string) => {
     if (!rowPart.trim()) return toast.error("Informe o nome da peça");
-    const row = await addPart(osId, { part_name: rowPart.trim(), quantity: rowQty || 1 });
-    if (!row) return;
-    toast.success("Peça solicitada");
-    setRowPart(""); setRowQty(1);
+    setPartCameraFor(osId);
+  };
+
+  const addPartToOs = async (osId: string, file: File) => {
+    if (!rowPart.trim()) return toast.error("Informe o nome da peça");
+    setSavingPart(true);
+    try {
+      const photoUrl = await uploadPartPhoto(osId, file);
+      if (!photoUrl) return;
+      const row = await addPart(osId, { part_name: rowPart.trim(), quantity: rowQty || 1, photo_url: photoUrl } as any);
+      if (!row) return;
+      await supabase.from("op_service_order_photos").insert({
+        service_order_id: osId,
+        photo_url: photoUrl,
+        photo_type: "antes",
+        uploaded_by: user?.id || null,
+      });
+      toast.success("Peça solicitada com foto");
+      setRowPart(""); setRowQty(1);
+    } finally {
+      setSavingPart(false);
+      setPartCameraFor(null);
+    }
   };
 
 
