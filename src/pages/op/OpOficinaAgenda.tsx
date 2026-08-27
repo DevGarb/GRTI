@@ -163,19 +163,48 @@ export default function OpOficinaAgenda() {
 
         </div>
 
-        <div className="flex gap-2 overflow-x-auto pb-1">
-          {weekCounts.map((w) => (
-            <button
-              key={w.d}
-              onClick={() => setDay(w.d)}
-              className={`min-w-[92px] rounded-lg border px-3 py-2 text-left transition ${w.d === day ? "bg-slate-800 text-white border-slate-800" : "bg-white hover:bg-slate-100"}`}
-            >
-              <div className="text-[11px] capitalize opacity-80">{weekdayLabel(w.d).slice(0, 3)}</div>
-              <div className="text-sm font-semibold">{formatDateBRShort(w.d).slice(0, 5)}</div>
-              <div className="text-[11px] opacity-80">{w.count} serviço(s)</div>
-            </button>
-          ))}
-        </div>
+        <Card className="p-3">
+          <div className="flex items-center justify-between mb-2">
+            <Button size="icon" variant="outline" className="h-7 w-7" onClick={() => shiftMonth(-1)}>
+              <ChevronLeft className="h-4 w-4" />
+            </Button>
+            <span className="text-sm font-semibold capitalize text-slate-800">{monthLabel}</span>
+            <Button size="icon" variant="outline" className="h-7 w-7" onClick={() => shiftMonth(1)}>
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+          </div>
+          <div className="grid grid-cols-7 gap-1 text-center text-[10px] text-slate-400 mb-1">
+            {["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"].map((d) => <div key={d}>{d}</div>)}
+          </div>
+          <div className="grid grid-cols-7 gap-1">
+            {monthDays.map((d, i) => {
+              if (!d) return <div key={`e${i}`} />;
+              const c = dayCounts.get(d);
+              const selected = d === day;
+              const isToday = d === today;
+              return (
+                <button
+                  key={d}
+                  onClick={() => setDay(d)}
+                  className={`rounded-lg border px-1 py-1.5 min-h-[52px] text-left transition ${
+                    selected ? "bg-slate-800 text-white border-slate-800" : isToday ? "bg-white border-slate-800 hover:bg-slate-100" : "bg-white hover:bg-slate-100"
+                  }`}
+                >
+                  <div className="text-xs font-semibold">{Number(d.slice(8))}</div>
+                  <div className="flex flex-wrap gap-0.5 mt-0.5">
+                    {!!c?.services && (
+                      <span className={`text-[9px] px-1 rounded ${selected ? "bg-white/20" : "bg-teal-500/15 text-teal-700"}`}>{c.services} serv.</span>
+                    )}
+                    {!!c?.bookings && (
+                      <span className={`text-[9px] px-1 rounded ${selected ? "bg-white/20" : "bg-amber-500/15 text-amber-700"}`}>{c.bookings} ag.</span>
+                    )}
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        </Card>
+
 
         {!readOnly && pending.length > 0 && (
           <Card className="p-4">
