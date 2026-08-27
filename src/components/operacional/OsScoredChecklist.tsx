@@ -68,7 +68,21 @@ export default function OsScoredChecklist({
         {items.length === 0 && (
           <p className="text-xs text-muted-foreground">Nenhum serviço vinculado a esta OS.</p>
         )}
-        {items.map((it) => {
+        {pending.length > 0 && (
+          <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground pt-1">
+            A realizar ({pending.length})
+          </p>
+        )}
+        {[...pending, ...concluded].map((it, idx) => {
+          const showDoneHeader = concluded.length > 0 && idx === pending.length;
+          const tag = TYPE_TAG[it.item_type];
+          return (
+            <div key={it.id}>
+            {showDoneHeader && (
+              <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground pt-2">
+                Concluídos ({concluded.length})
+              </p>
+            )}
           const tag = TYPE_TAG[it.item_type];
           return (
             <div key={it.id} className="flex items-center gap-2">
