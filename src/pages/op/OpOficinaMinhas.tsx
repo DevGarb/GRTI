@@ -21,6 +21,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import OficinaNav from "./OficinaNav";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import CameraCaptureModal from "@/components/CameraCaptureModal";
 import {
   stageInfo, PART_STATUS_INFO, PART_STATUS_FLOW, daysInWorkshop, DIAS_ALERTA,
 } from "@/lib/oficinaStages";
@@ -74,6 +75,7 @@ export default function OpOficinaMinhas() {
   const [itemName, setItemName] = useState("");
   const [itemQty, setItemQty] = useState(1);
   const [entryFiles, setEntryFiles] = useState<File[]>([]);
+  const [cameraOpen, setCameraOpen] = useState(false);
 
   useEffect(() => {
     Fancybox.bind("[data-fancybox='minhas-finalizadas']", {});
@@ -502,8 +504,13 @@ export default function OpOficinaMinhas() {
                     <div className="text-sm font-medium flex items-center gap-1">
                       <Camera className="h-4 w-4" /> Fotos da entrada ({entryFiles.length})
                     </div>
-                    <Input type="file" accept="image/*" multiple
-                      onChange={e => setEntryFiles(Array.from(e.target.files || []))} />
+                    <div className="flex flex-col sm:flex-row gap-2">
+                      <Input type="file" accept="image/*" capture="environment" multiple
+                        onChange={e => setEntryFiles(prev => [...prev, ...Array.from(e.target.files || [])])} />
+                      <Button type="button" variant="outline" size="sm" onClick={() => setCameraOpen(true)}>
+                        <Camera className="h-4 w-4 mr-1" /> Tirar foto
+                      </Button>
+                    </div>
                     {entryFiles.length > 0 && (
                       <div className="grid grid-cols-3 gap-2">
                         {entryFiles.map((f, i) => (
@@ -526,6 +533,13 @@ export default function OpOficinaMinhas() {
                 </DialogFooter>
               </DialogContent>
             </Dialog>
+
+            {cameraOpen && (
+              <CameraCaptureModal
+                onCapture={file => setEntryFiles(prev => [...prev, file])}
+                onClose={() => setCameraOpen(false)}
+              />
+            )}
 
 
             {mine.length === 0 && (
