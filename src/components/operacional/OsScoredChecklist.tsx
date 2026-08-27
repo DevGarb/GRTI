@@ -37,6 +37,8 @@ export default function OsScoredChecklist({
   const [customLabel, setCustomLabel] = useState("");
 
   const done = items.filter((i) => i.done).length;
+  const pending = items.filter((i) => !i.done);
+  const concluded = items.filter((i) => i.done);
   const requested = requestedPoints(items);
   const max = maxOsPoints(items);
 
