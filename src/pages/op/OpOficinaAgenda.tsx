@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Calendar, ChevronLeft, ChevronRight, CalendarPlus, Check, X, Clock, Bike, User, Trash2, Search, Plus } from "lucide-react";
 
 import OficinaNav from "./OficinaNav";
@@ -106,6 +106,8 @@ export default function OpOficinaAgenda() {
       .forEach((b) => bump(effectiveDate(b.scheduled_date), "bookings"));
     return map;
   }, [actives, bookings, today]);
+
+  useEffect(() => { setMonthCursor(day.slice(0, 7)); }, [day]);
 
   const shiftMonth = (delta: number) => {
     const [y, m] = monthCursor.split("-").map(Number);
