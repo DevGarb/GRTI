@@ -1,6 +1,6 @@
 import { useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { MapPin, Phone, MessageCircle, LogOut, Sun, Moon, CheckCircle2, PlayCircle, Navigation, Clock, ChevronDown, Package, ListTodo, Trophy, X, Camera, Trash2, Loader2, User, Plus, Building2, Calendar, Bike, Car, HelpCircle, FileText, AlertTriangle } from "lucide-react";
+import { MapPin, Phone, MessageCircle, LogOut, Sun, Moon, CheckCircle2, PlayCircle, Navigation, Clock, ChevronDown, Package, ListTodo, Trophy, X, Camera, Trash2, Loader2, User, Plus, Building2, Calendar, Bike, Car, HelpCircle, FileText, AlertTriangle, ClipboardList } from "lucide-react";
 import { motion, AnimatePresence, LayoutGroup } from "framer-motion";
 import { useDeliveries } from "@/hooks/useDeliveries";
 import { useDeliveryCategories } from "@/hooks/useDeliveryCategories";
