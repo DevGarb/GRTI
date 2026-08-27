@@ -534,6 +534,13 @@ export default function OpOficinaMinhas() {
               </DialogContent>
             </Dialog>
 
+            {cameraOpen && (
+              <CameraCaptureModal
+                onCapture={file => setEntryFiles(prev => [...prev, file])}
+                onClose={() => setCameraOpen(false)}
+              />
+            )}
+
 
             {mine.length === 0 && (
               <div className="bg-card border rounded-lg p-12 text-center text-muted-foreground">
