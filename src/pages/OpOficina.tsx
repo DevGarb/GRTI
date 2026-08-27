@@ -12,7 +12,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/contexts/AuthContext";
 import { useServiceOrders, useServiceOrderDetails, useServiceChecklists, useMechanics, useParts, type ServiceOrder, type ServiceChecklistItem } from "@/hooks/useOficina";
-import { useCompanies, useVehicles } from "@/hooks/useOperacional";
+import { useCompanies, useVehicles, type Company } from "@/hooks/useOperacional";
 import OpKanbanBoard, { type KanbanColumn } from "@/components/operacional/OpKanbanBoard";
 import OpClosureDialog from "@/components/operacional/OpClosureDialog";
 import OpQuickActions from "@/components/operacional/OpQuickActions";
