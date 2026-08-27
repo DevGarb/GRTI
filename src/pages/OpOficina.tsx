@@ -1035,40 +1035,27 @@ function OsDetailDialog({ os, onClose, onUpdate, onDelete, onRequestClose, compa
           </div>
           <div className="space-y-2">
             {parts.length === 0 && <div className="border rounded p-3 text-center text-muted-foreground text-xs">Nenhum item</div>}
-            {PART_STATUS_FLOW.filter(s => parts.some(p => (p.part_status || "solicitada") === s)).map(s => {
-              const group = parts.filter(p => (p.part_status || "solicitada") === s);
-              const collapsed = !!collapsedGroups[s];
-              return (
-                <div key={s} className="border rounded overflow-hidden">
-                  <button
-                    type="button"
-                    onClick={() => toggleGroup(s)}
-                    className="w-full flex items-center gap-2 px-2 py-2 bg-muted/50 hover:bg-muted text-sm"
-                  >
-                    {collapsed ? <ChevronDown className="h-4 w-4" /> : <ChevronUp className="h-4 w-4" />}
-                    <span className={cn("px-2 py-0.5 rounded text-xs font-medium", PART_STATUS_INFO[s].chip)}>{PART_STATUS_INFO[s].label}</span>
-                    <Badge variant="secondary" className="ml-auto">{group.length}</Badge>
-                  </button>
-                  {!collapsed && (
-                    <div className="divide-y text-sm">
-                      {group.map(p => (
-                        <div key={p.id} className="p-2 flex items-center gap-2 flex-wrap">
-                          <div className="flex-1 min-w-[120px]">{p.part_name}</div>
-                          <div className="w-12 text-center text-xs">{p.quantity}x</div>
-                          <Select value={p.part_status} onValueChange={(v) => updatePart(p.id, { part_status: v })}>
-                            <SelectTrigger className="w-[150px] h-8 text-xs"><SelectValue /></SelectTrigger>
-                            <SelectContent>
-                              {PART_STATUS_FLOW.map(st => <SelectItem key={st} value={st}>{PART_STATUS_INFO[st].label}</SelectItem>)}
-                            </SelectContent>
-                          </Select>
-                          <Button variant="ghost" size="icon" onClick={() => removePart(p.id)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              );
-            })}
+            <div className="grid sm:grid-cols-2 gap-2">
+              {parts.map(p => {
+                const info = PART_STATUS_INFO[p.part_status || "solicitada"] || PART_STATUS_INFO.solicitada;
+                return (
+                  <div key={p.id} className="bg-card border rounded-md px-3 py-2 flex items-center gap-2 group">
+                    <span className="text-sm truncate flex-1 min-w-0" title={p.part_name}>{p.part_name} (x{p.quantity})</span>
+                    <Select value={p.part_status || "solicitada"} onValueChange={(v) => updatePart(p.id, { part_status: v })}>
+                      <SelectTrigger className={cn("h-6 w-auto gap-1 rounded-full border-0 px-2 text-[11px] font-medium [&>svg]:h-3 [&>svg]:w-3", info.chip)}>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {PART_STATUS_FLOW.map(st => <SelectItem key={st} value={st}>{PART_STATUS_INFO[st].label}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                    <Button variant="ghost" size="icon" className="h-6 w-6 shrink-0" onClick={() => removePart(p.id)}>
+                      <Trash2 className="h-3.5 w-3.5 text-destructive" />
+                    </Button>
+                  </div>
+                );
+              })}
+            </div>
           </div>
 
         </div>
