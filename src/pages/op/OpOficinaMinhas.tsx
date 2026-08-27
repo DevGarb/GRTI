@@ -22,8 +22,9 @@ import OficinaNav from "./OficinaNav";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import {
-  stageInfo, PART_STATUS_INFO, daysInWorkshop, DIAS_ALERTA,
+  stageInfo, PART_STATUS_INFO, PART_STATUS_FLOW, daysInWorkshop, DIAS_ALERTA,
 } from "@/lib/oficinaStages";
+
 import { periodInfo, todayISO, formatDateBRShort, weekdayLabel } from "@/lib/oficinaAgenda";
 import { useWorkshopBookings, type WorkshopBooking } from "@/hooks/useWorkshopBookings";
 import { openOsFromBooking } from "@/lib/openOsFromBooking";
