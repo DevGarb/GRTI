@@ -543,6 +543,7 @@ export default function OpOficinaMinhas() {
                   {!isHidden && g.orders.map(o => {
               const st = stageInfo(o.stage);
               const parts = partsByOs[o.id] || [];
+              const pendingParts = parts.filter(p => (p.part_status || "solicitada") !== "recebida").length;
               const days = daysInWorkshop(o.opened_at);
               const open = expanded === o.id;
               return (
@@ -556,6 +557,11 @@ export default function OpOficinaMinhas() {
                       <div className="flex items-center gap-2 flex-wrap">
                         <span className="text-lg font-bold tracking-wide">{o.vehicle_plate || `OS #${o.os_number}`}</span>
                         <Badge variant="secondary" className={st.chip}>{st.label}</Badge>
+                        {pendingParts > 0 && (
+                          <Badge className="bg-orange-500/15 text-orange-700 border border-orange-400/40">
+                            <Package className="h-3 w-3 mr-0.5" />{pendingParts} a receber
+                          </Badge>
+                        )}
                         {(o as any).scheduled_date && (
                           <Badge
                             variant="secondary"
