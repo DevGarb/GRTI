@@ -1,4 +1,4 @@
-import { useRef, useState, useCallback } from "react";
+import { useRef, useState, useCallback, useEffect } from "react";
 import { X, Camera, RotateCcw, Check } from "lucide-react";
 
 interface Props {
@@ -31,7 +31,9 @@ export default function CameraCaptureModal({ onCapture, onClose }: Props) {
   }, []);
 
   // Start camera on mount
-  useState(() => { startCamera(); });
+  useEffect(() => {
+    startCamera();
+  }, [startCamera]);
 
   const takePhoto = () => {
     const video = videoRef.current;
