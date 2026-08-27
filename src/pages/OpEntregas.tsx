@@ -508,9 +508,22 @@ export default function OpEntregas() {
                   const company = companies.find(c => c.id === d.company_id);
                   const driver = drivers.find(x => x.id === d.driver_id);
                   const vehicle = vehicles.find(v => v.id === d.vehicle_id);
+                  const isExpanded = expandedIds.has(d.id);
                   return (
-                    <div key={d.id} className="bg-card border rounded-lg p-4 cursor-pointer hover:shadow-md transition" onClick={() => openEdit(d)}>
-                      <div className="flex items-start justify-between gap-3 flex-wrap">
+                    <div
+                      key={d.id}
+                      className="bg-card border rounded-lg overflow-hidden hover:shadow-md transition"
+                    >
+                      {/* Header clicável: expande/recolhe */}
+                      <button
+                        onClick={() => setExpandedIds(prev => {
+                          const next = new Set(prev);
+                          if (next.has(d.id)) next.delete(d.id);
+                          else next.add(d.id);
+                          return next;
+                        })}
+                        className="w-full text-left p-4 flex items-start justify-between gap-3 flex-wrap"
+                      >
                         <div className="flex-1 min-w-[260px]">
                           <div className="flex items-center gap-2 flex-wrap mb-2">
                             <span className="font-bold">{company?.name || "Sem empresa"}</span>
@@ -522,22 +535,51 @@ export default function OpEntregas() {
                             {vehicle && <span>🚗 {vehicle.plate} {vehicle.model && `(${vehicle.model})`}</span>}
                             <span>⏱ {d.period}</span>
                             {d.address && <span>📍 {d.address}</span>}
-                            {d.contact_name && <span>📞 {d.contact_name} {d.contact_phone}</span>}
                           </div>
-                          {d.notes && <p className="text-sm italic text-muted-foreground mt-2">{d.notes}</p>}
                         </div>
-                        <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
-                          <OpQuickActions phone={d.contact_phone} address={d.address} />
-                          <Select value={d.status} onValueChange={(v) => handleStatusChange(d, v)}>
-                            <SelectTrigger className="w-[130px] h-9"><SelectValue /></SelectTrigger>
-                            <SelectContent>{STATUSES.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
-                          </Select>
-                          <Button variant="ghost" size="icon" onClick={() => openEdit(d)}><Pencil className="h-4 w-4" /></Button>
-                          <Button variant="ghost" size="icon" onClick={() => { if (confirm("Excluir entrega?")) remove(d.id); }}>
-                            <Trash2 className="h-4 w-4 text-destructive" />
-                          </Button>
+                        <div className="flex items-center gap-1.5">
+                          <motion.span animate={{ rotate: isExpanded ? 180 : 0 }} transition={{ duration: 0.2 }}>
+                            <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                          </motion.span>
                         </div>
-                      </div>
+                      </button>
+
+                      {/* Conteúdo expandido: detalhes + ações */}
+                      <AnimatePresence initial={false}>
+                        {isExpanded && (
+                          <motion.div
+                            initial={{ height: 0, opacity: 0 }}
+                            animate={{ height: "auto", opacity: 1 }}
+                            exit={{ height: 0, opacity: 0 }}
+                            transition={{ duration: 0.2, ease: "easeOut" }}
+                            className="overflow-hidden border-t"
+                          >
+                            <div className="p-4 space-y-3">
+                              <div className="text-sm text-muted-foreground flex flex-wrap items-center gap-x-3 gap-y-1">
+                                {d.contact_name && <span>📞 {d.contact_name} {d.contact_phone}</span>}
+                                {d.receiver_phone && <span>📱 Recebedor: {d.receiver_phone}</span>}
+                              </div>
+                              {d.notes && (
+                                <div className="rounded-md bg-muted p-3 text-sm">
+                                  <div className="font-medium text-foreground mb-1">Observações</div>
+                                  <p className="italic text-muted-foreground whitespace-pre-wrap">{d.notes}</p>
+                                </div>
+                              )}
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <OpQuickActions phone={d.contact_phone} address={d.address} />
+                                <Select value={d.status} onValueChange={(v) => handleStatusChange(d, v)}>
+                                  <SelectTrigger className="w-[130px] h-9"><SelectValue /></SelectTrigger>
+                                  <SelectContent>{STATUSES.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
+                                </Select>
+                                <Button variant="ghost" size="icon" onClick={() => openEdit(d)}><Pencil className="h-4 w-4" /></Button>
+                                <Button variant="ghost" size="icon" onClick={() => { if (confirm("Excluir entrega?")) remove(d.id); }}>
+                                  <Trash2 className="h-4 w-4 text-destructive" />
+                                </Button>
+                              </div>
+                            </div>
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
                     </div>
                   );
                 })}
