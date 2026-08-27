@@ -1221,6 +1221,7 @@ function ConfirmedBookingsColumn({ companies, onCreated }: { companies: Company[
                 <Badge variant="secondary" className={per.chip}>{per.label}</Badge>
               </div>
               <div className="text-xs text-muted-foreground truncate">{b.vehicle_model || "—"}</div>
+              <div className="text-xs text-muted-foreground truncate">Empresa: {companyName(b.company_id)}</div>
               <div className="flex items-center gap-1.5 text-xs">
                 <Calendar className="h-3 w-3 text-muted-foreground" />
                 <span className={cn(isToday && "font-semibold text-primary")}>
