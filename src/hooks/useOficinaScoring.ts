@@ -304,13 +304,13 @@ export function useOsServiceItems() {
       item_type: "adicional",
       label: extra.name,
       points: extra.points,
-      done: true,
-      done_at: new Date().toISOString(),
-      done_by: user?.id || null,
+      done: false,
+      done_at: null,
+      done_by: null,
       position,
     });
     if (error) { toast.error(error.message); return false; }
-    toast.success(`Adicional incluído: ${extra.name} (+${extra.points})`);
+    toast.success(`Adicional incluído como pendente: ${extra.name} (+${extra.points})`);
     fetch();
     return true;
   };
@@ -330,13 +330,13 @@ export function useOsServiceItems() {
       item_type: "nao_cadastrado",
       label: label.trim(),
       points: 0,
-      done: true,
-      done_at: new Date().toISOString(),
-      done_by: user?.id || null,
+      done: false,
+      done_at: null,
+      done_by: null,
       position,
     });
     if (error) { toast.error(error.message); return false; }
-    toast.success("Serviço registrado — ficará pendente de avaliação de pontos");
+    toast.success("Serviço incluído como pendente — conclua depois marcando o item");
     fetch();
     return true;
   };
