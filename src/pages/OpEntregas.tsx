@@ -95,6 +95,7 @@ export default function OpEntregas() {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [typeFilter, setTypeFilter] = useState<string>("all");
+  const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
 
   // Closure flow
   const [closing, setClosing] = useState<Delivery | null>(null);
