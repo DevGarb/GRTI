@@ -1121,12 +1121,14 @@ function OsDetailDialog({ os, onClose, onUpdate, onDelete, onRequestClose, compa
 }
 
 /* ---------- Coluna de agendamentos confirmados (vertical colapsada / expandida) ---------- */
-function ConfirmedBookingsColumn({ onCreated }: { onCreated?: () => void }) {
+function ConfirmedBookingsColumn({ companies, onCreated }: { companies: Company[]; onCreated?: () => void }) {
   const { items, loading, refetch, remove } = useWorkshopBookings();
   const { user } = useAuth();
   const [opening, setOpening] = useState<string | null>(null);
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
   const [panelOpen, setPanelOpen] = useState(false);
+
+  const companyName = (id: string | null) => companies.find(c => c.id === id)?.name || "—";
 
   const list = useMemo(
     () => items
