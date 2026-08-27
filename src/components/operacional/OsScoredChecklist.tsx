@@ -92,7 +92,7 @@ export default function OsScoredChecklist({
                 <Badge variant="secondary" className={cn("text-[9px] px-1 py-0 shrink-0", tag.chip)}>{tag.label}</Badge>
               )}
               <span className="text-[10px] font-semibold text-primary shrink-0 tabular-nums">
-                +{formatPoints(it.points)}
+                +{formatPoints(it.points)} pt
               </span>
               {it.done && it.done_at && (
                 <span className="text-[10px] text-muted-foreground shrink-0">
@@ -128,7 +128,7 @@ export default function OsScoredChecklist({
                 <SelectContent>
                   {selectableExtras.map((e) => (
                     <SelectItem key={e.id} value={e.id}>
-                      {e.name} (+{formatPoints(e.points)})
+                      {e.name} (+{formatPoints(e.points)} pt)
                     </SelectItem>
                   ))}
                 </SelectContent>
