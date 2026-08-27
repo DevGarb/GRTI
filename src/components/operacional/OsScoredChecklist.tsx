@@ -37,6 +37,8 @@ export default function OsScoredChecklist({
   const [customLabel, setCustomLabel] = useState("");
 
   const done = items.filter((i) => i.done).length;
+  const pending = items.filter((i) => !i.done);
+  const concluded = items.filter((i) => i.done);
   const requested = requestedPoints(items);
   const max = maxOsPoints(items);
 
@@ -68,10 +70,22 @@ export default function OsScoredChecklist({
         {items.length === 0 && (
           <p className="text-xs text-muted-foreground">Nenhum serviço vinculado a esta OS.</p>
         )}
-        {items.map((it) => {
+        {pending.length > 0 && (
+          <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground pt-1">
+            A realizar ({pending.length})
+          </p>
+        )}
+        {[...pending, ...concluded].map((it, idx) => {
+          const showDoneHeader = concluded.length > 0 && idx === pending.length;
           const tag = TYPE_TAG[it.item_type];
           return (
-            <div key={it.id} className="flex items-center gap-2">
+            <div key={it.id}>
+            {showDoneHeader && (
+              <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground pt-2">
+                Concluídos ({concluded.length})
+              </p>
+            )}
+            <div className="flex items-center gap-2">
               <button
                 type="button"
                 disabled={readOnly}
@@ -112,6 +126,7 @@ export default function OsScoredChecklist({
                   <Trash2 className="h-3.5 w-3.5" />
                 </button>
               )}
+            </div>
             </div>
           );
         })}
@@ -160,7 +175,7 @@ export default function OsScoredChecklist({
                 size="sm" variant="outline"
                 onClick={() => { if (customLabel.trim()) { onAddCustom(customLabel); setCustomLabel(""); } }}
               >
-                <Star className="h-3.5 w-3.5 mr-1" /> Registrar
+                <Plus className="h-3.5 w-3.5 mr-1" /> Incluir
               </Button>
             </div>
           )}
