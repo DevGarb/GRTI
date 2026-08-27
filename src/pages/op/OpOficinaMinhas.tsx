@@ -79,6 +79,7 @@ export default function OpOficinaMinhas() {
 
   useEffect(() => {
     Fancybox.bind("[data-fancybox='minhas-finalizadas']", {});
+    Fancybox.bind("[data-fancybox='minhas-pecas']", {});
     return () => Fancybox.destroy();
   }, []);
 
