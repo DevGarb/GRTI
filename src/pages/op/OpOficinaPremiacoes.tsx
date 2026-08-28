@@ -1,5 +1,5 @@
 import { Fragment, useEffect, useMemo, useState } from "react";
-import { Trophy, Pencil, Loader2, ClipboardCheck, Camera, ChevronDown, ChevronUp } from "lucide-react";
+import { Trophy, Pencil, Loader2, ClipboardCheck, Camera, ChevronDown, ChevronUp, FileText } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -37,7 +37,7 @@ function AuditExpand({ os, readOnly, osItems, onFinalized }: {
   onFinalized: () => void;
 }) {
   const [finalizing, setFinalizing] = useState(false);
-  const { photos } = useServiceOrderDetails(os.id);
+  const { photos, parts } = useServiceOrderDetails(os.id);
   const items = osItems.byOs[os.id] || [];
 
   const finalize = async () => {
@@ -47,8 +47,71 @@ function AuditExpand({ os, readOnly, osItems, onFinalized }: {
     if (ok) onFinalized();
   };
 
+  const o = os as any;
+  const info: { label: string; value: string }[] = [
+    { label: "Placa", value: os.vehicle_plate || "—" },
+    { label: "Modelo", value: os.vehicle_model || "—" },
+    { label: "Abertura", value: os.opened_at ? formatDateBR(os.opened_at) : "—" },
+    { label: "Finalização", value: os.finished_at ? formatDateBR(os.finished_at) : "—" },
+    { label: "Prazo", value: os.deadline ? formatDateBR(os.deadline) : "—" },
+    { label: "KM na finalização", value: o.finish_km ? `${Number(o.finish_km).toLocaleString("pt-BR")} km` : "—" },
+  ];
+
+  const texts: { label: string; value?: string | null }[] = [
+    { label: "Serviço solicitado", value: os.description },
+    { label: "Diagnóstico", value: (os as any).diagnosis },
+    { label: "Resumo de encerramento", value: os.closure_summary },
+    { label: "Observações", value: os.notes },
+  ].filter((t) => !!t.value && String(t.value).trim());
+
   return (
     <div className="space-y-3 py-1">
+      <div className="border rounded-md p-3 bg-muted/30 space-y-3">
+        <p className="text-xs font-medium text-muted-foreground flex items-center gap-1">
+          <FileText className="h-3.5 w-3.5" /> Dados da OS
+        </p>
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 text-xs">
+          {info.map((i) => (
+            <div key={i.label}>
+              <span className="text-muted-foreground">{i.label}: </span>
+              <strong>{i.value}</strong>
+            </div>
+          ))}
+        </div>
+        {texts.length > 0 && (
+          <div className="space-y-2">
+            {texts.map((t) => (
+              <div key={t.label} className="rounded border bg-card p-2">
+                <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">{t.label}</p>
+                <p className="text-xs whitespace-pre-wrap mt-0.5">{t.value}</p>
+              </div>
+            ))}
+          </div>
+        )}
+        <div>
+          <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground mb-1">
+            Peças ({parts.length})
+          </p>
+          {parts.length > 0 ? (
+            <div className="grid sm:grid-cols-2 gap-1.5">
+              {parts.map((p: any) => (
+                <div key={p.id} className="flex items-center gap-2 rounded border bg-card px-2 py-1 text-xs">
+                  {p.photo_url && (
+                    <a href={p.photo_url} data-fancybox={`prem-pecas-${os.id}`} data-caption={p.part_name}>
+                      <img src={p.photo_url} alt={`Peça ${p.part_name}`} className="h-8 w-8 rounded object-cover border" loading="lazy" />
+                    </a>
+                  )}
+                  <span className="flex-1 truncate">{p.quantity}x {p.part_name}</span>
+                  <Badge variant="secondary" className="text-[10px]">{p.part_status}</Badge>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="text-xs text-muted-foreground">Nenhuma peça registrada.</p>
+          )}
+        </div>
+      </div>
+
       <OsAuditPanel
         items={items}
         readOnly={readOnly}
@@ -58,6 +121,7 @@ function AuditExpand({ os, readOnly, osItems, onFinalized }: {
         onAdjust={(item, pts) => osItems.setItemAuditPoints(item, pts)}
         onFinalize={finalize}
       />
+
       <div>
         <p className="text-xs font-medium text-muted-foreground flex items-center gap-1 mb-1.5">
           <Camera className="h-3.5 w-3.5" /> Fotos da OS ({photos.length})
