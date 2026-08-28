@@ -1,5 +1,5 @@
 import { Fragment, useEffect, useMemo, useState } from "react";
-import { Trophy, Pencil, Loader2, ClipboardCheck, Camera, ChevronDown, ChevronUp } from "lucide-react";
+import { Trophy, Pencil, Loader2, ClipboardCheck, Camera, ChevronDown, ChevronUp, FileText } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
