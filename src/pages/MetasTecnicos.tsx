@@ -8,6 +8,8 @@ import { useGoals } from "@/hooks/useGoals";
 import GoalsManager from "@/components/metas/GoalsManager";
 import PreventivasMonthlyTarget from "@/components/metas/PreventivasMonthlyTarget";
 import GoalsSummaryCards from "@/components/metas/GoalsSummaryCards";
+import ProjetosConcluidosCreditos from "@/components/metas/ProjetosConcluidosCreditos";
+
 import { BUSINESS_HOURS_PER_DAY } from "@/lib/businessHours";
 import { formatDateBR } from "@/lib/dateFormat";
 import PeriodFilter from "@/components/shared/PeriodFilter";
