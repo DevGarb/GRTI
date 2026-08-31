@@ -352,7 +352,10 @@ export default function MetasTecnicos() {
             </div>
           </div>
 
+          {isAdmin && <ProjetosConcluidosCreditos year={selectedYear} month={selectedMonth} />}
+
           {/* Goals Summary Cards */}
+
           <GoalsSummaryCards stats={visibleStats} goals={goals} formatHours={formatHours} />
 
           {/* Technician list */}
