@@ -134,26 +134,36 @@ export default function MetasTecnicos() {
         };
       });
 
-      // Augmenta com tarefas de projeto entregues no mês por técnico
+      // Projetos concluídos no mês, creditados aos membros da equipe
       const monthStart = new Date(selectedYear, selectedMonth - 1, 1).toISOString();
       const monthEnd = new Date(selectedYear, selectedMonth, 1).toISOString();
-      const userIds = result.map((r) => r.userId);
-      if (userIds.length > 0) {
-        const { data: tasks } = await (supabase as any)
-          .from("project_tasks")
-          .select("assigned_to")
-          .in("status", ["Concluído", "done"])
-          .in("assigned_to", userIds)
-          .gte("updated_at", monthStart)
-          .lt("updated_at", monthEnd);
-        const counts = new Map<string, number>();
-        for (const t of (tasks || []) as Array<{ assigned_to: string }>) {
-          counts.set(t.assigned_to, (counts.get(t.assigned_to) || 0) + 1);
+      const { data: doneProjects } = await supabase
+        .from("projects")
+        .select("id, completed_by")
+        .eq("status", "Concluído")
+        .gte("completed_at", monthStart)
+        .lt("completed_at", monthEnd);
+
+      const projectIds = (doneProjects || []).map((p: any) => p.id);
+      const counts = new Map<string, number>();
+      if (projectIds.length > 0) {
+        const { data: credits } = await supabase
+          .from("project_credits")
+          .select("project_id, user_id")
+          .in("project_id", projectIds);
+        const byProject = new Map<string, string[]>();
+        for (const c of (credits || []) as Array<{ project_id: string; user_id: string }>) {
+          byProject.set(c.project_id, [...(byProject.get(c.project_id) || []), c.user_id]);
         }
-        for (const tech of result) {
-          tech.projectTasksDone = counts.get(tech.userId) || 0;
+        for (const p of (doneProjects || []) as Array<{ id: string; completed_by: string | null }>) {
+          const users = byProject.get(p.id) ?? (p.completed_by ? [p.completed_by] : []);
+          for (const uid of users) counts.set(uid, (counts.get(uid) || 0) + 1);
         }
       }
+      for (const tech of result) {
+        tech.projectTasksDone = counts.get(tech.userId) || 0;
+      }
+
 
       return result;
     },
