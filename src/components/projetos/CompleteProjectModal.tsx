@@ -8,6 +8,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { useOrgProfiles } from "@/hooks/useOrgProfiles";
+import { saveProjectCredits } from "@/hooks/useProjectCredits";
+
 
 const SIZE_DEFAULTS: Record<string, number> = {
   pequeno: 300,
@@ -30,18 +33,41 @@ interface Props {
 }
 
 export default function CompleteProjectModal({ open, onOpenChange, projectId, initialSize, initialValue }: Props) {
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const queryClient = useQueryClient();
+  const members = useOrgProfiles();
   const [size, setSize] = useState<string>(initialSize || "medio");
   const [value, setValue] = useState<string>(initialValue != null ? String(initialValue) : "");
+  const [credited, setCredited] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    if (open) {
-      setSize(initialSize || "medio");
-      setValue(initialValue != null ? String(initialValue) : "");
-    }
-  }, [open, initialSize, initialValue]);
+    if (!open) return;
+    setSize(initialSize || "medio");
+    setValue(initialValue != null ? String(initialValue) : "");
+    (async () => {
+      const { data } = await supabase
+        .from("projects")
+        .select("owner_id, co_owner_id")
+        .eq("id", projectId)
+        .maybeSingle();
+      const { data: existing } = await supabase
+        .from("project_credits")
+        .select("user_id")
+        .eq("project_id", projectId);
+      const preset = (existing || []).map((c: any) => c.user_id as string);
+      if (preset.length > 0) {
+        setCredited(preset);
+      } else {
+        setCredited(
+          [data?.owner_id, (data as any)?.co_owner_id].filter(Boolean) as string[]
+        );
+      }
+    })();
+  }, [open, projectId, initialSize, initialValue]);
+
+  const toggleCredit = (uid: string) =>
+    setCredited((prev) => (prev.includes(uid) ? prev.filter((x) => x !== uid) : [...prev, uid]));
 
   const handleSizeChange = (s: string) => {
     setSize(s);
@@ -63,16 +89,26 @@ export default function CompleteProjectModal({ open, onOpenChange, projectId, in
         completed_by: user?.id ?? null,
       })
       .eq("id", projectId);
-    setSaving(false);
     if (error) {
+      setSaving(false);
       toast.error("Erro ao concluir: " + error.message);
       return;
     }
+    try {
+      await saveProjectCredits(projectId, credited, profile?.organization_id ?? null);
+    } catch (e: any) {
+      toast.error("Projeto concluído, mas não foi possível salvar os créditos: " + e.message);
+    }
+    setSaving(false);
     queryClient.invalidateQueries({ queryKey: ["projects"] });
     queryClient.invalidateQueries({ queryKey: ["project"] });
+    queryClient.invalidateQueries({ queryKey: ["project-credits"] });
+    queryClient.invalidateQueries({ queryKey: ["completed-projects"] });
+    queryClient.invalidateQueries({ queryKey: ["metas-tecnicos"] });
     toast.success("Projeto concluído!");
     onOpenChange(false);
   };
+
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -108,7 +144,33 @@ export default function CompleteProjectModal({ open, onOpenChange, projectId, in
               Deixe em branco para usar o valor sugerido do porte selecionado (R$ {SIZE_DEFAULTS[size]?.toLocaleString("pt-BR") ?? "0"}).
             </p>
           </div>
+          <div className="space-y-2">
+            <Label>Creditar entrega para</Label>
+            <div className="flex flex-wrap gap-1.5 max-h-40 overflow-y-auto">
+              {members.map((m) => {
+                const active = credited.includes(m.user_id);
+                return (
+                  <button
+                    key={m.user_id}
+                    type="button"
+                    onClick={() => toggleCredit(m.user_id)}
+                    className={`rounded-full px-2.5 py-1 text-xs border transition-colors ${
+                      active
+                        ? "bg-primary text-primary-foreground border-primary"
+                        : "border-border text-muted-foreground hover:text-foreground"
+                    }`}
+                  >
+                    {m.full_name}
+                  </button>
+                );
+              })}
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Cada membro selecionado contabiliza este projeto na meta "Projetos Entregues" do mês.
+            </p>
+          </div>
         </div>
+
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)} disabled={saving}>Cancelar</Button>
           <Button onClick={handleConfirm} disabled={saving}>
