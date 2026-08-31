@@ -144,7 +144,33 @@ export default function CompleteProjectModal({ open, onOpenChange, projectId, in
               Deixe em branco para usar o valor sugerido do porte selecionado (R$ {SIZE_DEFAULTS[size]?.toLocaleString("pt-BR") ?? "0"}).
             </p>
           </div>
+          <div className="space-y-2">
+            <Label>Creditar entrega para</Label>
+            <div className="flex flex-wrap gap-1.5 max-h-40 overflow-y-auto">
+              {members.map((m) => {
+                const active = credited.includes(m.user_id);
+                return (
+                  <button
+                    key={m.user_id}
+                    type="button"
+                    onClick={() => toggleCredit(m.user_id)}
+                    className={`rounded-full px-2.5 py-1 text-xs border transition-colors ${
+                      active
+                        ? "bg-primary text-primary-foreground border-primary"
+                        : "border-border text-muted-foreground hover:text-foreground"
+                    }`}
+                  >
+                    {m.full_name}
+                  </button>
+                );
+              })}
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Cada membro selecionado contabiliza este projeto na meta "Projetos Entregues" do mês.
+            </p>
+          </div>
         </div>
+
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)} disabled={saving}>Cancelar</Button>
           <Button onClick={handleConfirm} disabled={saving}>
