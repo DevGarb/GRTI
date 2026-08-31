@@ -8,6 +8,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { useOrgProfiles } from "@/hooks/useOrgProfiles";
+import { saveProjectCredits } from "@/hooks/useProjectCredits";
+
 
 const SIZE_DEFAULTS: Record<string, number> = {
   pequeno: 300,
