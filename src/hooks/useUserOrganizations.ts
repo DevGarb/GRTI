@@ -8,6 +8,7 @@ export interface UserOrg {
   slug: string;
   logo_url: string | null;
   phone: string | null;
+  external_url: string | null;
 }
 
 export function useUserOrganizations() {
@@ -31,7 +32,7 @@ export function useUserOrganizations() {
       }
       const { data: orgsData } = await supabase
         .from("organizations")
-        .select("id, name, slug, logo_url, phone")
+        .select("id, name, slug, logo_url, phone, external_url")
         .in("id", ids)
         .order("name");
       if (!cancelled) {
