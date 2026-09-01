@@ -72,10 +72,12 @@ export default function LinkOrgModal({ userId, userName, onClose }: Props) {
             .from("user_organizations")
             .insert({ user_id: userId, organization_id: r.organization_id });
           if (e1) throw e1;
-          const { error: e2 } = await supabase
-            .from("user_organization_roles")
-            .insert({ user_id: userId, organization_id: r.organization_id, role: r.role as any });
-          if (e2) throw e2;
+          if (!r.external) {
+            const { error: e2 } = await supabase
+              .from("user_organization_roles")
+              .insert({ user_id: userId, organization_id: r.organization_id, role: r.role as any });
+            if (e2) throw e2;
+          }
         } else if (!r.linked && orig.linked) {
           await supabase
             .from("user_organization_roles")
@@ -146,8 +148,13 @@ export default function LinkOrgModal({ userId, userName, onClose }: Props) {
                 />
                 <div className="flex-1 min-w-0">
                   <div className="text-sm font-medium text-foreground truncate">{r.name}</div>
-                  <div className="text-[11px] text-muted-foreground">{r.slug}</div>
+                  <div className="text-[11px] text-muted-foreground">
+                    {r.slug}{r.external ? " · link externo" : ""}
+                  </div>
                 </div>
+                {r.external ? (
+                  <span className="text-[11px] text-muted-foreground">Somente visualização</span>
+                ) : (
                 <select
                   disabled={!r.linked}
                   value={r.role}
