@@ -16,6 +16,13 @@ const ORG_DESCRIPTIONS: Record<string, { subtitle: string; sector: string }> = {
   "gestao-processos": { subtitle: "Mapeamento e Gestão de Processos", sector: "Ambiente externo" },
 };
 
+const ORG_ORDER: Record<string, number> = {
+  "grupo-ramos": 1,
+  "cgps-operacional": 2,
+  "grcheck": 3,
+  "gestao-processos": 4,
+};
+
 const stagger = {
   hidden: {},
   show: { transition: { staggerChildren: 0.08, delayChildren: 0.15 } },
