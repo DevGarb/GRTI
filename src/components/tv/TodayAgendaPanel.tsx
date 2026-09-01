@@ -19,7 +19,7 @@ import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { DateRange } from "react-day-picker";
 
-export type AgendaFilterType = "today" | "yesterday" | "last_month" | "custom";
+export type AgendaFilterType = "today" | "custom";
 export interface AgendaFilter {
   type: AgendaFilterType;
   from: string; // YYYY-MM-DD
