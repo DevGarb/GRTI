@@ -2882,6 +2882,7 @@ export type Database = {
       organizations: {
         Row: {
           created_at: string
+          external_url: string | null
           favicon_url: string | null
           id: string
           logo_url: string | null
@@ -2895,6 +2896,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          external_url?: string | null
           favicon_url?: string | null
           id?: string
           logo_url?: string | null
@@ -2908,6 +2910,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          external_url?: string | null
           favicon_url?: string | null
           id?: string
           logo_url?: string | null

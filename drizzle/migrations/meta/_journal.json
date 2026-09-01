@@ -8,6 +8,13 @@
       "when": 1788182046375,
       "tag": "0000_create_project_credits",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1788294021203,
+      "tag": "0001_add_external_org_gestao_processos",
+      "breakpoints": true
     }
   ]
 }
