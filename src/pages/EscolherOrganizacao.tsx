@@ -168,10 +168,14 @@ export default function EscolherOrganizacao() {
                   )}
 
                   <div className="flex items-center gap-1.5 text-sm font-medium text-sky-400 transition-colors group-hover:text-cyan-300">
-                    Entrar
-                    <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
+                    {isExternal ? "Acessar site" : "Entrar"}
+                    {isExternal ? (
+                      <ExternalLink className="h-4 w-4 transition-transform group-hover:translate-x-1" />
+                    ) : (
+                      <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
+                    )}
                   </div>
-                </motion.button>
+                </CardTag>
               );
             })}
           </div>
