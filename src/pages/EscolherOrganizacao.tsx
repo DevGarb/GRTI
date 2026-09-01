@@ -141,7 +141,7 @@ export default function EscolherOrganizacao() {
           </motion.p>
 
           <div className="grid gap-6 sm:grid-cols-2">
-            {orgs.map((org) => {
+            {sortedOrgs.map((org) => {
               const meta = ORG_DESCRIPTIONS[org.slug] || { subtitle: "", sector: "" };
               const isExternal = Boolean(org.external_url);
               const CardTag: any = isExternal ? motion.a : motion.button;
