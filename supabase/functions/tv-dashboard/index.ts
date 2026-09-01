@@ -288,7 +288,7 @@ Deno.serve(async (req) => {
     // CSAT do mês vigente (apenas satisfaction)
     const { data: evalsMonth } = await supabase
       .from("evaluations").select("score, ticket_id, created_at, type, tickets!inner(organization_id)")
-      .gte("created_at", startMonth.toISOString())
+      .gte("created_at", fetchFromIso)
       .lt("created_at", endMonth.toISOString())
       .eq("type", "satisfaction")
       .eq("tickets.organization_id", orgId);
