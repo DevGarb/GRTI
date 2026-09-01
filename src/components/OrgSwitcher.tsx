@@ -37,10 +37,10 @@ export default function OrgSwitcher() {
         if (isSuperAdmin) {
           const { data, error } = await supabase
             .from("organizations")
-            .select("id, name, slug, logo_url")
+            .select("id, name, slug, logo_url, external_url")
             .order("name");
           if (error) throw error;
-          if (!cancelled) setOrgs(data || []);
+          if (!cancelled) setOrgs((data || []).filter((o: any) => !o.external_url));
           return;
         }
 
@@ -64,11 +64,11 @@ export default function OrgSwitcher() {
 
         const { data, error: orgsErr } = await supabase
           .from("organizations")
-          .select("id, name, slug, logo_url")
+          .select("id, name, slug, logo_url, external_url")
           .in("id", orgIds)
           .order("name");
         if (orgsErr) throw orgsErr;
-        if (!cancelled) setOrgs(data || []);
+        if (!cancelled) setOrgs((data || []).filter((o: any) => !o.external_url));
       } catch (e) {
         if (!cancelled) setError(e instanceof Error ? e.message : "Erro ao carregar organizações");
       } finally {

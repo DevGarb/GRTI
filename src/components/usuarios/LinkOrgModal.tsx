@@ -16,6 +16,7 @@ type Row = {
   slug: string;
   linked: boolean;
   role: string;
+  external: boolean;
 };
 
 const ROLES = [
@@ -34,7 +35,7 @@ export default function LinkOrgModal({ userId, userName, onClose }: Props) {
     queryFn: async () => {
       const { data: orgs, error } = await supabase
         .from("organizations")
-        .select("id, name, slug")
+        .select("id, name, slug, external_url")
         .order("name");
       if (error) throw error;
       const { data: links } = await supabase
@@ -54,6 +55,7 @@ export default function LinkOrgModal({ userId, userName, onClose }: Props) {
         slug: o.slug,
         linked: linkedSet.has(o.id),
         role: roleMap.get(o.id) || "solicitante",
+        external: Boolean(o.external_url),
       })) as Row[];
     },
   });
@@ -70,10 +72,12 @@ export default function LinkOrgModal({ userId, userName, onClose }: Props) {
             .from("user_organizations")
             .insert({ user_id: userId, organization_id: r.organization_id });
           if (e1) throw e1;
-          const { error: e2 } = await supabase
-            .from("user_organization_roles")
-            .insert({ user_id: userId, organization_id: r.organization_id, role: r.role as any });
-          if (e2) throw e2;
+          if (!r.external) {
+            const { error: e2 } = await supabase
+              .from("user_organization_roles")
+              .insert({ user_id: userId, organization_id: r.organization_id, role: r.role as any });
+            if (e2) throw e2;
+          }
         } else if (!r.linked && orig.linked) {
           await supabase
             .from("user_organization_roles")
@@ -144,8 +148,13 @@ export default function LinkOrgModal({ userId, userName, onClose }: Props) {
                 />
                 <div className="flex-1 min-w-0">
                   <div className="text-sm font-medium text-foreground truncate">{r.name}</div>
-                  <div className="text-[11px] text-muted-foreground">{r.slug}</div>
+                  <div className="text-[11px] text-muted-foreground">
+                    {r.slug}{r.external ? " · link externo" : ""}
+                  </div>
                 </div>
+                {r.external ? (
+                  <span className="text-[11px] text-muted-foreground">Somente visualização</span>
+                ) : (
                 <select
                   disabled={!r.linked}
                   value={r.role}
@@ -160,6 +169,7 @@ export default function LinkOrgModal({ userId, userName, onClose }: Props) {
                     <option key={role.value} value={role.value}>{role.label}</option>
                   ))}
                 </select>
+                )}
               </div>
             ))}
           </div>

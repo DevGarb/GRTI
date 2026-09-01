@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Building2, LogOut, ArrowRight } from "lucide-react";
+import { Building2, LogOut, ArrowRight, ExternalLink } from "lucide-react";
 import { motion } from "framer-motion";
 import { useAuth } from "@/contexts/AuthContext";
 import { useUserOrganizations } from "@/hooks/useUserOrganizations";
@@ -13,6 +13,7 @@ const ORG_DESCRIPTIONS: Record<string, { subtitle: string; sector: string }> = {
   "grupo-ramos": { subtitle: "Suporte e Help Desk", sector: "Setor de T.I" },
   "cgps-operacional": { subtitle: "Entregas, Oficina e Manutenção", sector: "Setor de Operações" },
   "grcheck": { subtitle: "Checklists e Auditoria de Setores", sector: "Gestão de Qualidade" },
+  "gestao-processos": { subtitle: "Mapeamento e Gestão de Processos", sector: "Ambiente externo" },
 };
 
 const stagger = {
@@ -29,16 +30,21 @@ export default function EscolherOrganizacao() {
   const { signOut, profile } = useAuth();
   const { orgs, loading, switchToOrg } = useUserOrganizations();
 
-  // If only 1 org, auto-select and bounce
+  // Organizações internas (ambientes do GRTI) x externas (apenas link)
+  const internalOrgs = orgs.filter((o) => !o.external_url);
+
+  // If only 1 internal org, auto-select and bounce
   useEffect(() => {
     if (loading) return;
-    if (orgs.length === 1 && profile && profile.organization_id !== orgs[0].id) {
-      switchToOrg(orgs[0].id).then(() => {
-        persistActiveOrgSlug(orgs[0].slug ?? null);
+    if (internalOrgs.length !== 1) return;
+    const only = internalOrgs[0];
+    if (profile && profile.organization_id !== only.id) {
+      switchToOrg(only.id).then(() => {
+        persistActiveOrgSlug(only.slug ?? null);
         window.location.replace("/");
       });
-    } else if (orgs.length === 1) {
-      persistActiveOrgSlug(orgs[0].slug ?? null);
+    } else {
+      persistActiveOrgSlug(only.slug ?? null);
       navigate("/", { replace: true });
     }
   }, [loading, orgs, profile?.organization_id]);
@@ -122,15 +128,26 @@ export default function EscolherOrganizacao() {
           <div className="grid gap-6 sm:grid-cols-2">
             {orgs.map((org) => {
               const meta = ORG_DESCRIPTIONS[org.slug] || { subtitle: "", sector: "" };
+              const isExternal = Boolean(org.external_url);
+              const CardTag: any = isExternal ? motion.a : motion.button;
+              const cardProps = isExternal
+                ? { href: org.external_url as string, target: "_blank", rel: "noopener noreferrer" }
+                : { onClick: () => choose(org.id) };
               return (
-                <motion.button
+                <CardTag
                   key={org.id}
                   variants={rise}
-                  onClick={() => choose(org.id)}
+                  {...cardProps}
                   className="group relative overflow-hidden rounded-2xl border border-white/10 bg-white/[0.05] backdrop-blur-2xl p-8 text-left shadow-[0_24px_80px_-20px_hsl(220_45%_2%/0.9)] transition-all hover:border-cyan-400/40 hover:bg-white/[0.08] hover:-translate-y-1 hover:shadow-[0_28px_90px_-20px_hsl(199_95%_50%/0.25)] active:scale-[0.99]"
                 >
                   {/* Gradient hairline on top of the card */}
                   <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-cyan-400/70 to-transparent opacity-0 transition-opacity group-hover:opacity-100" />
+
+                  {isExternal && (
+                    <span className="absolute right-4 top-4 inline-flex items-center gap-1 rounded-full border border-white/10 bg-white/[0.06] px-2.5 py-1 text-[10px] font-medium uppercase tracking-wider text-cyan-300">
+                      <ExternalLink className="h-3 w-3" /> Link externo
+                    </span>
+                  )}
 
                   <div className="flex items-center gap-4 mb-6">
                     <div className="flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-cyan-400/20 bg-gradient-to-br from-sky-500/20 to-cyan-400/10">
@@ -151,10 +168,14 @@ export default function EscolherOrganizacao() {
                   )}
 
                   <div className="flex items-center gap-1.5 text-sm font-medium text-sky-400 transition-colors group-hover:text-cyan-300">
-                    Entrar
-                    <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
+                    {isExternal ? "Acessar site" : "Entrar"}
+                    {isExternal ? (
+                      <ExternalLink className="h-4 w-4 transition-transform group-hover:translate-x-1" />
+                    ) : (
+                      <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
+                    )}
                   </div>
-                </motion.button>
+                </CardTag>
               );
             })}
           </div>
