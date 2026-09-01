@@ -188,7 +188,7 @@ export default function GoalsSummaryCards({ stats, goals, formatHours }: Props) 
                           {isHit && <CheckCircle2 className="h-3 w-3 text-emerald-500 ml-auto" />}
                           {!isHit && d.pct < 50 && <AlertTriangle className="h-3 w-3 text-amber-500 ml-auto" />}
                         </div>
-                        <div className="text-base font-bold text-foreground leading-tight">
+                        <div className="text-base font-bold text-foreground leading-tight flex items-center gap-1.5">
                           {d.metricKey === "avg_score"
                             ? d.actual.toFixed(1)
                             : d.metricKey === "avg_resolution_hours"
@@ -196,7 +196,20 @@ export default function GoalsSummaryCards({ stats, goals, formatHours }: Props) 
                             : d.metricKey === "rework_percent"
                             ? `${d.actual.toFixed(1)}%`
                             : d.metricKey === "points"
-                            ? `${d.target > 0 ? Math.round((d.actual / d.target) * 100) : 0}%`
+                            ? (
+                              <>
+                                {Math.round(d.actual)}
+                                <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-semibold ${
+                                  d.pct >= 100
+                                    ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-400"
+                                    : d.pct >= 50
+                                    ? "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-400"
+                                    : "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-400"
+                                }`}>
+                                  {d.target > 0 ? Math.round((d.actual / d.target) * 100) : 0}%
+                                </span>
+                              </>
+                            )
                             : Math.round(d.actual)}
                         </div>
                         <div className="text-[10px] text-muted-foreground">
