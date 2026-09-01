@@ -16,6 +16,7 @@ type Row = {
   slug: string;
   linked: boolean;
   role: string;
+  external: boolean;
 };
 
 const ROLES = [
@@ -34,7 +35,7 @@ export default function LinkOrgModal({ userId, userName, onClose }: Props) {
     queryFn: async () => {
       const { data: orgs, error } = await supabase
         .from("organizations")
-        .select("id, name, slug")
+        .select("id, name, slug, external_url")
         .order("name");
       if (error) throw error;
       const { data: links } = await supabase
@@ -54,6 +55,7 @@ export default function LinkOrgModal({ userId, userName, onClose }: Props) {
         slug: o.slug,
         linked: linkedSet.has(o.id),
         role: roleMap.get(o.id) || "solicitante",
+        external: Boolean(o.external_url),
       })) as Row[];
     },
   });
