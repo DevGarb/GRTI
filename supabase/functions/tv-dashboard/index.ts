@@ -296,8 +296,9 @@ Deno.serve(async (req) => {
     let csatTodaySum = 0, csatTodayN = 0;
     for (const e of evalsMonth ?? []) {
       const s = (e as any).score ?? 0;
-      csatSum += s; csatN++;
-      { const ed = new Date((e as any).created_at); if (ed >= agendaStart && ed < agendaEnd) { csatTodaySum += s; csatTodayN++; } }
+      const ed = new Date((e as any).created_at);
+      if (ed >= startMonth && ed < endMonth) { csatSum += s; csatN++; }
+      if (ed >= agendaStart && ed < agendaEnd) { csatTodaySum += s; csatTodayN++; }
     }
     const csat = csatN ? csatSum / csatN : 0;
     const csatToday = csatTodayN ? csatTodaySum / csatTodayN : 0;
