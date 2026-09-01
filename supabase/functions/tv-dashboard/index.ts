@@ -369,14 +369,30 @@ Deno.serve(async (req) => {
       .in("user_id", techIds.length ? techIds : ["00000000-0000-0000-0000-000000000000"]);
     const techNameOf = new Map((techProfiles ?? []).map((p: any) => [p.user_id, p.full_name]));
 
-    // Demandas de projeto: tarefas em "Em Desenvolvimento" atribuídas ao dev
-    // (assignee_id quando existir, senão quem fez a última mudança de status)
-    const { data: devTasks } = await supabase
+    // Demandas de projeto: tarefas em "Em Desenvolvimento" que pertencem a
+    // sprints realmente em andamento e projetos ainda não concluídos.
+    const { data: rawDevTasks } = await supabase
       .from("project_tasks")
-      .select("id, title, assignee_id")
+      .select("id, title, assignee_id, sprint_id, project_id")
       .eq("organization_id", orgId)
       .eq("status", "Em Desenvolvimento");
-    const devTaskIds = (devTasks ?? []).map((t: any) => t.id);
+    const sprintIds = Array.from(new Set((rawDevTasks ?? []).map((t: any) => t.sprint_id).filter(Boolean)));
+    const projectIds = Array.from(new Set((rawDevTasks ?? []).map((t: any) => t.project_id).filter(Boolean)));
+    const [{ data: sprintRows }, { data: projectRows }] = await Promise.all([
+      supabase.from("sprints").select("id, status").in("id", sprintIds.length ? sprintIds : ["00000000-0000-0000-0000-000000000000"]),
+      supabase.from("projects").select("id, status").in("id", projectIds.length ? projectIds : ["00000000-0000-0000-0000-000000000000"]),
+    ]);
+    const sprintStatusOf = new Map((sprintRows ?? []).map((s: any) => [s.id, String(s.status ?? "").toLowerCase()]));
+    const projectStatusOf = new Map((projectRows ?? []).map((p: any) => [p.id, String(p.status ?? "").toLowerCase()]));
+    const devTasks = (rawDevTasks ?? []).filter((t: any) => {
+      const ps = t.project_id ? projectStatusOf.get(t.project_id) : null;
+      if (ps && (ps.includes("conclu") || ps.includes("cancel"))) return false;
+      if (!t.sprint_id) return true;
+      const ss = sprintStatusOf.get(t.sprint_id);
+      // só conta sprint em andamento (ignora planejada / concluída / cancelada)
+      return ss === "ativa" || ss === "em_andamento" || ss === "em andamento";
+    });
+    const devTaskIds = devTasks.map((t: any) => t.id);
     const { data: devHist } = await supabase
       .from("task_status_history")
       .select("task_id, changed_by, changed_at")
@@ -387,6 +403,7 @@ Deno.serve(async (req) => {
     for (const h of (devHist ?? []) as any[]) {
       if (h.changed_by) lastChangerOf.set(h.task_id, h.changed_by);
     }
+
 
     type TeamAgg = {
       closed_today: number;
