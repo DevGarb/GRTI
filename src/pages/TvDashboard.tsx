@@ -235,8 +235,7 @@ export default function TvDashboard() {
   }, [query.dataUpdatedAt, tick]);
 
   const opStatus = useMemo(() => {
-    const isCustomDay = agendaFilter.type !== "today";
-  const d = (isCustomDay ? (agendaQuery.data ?? query.data) : query.data) as TvData | undefined;
+    const d = query.data;
     if (!d) return null;
     return computeOpStatus({
       backlogTotal: d.kpis.backlog,
