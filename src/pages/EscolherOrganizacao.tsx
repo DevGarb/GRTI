@@ -16,6 +16,13 @@ const ORG_DESCRIPTIONS: Record<string, { subtitle: string; sector: string }> = {
   "gestao-processos": { subtitle: "Mapeamento e Gestão de Processos", sector: "Ambiente externo" },
 };
 
+const ORG_ORDER: Record<string, number> = {
+  "grupo-ramos": 1,
+  "cgps-operacional": 2,
+  "grcheck": 3,
+  "gestao-processos": 4,
+};
+
 const stagger = {
   hidden: {},
   show: { transition: { staggerChildren: 0.08, delayChildren: 0.15 } },
@@ -30,8 +37,16 @@ export default function EscolherOrganizacao() {
   const { signOut, profile } = useAuth();
   const { orgs, loading, switchToOrg } = useUserOrganizations();
 
+  // Ordem fixa solicitada: T.I → Operacional → GRCheck → Gestão de Processos
+  const sortedOrgs = [...orgs].sort((a, b) => {
+    const orderA = ORG_ORDER[a.slug] ?? 999;
+    const orderB = ORG_ORDER[b.slug] ?? 999;
+    if (orderA !== orderB) return orderA - orderB;
+    return a.name.localeCompare(b.name);
+  });
+
   // Organizações internas (ambientes do GRTI) x externas (apenas link)
-  const internalOrgs = orgs.filter((o) => !o.external_url);
+  const internalOrgs = sortedOrgs.filter((o) => !o.external_url);
 
   // If only 1 internal org, auto-select and bounce
   useEffect(() => {
@@ -126,7 +141,7 @@ export default function EscolherOrganizacao() {
           </motion.p>
 
           <div className="grid gap-6 sm:grid-cols-2">
-            {orgs.map((org) => {
+            {sortedOrgs.map((org) => {
               const meta = ORG_DESCRIPTIONS[org.slug] || { subtitle: "", sector: "" };
               const isExternal = Boolean(org.external_url);
               const CardTag: any = isExternal ? motion.a : motion.button;
