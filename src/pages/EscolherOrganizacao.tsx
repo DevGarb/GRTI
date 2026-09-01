@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Building2, LogOut, ArrowRight } from "lucide-react";
+import { Building2, LogOut, ArrowRight, ExternalLink } from "lucide-react";
 import { motion } from "framer-motion";
 import { useAuth } from "@/contexts/AuthContext";
 import { useUserOrganizations } from "@/hooks/useUserOrganizations";
@@ -13,6 +13,7 @@ const ORG_DESCRIPTIONS: Record<string, { subtitle: string; sector: string }> = {
   "grupo-ramos": { subtitle: "Suporte e Help Desk", sector: "Setor de T.I" },
   "cgps-operacional": { subtitle: "Entregas, Oficina e Manutenção", sector: "Setor de Operações" },
   "grcheck": { subtitle: "Checklists e Auditoria de Setores", sector: "Gestão de Qualidade" },
+  "gestao-processos": { subtitle: "Mapeamento e Gestão de Processos", sector: "Ambiente externo" },
 };
 
 const stagger = {
