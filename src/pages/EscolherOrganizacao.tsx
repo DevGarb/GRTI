@@ -37,8 +37,16 @@ export default function EscolherOrganizacao() {
   const { signOut, profile } = useAuth();
   const { orgs, loading, switchToOrg } = useUserOrganizations();
 
+  // Ordem fixa solicitada: T.I → Operacional → GRCheck → Gestão de Processos
+  const sortedOrgs = [...orgs].sort((a, b) => {
+    const orderA = ORG_ORDER[a.slug] ?? 999;
+    const orderB = ORG_ORDER[b.slug] ?? 999;
+    if (orderA !== orderB) return orderA - orderB;
+    return a.name.localeCompare(b.name);
+  });
+
   // Organizações internas (ambientes do GRTI) x externas (apenas link)
-  const internalOrgs = orgs.filter((o) => !o.external_url);
+  const internalOrgs = sortedOrgs.filter((o) => !o.external_url);
 
   // If only 1 internal org, auto-select and bounce
   useEffect(() => {
