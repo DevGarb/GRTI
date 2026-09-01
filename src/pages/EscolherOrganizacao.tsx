@@ -30,16 +30,21 @@ export default function EscolherOrganizacao() {
   const { signOut, profile } = useAuth();
   const { orgs, loading, switchToOrg } = useUserOrganizations();
 
-  // If only 1 org, auto-select and bounce
+  // Organizações internas (ambientes do GRTI) x externas (apenas link)
+  const internalOrgs = orgs.filter((o) => !o.external_url);
+
+  // If only 1 internal org, auto-select and bounce
   useEffect(() => {
     if (loading) return;
-    if (orgs.length === 1 && profile && profile.organization_id !== orgs[0].id) {
-      switchToOrg(orgs[0].id).then(() => {
-        persistActiveOrgSlug(orgs[0].slug ?? null);
+    if (internalOrgs.length !== 1) return;
+    const only = internalOrgs[0];
+    if (profile && profile.organization_id !== only.id) {
+      switchToOrg(only.id).then(() => {
+        persistActiveOrgSlug(only.slug ?? null);
         window.location.replace("/");
       });
-    } else if (orgs.length === 1) {
-      persistActiveOrgSlug(orgs[0].slug ?? null);
+    } else {
+      persistActiveOrgSlug(only.slug ?? null);
       navigate("/", { replace: true });
     }
   }, [loading, orgs, profile?.organization_id]);
