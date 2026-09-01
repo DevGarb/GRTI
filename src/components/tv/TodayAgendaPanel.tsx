@@ -1,23 +1,16 @@
 import { createContext, useContext, useEffect, useMemo, useState } from "react";
-import { CalendarDays, Sunrise, Sunset, ChevronDown } from "lucide-react";
+import { CalendarDays, Sunrise, Sunset } from "lucide-react";
 import { BentoTile } from "./BentoTile";
 import { TodayTicket } from "./TodayTimelinePanel";
 import { useTicketModal } from "@/contexts/TicketModalContext";
 
 interface FlashCtx { flashKey: number; targetId: string | null }
 const FlashContext = createContext<FlashCtx>({ flashKey: 0, targetId: null });
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { DateRange } from "react-day-picker";
 
 export type AgendaFilterType = "today" | "custom";
 export interface AgendaFilter {
@@ -61,26 +54,16 @@ function ymd(d: Date) {
   return `${y}-${m}-${da}`;
 }
 
-export function computeAgendaRange(type: AgendaFilterType, custom?: DateRange): AgendaFilter {
+export function computeAgendaRange(input: Date | "today" = "today"): AgendaFilter {
   const now = new Date();
-  if (type === "today") {
-    const s = ymd(now);
-    return { type, from: s, to: s };
-  }
-  if (type === "yesterday") {
-    const y = new Date(now); y.setDate(y.getDate() - 1);
-    const s = ymd(y);
-    return { type, from: s, to: s };
-  }
-  if (type === "last_month") {
-    const first = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-    const last = new Date(now.getFullYear(), now.getMonth(), 0);
-    return { type, from: ymd(first), to: ymd(last) };
-  }
-  // custom
-  const from = custom?.from ?? now;
-  const to = custom?.to ?? from;
-  return { type: "custom", from: ymd(from), to: ymd(to) };
+  const d = input === "today" ? now : input;
+  const s = ymd(d);
+  return { type: s === ymd(now) ? "today" : "custom", from: s, to: s };
+}
+
+/** First day of the previous month (lower bound for the agenda date picker). */
+export function agendaMinDate(now: Date = new Date()) {
+  return new Date(now.getFullYear(), now.getMonth() - 1, 1);
 }
 
 function hourOf(hhmm: string) {
@@ -189,48 +172,6 @@ function SingleDayView({ tickets }: { tickets: (TodayTicket & { date?: string })
   );
 }
 
-function MultiDayView({ tickets }: { tickets: (TodayTicket & { date?: string })[] }) {
-  const byDay = new Map<string, (TodayTicket & { date?: string })[]>();
-  for (const t of tickets) {
-    const k = t.date ?? "sem-data";
-    if (!byDay.has(k)) byDay.set(k, []);
-    byDay.get(k)!.push(t);
-  }
-  const days = Array.from(byDay.keys()).sort();
-  return (
-    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3 max-h-[520px] overflow-y-auto pr-1">
-      {days.map(day => {
-        const list = byDay.get(day)!;
-        const dateObj = new Date(day + "T12:00:00");
-        const label = format(dateObj, "EEE, dd/MM", { locale: ptBR });
-        return (
-          <div key={day} className="rounded-lg border border-[hsl(var(--tv-border))] bg-[hsl(var(--tv-surface-2))]/40 p-3">
-            <div className="flex items-center justify-between mb-2 pb-2 border-b border-[hsl(var(--tv-border))]">
-              <span className="text-[13px] uppercase tracking-widest text-[hsl(var(--tv-text-dim))] font-semibold">
-                {label}
-              </span>
-              <span className="font-mono-tech text-[13px] text-[hsl(var(--tv-text-dim))]">
-                {list.length.toString().padStart(2, "0")}
-              </span>
-
-            </div>
-            <div className="flex flex-col gap-1">
-              {list.map(t => <TicketChip key={t.id} t={t} />)}
-            </div>
-          </div>
-        );
-      })}
-    </div>
-  );
-}
-
-const FILTER_LABELS: Record<AgendaFilterType, string> = {
-  today: "Hoje",
-  yesterday: "Ontem",
-  last_month: "Mês passado",
-  custom: "Personalizado",
-};
-
 export function TodayAgendaPanel({ tickets, filter, onFilterChange, flashKey = 0, flashTicketId = null }: Props) {
   // Panel-wide flash when target isn't in the visible list
   const chipTargetVisible = !!flashTicketId && tickets.some(t => t.id === flashTicketId);
@@ -245,43 +186,14 @@ export function TodayAgendaPanel({ tickets, filter, onFilterChange, flashKey = 0
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [flashKey]);
 
-  const [customOpen, setCustomOpen] = useState(false);
-  const [customRange, setCustomRange] = useState<DateRange | undefined>(() => {
-    if (filter.type === "custom") {
-      return {
-        from: new Date(filter.from + "T12:00:00"),
-        to: new Date(filter.to + "T12:00:00"),
-      };
-    }
-    return undefined;
-  });
+  const [pickerOpen, setPickerOpen] = useState(false);
+  const selectedDate = useMemo(() => new Date(filter.from + "T12:00:00"), [filter.from]);
+  const isToday = filter.type === "today";
 
-  const isSingleDay = filter.from === filter.to;
-
-  const headerTitle = useMemo(() => {
-    if (filter.type === "today") return "Agenda de Hoje";
-    if (filter.type === "yesterday") return "Agenda de Ontem";
-    if (filter.type === "last_month") return "Agenda · Mês Passado";
-    if (isSingleDay) {
-      return `Agenda · ${format(new Date(filter.from + "T12:00:00"), "dd/MM/yyyy")}`;
-    }
-    return `Agenda · ${format(new Date(filter.from + "T12:00:00"), "dd/MM")} → ${format(new Date(filter.to + "T12:00:00"), "dd/MM")}`;
-  }, [filter, isSingleDay]);
-
-  function handleSelect(type: AgendaFilterType) {
-    if (type === "custom") {
-      setCustomOpen(true);
-      return;
-    }
-    onFilterChange(computeAgendaRange(type));
-  }
-
-  function applyCustom() {
-    if (customRange?.from) {
-      onFilterChange(computeAgendaRange("custom", customRange));
-      setCustomOpen(false);
-    }
-  }
+  const headerTitle = useMemo(
+    () => (isToday ? "Agenda de Hoje" : `Agenda · ${format(selectedDate, "dd/MM/yyyy")}`),
+    [isToday, selectedDate],
+  );
 
   return (
     <FlashContext.Provider value={{ flashKey, targetId: flashTicketId }}>
@@ -300,55 +212,40 @@ export function TodayAgendaPanel({ tickets, filter, onFilterChange, flashKey = 0
         </div>
 
         <div className="flex items-center gap-2">
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <button
-                className="flex items-center gap-1.5 rounded-md border border-[hsl(var(--tv-border))] bg-[hsl(var(--tv-surface-2))] px-3 py-2 text-[13px] font-semibold uppercase tracking-wider text-[hsl(var(--tv-text))] hover:border-[hsl(var(--tv-border-strong))] transition"
-              >
-                {FILTER_LABELS[filter.type]}
-                <ChevronDown className="h-3 w-3" />
-              </button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="min-w-[160px]">
-              {(["today", "yesterday", "last_month", "custom"] as AgendaFilterType[]).map(k => (
-                <DropdownMenuItem key={k} onClick={() => handleSelect(k)}>
-                  {FILTER_LABELS[k]}
-                </DropdownMenuItem>
-              ))}
-            </DropdownMenuContent>
-          </DropdownMenu>
-
-          <Popover open={customOpen} onOpenChange={setCustomOpen}>
+          <Popover open={pickerOpen} onOpenChange={setPickerOpen}>
             <PopoverTrigger asChild>
-              <button className="sr-only" aria-hidden />
+              <button className="flex items-center gap-2 rounded-md border border-[hsl(var(--tv-border))] bg-[hsl(var(--tv-surface-2))] px-3 py-2 text-[13px] font-semibold uppercase tracking-wider text-[hsl(var(--tv-text))] hover:border-[hsl(var(--tv-border-strong))] transition">
+                <CalendarDays className="h-4 w-4" />
+                {format(selectedDate, "dd/MM/yyyy")}
+              </button>
             </PopoverTrigger>
             <PopoverContent className="w-auto p-0" align="end">
               <Calendar
-                mode="range"
-                selected={customRange}
-                onSelect={setCustomRange}
-                numberOfMonths={2}
+                mode="single"
+                selected={selectedDate}
+                defaultMonth={selectedDate}
+                onSelect={(d) => {
+                  if (!d) return;
+                  onFilterChange(computeAgendaRange(d));
+                  setPickerOpen(false);
+                }}
+                fromDate={agendaMinDate()}
+                toDate={new Date()}
                 locale={ptBR}
                 initialFocus
                 className={cn("p-3 pointer-events-auto")}
               />
-              <div className="flex justify-end gap-2 p-3 border-t">
-                <button
-                  className="text-xs px-3 py-1.5 rounded-md border hover:bg-muted"
-                  onClick={() => setCustomOpen(false)}
-                >
-                  Cancelar
-                </button>
-                <button
-                  className="text-xs px-3 py-1.5 rounded-md bg-primary text-primary-foreground disabled:opacity-50"
-                  disabled={!customRange?.from}
-                  onClick={applyCustom}
-                >
-                  Aplicar
-                </button>
-              </div>
             </PopoverContent>
           </Popover>
+
+          {!isToday && (
+            <button
+              className="rounded-md border border-[hsl(var(--tv-border))] bg-[hsl(var(--tv-surface-2))] px-3 py-2 text-[13px] font-semibold uppercase tracking-wider text-[hsl(var(--tv-text-dim))] hover:border-[hsl(var(--tv-border-strong))] transition"
+              onClick={() => onFilterChange(computeAgendaRange("today"))}
+            >
+              Hoje
+            </button>
+          )}
 
           <span className="font-mono-tech text-[13px] text-[hsl(var(--tv-text-dim))] tracking-widest">
             {tickets.length.toString().padStart(3, "0")} EVT
@@ -361,10 +258,8 @@ export function TodayAgendaPanel({ tickets, filter, onFilterChange, flashKey = 0
 
           Sem chamados no período selecionado
         </div>
-      ) : isSingleDay ? (
-        <SingleDayView tickets={tickets} />
       ) : (
-        <MultiDayView tickets={tickets} />
+        <SingleDayView tickets={tickets} />
       )}
     </BentoTile>
     </div>
