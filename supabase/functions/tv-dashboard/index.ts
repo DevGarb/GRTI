@@ -144,6 +144,7 @@ Deno.serve(async (req) => {
     // computes: open* uses aging/backlog; recent* uses closed/opened/tma/ranking.
     const selectCols = "id, title, status, priority, created_at, started_at, closed_at, aguardando_aprovacao_at, assigned_to, created_by, category_id";
     const startMonthIso = startMonth.toISOString();
+    const fetchFromIso = new Date(Math.min(startMonth.getTime(), agendaStart.getTime())).toISOString();
     const [openRes, recentRes] = await Promise.all([
       supabase
         .from("tickets")
@@ -155,7 +156,7 @@ Deno.serve(async (req) => {
         .from("tickets")
         .select(selectCols)
         .eq("organization_id", orgId)
-        .or(`created_at.gte.${startMonthIso},closed_at.gte.${startMonthIso},aguardando_aprovacao_at.gte.${startMonthIso}`)
+        .or(`created_at.gte.${fetchFromIso},closed_at.gte.${fetchFromIso},aguardando_aprovacao_at.gte.${fetchFromIso}`)
         .order("created_at", { ascending: false }),
     ]);
     const byId = new Map<string, any>();
@@ -208,7 +209,7 @@ Deno.serve(async (req) => {
 
     for (const t of list) {
       const createdAt = new Date(t.created_at);
-      const isCreatedToday = createdAt >= startToday;
+      const isCreatedToday = createdAt >= agendaStart && createdAt < agendaEnd;
       if (isCreatedToday) opened_today++;
 
       // Momento efetivo de finalização pelo técnico:
@@ -220,7 +221,7 @@ Deno.serve(async (req) => {
       const effectiveFinish = aad ?? (isFinal ? closedAt : null);
 
       if (effectiveFinish) {
-        if (effectiveFinish >= startToday) {
+        if (effectiveFinish >= agendaStart && effectiveFinish < agendaEnd) {
           closed_today++;
           if (t.assigned_to) activeTechsToday.add(t.assigned_to);
         }
@@ -239,7 +240,7 @@ Deno.serve(async (req) => {
           if (m > 0) {
             tmaSum += m; tmaN++;
             if (finished >= startMonth && finished < endMonth) { tmaMonthSum += m; tmaMonthN++; }
-            if (finished >= startToday) { tmaTodaySum += m; tmaTodayN++; }
+            if (finished >= agendaStart && finished < agendaEnd) { tmaTodaySum += m; tmaTodayN++; }
           }
         }
       }
@@ -287,7 +288,7 @@ Deno.serve(async (req) => {
     // CSAT do mês vigente (apenas satisfaction)
     const { data: evalsMonth } = await supabase
       .from("evaluations").select("score, ticket_id, created_at, type, tickets!inner(organization_id)")
-      .gte("created_at", startMonth.toISOString())
+      .gte("created_at", fetchFromIso)
       .lt("created_at", endMonth.toISOString())
       .eq("type", "satisfaction")
       .eq("tickets.organization_id", orgId);
@@ -295,8 +296,9 @@ Deno.serve(async (req) => {
     let csatTodaySum = 0, csatTodayN = 0;
     for (const e of evalsMonth ?? []) {
       const s = (e as any).score ?? 0;
-      csatSum += s; csatN++;
-      if (new Date((e as any).created_at) >= startToday) { csatTodaySum += s; csatTodayN++; }
+      const ed = new Date((e as any).created_at);
+      if (ed >= startMonth && ed < endMonth) { csatSum += s; csatN++; }
+      if (ed >= agendaStart && ed < agendaEnd) { csatTodaySum += s; csatTodayN++; }
     }
     const csat = csatN ? csatSum / csatN : 0;
     const csatToday = csatTodayN ? csatTodaySum / csatTodayN : 0;
@@ -340,7 +342,7 @@ Deno.serve(async (req) => {
       const aad = t.aguardando_aprovacao_at ? new Date(t.aguardando_aprovacao_at) : null;
       const isFinal = t.status === "Fechado" || t.status === "Aprovado";
       const eff = aad ?? (isFinal && t.closed_at ? new Date(t.closed_at) : null);
-      if (eff && eff >= startToday && t.assigned_to) {
+      if (eff && eff >= agendaStart && eff < agendaEnd && t.assigned_to) {
         const r = rankMap.get(t.assigned_to) ?? { fechados: 0 };
         r.fechados++;
         rankMap.set(t.assigned_to, r);
@@ -424,7 +426,7 @@ Deno.serve(async (req) => {
       const aad = t.aguardando_aprovacao_at ? new Date(t.aguardando_aprovacao_at) : null;
       const isFinal = t.status === "Fechado" || t.status === "Aprovado";
       const eff = aad ?? (isFinal && t.closed_at ? new Date(t.closed_at) : null);
-      if (eff && eff >= startToday) {
+      if (eff && eff >= agendaStart && eff < agendaEnd) {
         agg.closed_today++;
         if (agg.closed_titles.length < 12) agg.closed_titles.push(t.title ?? "—");
       }

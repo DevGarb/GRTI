@@ -316,7 +316,8 @@ export default function TvDashboard() {
     );
   }
 
-  const d = query.data;
+  const isCustomDay = agendaFilter.type !== "today";
+  const d = (isCustomDay ? (agendaQuery.data ?? query.data) : query.data) as TvData | undefined;
   const dateStr = clock.toLocaleDateString("pt-BR", { weekday: "long", day: "2-digit", month: "long", year: "numeric" });
   const timeStr = clock.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit", second: "2-digit" });
 
@@ -500,7 +501,7 @@ export default function TvDashboard() {
           {/* Row 2: Agenda — filtro por período */}
           <section>
             <TodayAgendaPanel
-              tickets={(agendaFilter.type === "today" ? d.today_tickets : agendaQuery.data?.today_tickets) ?? []}
+              tickets={d.today_tickets ?? []}
               filter={agendaFilter}
               onFilterChange={setAgendaFilter}
               flashKey={flashKey}
