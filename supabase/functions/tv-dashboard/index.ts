@@ -208,7 +208,7 @@ Deno.serve(async (req) => {
 
     for (const t of list) {
       const createdAt = new Date(t.created_at);
-      const isCreatedToday = createdAt >= startToday;
+      const isCreatedToday = createdAt >= agendaStart && createdAt < agendaEnd;
       if (isCreatedToday) opened_today++;
 
       // Momento efetivo de finalização pelo técnico:
@@ -220,7 +220,7 @@ Deno.serve(async (req) => {
       const effectiveFinish = aad ?? (isFinal ? closedAt : null);
 
       if (effectiveFinish) {
-        if (effectiveFinish >= startToday) {
+        if (effectiveFinish >= agendaStart && effectiveFinish < agendaEnd) {
           closed_today++;
           if (t.assigned_to) activeTechsToday.add(t.assigned_to);
         }
@@ -239,7 +239,7 @@ Deno.serve(async (req) => {
           if (m > 0) {
             tmaSum += m; tmaN++;
             if (finished >= startMonth && finished < endMonth) { tmaMonthSum += m; tmaMonthN++; }
-            if (finished >= startToday) { tmaTodaySum += m; tmaTodayN++; }
+            if (finished >= agendaStart && finished < agendaEnd) { tmaTodaySum += m; tmaTodayN++; }
           }
         }
       }
@@ -296,7 +296,7 @@ Deno.serve(async (req) => {
     for (const e of evalsMonth ?? []) {
       const s = (e as any).score ?? 0;
       csatSum += s; csatN++;
-      if (new Date((e as any).created_at) >= startToday) { csatTodaySum += s; csatTodayN++; }
+      { const ed = new Date((e as any).created_at); if (ed >= agendaStart && ed < agendaEnd) { csatTodaySum += s; csatTodayN++; } }
     }
     const csat = csatN ? csatSum / csatN : 0;
     const csatToday = csatTodayN ? csatTodaySum / csatTodayN : 0;
@@ -340,7 +340,7 @@ Deno.serve(async (req) => {
       const aad = t.aguardando_aprovacao_at ? new Date(t.aguardando_aprovacao_at) : null;
       const isFinal = t.status === "Fechado" || t.status === "Aprovado";
       const eff = aad ?? (isFinal && t.closed_at ? new Date(t.closed_at) : null);
-      if (eff && eff >= startToday && t.assigned_to) {
+      if (eff && eff >= agendaStart && eff < agendaEnd && t.assigned_to) {
         const r = rankMap.get(t.assigned_to) ?? { fechados: 0 };
         r.fechados++;
         rankMap.set(t.assigned_to, r);
@@ -424,7 +424,7 @@ Deno.serve(async (req) => {
       const aad = t.aguardando_aprovacao_at ? new Date(t.aguardando_aprovacao_at) : null;
       const isFinal = t.status === "Fechado" || t.status === "Aprovado";
       const eff = aad ?? (isFinal && t.closed_at ? new Date(t.closed_at) : null);
-      if (eff && eff >= startToday) {
+      if (eff && eff >= agendaStart && eff < agendaEnd) {
         agg.closed_today++;
         if (agg.closed_titles.length < 12) agg.closed_titles.push(t.title ?? "—");
       }
