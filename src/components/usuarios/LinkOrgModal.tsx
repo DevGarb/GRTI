@@ -169,6 +169,7 @@ export default function LinkOrgModal({ userId, userName, onClose }: Props) {
                     <option key={role.value} value={role.value}>{role.label}</option>
                   ))}
                 </select>
+                )}
               </div>
             ))}
           </div>
