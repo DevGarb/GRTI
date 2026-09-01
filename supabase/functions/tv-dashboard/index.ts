@@ -144,6 +144,7 @@ Deno.serve(async (req) => {
     // computes: open* uses aging/backlog; recent* uses closed/opened/tma/ranking.
     const selectCols = "id, title, status, priority, created_at, started_at, closed_at, aguardando_aprovacao_at, assigned_to, created_by, category_id";
     const startMonthIso = startMonth.toISOString();
+    const fetchFromIso = new Date(Math.min(startMonth.getTime(), agendaStart.getTime())).toISOString();
     const [openRes, recentRes] = await Promise.all([
       supabase
         .from("tickets")
@@ -155,7 +156,7 @@ Deno.serve(async (req) => {
         .from("tickets")
         .select(selectCols)
         .eq("organization_id", orgId)
-        .or(`created_at.gte.${startMonthIso},closed_at.gte.${startMonthIso},aguardando_aprovacao_at.gte.${startMonthIso}`)
+        .or(`created_at.gte.${fetchFromIso},closed_at.gte.${fetchFromIso},aguardando_aprovacao_at.gte.${fetchFromIso}`)
         .order("created_at", { ascending: false }),
     ]);
     const byId = new Map<string, any>();
