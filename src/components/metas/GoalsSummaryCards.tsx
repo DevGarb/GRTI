@@ -195,6 +195,8 @@ export default function GoalsSummaryCards({ stats, goals, formatHours }: Props) 
                             ? formatHours(d.actual)
                             : d.metricKey === "rework_percent"
                             ? `${d.actual.toFixed(1)}%`
+                            : d.metricKey === "points"
+                            ? `${d.target > 0 ? Math.round((d.actual / d.target) * 100) : 0}%`
                             : Math.round(d.actual)}
                         </div>
                         <div className="text-[10px] text-muted-foreground">
