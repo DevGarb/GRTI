@@ -488,6 +488,14 @@ export default function GoalsManager({ year, month }: Props) {
           )}
         </div>
       )}
+
+      <PointsGoalSuggestionModal
+        open={showSuggestion}
+        onOpenChange={setShowSuggestion}
+        year={year}
+        month={month}
+        technicians={technicians}
+      />
     </div>
   );
 }
