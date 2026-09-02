@@ -1,5 +1,7 @@
 import { useState, useMemo } from "react";
-import { Plus, Trash2, Target, Users, User, Edit2, Check, X, CheckCircle2, Clock, Star, Award, Wrench, RefreshCw, Rocket, Wand2, Eraser } from "lucide-react";
+import { Plus, Trash2, Target, Users, User, Edit2, Check, X, CheckCircle2, Clock, Star, Award, Wrench, RefreshCw, Rocket, Wand2, Eraser, Sparkles } from "lucide-react";
+import PointsGoalSuggestionModal from "@/components/metas/PointsGoalSuggestionModal";
+
 import { useGoals, useCreateGoal, useUpdateGoal, useDeleteGoal, type PerformanceGoal } from "@/hooks/useGoals";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -79,6 +81,8 @@ export default function GoalsManager({ year, month }: Props) {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editValue, setEditValue] = useState("");
   const [form, setForm] = useState<TargetForm>(emptyForm());
+  const [showSuggestion, setShowSuggestion] = useState(false);
+
 
   const { data: technicians = [] } = useQuery({
     queryKey: ["technicians-for-goals", orgId],
@@ -307,13 +311,23 @@ export default function GoalsManager({ year, month }: Props) {
           </h3>
           <p className="text-xs text-muted-foreground mt-0.5">Defina todas as KPIs de um técnico ou setor de uma só vez</p>
         </div>
-        <button
-          onClick={openNew}
-          className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 transition-opacity"
-        >
-          <Plus className="h-4 w-4" />
-          Definir Metas
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setShowSuggestion(true)}
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-primary/40 bg-primary/5 text-primary text-sm font-medium hover:bg-primary/10 transition-colors"
+          >
+            <Sparkles className="h-4 w-4" />
+            Sugestão de meta de pontuação
+          </button>
+          <button
+            onClick={openNew}
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 transition-opacity"
+          >
+            <Plus className="h-4 w-4" />
+            Definir Metas
+          </button>
+        </div>
+
       </div>
 
       {showForm && (
