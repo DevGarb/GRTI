@@ -5,7 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useGoals } from "@/hooks/useGoals";
 import { BUSINESS_HOURS_PER_DAY } from "@/lib/businessHours";
-import { fetchTicketTmaMinutes } from "@/lib/ticketTiming";
+
 
 const METRIC_CONFIG: Record<string, { label: string; icon: typeof Target; shortLabel: string }> = {
   tickets_closed: { label: "Chamados Fechados", icon: TrendingUp, shortLabel: "Chamados" },
@@ -60,86 +60,29 @@ export default function MyGoalCard({ year, month }: Props) {
     queryFn: async () => {
       if (!user?.id) return null;
 
-      // Tickets fechados no mês atribuídos ao usuário — filtra por closed_at (mês do fechamento)
-      const { data: closedTickets } = await supabase
-        .from("tickets")
-        .select("id, created_at, updated_at, closed_at, started_at, assigned_to")
-        .eq("status", "Fechado")
-        .eq("assigned_to", user.id)
-        .gte("closed_at", monthStart.toISOString())
-        .lt("closed_at", monthEnd.toISOString());
+      // Fonte única de verdade: mesma RPC usada na aba Metas
+      const { data, error } = await supabase.rpc("get_metas_tecnicos", {
+        _year: year,
+        _month: month,
+      });
+      if (error) throw error;
 
+      const rows = ((data || []) as unknown) as Array<{
+        user_id: string;
+        total_closed: number;
+        total_points: number;
+        avg_score: number;
+        preventivas_done: number;
+        rework_count: number;
+        total_work_minutes: number;
+        timed_tickets_count?: number;
+      }>;
+      const mine = rows.find((r) => r.user_id === user.id);
 
-      const ids = (closedTickets || []).map((t) => t.id);
-
-      // Pontuação = soma dos pontos da categoria de cada chamado fechado
-      let totalPoints = 0;
-      if (ids.length > 0) {
-        const { data: ticketsCat } = await supabase
-          .from("tickets")
-          .select("category_id")
-          .in("id", ids);
-        const catIds = Array.from(
-          new Set((ticketsCat || []).map((t: any) => t.category_id).filter(Boolean))
-        );
-        let catScores = new Map<string, number>();
-        if (catIds.length > 0) {
-          const { data: cats } = await supabase
-            .from("categories")
-            .select("id, score")
-            .in("id", catIds);
-          catScores = new Map((cats || []).map((c: any) => [c.id, Number(c.score || 0)]));
-        }
-        totalPoints = (ticketsCat || []).reduce(
-          (s: number, t: any) => s + (catScores.get(t.category_id) || 0),
-          0
-        );
-      }
-
-
-      // Nota média (satisfaction)
-      let avgScore = 0;
-      if (ids.length > 0) {
-        const { data: satEvals } = await supabase
-          .from("evaluations")
-          .select("score")
-          .eq("type", "satisfaction")
-          .in("ticket_id", ids);
-        const scores = (satEvals || []).map((e) => e.score).filter(Boolean) as number[];
-        avgScore = scores.length > 0 ? scores.reduce((a, b) => a + b, 0) / scores.length : 0;
-      }
-
-      // TMA (regra única): wall clock started_at → 1ª "Aguardando Aprovação"
-      let avgResolutionHours = 0;
-      if ((closedTickets || []).length > 0) {
-        const tmaMap = await fetchTicketTmaMinutes(closedTickets || []);
-        const values = (closedTickets || [])
-          .map((t) => tmaMap.get(t.id) ?? 0)
-          .filter((m) => m > 0);
-        if (values.length > 0) {
-          avgResolutionHours = values.reduce((a, b) => a + b, 0) / values.length / 60;
-        }
-      }
-
-      // Preventivas do mês
-      const { count: prevCount } = await supabase
-        .from("preventive_maintenance")
-        .select("id", { count: "exact", head: true })
-        .eq("created_by", user.id)
-        .gte("created_at", monthStart.toISOString())
-        .lt("created_at", monthEnd.toISOString());
-
-      // Retrabalho %: chamados fechados que tiveram retrabalho / total fechados * 100
-      let reworkPercent = 0;
-      if (ids.length > 0) {
-        const { data: reworkHist } = await supabase
-          .from("ticket_history")
-          .select("ticket_id")
-          .eq("action", "rework")
-          .in("ticket_id", ids);
-        const reworkedIds = new Set((reworkHist || []).map((h) => h.ticket_id));
-        reworkPercent = (reworkedIds.size / ids.length) * 100;
-      }
+      const totalClosed = Number(mine?.total_closed || 0);
+      const timed = Number(mine?.timed_tickets_count || 0);
+      const totalHours = Number(mine?.total_work_minutes || 0) / 60;
+      const reworkCount = Number(mine?.rework_count || 0);
 
       // Projetos entregues no mês = tarefas concluídas atribuídas ao usuário
       const projectTasksRes = await (supabase as any)
@@ -152,17 +95,18 @@ export default function MyGoalCard({ year, month }: Props) {
       const projectTasksDone: number = projectTasksRes?.count || 0;
 
       return {
-        totalClosed: (closedTickets || []).length,
-        totalPoints,
-        avgScore,
-        avgResolutionHours,
-        preventivasDone: prevCount || 0,
-        reworkPercent,
+        totalClosed,
+        totalPoints: Number(mine?.total_points || 0),
+        avgScore: Number(mine?.avg_score || 0),
+        avgResolutionHours: timed > 0 ? totalHours / timed : 0,
+        preventivasDone: Number(mine?.preventivas_done || 0),
+        reworkPercent: totalClosed > 0 ? (reworkCount / totalClosed) * 100 : 0,
         projectTasksDone: projectTasksDone || 0,
       };
     },
     enabled: !!user?.id && myGoals.length > 0,
   });
+
 
   if (myGoals.length === 0 || !stats) return null;
 
