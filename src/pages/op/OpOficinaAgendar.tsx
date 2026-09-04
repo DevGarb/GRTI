@@ -168,6 +168,11 @@ export default function OpOficinaAgendar() {
                     Confirmada para <strong>{formatDateBRShort(b.scheduled_date)}</strong> · {periodInfo(b.scheduled_period).label}
                   </div>
                 )}
+                {b.status === "nao_compareceu" && (
+                  <div className="text-xs text-rose-700 mt-1">
+                    Cliente não compareceu — reagende a moto quando necessário.
+                  </div>
+                )}
                 {b.description && <p className="text-xs text-slate-600 mt-2 line-clamp-2">{b.description}</p>}
               </Card>
             ))}
