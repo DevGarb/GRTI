@@ -173,7 +173,7 @@ export function useServiceTypes() {
   };
 
   return {
-    types, itemsByType, companyIdsByType, loading, typesForCompany, maxPointsOf,
+    types, itemsByType, companyIdsByType, loading, typesForCompany, maxPointsOf, catalogForCompany,
     addType, updateType, setTypeCompanies, addItem, updateItem, removeItem, removeType, refetch: fetch,
   };
 }
