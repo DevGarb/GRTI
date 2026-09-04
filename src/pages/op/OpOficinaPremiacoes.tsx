@@ -314,7 +314,8 @@ export default function OpOficinaPremiacoes() {
                     <tbody className="divide-y">
                       {rows.map(({ os, requested, approved }) => {
                         const st = POINTS_STATUS_INFO[os.points_status || "pendente"] || POINTS_STATUS_INFO.pendente;
-                        const audited = isAudited(os);
+                        const audited = isAudited(os) && !reopened.has(os.id);
+                        const isReopened = isAudited(os) && reopened.has(os.id);
                         const expanded = expandedId === os.id;
                         return (
                           <Fragment key={os.id}>
