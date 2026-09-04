@@ -160,22 +160,30 @@ export default function OpOficinaMeusPontos() {
               </div>
 
               <div className="relative pt-8 pb-2">
-                <div className="h-3 w-full rounded-full bg-black/10 overflow-hidden">
+                <div className="relative h-3 w-full rounded-full bg-black/10 overflow-hidden">
                   <div
-                    className="h-full rounded-full transition-all"
+                    className="absolute inset-y-0 left-0 rounded-full transition-all opacity-50"
                     style={{ width: `${progress.progress}%`, background: "hsl(var(--cgps-accent))" }}
+                  />
+                  <div
+                    className="absolute inset-y-0 left-0 rounded-full transition-all"
+                    style={{ width: `${progress.approvedProgress}%`, background: "hsl(var(--cgps-accent))" }}
                   />
                 </div>
                 <div
-                  className="absolute top-5 h-6 w-1 rounded bg-[hsl(var(--cgps-primary))] shadow-[0_0_8px_rgba(13,74,86,0.4)]"
+                  className="absolute top-5 h-6 w-1 rounded bg-[hsl(var(--cgps-primary))] shadow-[0_0_8px_rgba(13,74,86,0.4)] transition-all"
                   style={{ left: `${progress.progress}%` }}
                 />
                 <div
-                  className="absolute top-1 text-xs font-bold tabular-nums text-[hsl(var(--cgps-primary))]"
+                  className="absolute top-1 text-xs font-bold tabular-nums text-[hsl(var(--cgps-primary))] transition-all"
                   style={{ left: `${progress.progress}%`, transform: "translateX(-50%)" }}
                 >
-                  {formatPoints(approvedPts)} pts
+                  {formatPoints(totalPts)} pts
+                  {pendingPts > 0 && (
+                    <span className="ml-1 font-normal text-muted-foreground">({formatPoints(approvedPts)} aprov.)</span>
+                  )}
                 </div>
+
 
                 <div className="relative mt-4 h-16">
                   {sortedTiers.map((tier) => {
