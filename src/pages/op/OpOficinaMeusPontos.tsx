@@ -64,6 +64,17 @@ export default function OpOficinaMeusPontos() {
   }, [orgId, profile?.id]);
   useEffect(() => { fetch(); }, [fetch]);
 
+  // Atualiza em tempo real conforme o mecânico vai fechando OS
+  useEffect(() => {
+    if (!orgId || !profile?.id) return;
+    const ch = supabase
+      .channel("meus-pontos-os")
+      .on("postgres_changes", { event: "*", schema: "public", table: "op_service_orders" }, () => fetch())
+      .on("postgres_changes", { event: "*", schema: "public", table: "op_os_service_items" }, () => fetch())
+      .subscribe();
+    return () => { supabase.removeChannel(ch); };
+  }, [orgId, profile?.id, fetch]);
+
   const companyName = useMemo(() => Object.fromEntries(companies.map((c) => [c.id, c.name])), [companies]);
   const typeName = useMemo(() => Object.fromEntries(types.map((t) => [t.id, t.name])), [types]);
 
@@ -75,28 +86,32 @@ export default function OpOficinaMeusPontos() {
     [monthOrders],
   );
 
+  // Pontuação acumulada conforme as OS vão sendo fechadas (aprovadas + em auditoria)
+  const totalPts = approvedPts + pendingPts;
+
   const sortedTiers = useMemo(
     () => [...tiers].filter((t) => t.active).sort((a, b) => Number(a.from_points) - Number(b.from_points)),
     [tiers],
   );
 
   const progress = useMemo(() => {
-    if (!sortedTiers.length) return { current: null as typeof sortedTiers[0] | null, next: null as typeof sortedTiers[0] | null, missing: 0, progress: 0, maxVisible: 0 };
+    if (!sortedTiers.length) return { current: null as typeof sortedTiers[0] | null, next: null as typeof sortedTiers[0] | null, missing: 0, progress: 0, approvedProgress: 0, maxVisible: 0 };
     const maxVisible = Math.max(
-      approvedPts,
+      totalPts,
       ...sortedTiers.map((t) => Number(t.to_points || t.from_points)),
     );
+    const pct = (v: number) => Math.min(100, maxVisible ? (v / maxVisible) * 100 : 0);
     for (let i = 0; i < sortedTiers.length; i++) {
       const t = sortedTiers[i];
       const upper = t.to_points == null ? Infinity : Number(t.to_points);
-      if (approvedPts <= upper || i === sortedTiers.length - 1) {
+      if (totalPts <= upper || i === sortedTiers.length - 1) {
         const next = t.to_points == null ? null : sortedTiers[i + 1] ?? null;
-        const missing = next ? Math.max(0, Number(next.from_points) - approvedPts) : 0;
-        return { current: t, next, missing, progress: Math.min(100, (approvedPts / maxVisible) * 100), maxVisible };
+        const missing = next ? Math.max(0, Number(next.from_points) - totalPts) : 0;
+        return { current: t, next, missing, progress: pct(totalPts), approvedProgress: pct(approvedPts), maxVisible };
       }
     }
-    return { current: sortedTiers[sortedTiers.length - 1], next: null, missing: 0, progress: 100, maxVisible };
-  }, [sortedTiers, approvedPts]);
+    return { current: sortedTiers[sortedTiers.length - 1], next: null, missing: 0, progress: 100, approvedProgress: pct(approvedPts), maxVisible };
+  }, [sortedTiers, approvedPts, totalPts]);
 
   return (
     <div className="cgps-scope min-h-screen bg-slate-50">
@@ -145,22 +160,30 @@ export default function OpOficinaMeusPontos() {
               </div>
 
               <div className="relative pt-8 pb-2">
-                <div className="h-3 w-full rounded-full bg-black/10 overflow-hidden">
+                <div className="relative h-3 w-full rounded-full bg-black/10 overflow-hidden">
                   <div
-                    className="h-full rounded-full transition-all"
+                    className="absolute inset-y-0 left-0 rounded-full transition-all opacity-50"
                     style={{ width: `${progress.progress}%`, background: "hsl(var(--cgps-accent))" }}
+                  />
+                  <div
+                    className="absolute inset-y-0 left-0 rounded-full transition-all"
+                    style={{ width: `${progress.approvedProgress}%`, background: "hsl(var(--cgps-accent))" }}
                   />
                 </div>
                 <div
-                  className="absolute top-5 h-6 w-1 rounded bg-[hsl(var(--cgps-primary))] shadow-[0_0_8px_rgba(13,74,86,0.4)]"
+                  className="absolute top-5 h-6 w-1 rounded bg-[hsl(var(--cgps-primary))] shadow-[0_0_8px_rgba(13,74,86,0.4)] transition-all"
                   style={{ left: `${progress.progress}%` }}
                 />
                 <div
-                  className="absolute top-1 text-xs font-bold tabular-nums text-[hsl(var(--cgps-primary))]"
+                  className="absolute top-1 text-xs font-bold tabular-nums text-[hsl(var(--cgps-primary))] transition-all"
                   style={{ left: `${progress.progress}%`, transform: "translateX(-50%)" }}
                 >
-                  {formatPoints(approvedPts)} pts
+                  {formatPoints(totalPts)} pts
+                  {pendingPts > 0 && (
+                    <span className="ml-1 font-normal text-muted-foreground">({formatPoints(approvedPts)} aprov.)</span>
+                  )}
                 </div>
+
 
                 <div className="relative mt-4 h-16">
                   {sortedTiers.map((tier) => {
