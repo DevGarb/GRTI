@@ -69,7 +69,7 @@ export default function OficinaNav() {
           </div>
           <span className="font-bold text-sm" style={{ color: "hsl(191 74% 20%)" }}>Oficina</span>
         </div>
-        <nav className="flex items-stretch flex-1 gap-1 overflow-x-auto no-scrollbar">
+        <nav className="flex items-stretch flex-1 min-w-0 gap-1 overflow-x-auto no-scrollbar">
           {GROUPS.map((g, gi) => (
             <div key={g.label || gi} className="flex items-center">
               {gi > 0 && <span className="mx-2 h-5 w-px bg-slate-200 shrink-0" aria-hidden />}
@@ -96,11 +96,11 @@ export default function OficinaNav() {
         </nav>
 
         {profile && (
-          <div className="flex items-center gap-2 py-2">
-            <Badge className={(OFICINA_ROLE_BADGE[profile.type] || "bg-slate-700 text-white") + " border-0"}>
+          <div className="flex items-center gap-2 py-2 shrink-0 max-w-[280px]">
+            <Badge className={(OFICINA_ROLE_BADGE[profile.type] || "bg-slate-700 text-white") + " border-0 shrink-0"}>
               {oficinaRoleInfo(profile.type).label}
             </Badge>
-            <span className="text-sm font-medium text-slate-700 hidden sm:inline">{profile.name}</span>
+            <span className="text-sm font-medium text-slate-700 hidden sm:inline truncate">{profile.name}</span>
             <Button size="sm" variant="ghost" onClick={logout} className="text-slate-600">
               <LogOut className="h-4 w-4" />
             </Button>
