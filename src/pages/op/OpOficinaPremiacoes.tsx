@@ -193,6 +193,13 @@ export default function OpOficinaPremiacoes() {
 
   const isAudited = (os: ServiceOrder) => os.points_status === "aprovada" || os.points_status === "ajustada";
 
+  /** OS já auditadas que o admin reabriu para corrigir algum erro. */
+  const [reopened, setReopened] = useState<Set<string>>(new Set());
+  const reopenAudit = (os: ServiceOrder) => {
+    setReopened(prev => new Set(prev).add(os.id));
+    setExpandedId(os.id);
+  };
+
   const byMechanic = useMemo(() => {
     const acc = new Map<string, { id: string; name: string; osCount: number; requested: number; approved: number; pendingAudit: number }>();
     rows.forEach(({ os, requested, approved }) => {
