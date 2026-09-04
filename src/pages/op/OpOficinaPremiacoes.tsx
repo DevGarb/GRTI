@@ -193,6 +193,13 @@ export default function OpOficinaPremiacoes() {
 
   const isAudited = (os: ServiceOrder) => os.points_status === "aprovada" || os.points_status === "ajustada";
 
+  /** OS já auditadas que o admin reabriu para corrigir algum erro. */
+  const [reopened, setReopened] = useState<Set<string>>(new Set());
+  const reopenAudit = (os: ServiceOrder) => {
+    setReopened(prev => new Set(prev).add(os.id));
+    setExpandedId(os.id);
+  };
+
   const byMechanic = useMemo(() => {
     const acc = new Map<string, { id: string; name: string; osCount: number; requested: number; approved: number; pendingAudit: number }>();
     rows.forEach(({ os, requested, approved }) => {
@@ -307,7 +314,8 @@ export default function OpOficinaPremiacoes() {
                     <tbody className="divide-y">
                       {rows.map(({ os, requested, approved }) => {
                         const st = POINTS_STATUS_INFO[os.points_status || "pendente"] || POINTS_STATUS_INFO.pendente;
-                        const audited = isAudited(os);
+                        const audited = isAudited(os) && !reopened.has(os.id);
+                        const isReopened = isAudited(os) && reopened.has(os.id);
                         const expanded = expandedId === os.id;
                         return (
                           <Fragment key={os.id}>
@@ -321,11 +329,27 @@ export default function OpOficinaPremiacoes() {
                               <td className="px-3 py-2">{compName(os.company_id)}</td>
                               <td className="px-3 py-2 text-right tabular-nums">{formatPoints(requested)}</td>
                               <td className="px-3 py-2 text-right tabular-nums font-semibold text-emerald-600">
-                                {audited ? formatPoints(approved) : "—"}
+                                {isAudited(os) ? formatPoints(approved) : "—"}
                               </td>
                               <td className="px-3 py-2">
                                 <div className="flex items-center gap-1.5">
                                   <Badge variant="secondary" className={st.chip}>{st.label}</Badge>
+                                  {isReopened && (
+                                    <Badge variant="secondary" className="bg-amber-500/15 text-amber-700 text-[10px]">
+                                      Em correção
+                                    </Badge>
+                                  )}
+                                  {audited && (
+                                    <Button
+                                      size="sm"
+                                      variant="ghost"
+                                      className="h-7 px-2 text-xs"
+                                      title="Corrigir auditoria desta OS"
+                                      onClick={(e) => { e.stopPropagation(); reopenAudit(os); }}
+                                    >
+                                      <Pencil className="h-3.5 w-3.5 mr-1" /> Editar
+                                    </Button>
+                                  )}
                                   {expanded
                                     ? <ChevronUp className="h-4 w-4 text-muted-foreground" />
                                     : <ChevronDown className="h-4 w-4 text-muted-foreground" />}
@@ -339,7 +363,11 @@ export default function OpOficinaPremiacoes() {
                                     os={os}
                                     readOnly={audited}
                                     osItems={osItems}
-                                    onFinalized={() => { setExpandedId(null); refetch(); }}
+                                    onFinalized={() => {
+                                      setExpandedId(null);
+                                      setReopened(prev => { const n = new Set(prev); n.delete(os.id); return n; });
+                                      refetch();
+                                    }}
                                   />
                                 </td>
                               </tr>
