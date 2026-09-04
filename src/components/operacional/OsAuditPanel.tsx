@@ -1,12 +1,16 @@
-import { Check, ShieldCheck, X } from "lucide-react";
+import { useState } from "react";
+import { Check, Plus, ShieldCheck, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import {
   requestedPoints, approvedPoints, formatPoints,
   type OsServiceItem,
 } from "@/lib/oficinaScoring";
+
+export interface AuditCatalogService { id: string; name: string; points: number }
 
 interface Props {
   items: OsServiceItem[];
@@ -16,12 +20,90 @@ interface Props {
   onFinalize?: () => void;
   finalizing?: boolean;
   showFinalize?: boolean;
+  /** Catálogo de serviços da empresa da OS, para o auditor incluir manualmente. */
+  catalog?: AuditCatalogService[];
+  onAddService?: (input: { label: string; points: number }) => void | Promise<unknown>;
   className?: string;
+}
+
+/** Formulário para o auditor incluir um serviço que o mecânico esqueceu de marcar. */
+function AddServiceForm({ catalog = [], onAdd }: {
+  catalog?: AuditCatalogService[];
+  onAdd: (input: { label: string; points: number }) => void | Promise<unknown>;
+}) {
+  const [selected, setSelected] = useState("");
+  const [label, setLabel] = useState("");
+  const [points, setPoints] = useState("");
+  const custom = selected === "__custom";
+
+  const submit = async () => {
+    if (custom) {
+      if (!label.trim()) return;
+      await onAdd({ label: label.trim(), points: Number(points) || 0 });
+    } else {
+      const svc = catalog.find((c) => c.id === selected);
+      if (!svc) return;
+      await onAdd({ label: svc.name, points: Number(points === "" ? svc.points : points) || 0 });
+    }
+    setSelected(""); setLabel(""); setPoints("");
+  };
+
+  return (
+    <div className="border-t pt-2 space-y-2">
+      <p className="text-[11px] font-medium text-muted-foreground flex items-center gap-1">
+        <Plus className="h-3 w-3" /> Incluir serviço na auditoria
+      </p>
+      <div className="flex flex-wrap items-center gap-2">
+        <Select
+          value={selected}
+          onValueChange={(v) => {
+            setSelected(v);
+            const svc = catalog.find((c) => c.id === v);
+            setPoints(svc ? String(svc.points) : "");
+          }}
+        >
+          <SelectTrigger className="h-8 text-xs w-[260px]">
+            <SelectValue placeholder="Escolher serviço do catálogo" />
+          </SelectTrigger>
+          <SelectContent className="max-h-72">
+            {catalog.map((c) => (
+              <SelectItem key={c.id} value={c.id} className="text-xs">
+                {c.name} · {formatPoints(c.points)} pts
+              </SelectItem>
+            ))}
+            <SelectItem value="__custom" className="text-xs">Outro serviço (digitar)</SelectItem>
+          </SelectContent>
+        </Select>
+
+        {custom && (
+          <Input
+            value={label}
+            onChange={(e) => setLabel(e.target.value)}
+            placeholder="Nome do serviço"
+            className="h-8 text-xs w-[220px]"
+          />
+        )}
+
+        <Input
+          type="number" step="0.05" min={0}
+          value={points}
+          onChange={(e) => setPoints(e.target.value)}
+          placeholder="pts"
+          className="h-8 w-20 text-xs text-right"
+          aria-label="Pontos do serviço"
+        />
+
+        <Button size="sm" className="h-8" onClick={submit} disabled={!selected || (custom && !label.trim())}>
+          <Plus className="h-3.5 w-3.5 mr-1" /> Incluir
+        </Button>
+      </div>
+    </div>
+  );
 }
 
 /** Painel de auditoria: admin confere os serviços executados e aprova/ajusta os pontos. */
 export default function OsAuditPanel({
-  items, readOnly, onApprove, onAdjust, onFinalize, finalizing, showFinalize, className,
+  items, readOnly, onApprove, onAdjust, onFinalize, finalizing, showFinalize, catalog, onAddService, className,
 }: Props) {
   const done = items.filter((i) => i.done);
   const requested = requestedPoints(items);
@@ -30,8 +112,17 @@ export default function OsAuditPanel({
 
   if (!items.length) {
     return (
-      <div className={cn("border rounded-md p-3 bg-muted/30 text-xs text-muted-foreground", className)}>
-        Nenhum serviço pontuado nesta OS.
+      <div className={cn("border rounded-md p-3 bg-muted/30 space-y-3", className)}>
+        <p className="text-xs text-muted-foreground">Nenhum serviço pontuado nesta OS.</p>
+        {!readOnly && onAddService && <AddServiceForm catalog={catalog} onAdd={onAddService} />}
+        {showFinalize && !readOnly && (
+          <div className="flex justify-end pt-1 border-t">
+            <Button size="sm" onClick={onFinalize} disabled={finalizing}>
+              <ShieldCheck className="h-4 w-4 mr-1" />
+              {finalizing ? "Salvando..." : "Aprovar pontuação"}
+            </Button>
+          </div>
+        )}
       </div>
     );
   }
