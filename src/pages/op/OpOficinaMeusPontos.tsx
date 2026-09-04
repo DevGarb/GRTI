@@ -64,6 +64,17 @@ export default function OpOficinaMeusPontos() {
   }, [orgId, profile?.id]);
   useEffect(() => { fetch(); }, [fetch]);
 
+  // Atualiza em tempo real conforme o mecânico vai fechando OS
+  useEffect(() => {
+    if (!orgId || !profile?.id) return;
+    const ch = supabase
+      .channel("meus-pontos-os")
+      .on("postgres_changes", { event: "*", schema: "public", table: "op_service_orders" }, () => fetch())
+      .on("postgres_changes", { event: "*", schema: "public", table: "op_os_service_items" }, () => fetch())
+      .subscribe();
+    return () => { supabase.removeChannel(ch); };
+  }, [orgId, profile?.id, fetch]);
+
   const companyName = useMemo(() => Object.fromEntries(companies.map((c) => [c.id, c.name])), [companies]);
   const typeName = useMemo(() => Object.fromEntries(types.map((t) => [t.id, t.name])), [types]);
 
