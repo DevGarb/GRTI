@@ -374,6 +374,40 @@ export function useOsServiceItems() {
     else { toast.success("Item removido da OS"); fetch(); }
   };
 
+  /** Auditor inclui um serviço direto na auditoria: já entra executado e aprovado. */
+  const addAuditItem = async (
+    os: { id: string; organization_id: string },
+    input: { label: string; points: number },
+  ) => {
+    const label = input.label.trim();
+    if (!label) return false;
+    const current = byOs[os.id] || [];
+    if (isDuplicateLabel(current, label)) {
+      toast.error("Este serviço já está incluído nesta OS.");
+      return false;
+    }
+    const points = Number(input.points) || 0;
+    const position = (current.slice(-1)[0]?.position ?? 0) + 1;
+    const { error } = await supabase.from("op_os_service_items").insert({
+      organization_id: os.organization_id,
+      service_order_id: os.id,
+      item_type: "adicional",
+      label,
+      points,
+      done: true,
+      done_at: new Date().toISOString(),
+      done_by: user?.id || null,
+      approved: true,
+      points_approved: points,
+      audit_note: "Incluído pelo auditor",
+      position,
+    });
+    if (error) { toast.error(error.message); return false; }
+    toast.success(`Serviço incluído na auditoria: ${label}`);
+    fetch();
+    return true;
+  };
+
   /** Semeia o checklist pontuado de um tipo em uma OS sem itens (mudança manual de tipo). */
   const seedFromType = async (os: { id: string; organization_id: string }, typeId: string) => {
     if ((byOs[os.id] || []).length > 0) return;
