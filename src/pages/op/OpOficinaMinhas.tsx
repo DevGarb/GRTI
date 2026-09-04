@@ -333,6 +333,18 @@ export default function OpOficinaMinhas() {
 
 
   const openFinish = (o: ServiceOrder) => {
+    const items = osItems.byOs[o.id] || [];
+    if (items.length === 0) {
+      toast.error("Inclua os serviços executados no checklist antes de finalizar a OS");
+      setExpanded(o.id);
+      return;
+    }
+    const pending = items.filter(i => !i.done);
+    if (pending.length > 0) {
+      toast.error(`Marque como concluído todos os serviços do checklist (${pending.length} pendente${pending.length > 1 ? "s" : ""})`);
+      setExpanded(o.id);
+      return;
+    }
     setFinishOs(o);
     setSummary("");
     setFiles([]);
