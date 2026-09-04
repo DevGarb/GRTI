@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
+import { takenPeriods } from "@/lib/oficinaAgenda";
 
 export interface WorkshopBooking {
   id: string;
@@ -51,18 +52,13 @@ export function useWorkshopBookings() {
     const date = input.preferred_date || null;
     const period = input.preferred_period || null;
     if (date && period) {
-      // 1 agendamento por período (manhã / tarde) por dia
       const { data: existing, error: checkError } = await supabase
         .from("op_workshop_bookings" as any)
-        .select("id, scheduled_period, preferred_period, status")
+        .select("id, status, service_order_id, scheduled_date, preferred_date, scheduled_period, preferred_period")
         .eq("organization_id", profile.organization_id)
-        .or(`scheduled_date.eq.${date},preferred_date.eq.${date}`)
-        .neq("status", "recusado");
+        .or(`scheduled_date.eq.${date},preferred_date.eq.${date}`);
       if (checkError) { toast.error(checkError.message); return null; }
-      const taken = ((existing || []) as any[]).some(
-        (b) => (b.scheduled_period || b.preferred_period) === period
-      );
-      if (taken) {
+      if (takenPeriods((existing || []) as any[], date).has(period)) {
         toast.error("Este período já possui um agendamento nesta data. Escolha outro período ou outro dia.");
         return null;
       }
