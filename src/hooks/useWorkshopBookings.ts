@@ -47,6 +47,27 @@ export function useWorkshopBookings() {
 
   const add = async (input: Partial<WorkshopBooking>) => {
     if (!profile?.organization_id || !user) return null;
+
+    const date = input.preferred_date || null;
+    const period = input.preferred_period || null;
+    if (date && period) {
+      // 1 agendamento por período (manhã / tarde) por dia
+      const { data: existing, error: checkError } = await supabase
+        .from("op_workshop_bookings" as any)
+        .select("id, scheduled_period, preferred_period, status")
+        .eq("organization_id", profile.organization_id)
+        .or(`scheduled_date.eq.${date},preferred_date.eq.${date}`)
+        .neq("status", "recusado");
+      if (checkError) { toast.error(checkError.message); return null; }
+      const taken = ((existing || []) as any[]).some(
+        (b) => (b.scheduled_period || b.preferred_period) === period
+      );
+      if (taken) {
+        toast.error("Este período já possui um agendamento nesta data. Escolha outro período ou outro dia.");
+        return null;
+      }
+    }
+
     const { data, error } = await supabase
       .from("op_workshop_bookings" as any)
       .insert({
@@ -61,12 +82,14 @@ export function useWorkshopBookings() {
         description: input.description || null,
         preferred_date: input.preferred_date || null,
         preferred_period: input.preferred_period || null,
-        status: "pendente",
+        status: "agendado",
+        scheduled_date: date,
+        scheduled_period: period,
       } as any)
       .select()
       .single();
     if (error) { toast.error(error.message); return null; }
-    toast.success("Solicitação de agendamento enviada");
+    toast.success("Agendamento confirmado");
     fetch();
     return data;
   };
