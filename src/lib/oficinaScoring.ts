@@ -27,6 +27,8 @@ export interface AwardTier {
   from_points: number;
   to_points: number | null;
   rate_brl: number;
+  /** Bônus fixo pago ao atingir a faixa (batimento de meta). */
+  bonus_brl?: number | null;
   position: number;
   active: boolean;
 }
