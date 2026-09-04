@@ -86,28 +86,32 @@ export default function OpOficinaMeusPontos() {
     [monthOrders],
   );
 
+  // Pontuação acumulada conforme as OS vão sendo fechadas (aprovadas + em auditoria)
+  const totalPts = approvedPts + pendingPts;
+
   const sortedTiers = useMemo(
     () => [...tiers].filter((t) => t.active).sort((a, b) => Number(a.from_points) - Number(b.from_points)),
     [tiers],
   );
 
   const progress = useMemo(() => {
-    if (!sortedTiers.length) return { current: null as typeof sortedTiers[0] | null, next: null as typeof sortedTiers[0] | null, missing: 0, progress: 0, maxVisible: 0 };
+    if (!sortedTiers.length) return { current: null as typeof sortedTiers[0] | null, next: null as typeof sortedTiers[0] | null, missing: 0, progress: 0, approvedProgress: 0, maxVisible: 0 };
     const maxVisible = Math.max(
-      approvedPts,
+      totalPts,
       ...sortedTiers.map((t) => Number(t.to_points || t.from_points)),
     );
+    const pct = (v: number) => Math.min(100, maxVisible ? (v / maxVisible) * 100 : 0);
     for (let i = 0; i < sortedTiers.length; i++) {
       const t = sortedTiers[i];
       const upper = t.to_points == null ? Infinity : Number(t.to_points);
-      if (approvedPts <= upper || i === sortedTiers.length - 1) {
+      if (totalPts <= upper || i === sortedTiers.length - 1) {
         const next = t.to_points == null ? null : sortedTiers[i + 1] ?? null;
-        const missing = next ? Math.max(0, Number(next.from_points) - approvedPts) : 0;
-        return { current: t, next, missing, progress: Math.min(100, (approvedPts / maxVisible) * 100), maxVisible };
+        const missing = next ? Math.max(0, Number(next.from_points) - totalPts) : 0;
+        return { current: t, next, missing, progress: pct(totalPts), approvedProgress: pct(approvedPts), maxVisible };
       }
     }
-    return { current: sortedTiers[sortedTiers.length - 1], next: null, missing: 0, progress: 100, maxVisible };
-  }, [sortedTiers, approvedPts]);
+    return { current: sortedTiers[sortedTiers.length - 1], next: null, missing: 0, progress: 100, approvedProgress: pct(approvedPts), maxVisible };
+  }, [sortedTiers, approvedPts, totalPts]);
 
   return (
     <div className="cgps-scope min-h-screen bg-slate-50">
