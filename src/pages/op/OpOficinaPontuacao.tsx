@@ -86,7 +86,7 @@ export default function OpOficinaPontuacao() {
         <TabsContent value="checklists" className="space-y-4 mt-4">
           <Card>
             <CardContent className="p-4 space-y-3">
-              <p className="text-sm font-medium">Novo checklist (tipo de serviço)</p>
+              <p className="text-sm font-medium">Novo serviço</p>
               <div className="grid sm:grid-cols-2 gap-2">
                 <div>
                   <Label className="text-xs">Nome</Label>
