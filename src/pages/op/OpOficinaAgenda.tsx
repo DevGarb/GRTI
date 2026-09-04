@@ -102,10 +102,10 @@ export default function OpOficinaAgenda() {
   }, [monthCursor]);
 
   const dayCounts = useMemo(() => {
-    const map = new Map<string, { services: number; bookings: number }>();
+    const map = new Map<string, { services: number; bookings: number; free: number }>();
     const bump = (d: string | null, key: "services" | "bookings") => {
       if (!d) return;
-      const cur = map.get(d) || { services: 0, bookings: 0 };
+      const cur = map.get(d) || { services: 0, bookings: 0, free: BOOKING_PERIODS.length };
       cur[key] += 1;
       map.set(d, cur);
     };
@@ -113,6 +113,11 @@ export default function OpOficinaAgenda() {
     bookings
       .filter((b) => b.status === "agendado" && !b.service_order_id)
       .forEach((b) => bump(effectiveDate(b.scheduled_date), "bookings"));
+    // vagas livres: 1 manhã + 1 tarde por dia, descontando períodos já ocupados
+    map.forEach((cur, d) => {
+      const taken = takenPeriods(bookings as any[], d);
+      cur.free = BOOKING_PERIODS.filter((p) => !taken.has(p.id)).length;
+    });
     return map;
   }, [actives, bookings, today]);
 
