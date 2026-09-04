@@ -703,11 +703,38 @@ export default function OpOficinaMinhas() {
                             <MessageSquareWarning className="h-4 w-4 mr-1" />
                             {o.supervisor_alert ? "Editar observação" : "Acionar supervisor"}
                           </Button>
-                          <Button size="sm" onClick={() => openFinish(o)}>
+                          <Button
+                            size="sm"
+                            onClick={() => openFinish(o)}
+                            title={
+                              (osItems.byOs[o.id] || []).length === 0
+                                ? "Inclua os serviços do checklist antes de finalizar"
+                                : (osItems.byOs[o.id] || []).some(i => !i.done)
+                                  ? "Conclua todos os serviços do checklist antes de finalizar"
+                                  : "Finalizar serviço"
+                            }
+                          >
                             <CheckCircle2 className="h-4 w-4 mr-1" /> Finalizar Serviço
                           </Button>
                         </div>
                       </div>
+                      {(() => {
+                        const its = osItems.byOs[o.id] || [];
+                        const pend = its.filter(i => !i.done).length;
+                        if (its.length === 0)
+                          return (
+                            <p className="text-xs text-amber-700">
+                              Inclua no checklist os serviços executados para poder finalizar a OS.
+                            </p>
+                          );
+                        if (pend > 0)
+                          return (
+                            <p className="text-xs text-amber-700">
+                              {pend} serviço(s) do checklist ainda não concluído(s) — marque todos para finalizar.
+                            </p>
+                          );
+                        return null;
+                      })()}
 
                       {o.supervisor_alert && (
                         <div className="border border-amber-500/40 bg-amber-500/10 rounded-md p-3 space-y-1">
