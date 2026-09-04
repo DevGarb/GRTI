@@ -479,5 +479,5 @@ export function useOsServiceItems() {
     return !error;
   };
 
-  return { byOs, toggle, addExtraItem, addCustomItem, removeItem, seedFromType, setItemApproval, setItemAuditPoints, finalizeAudit, refetch: fetch };
+  return { byOs, toggle, addExtraItem, addCustomItem, addAuditItem, removeItem, seedFromType, setItemApproval, setItemAuditPoints, finalizeAudit, refetch: fetch };
 }
