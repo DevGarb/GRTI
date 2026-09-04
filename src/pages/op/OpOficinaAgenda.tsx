@@ -15,7 +15,7 @@ import { useWorkshopBookings } from "@/hooks/useWorkshopBookings";
 import { useOficinaProfile } from "@/contexts/OficinaProfileContext";
 import { stageInfo, STAGE_ENTREGUE } from "@/lib/oficinaStages";
 import {
-  SCHEDULE_PERIODS, periodInfo, BOOKING_STATUS_INFO, todayISO, shiftDay,
+  SCHEDULE_PERIODS, BOOKING_PERIODS, takenPeriods, periodInfo, BOOKING_STATUS_INFO, todayISO, shiftDay,
   formatDateBRShort, weekdayLabel, SERVICE_TYPES, type BookingStatus,
 } from "@/lib/oficinaAgenda";
 import { toast } from "sonner";
@@ -375,6 +375,7 @@ export default function OpOficinaAgenda() {
       {booking && (
         <BookingDialog
           booking={booking}
+          allBookings={bookings}
           defaultDate={day}
           mechanics={mecs}
           onClose={() => setBooking(null)}
@@ -392,6 +393,7 @@ export default function OpOficinaAgenda() {
 
       {creating && (
         <NewBookingDialog
+          allBookings={bookings}
           defaultDate={day}
           mechanics={mecs}
           onClose={() => setCreating(false)}
@@ -480,14 +482,15 @@ function ScheduleDialog({ order, defaultDate, mechanics, onClose, onSave }: {
   );
 }
 
-function BookingDialog({ booking, defaultDate, mechanics, onClose, onConfirm }: {
-  booking: any; defaultDate: string;
+function BookingDialog({ booking, allBookings, defaultDate, mechanics, onClose, onConfirm }: {
+  booking: any; allBookings: any[]; defaultDate: string;
   mechanics: { id: string; name: string }[];
   onClose: () => void;
   onConfirm: (v: { date: string; period: string; mechanic_id: string | null; notes: string }) => void;
 }) {
   const [date, setDate] = useState(booking.preferred_date || defaultDate);
-  const [period, setPeriod] = useState(booking.preferred_period || "dia");
+  const [period, setPeriod] = useState(booking.preferred_period === "tarde" ? "tarde" : "manha");
+  const taken = useMemo(() => takenPeriods(allBookings, date, booking.id), [allBookings, date, booking.id]);
   const [mechanicId, setMechanicId] = useState("none");
   const [notes, setNotes] = useState("");
   const [saving, setSaving] = useState(false);
@@ -507,7 +510,13 @@ function BookingDialog({ booking, defaultDate, mechanics, onClose, onConfirm }: 
               <Label>Período</Label>
               <Select value={period} onValueChange={setPeriod}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>{SCHEDULE_PERIODS.map((p) => <SelectItem key={p.id} value={p.id}>{p.label}</SelectItem>)}</SelectContent>
+                <SelectContent>
+                  {BOOKING_PERIODS.map((p) => (
+                    <SelectItem key={p.id} value={p.id} disabled={taken.has(p.id)}>
+                      {p.label}{taken.has(p.id) ? " — ocupado" : ""}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
               </Select>
             </div>
           </div>
@@ -528,7 +537,7 @@ function BookingDialog({ booking, defaultDate, mechanics, onClose, onConfirm }: 
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={onClose}>Cancelar</Button>
-          <Button className="cgps-btn-primary" disabled={saving || !date} onClick={() => {
+          <Button className="cgps-btn-primary" disabled={saving || !date || taken.has(period)} onClick={() => {
             setSaving(true);
             onConfirm({ date, period, mechanic_id: mechanicId === "none" ? null : mechanicId, notes });
           }}>Confirmar agendamento</Button>
@@ -538,8 +547,8 @@ function BookingDialog({ booking, defaultDate, mechanics, onClose, onConfirm }: 
   );
 }
 
-function NewBookingDialog({ defaultDate, mechanics, onClose, onConfirm }: {
-  defaultDate: string;
+function NewBookingDialog({ allBookings, defaultDate, mechanics, onClose, onConfirm }: {
+  allBookings: any[]; defaultDate: string;
   mechanics: { id: string; name: string }[];
   onClose: () => void;
   onConfirm: (v: { plate: string; model: string; serviceType: string; date: string; period: string; mechanic_id: string | null; notes: string }) => void;
@@ -548,7 +557,8 @@ function NewBookingDialog({ defaultDate, mechanics, onClose, onConfirm }: {
   const [model, setModel] = useState("");
   const [serviceType, setServiceType] = useState(SERVICE_TYPES[0]);
   const [date, setDate] = useState(defaultDate);
-  const [period, setPeriod] = useState("dia");
+  const [period, setPeriod] = useState("manha");
+  const taken = useMemo(() => takenPeriods(allBookings, date), [allBookings, date]);
   const [mechanicId, setMechanicId] = useState("none");
   const [notes, setNotes] = useState("");
   const [saving, setSaving] = useState(false);
@@ -585,7 +595,13 @@ function NewBookingDialog({ defaultDate, mechanics, onClose, onConfirm }: {
               <Label>Período</Label>
               <Select value={period} onValueChange={setPeriod}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>{SCHEDULE_PERIODS.map((p) => <SelectItem key={p.id} value={p.id}>{p.label}</SelectItem>)}</SelectContent>
+                <SelectContent>
+                  {BOOKING_PERIODS.map((p) => (
+                    <SelectItem key={p.id} value={p.id} disabled={taken.has(p.id)}>
+                      {p.label}{taken.has(p.id) ? " — ocupado" : ""}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
               </Select>
             </div>
           </div>
@@ -606,7 +622,7 @@ function NewBookingDialog({ defaultDate, mechanics, onClose, onConfirm }: {
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={onClose}>Cancelar</Button>
-          <Button className="cgps-btn-primary" disabled={saving || !plate.trim() || !date} onClick={() => {
+          <Button className="cgps-btn-primary" disabled={saving || !plate.trim() || !date || taken.has(period)} onClick={() => {
             setSaving(true);
             onConfirm({ plate: plate.trim(), model, serviceType, date, period, mechanic_id: mechanicId === "none" ? null : mechanicId, notes });
           }}>Criar agendamento</Button>

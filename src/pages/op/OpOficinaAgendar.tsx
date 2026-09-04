@@ -14,7 +14,7 @@ import { useServiceTypes } from "@/hooks/useOficinaScoring";
 import { filterOficinaCompanies } from "@/lib/oficinaCompanies";
 import { useOficinaProfile } from "@/contexts/OficinaProfileContext";
 import {
-  SCHEDULE_PERIODS, periodInfo, BOOKING_STATUS_INFO, SERVICE_TYPES,
+  BOOKING_PERIODS, takenPeriods, periodInfo, BOOKING_STATUS_INFO, SERVICE_TYPES,
   todayISO, formatDateBRShort, type BookingStatus,
 } from "@/lib/oficinaAgenda";
 import { toast } from "sonner";
@@ -40,17 +40,7 @@ export default function OpOficinaAgendar() {
 
   const mine = useMemo(() => items.slice(0, 30), [items]);
 
-  const dayPeriods = useMemo(() => {
-    const taken = new Set<string>();
-    items.forEach((b) => {
-      if (b.status === "recusado") return;
-      const d = b.scheduled_date || b.preferred_date;
-      if (d !== date) return;
-      const p = b.scheduled_period || b.preferred_period;
-      if (p) taken.add(p);
-    });
-    return taken;
-  }, [items, date]);
+  const dayPeriods = useMemo(() => takenPeriods(items as any[], date), [items, date]);
 
   const submit = async () => {
     if (!plate.trim()) return toast.error("Informe a placa");
@@ -120,7 +110,7 @@ export default function OpOficinaAgendar() {
               <Select value={period} onValueChange={setPeriod}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  {SCHEDULE_PERIODS.filter((p) => p.id !== "dia").map((p) => (
+                  {BOOKING_PERIODS.map((p) => (
                     <SelectItem key={p.id} value={p.id} disabled={dayPeriods.has(p.id)}>
                       {p.label}{dayPeriods.has(p.id) ? " — ocupado" : ""}
                     </SelectItem>
@@ -176,6 +166,11 @@ export default function OpOficinaAgendar() {
                 {b.scheduled_date && (
                   <div className="text-xs text-emerald-700 mt-1">
                     Confirmada para <strong>{formatDateBRShort(b.scheduled_date)}</strong> · {periodInfo(b.scheduled_period).label}
+                  </div>
+                )}
+                {b.status === "nao_compareceu" && (
+                  <div className="text-xs text-rose-700 mt-1">
+                    Cliente não compareceu — reagende a moto quando necessário.
                   </div>
                 )}
                 {b.description && <p className="text-xs text-slate-600 mt-2 line-clamp-2">{b.description}</p>}

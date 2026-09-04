@@ -224,7 +224,7 @@ export default function OpOficinaMinhas() {
   const agendaHoje = agendaGroups.find(g => g.isToday)?.orders.length || 0;
 
   // Agendamentos confirmados aguardando chegada da moto
-  const { items: allBookings, refetch: refetchBookings } = useWorkshopBookings();
+  const { items: allBookings, refetch: refetchBookings, update: updateBooking } = useWorkshopBookings();
   const [openingBooking, setOpeningBooking] = useState<string | null>(null);
   const [bookingTarget, setBookingTarget] = useState<WorkshopBooking | null>(null);
   const bookings = useMemo(
@@ -233,6 +233,25 @@ export default function OpOficinaMinhas() {
       .sort((a, b) => (a.scheduled_date || "").localeCompare(b.scheduled_date || "")),
     [allBookings],
   );
+
+  const [noShowTarget, setNoShowTarget] = useState<WorkshopBooking | null>(null);
+  const [noShowSaving, setNoShowSaving] = useState(false);
+
+  const handleNoShow = async (b: WorkshopBooking) => {
+    setNoShowSaving(true);
+    const when = new Date().toLocaleString("pt-BR");
+    const note = `Cliente não compareceu (${profile?.name || "mecânico"} · ${when}).`;
+    const ok = await updateBooking(b.id, {
+      status: "nao_compareceu",
+      admin_notes: [b.admin_notes, note].filter(Boolean).join(" | "),
+    } as any);
+    setNoShowSaving(false);
+    if (ok) {
+      setNoShowTarget(null);
+      refetchBookings();
+      toast.success(`Agendamento devolvido ao solicitante: cliente não compareceu (${b.vehicle_plate})`);
+    }
+  };
 
   const handleOpenBooking = async (b: WorkshopBooking, moveToExecucao: boolean) => {
     setOpeningBooking(b.id);
@@ -871,9 +890,14 @@ export default function OpOficinaMinhas() {
                             {[b.vehicle_model, b.service_type, b.requester_name].filter(Boolean).join(" · ") || "—"}
                           </div>
                         </div>
-                        <Button size="sm" disabled={openingBooking === b.id} onClick={() => setBookingTarget(b)}>
-                          {openingBooking === b.id ? "Abrindo..." : "Moto chegou · abrir OS"}
-                        </Button>
+                        <div className="flex gap-2 flex-wrap">
+                          <Button size="sm" disabled={openingBooking === b.id} onClick={() => setBookingTarget(b)}>
+                            {openingBooking === b.id ? "Abrindo..." : "Moto chegou · abrir OS"}
+                          </Button>
+                          <Button size="sm" variant="outline" className="text-rose-600" onClick={() => setNoShowTarget(b)}>
+                            Não compareceu
+                          </Button>
+                        </div>
                       </div>
                     );
                   })}
@@ -1124,6 +1148,32 @@ export default function OpOficinaMinhas() {
           </DialogContent>
         </Dialog>
 
+
+        {/* Cliente não compareceu: devolve o agendamento ao solicitante */}
+        <Dialog open={!!noShowTarget} onOpenChange={v => !v && !noShowSaving && setNoShowTarget(null)}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle>Cliente não compareceu · {noShowTarget?.vehicle_plate}</DialogTitle>
+            </DialogHeader>
+            <p className="text-sm text-muted-foreground">
+              O agendamento sai da agenda da oficina e volta para quem solicitou, com a informação de que o
+              cliente não compareceu. A vaga do período fica livre para outra moto.
+            </p>
+            <DialogFooter className="flex-col gap-2 sm:flex-col">
+              <Button
+                className="w-full"
+                variant="destructive"
+                disabled={noShowSaving}
+                onClick={() => noShowTarget && handleNoShow(noShowTarget)}
+              >
+                {noShowSaving ? "Registrando..." : "Confirmar não comparecimento"}
+              </Button>
+              <Button variant="outline" className="w-full" disabled={noShowSaving} onClick={() => setNoShowTarget(null)}>
+                Cancelar
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
 
         {/* Moto chegou: escolher destino da OS */}
         <Dialog open={!!bookingTarget} onOpenChange={v => !v && !openingBooking && setBookingTarget(null)}>
