@@ -333,6 +333,18 @@ export default function OpOficinaMinhas() {
 
 
   const openFinish = (o: ServiceOrder) => {
+    const items = osItems.byOs[o.id] || [];
+    if (items.length === 0) {
+      toast.error("Inclua os serviços executados no checklist antes de finalizar a OS");
+      setExpanded(o.id);
+      return;
+    }
+    const pending = items.filter(i => !i.done);
+    if (pending.length > 0) {
+      toast.error(`Marque como concluído todos os serviços do checklist (${pending.length} pendente${pending.length > 1 ? "s" : ""})`);
+      setExpanded(o.id);
+      return;
+    }
     setFinishOs(o);
     setSummary("");
     setFiles([]);
@@ -341,6 +353,11 @@ export default function OpOficinaMinhas() {
 
   const confirmFinish = async () => {
     if (!finishOs) return;
+    const finishItems = osItems.byOs[finishOs.id] || [];
+    if (finishItems.length === 0 || finishItems.some(i => !i.done)) {
+      setFinishOs(null);
+      return toast.error("Checklist incompleto: inclua e conclua todos os serviços antes de finalizar");
+    }
     if (!summary.trim()) return toast.error("Descreva o que foi feito no serviço");
     if (files.length === 0) return toast.error("Tire ou anexe pelo menos uma foto da moto");
     const km = Number(String(finishKm).replace(/\D/g, ""));
@@ -686,11 +703,38 @@ export default function OpOficinaMinhas() {
                             <MessageSquareWarning className="h-4 w-4 mr-1" />
                             {o.supervisor_alert ? "Editar observação" : "Acionar supervisor"}
                           </Button>
-                          <Button size="sm" onClick={() => openFinish(o)}>
+                          <Button
+                            size="sm"
+                            onClick={() => openFinish(o)}
+                            title={
+                              (osItems.byOs[o.id] || []).length === 0
+                                ? "Inclua os serviços do checklist antes de finalizar"
+                                : (osItems.byOs[o.id] || []).some(i => !i.done)
+                                  ? "Conclua todos os serviços do checklist antes de finalizar"
+                                  : "Finalizar serviço"
+                            }
+                          >
                             <CheckCircle2 className="h-4 w-4 mr-1" /> Finalizar Serviço
                           </Button>
                         </div>
                       </div>
+                      {(() => {
+                        const its = osItems.byOs[o.id] || [];
+                        const pend = its.filter(i => !i.done).length;
+                        if (its.length === 0)
+                          return (
+                            <p className="text-xs text-amber-700">
+                              Inclua no checklist os serviços executados para poder finalizar a OS.
+                            </p>
+                          );
+                        if (pend > 0)
+                          return (
+                            <p className="text-xs text-amber-700">
+                              {pend} serviço(s) do checklist ainda não concluído(s) — marque todos para finalizar.
+                            </p>
+                          );
+                        return null;
+                      })()}
 
                       {o.supervisor_alert && (
                         <div className="border border-amber-500/40 bg-amber-500/10 rounded-md p-3 space-y-1">
