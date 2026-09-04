@@ -32,7 +32,7 @@ export default function OpOficinaAgendar() {
   const [serviceType, setServiceType] = useState(SERVICE_TYPES[0]);
   const [checklistTypeId, setChecklistTypeId] = useState("");
   const [date, setDate] = useState(todayISO());
-  const [period, setPeriod] = useState("dia");
+  const [period, setPeriod] = useState("manha");
   const [description, setDescription] = useState("");
   const [saving, setSaving] = useState(false);
 
@@ -40,9 +40,22 @@ export default function OpOficinaAgendar() {
 
   const mine = useMemo(() => items.slice(0, 30), [items]);
 
+  const dayPeriods = useMemo(() => {
+    const taken = new Set<string>();
+    items.forEach((b) => {
+      if (b.status === "recusado") return;
+      const d = b.scheduled_date || b.preferred_date;
+      if (d !== date) return;
+      const p = b.scheduled_period || b.preferred_period;
+      if (p) taken.add(p);
+    });
+    return taken;
+  }, [items, date]);
+
   const submit = async () => {
     if (!plate.trim()) return toast.error("Informe a placa");
     if (!companyId) return toast.error("Selecione a empresa / cliente");
+    if (dayPeriods.has(period)) return toast.error("Este período já está ocupado nesta data.");
     setSaving(true);
     const ok = await add({
       vehicle_plate: plate.trim(),
@@ -67,7 +80,7 @@ export default function OpOficinaAgendar() {
           <h1 className="text-xl font-bold flex items-center gap-2 text-slate-800">
             <CalendarPlus className="h-5 w-5" /> Agendar manutenção
           </h1>
-          <p className="text-sm text-slate-500">Envie a moto para a fila da oficina. O administrador confirma a data de execução.</p>
+          <p className="text-sm text-slate-500">Envie a moto para a fila da oficina. Cada dia permite 1 agendamento pela manhã e 1 pela tarde. A confirmação é automática.</p>
         </div>
 
         <Card className="p-4 space-y-3">
@@ -106,7 +119,13 @@ export default function OpOficinaAgendar() {
               <Label>Período</Label>
               <Select value={period} onValueChange={setPeriod}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>{SCHEDULE_PERIODS.map((p) => <SelectItem key={p.id} value={p.id}>{p.label}</SelectItem>)}</SelectContent>
+                <SelectContent>
+                  {SCHEDULE_PERIODS.filter((p) => p.id !== "dia").map((p) => (
+                    <SelectItem key={p.id} value={p.id} disabled={dayPeriods.has(p.id)}>
+                      {p.label}{dayPeriods.has(p.id) ? " — ocupado" : ""}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
               </Select>
             </div>
           </div>
@@ -131,14 +150,14 @@ export default function OpOficinaAgendar() {
             <Textarea rows={3} value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Descreva o que a moto apresenta..." />
           </div>
           <Button className="cgps-btn-primary" disabled={saving} onClick={submit}>
-            <Send className="h-4 w-4 mr-1" /> Enviar solicitação
+            <Send className="h-4 w-4 mr-1" /> Confirmar agendamento
           </Button>
         </Card>
 
         <div>
-          <h2 className="font-semibold text-slate-800 mb-2">Solicitações recentes</h2>
+          <h2 className="font-semibold text-slate-800 mb-2">Agendamentos recentes</h2>
           <div className="grid md:grid-cols-2 gap-3">
-            {mine.length === 0 && <p className="text-sm text-slate-400">Nenhuma solicitação enviada ainda.</p>}
+            {mine.length === 0 && <p className="text-sm text-slate-400">Nenhum agendamento ainda.</p>}
             {mine.map((b) => (
               <Card key={b.id} className="p-3">
                 <div className="flex items-center justify-between gap-2">
@@ -152,7 +171,7 @@ export default function OpOficinaAgendar() {
                   </Badge>
                 </div>
                 <div className="text-xs text-slate-500 mt-2">
-                  Desejada: <strong>{formatDateBRShort(b.preferred_date)}</strong> · {periodInfo(b.preferred_period).label}
+                  Data: <strong>{formatDateBRShort(b.preferred_date)}</strong> · {periodInfo(b.preferred_period).label}
                 </div>
                 {b.scheduled_date && (
                   <div className="text-xs text-emerald-700 mt-1">
