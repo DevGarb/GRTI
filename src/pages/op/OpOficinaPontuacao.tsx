@@ -114,127 +114,140 @@ export default function OpOficinaPontuacao() {
             </CardContent>
           </Card>
 
-          {st.types.map((t) => {
-            const items = st.itemsByType[t.id] || [];
-            const maxPts = st.maxPointsOf(t.id);
-            const draft = newItem[t.id] || { label: "", points: "" };
-            const open = !!expanded[t.id];
-            return (
-              <Card key={t.id} className={cn(!t.active && "opacity-60")}>
-                <CardContent className="p-4 space-y-3">
-                  <div className="flex items-center justify-between gap-2 flex-wrap">
-                    <div className="flex items-center gap-2 min-w-0">
-                      <button
-                        type="button"
-                        onClick={() => toggleExpanded(t.id)}
-                        className="h-8 w-8 shrink-0 rounded-md border flex items-center justify-center hover:bg-muted transition"
-                        aria-label={open ? `Ocultar itens de ${t.name}` : `Mostrar itens de ${t.name}`}
-                      >
-                        {open ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
-                      </button>
+          <Card>
+            <CardContent className="p-0">
+              <div className="hidden md:flex items-center gap-2 px-3 py-2 text-[11px] uppercase tracking-wide text-muted-foreground border-b">
+                <span className="flex-1">Serviço</span>
+                <span className="w-20 text-right">Pontos</span>
+                <span className="w-[420px]">Empresas</span>
+                <span className="w-8" />
+              </div>
+              {st.types.map((t) => {
+                const items = st.itemsByType[t.id] || [];
+                const single = items.length <= 1;
+                const only = items[0];
+                const maxPts = st.maxPointsOf(t.id);
+                const draft = newItem[t.id] || { label: "", points: "" };
+                const open = !!expanded[t.id];
+                return (
+                  <div key={t.id} className={cn("border-b last:border-0", !t.active && "opacity-60")}>
+                    <div className="flex items-center gap-2 px-3 py-2 flex-wrap md:flex-nowrap">
+                      {!single && (
+                        <button
+                          type="button"
+                          onClick={() => toggleExpanded(t.id)}
+                          className="h-8 w-8 shrink-0 rounded-md border flex items-center justify-center hover:bg-muted transition"
+                          aria-label={open ? `Ocultar itens de ${t.name}` : `Mostrar itens de ${t.name}`}
+                        >
+                          {open ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+                        </button>
+                      )}
                       <Input
                         defaultValue={t.name}
                         key={t.id + t.name}
-                        className="h-8 font-semibold w-64"
-                        onBlur={(e) => e.target.value.trim() && e.target.value !== t.name && st.updateType(t.id, { name: e.target.value.trim() })}
+                        className="h-8 text-sm flex-1 min-w-[220px]"
+                        onBlur={(e) => {
+                          const v = e.target.value.trim();
+                          if (!v || v === t.name) return;
+                          st.updateType(t.id, { name: v });
+                          if (single && only) st.updateItem(only.id, { label: v });
+                        }}
                       />
-                      <Badge variant="secondary">{formatPoints(maxPts)} pts máx.</Badge>
-                      <Badge variant="outline" className="text-[10px]">{items.length} {items.length === 1 ? "item" : "itens"}</Badge>
-                      <button
-                        type="button"
-                        onClick={() => st.updateType(t.id, { active: !t.active })}
-                        className={cn(
-                          "text-[10px] px-2 py-0.5 rounded-full border",
-                          t.active ? "bg-emerald-500/15 text-emerald-700 border-emerald-500/40" : "bg-muted text-muted-foreground",
-                        )}
-                      >
-                        {t.active ? "Ativo" : "Inativo"}
-                      </button>
-                    </div>
-                    <Button
-                      size="sm" variant="ghost"
-                      className="h-8 text-destructive hover:text-destructive"
-                      onClick={() => {
-                        if (window.confirm(`Excluir o checklist "${t.name}" e todos os seus ${items.length} itens?`)) st.removeType(t.id);
-                      }}
-                    >
-                      <Trash2 className="h-3.5 w-3.5 mr-1" /> Excluir
-                    </Button>
-                  </div>
-
-                  {!open && t.description && (
-                    <p className="text-xs text-muted-foreground truncate">{t.description}</p>
-                  )}
-
-                  {open && (
-                  <>
-                  <div>
-                    <Label className="text-xs">Empresas</Label>
-                    <CompanyPicker
-                      companies={companies}
-                      selected={st.companyIdsByType[t.id] || []}
-                      onChange={(ids) => st.setTypeCompanies(t.id, ids)}
-                    />
-                  </div>
-
-                  <div className="space-y-1">
-                    {items.map((it) => (
-                      <div key={it.id} className="flex items-center gap-2">
-                        <Input
-                          defaultValue={it.label}
-                          key={it.id + it.label}
-                          className="h-8 text-sm"
-                          onBlur={(e) => e.target.value.trim() && e.target.value !== it.label && st.updateItem(it.id, { label: e.target.value.trim() })}
-                        />
+                      {single ? (
                         <Input
                           type="number" step="0.05" min={0}
-                          defaultValue={it.points}
-                          key={it.id + "-" + it.points}
-                          className="h-8 w-24 text-right"
+                          defaultValue={only ? only.points : 0}
+                          key={t.id + "-pts-" + (only?.points ?? 0)}
+                          className="h-8 w-20 text-right"
+                          aria-label={`Pontos de ${t.name}`}
                           onBlur={(e) => {
                             const v = Number(e.target.value);
-                            if (Number.isFinite(v) && v >= 0 && v !== Number(it.points)) st.updateItem(it.id, { points: v });
+                            if (!Number.isFinite(v) || v < 0) return;
+                            if (only) { if (v !== Number(only.points)) st.updateItem(only.id, { points: v }); }
+                            else st.addItem(t.id, { label: t.name, points: v });
                           }}
-                          aria-label={`Pontos de ${it.label}`}
                         />
-                        <Button size="icon" variant="ghost" className="h-8 w-8 text-destructive" onClick={() => st.removeItem(it.id)} aria-label="Remover item">
-                          <Trash2 className="h-3.5 w-3.5" />
-                        </Button>
+                      ) : (
+                        <Badge variant="secondary" className="w-20 justify-center">{formatPoints(maxPts)} pts</Badge>
+                      )}
+                      <div className="md:w-[420px]">
+                        <CompanyPicker
+                          companies={companies}
+                          selected={st.companyIdsByType[t.id] || []}
+                          onChange={(ids) => st.setTypeCompanies(t.id, ids)}
+                        />
                       </div>
-                    ))}
-                  </div>
+                      <Button
+                        size="icon" variant="ghost"
+                        className="h-8 w-8 text-destructive shrink-0"
+                        aria-label={`Excluir ${t.name}`}
+                        onClick={() => {
+                          if (window.confirm(`Excluir "${t.name}"?`)) st.removeType(t.id);
+                        }}
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </Button>
+                    </div>
 
-                  <div className="flex items-center gap-2 pt-1 border-t">
-                    <Input
-                      value={draft.label}
-                      onChange={(e) => setNewItem((p) => ({ ...p, [t.id]: { ...draft, label: e.target.value } }))}
-                      placeholder="Novo item do checklist"
-                      className="h-8 text-sm"
-                    />
-                    <Input
-                      type="number" step="0.05" min={0}
-                      value={draft.points}
-                      onChange={(e) => setNewItem((p) => ({ ...p, [t.id]: { ...draft, points: e.target.value } }))}
-                      placeholder="Pts"
-                      className="h-8 w-24 text-right"
-                    />
-                    <Button
-                      size="sm" variant="outline"
-                      disabled={!draft.label.trim()}
-                      onClick={() => {
-                        st.addItem(t.id, { label: draft.label, points: Number(draft.points) || 0 });
-                        setNewItem((p) => ({ ...p, [t.id]: { label: "", points: "" } }));
-                      }}
-                    >
-                      <Plus className="h-3.5 w-3.5 mr-1" /> Incluir
-                    </Button>
+                    {!single && open && (
+                      <div className="px-3 pb-3 pl-12 space-y-1">
+                        {items.map((it) => (
+                          <div key={it.id} className="flex items-center gap-2">
+                            <Input
+                              defaultValue={it.label}
+                              key={it.id + it.label}
+                              className="h-8 text-sm"
+                              onBlur={(e) => e.target.value.trim() && e.target.value !== it.label && st.updateItem(it.id, { label: e.target.value.trim() })}
+                            />
+                            <Input
+                              type="number" step="0.05" min={0}
+                              defaultValue={it.points}
+                              key={it.id + "-" + it.points}
+                              className="h-8 w-20 text-right"
+                              onBlur={(e) => {
+                                const v = Number(e.target.value);
+                                if (Number.isFinite(v) && v >= 0 && v !== Number(it.points)) st.updateItem(it.id, { points: v });
+                              }}
+                              aria-label={`Pontos de ${it.label}`}
+                            />
+                            <Button size="icon" variant="ghost" className="h-8 w-8 text-destructive" onClick={() => st.removeItem(it.id)} aria-label="Remover item">
+                              <Trash2 className="h-3.5 w-3.5" />
+                            </Button>
+                          </div>
+                        ))}
+                        <div className="flex items-center gap-2 pt-1 border-t">
+                          <Input
+                            value={draft.label}
+                            onChange={(e) => setNewItem((p) => ({ ...p, [t.id]: { ...draft, label: e.target.value } }))}
+                            placeholder="Novo item do checklist"
+                            className="h-8 text-sm"
+                          />
+                          <Input
+                            type="number" step="0.05" min={0}
+                            value={draft.points}
+                            onChange={(e) => setNewItem((p) => ({ ...p, [t.id]: { ...draft, points: e.target.value } }))}
+                            placeholder="Pts"
+                            className="h-8 w-20 text-right"
+                          />
+                          <Button
+                            size="sm" variant="outline"
+                            disabled={!draft.label.trim()}
+                            onClick={() => {
+                              st.addItem(t.id, { label: draft.label, points: Number(draft.points) || 0 });
+                              setNewItem((p) => ({ ...p, [t.id]: { label: "", points: "" } }));
+                            }}
+                          >
+                            <Plus className="h-3.5 w-3.5 mr-1" /> Incluir
+                          </Button>
+                        </div>
+                      </div>
+                    )}
                   </div>
-                  </>
-                  )}
-                </CardContent>
-              </Card>
-            );
-          })}
+                );
+              })}
+            </CardContent>
+          </Card>
+
         </TabsContent>
 
         {/* ================= FAIXAS ================= */}
