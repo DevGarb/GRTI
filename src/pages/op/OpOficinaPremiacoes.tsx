@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { useServiceOrders, useMechanics, useServiceOrderDetails, type ServiceOrder } from "@/hooks/useOficina";
-import { useOsServiceItems, useAwardTiers } from "@/hooks/useOficinaScoring";
+import { useOsServiceItems, useAwardTiers, useServiceTypes } from "@/hooks/useOficinaScoring";
 import OsAuditPanel from "@/components/operacional/OsAuditPanel";
 import { Fancybox } from "@fancyapps/ui/dist/fancybox/fancybox.js";
 import "@fancyapps/ui/dist/fancybox/fancybox.css";
