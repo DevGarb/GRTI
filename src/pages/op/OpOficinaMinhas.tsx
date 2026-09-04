@@ -13,7 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useServiceOrders, useServiceChecklists, type ServiceOrder, type ServiceOrderPhoto, type ServiceOrderPart } from "@/hooks/useOficina";
 import OsProgressBar from "@/components/operacional/OsProgressBar";
 import OsScoredChecklist from "@/components/operacional/OsScoredChecklist";
-import { useOsServiceItems, useServiceTypes, useExtraServices } from "@/hooks/useOficinaScoring";
+import { useOsServiceItems, useServiceTypes } from "@/hooks/useOficinaScoring";
 import { useCompanies } from "@/hooks/useOperacional";
 import { useOficinaProfile } from "@/contexts/OficinaProfileContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -54,7 +54,6 @@ export default function OpOficinaMinhas() {
   const companyName = (id?: string | null) => companies.find(c => c.id === id)?.name || null;
   const osItems = useOsServiceItems();
   const stHook = useServiceTypes();
-  const extrasHook = useExtraServices();
   const [tab, setTab] = useState("servicos");
   const [expanded, setExpanded] = useState<string | null>(null);
   const [hiddenStages, setHiddenStages] = useState<string[]>([]);
@@ -721,7 +720,7 @@ export default function OpOficinaMinhas() {
 
                       <OsScoredChecklist
                         items={osItems.byOs[o.id] || []}
-                        availableExtras={extrasHook.extrasForCompany(o.company_id)}
+                        availableExtras={stHook.catalogForCompany(o.company_id)}
                         barClass={st.bar}
                         onToggle={osItems.toggle}
                         onAddExtra={(extra) => osItems.addExtraItem(o, extra)}
