@@ -117,6 +117,8 @@ function AuditExpand({ os, readOnly, osItems, onFinalized }: {
         readOnly={readOnly}
         showFinalize={!readOnly}
         finalizing={finalizing}
+        catalog={catalog}
+        onAddService={(input) => osItems.addAuditItem(os, input)}
         onApprove={(item, approved) => osItems.setItemApproval(item, approved)}
         onAdjust={(item, pts) => osItems.setItemAuditPoints(item, pts)}
         onFinalize={finalize}
