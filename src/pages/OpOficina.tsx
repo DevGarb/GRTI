@@ -22,7 +22,7 @@ import OsProgressBar from "@/components/operacional/OsProgressBar";
 import OsChecklist from "@/components/operacional/OsChecklist";
 import OsScoredChecklist from "@/components/operacional/OsScoredChecklist";
 import OsAuditPanel from "@/components/operacional/OsAuditPanel";
-import { useServiceTypes, useOsServiceItems, useExtraServices } from "@/hooks/useOficinaScoring";
+import { useServiceTypes, useOsServiceItems } from "@/hooks/useOficinaScoring";
 import OficinaNav from "@/pages/op/OficinaNav";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -751,7 +751,6 @@ function OsDetailDialog({ os, onClose, onUpdate, onDelete, onRequestClose, compa
   const { items: companies } = useCompanies();
   const stHook = useServiceTypes();
   const osItems = useOsServiceItems();
-  const extrasHook = useExtraServices();
 
   const [stage, setStage] = useState(os.stage || "analise");
   const [diagnosis, setDiagnosis] = useState(os.diagnosis || "");
@@ -986,7 +985,7 @@ function OsDetailDialog({ os, onClose, onUpdate, onDelete, onRequestClose, compa
         {(osItems.byOs[os.id] || []).length > 0 ? (
           <OsScoredChecklist
             items={osItems.byOs[os.id] || []}
-            availableExtras={extrasHook.extrasForCompany(companyId || os.company_id)}
+            availableExtras={stHook.catalogForCompany(companyId || os.company_id)}
             readOnly={os.stage === STAGE_ENTREGUE || os.status === TERMINAL}
             barClass={stageInfo(stage).bar}
             onToggle={osItems.toggle}

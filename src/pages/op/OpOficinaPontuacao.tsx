@@ -1,5 +1,5 @@
 import { forwardRef, useState } from "react";
-import { ClipboardList, Plus, Trash2, Star, Layers, Calculator, ChevronDown, ChevronRight } from "lucide-react";
+import { ClipboardList, Plus, Trash2, Layers, Calculator, ChevronDown, ChevronRight } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useCompanies } from "@/hooks/useOperacional";
-import { useServiceTypes, useExtraServices, useAwardTiers } from "@/hooks/useOficinaScoring";
+import { useServiceTypes, useAwardTiers } from "@/hooks/useOficinaScoring";
 import { filterOficinaCompanies } from "@/lib/oficinaCompanies";
 import { calcAward, formatPoints } from "@/lib/oficinaScoring";
 import { toast } from "sonner";
@@ -47,7 +47,6 @@ export default function OpOficinaPontuacao() {
   const { items: allCompanies } = useCompanies();
   const companies = filterOficinaCompanies(allCompanies);
   const st = useServiceTypes();
-  const ex = useExtraServices();
   const tiersHook = useAwardTiers();
   const { tiers } = tiersHook;
 
@@ -60,10 +59,6 @@ export default function OpOficinaPontuacao() {
   // checklists expandidos (por padrão, ocultos)
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
   const toggleExpanded = (id: string) => setExpanded((p) => ({ ...p, [id]: !p[id] }));
-  // novo adicional
-  const [newExtraName, setNewExtraName] = useState("");
-  const [newExtraPoints, setNewExtraPoints] = useState("0.25");
-  const [newExtraCompanies, setNewExtraCompanies] = useState<string[]>([]);
   // nova faixa
   const [newTier, setNewTier] = useState({ label: "", from: "", to: "", rate: "" });
   // simulador
@@ -77,14 +72,13 @@ export default function OpOficinaPontuacao() {
       <div>
         <h1 className="text-2xl font-bold">Pontuação & Checklists</h1>
         <p className="text-sm text-muted-foreground">
-          Configure os checklists por tipo de serviço, os serviços adicionais e as faixas de premiação dos mecânicos.
+          Configure os checklists por tipo de serviço (com os serviços individuais e seus pontos) e as faixas de premiação dos mecânicos.
         </p>
       </div>
 
       <Tabs defaultValue="checklists">
         <TabsList>
           <TabsTrigger value="checklists"><ClipboardList className="h-4 w-4 mr-1" /> Checklists por serviço</TabsTrigger>
-          <TabsTrigger value="adicionais"><Star className="h-4 w-4 mr-1" /> Serviços adicionais</TabsTrigger>
           <TabsTrigger value="faixas"><Layers className="h-4 w-4 mr-1" /> Faixas de premiação</TabsTrigger>
         </TabsList>
 
@@ -241,86 +235,6 @@ export default function OpOficinaPontuacao() {
               </Card>
             );
           })}
-        </TabsContent>
-
-        {/* ================= ADICIONAIS ================= */}
-        <TabsContent value="adicionais" className="space-y-4 mt-4">
-          <Card>
-            <CardContent className="p-4 space-y-3">
-              <p className="text-sm font-medium">Novo serviço adicional</p>
-              <div className="grid sm:grid-cols-2 gap-2">
-                <div>
-                  <Label className="text-xs">Nome</Label>
-                  <Input value={newExtraName} onChange={(e) => setNewExtraName(e.target.value)} placeholder="Ex.: Troca de vela" />
-                </div>
-                <div>
-                  <Label className="text-xs">Pontos</Label>
-                  <Input type="number" step="0.05" min={0} value={newExtraPoints} onChange={(e) => setNewExtraPoints(e.target.value)} />
-                </div>
-              </div>
-              <div>
-                <Label className="text-xs">Empresas</Label>
-                <CompanyPicker companies={companies} selected={newExtraCompanies} onChange={setNewExtraCompanies} />
-              </div>
-              <Button
-                size="sm"
-                disabled={!newExtraName.trim() || newExtraCompanies.length === 0}
-                onClick={() => {
-                  ex.addExtra(newExtraName, Number(newExtraPoints) || 0, newExtraCompanies);
-                  setNewExtraName(""); setNewExtraPoints("0.25"); setNewExtraCompanies([]);
-                }}
-              >
-                <Plus className="h-4 w-4 mr-1" /> Criar adicional
-              </Button>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardContent className="p-4 space-y-2">
-              {ex.extras.length === 0 && <p className="text-sm text-muted-foreground">Nenhum serviço adicional cadastrado.</p>}
-              {ex.extras.map((e) => (
-                <div key={e.id} className={cn("border rounded-md p-3 space-y-2", !e.active && "opacity-60")}>
-                  <div className="flex items-center gap-2">
-                    <Input
-                      defaultValue={e.name}
-                      key={e.id + e.name}
-                      className="h-8 text-sm"
-                      onBlur={(ev) => ev.target.value.trim() && ev.target.value !== e.name && ex.updateExtra(e.id, { name: ev.target.value.trim() })}
-                    />
-                    <Input
-                      type="number" step="0.05" min={0}
-                      defaultValue={e.points}
-                      key={e.id + "-" + e.points}
-                      className="h-8 w-24 text-right"
-                      onBlur={(ev) => {
-                        const v = Number(ev.target.value);
-                        if (Number.isFinite(v) && v >= 0 && v !== Number(e.points)) ex.updateExtra(e.id, { points: v });
-                      }}
-                      aria-label={`Pontos de ${e.name}`}
-                    />
-                    <button
-                      type="button"
-                      onClick={() => ex.updateExtra(e.id, { active: !e.active })}
-                      className={cn(
-                        "text-[10px] px-2 py-0.5 rounded-full border shrink-0",
-                        e.active ? "bg-emerald-500/15 text-emerald-700 border-emerald-500/40" : "bg-muted text-muted-foreground",
-                      )}
-                    >
-                      {e.active ? "Ativo" : "Inativo"}
-                    </button>
-                    <Button size="icon" variant="ghost" className="h-8 w-8 text-destructive shrink-0" onClick={() => ex.removeExtra(e.id)} aria-label="Remover adicional">
-                      <Trash2 className="h-3.5 w-3.5" />
-                    </Button>
-                  </div>
-                  <CompanyPicker
-                    companies={companies}
-                    selected={ex.companyIdsByExtra[e.id] || []}
-                    onChange={(ids) => ex.setExtraCompanies(e.id, ids)}
-                  />
-                </div>
-              ))}
-            </CardContent>
-          </Card>
         </TabsContent>
 
         {/* ================= FAIXAS ================= */}

@@ -84,6 +84,33 @@ export function useServiceTypes() {
     [itemsByType],
   );
 
+  /**
+   * Catálogo de serviços individuais da empresa: todos os itens dos checklists
+   * vinculados a ela (inclusive o catálogo avulso), sem duplicidade de nome.
+   * É a lista que o mecânico usa para incluir serviço a serviço na OS.
+   */
+  const catalogForCompany = useCallback(
+    (companyId?: string | null): ExtraService[] => {
+      const typeIds = types
+        .filter((t) => !companyId || (companyIdsByType[t.id] || []).includes(companyId))
+        .map((t) => t.id);
+      const seen = new Set<string>();
+      const out: ExtraService[] = [];
+      typeIds.forEach((tid) => {
+        (itemsByType[tid] || []).forEach((i) => {
+          if (!i.active) return;
+          const key = i.label.trim().toLowerCase();
+          if (seen.has(key)) return;
+          seen.add(key);
+          out.push({ id: i.id, organization_id: orgId || "", name: i.label, points: Number(i.points || 0), active: true });
+        });
+      });
+      return out.sort((a, b) => a.name.localeCompare(b.name));
+    },
+    [types, companyIdsByType, itemsByType, orgId],
+  );
+
+
   const addType = async (name: string, description: string, companyIds: string[]) => {
     if (!orgId || !name.trim()) return;
     const { data, error } = await supabase
@@ -146,7 +173,7 @@ export function useServiceTypes() {
   };
 
   return {
-    types, itemsByType, companyIdsByType, loading, typesForCompany, maxPointsOf,
+    types, itemsByType, companyIdsByType, loading, typesForCompany, maxPointsOf, catalogForCompany,
     addType, updateType, setTypeCompanies, addItem, updateItem, removeItem, removeType, refetch: fetch,
   };
 }
