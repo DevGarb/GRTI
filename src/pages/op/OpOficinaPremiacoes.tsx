@@ -429,6 +429,12 @@ export default function OpOficinaPremiacoes() {
                             ? <span className="font-bold text-emerald-600">{formatBRL(award.total)}</span>
                             : <span className="text-muted-foreground">Sem premiação</span>}
                         </div>
+                        {award.bonus > 0 && (
+                          <div className="text-[10px] text-amber-600">
+                            Inclui bônus de {formatBRL(award.bonus)} pela meta {award.bonusTier?.label}
+                          </div>
+                        )}
+
                         {prog.next ? (
                           <>
                             <div className="h-1.5 w-full rounded-full bg-muted overflow-hidden">
