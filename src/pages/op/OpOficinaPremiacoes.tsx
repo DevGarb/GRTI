@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { useServiceOrders, useMechanics, useServiceOrderDetails, type ServiceOrder } from "@/hooks/useOficina";
-import { useOsServiceItems, useAwardTiers } from "@/hooks/useOficinaScoring";
+import { useOsServiceItems, useAwardTiers, useServiceTypes } from "@/hooks/useOficinaScoring";
 import OsAuditPanel from "@/components/operacional/OsAuditPanel";
 import { Fancybox } from "@fancyapps/ui/dist/fancybox/fancybox.js";
 import "@fancyapps/ui/dist/fancybox/fancybox.css";
@@ -39,6 +39,11 @@ function AuditExpand({ os, readOnly, osItems, onFinalized }: {
   const [finalizing, setFinalizing] = useState(false);
   const { photos, parts } = useServiceOrderDetails(os.id);
   const items = osItems.byOs[os.id] || [];
+  const { catalogForCompany } = useServiceTypes();
+  const catalog = useMemo(
+    () => catalogForCompany(os.company_id).map((s) => ({ id: s.id, name: s.name, points: s.points })),
+    [catalogForCompany, os.company_id],
+  );
 
   const finalize = async () => {
     setFinalizing(true);
@@ -117,6 +122,8 @@ function AuditExpand({ os, readOnly, osItems, onFinalized }: {
         readOnly={readOnly}
         showFinalize={!readOnly}
         finalizing={finalizing}
+        catalog={catalog}
+        onAddService={(input) => osItems.addAuditItem(os, input)}
         onApprove={(item, approved) => osItems.setItemApproval(item, approved)}
         onAdjust={(item, pts) => osItems.setItemAuditPoints(item, pts)}
         onFinalize={finalize}
