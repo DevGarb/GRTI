@@ -371,8 +371,14 @@ export default function OpOficinaPontuacao() {
                     {" "}(faixa {b.tier.from_points}–{b.tier.to_points ?? "∞"})
                   </div>
                 ))}
+                {sim.bonus > 0 && (
+                  <div className="text-emerald-600 font-medium">
+                    Bônus por bater a meta {sim.bonusTier?.label}: R$ {sim.bonus.toFixed(2)}
+                  </div>
+                )}
                 {sim.breakdown.length === 0 && <div>Nenhuma faixa ativa para simular.</div>}
               </div>
+
             </CardContent>
           </Card>
         </TabsContent>
