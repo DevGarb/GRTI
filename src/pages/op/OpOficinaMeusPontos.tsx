@@ -56,7 +56,6 @@ export default function OpOficinaMeusPontos() {
       .select("id, plate, model, company_id, service_type_id, finished_at, points_requested, points_approved, points_status")
       .eq("organization_id", orgId)
       .eq("mechanic_id", profile.id)
-      .eq("status", "entregue")
       .not("finished_at", "is", null)
       .order("finished_at", { ascending: false });
     setOrders((data || []) as unknown as MyOs[]);
