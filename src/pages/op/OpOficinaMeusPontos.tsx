@@ -17,8 +17,8 @@ import "./cearagps.css";
 
 interface MyOs {
   id: string;
-  plate: string;
-  model: string | null;
+  vehicle_plate: string | null;
+  vehicle_model: string | null;
   company_id: string | null;
   service_type_id: string | null;
   finished_at: string | null;
@@ -28,8 +28,8 @@ interface MyOs {
 }
 
 const monthKey = (ts: string) => {
-  const d = new Date(ts);
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+  // finished_at is a DATE (YYYY-MM-DD), so parsing it as Date shifts the day/month in UTC-3.
+  return ts.slice(0, 7);
 };
 
 export default function OpOficinaMeusPontos() {
@@ -51,14 +51,19 @@ export default function OpOficinaMeusPontos() {
   const fetch = useCallback(async () => {
     if (!orgId || !profile?.id) return;
     setLoading(true);
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from("op_service_orders")
-      .select("id, plate, model, company_id, service_type_id, finished_at, points_requested, points_approved, points_status")
+      .select("id, vehicle_plate, vehicle_model, company_id, service_type_id, finished_at, points_requested, points_approved, points_status")
       .eq("organization_id", orgId)
       .eq("mechanic_id", profile.id)
       .not("finished_at", "is", null)
       .order("finished_at", { ascending: false });
-    setOrders((data || []) as unknown as MyOs[]);
+    if (error) {
+      console.error("Erro ao carregar pontos do mecânico:", error);
+      setOrders([]);
+    } else {
+      setOrders((data || []) as MyOs[]);
+    }
     setLoading(false);
   }, [orgId, profile?.id]);
   useEffect(() => { fetch(); }, [fetch]);
@@ -221,7 +226,7 @@ export default function OpOficinaMeusPontos() {
                     <div key={o.id} className="flex items-center gap-3 border rounded-md px-3 py-2 flex-wrap">
                       <div className="min-w-0 flex-1">
                         <p className="text-sm font-medium">
-                          {o.plate} {o.model ? `· ${o.model}` : ""}
+                          {o.vehicle_plate || "Sem placa"} {o.vehicle_model ? `· ${o.vehicle_model}` : ""}
                         </p>
                         <p className="text-xs text-muted-foreground">
                           {companyName[o.company_id || ""] || "—"} · {o.service_type_id ? typeName[o.service_type_id] || "—" : "Sem checklist"}
