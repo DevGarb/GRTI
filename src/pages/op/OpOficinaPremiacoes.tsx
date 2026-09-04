@@ -39,6 +39,11 @@ function AuditExpand({ os, readOnly, osItems, onFinalized }: {
   const [finalizing, setFinalizing] = useState(false);
   const { photos, parts } = useServiceOrderDetails(os.id);
   const items = osItems.byOs[os.id] || [];
+  const { catalogForCompany } = useServiceTypes();
+  const catalog = useMemo(
+    () => catalogForCompany(os.company_id).map((s) => ({ id: s.id, name: s.name, points: s.points })),
+    [catalogForCompany, os.company_id],
+  );
 
   const finalize = async () => {
     setFinalizing(true);
