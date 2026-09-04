@@ -65,7 +65,7 @@ export default function OficinaPin() {
           <TabsList className="grid grid-cols-4 mb-6">
             <TabsTrigger value="mecanico"><HardHat className="h-3.5 w-3.5 mr-1" />Mecânico</TabsTrigger>
             <TabsTrigger value="compras"><ShoppingCart className="h-3.5 w-3.5 mr-1" />Compras</TabsTrigger>
-            <TabsTrigger value="motoloc"><CalendarPlus className="h-3.5 w-3.5 mr-1" />Motoloc</TabsTrigger>
+            <TabsTrigger value="motoloc"><CalendarPlus className="h-3.5 w-3.5 mr-1" />Agendar</TabsTrigger>
             <TabsTrigger value="admin"><Shield className="h-3.5 w-3.5 mr-1" />Admin</TabsTrigger>
           </TabsList>
 
@@ -110,7 +110,7 @@ export default function OficinaPin() {
 
           <TabsContent value="motoloc" className="space-y-3">
             <div>
-              <Label>PIN Motoloc</Label>
+              <Label>PIN Agendar</Label>
               <Input
                 type="password"
                 inputMode="numeric"
@@ -123,7 +123,7 @@ export default function OficinaPin() {
               />
             </div>
             <Button onClick={() => loginByPin("motoloc", motoPin)} className="w-full cgps-btn-primary">
-              Entrar como Motoloc <ArrowRight className="h-4 w-4 ml-1" />
+              Entrar como Agendar <ArrowRight className="h-4 w-4 ml-1" />
             </Button>
           </TabsContent>
 

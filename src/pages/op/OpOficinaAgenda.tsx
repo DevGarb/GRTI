@@ -221,7 +221,7 @@ export default function OpOficinaAgenda() {
           <Card className="p-4">
             <div className="flex items-center gap-2 mb-3">
               <Clock className="h-4 w-4 text-amber-600" />
-              <h2 className="font-semibold text-slate-800">Solicitações da Motoloc ({pending.length})</h2>
+              <h2 className="font-semibold text-slate-800">Solicitações do Agendar ({pending.length})</h2>
             </div>
             <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-3">
               {pending.map((b) => (
