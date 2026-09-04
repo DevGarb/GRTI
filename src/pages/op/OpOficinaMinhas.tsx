@@ -353,6 +353,11 @@ export default function OpOficinaMinhas() {
 
   const confirmFinish = async () => {
     if (!finishOs) return;
+    const finishItems = osItems.byOs[finishOs.id] || [];
+    if (finishItems.length === 0 || finishItems.some(i => !i.done)) {
+      setFinishOs(null);
+      return toast.error("Checklist incompleto: inclua e conclua todos os serviços antes de finalizar");
+    }
     if (!summary.trim()) return toast.error("Descreva o que foi feito no serviço");
     if (files.length === 0) return toast.error("Tire ou anexe pelo menos uma foto da moto");
     const km = Number(String(finishKm).replace(/\D/g, ""));
