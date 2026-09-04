@@ -15,6 +15,13 @@
       "when": 1788294021203,
       "tag": "0001_add_external_org_gestao_processos",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1788527307022,
+      "tag": "0002_add_bonus_brl_to_award_tiers",
+      "breakpoints": true
     }
   ]
 }

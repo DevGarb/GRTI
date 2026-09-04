@@ -1199,6 +1199,7 @@ export type Database = {
       op_award_tiers: {
         Row: {
           active: boolean
+          bonus_brl: number
           created_at: string
           from_points: number
           id: string
@@ -1210,6 +1211,7 @@ export type Database = {
         }
         Insert: {
           active?: boolean
+          bonus_brl?: number
           created_at?: string
           from_points: number
           id?: string
@@ -1221,6 +1223,7 @@ export type Database = {
         }
         Update: {
           active?: boolean
+          bonus_brl?: number
           created_at?: string
           from_points?: number
           id?: string

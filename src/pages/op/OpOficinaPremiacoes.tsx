@@ -429,6 +429,12 @@ export default function OpOficinaPremiacoes() {
                             ? <span className="font-bold text-emerald-600">{formatBRL(award.total)}</span>
                             : <span className="text-muted-foreground">Sem premiação</span>}
                         </div>
+                        {award.bonus > 0 && (
+                          <div className="text-[10px] text-amber-600">
+                            Inclui bônus de {formatBRL(award.bonus)} pela meta {award.bonusTier?.label}
+                          </div>
+                        )}
+
                         {prog.next ? (
                           <>
                             <div className="h-1.5 w-full rounded-full bg-muted overflow-hidden">
@@ -461,10 +467,14 @@ export default function OpOficinaPremiacoes() {
                   <div key={t.id} className="border rounded-md p-3 flex items-center justify-between gap-2">
                     <div>
                       <div className="text-sm font-medium">
-                        {formatPoints(t.from_points)}–{t.to_points == null ? "∞" : formatPoints(t.to_points)} pts
+                        {t.label ? `${t.label} · ` : ""}{formatPoints(t.from_points)}–{t.to_points == null ? "∞" : formatPoints(t.to_points)} pts
                       </div>
                       <div className="text-sm font-bold text-emerald-600">{formatBRL(Number(t.rate_brl))}/pt</div>
+                      {Number(t.bonus_brl || 0) > 0 && (
+                        <div className="text-[11px] text-amber-600 font-medium">+ bônus {formatBRL(Number(t.bonus_brl))} ao bater a meta</div>
+                      )}
                     </div>
+
                     <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => openTierEdit(t)} aria-label="Editar faixa">
                       <Pencil className="h-4 w-4" />
                     </Button>

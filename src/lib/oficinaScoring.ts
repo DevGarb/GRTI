@@ -27,6 +27,8 @@ export interface AwardTier {
   from_points: number;
   to_points: number | null;
   rate_brl: number;
+  /** Bônus fixo pago ao atingir a faixa (batimento de meta). */
+  bonus_brl?: number | null;
   position: number;
   active: boolean;
 }
@@ -90,11 +92,20 @@ export interface AwardBreakdownRow {
   amount: number;
 }
 
+/** Faixa atingida (a de maior `from_points` alcançada pelos pontos). */
+export function reachedTier(points: number, tiers: AwardTier[]): AwardTier | null {
+  const sorted = [...tiers].filter((t) => t.active).sort((a, b) => Number(a.from_points) - Number(b.from_points));
+  let hit: AwardTier | null = null;
+  for (const t of sorted) if (points >= Number(t.from_points)) hit = t;
+  return hit;
+}
+
 /**
  * Cálculo progressivo: cada faixa cobre do fim da anterior até `to_points`.
  * Ex.: 70 pts com faixas (1-50 @10 · 51-99 @15) = 50×10 + 20×15 = R$ 800.
+ * Ao atingir uma faixa com bônus (batimento de meta), o bônus fixo é somado.
  */
-export function calcAward(points: number, tiers: AwardTier[]): { total: number; breakdown: AwardBreakdownRow[] } {
+export function calcAward(points: number, tiers: AwardTier[]): { total: number; variable: number; bonus: number; bonusTier: AwardTier | null; breakdown: AwardBreakdownRow[] } {
   const sorted = [...tiers].filter((t) => t.active).sort((a, b) => Number(a.from_points) - Number(b.from_points));
   const p = Math.max(0, points);
   const breakdown: AwardBreakdownRow[] = [];
@@ -105,7 +116,10 @@ export function calcAward(points: number, tiers: AwardTier[]): { total: number; 
     if (span > 0) breakdown.push({ tier, points: round2(span), amount: round2(span * Number(tier.rate_brl)) });
     lower = upper;
   }
-  return { total: round2(breakdown.reduce((s, b) => s + b.amount, 0)), breakdown };
+  const variable = round2(breakdown.reduce((s, b) => s + b.amount, 0));
+  const hit = reachedTier(p, sorted);
+  const bonus = round2(Number(hit?.bonus_brl || 0));
+  return { total: round2(variable + bonus), variable, bonus, bonusTier: bonus > 0 ? hit : null, breakdown };
 }
 
 /** Situação do mecânico nas faixas: faixa atual, próxima e quanto falta. */

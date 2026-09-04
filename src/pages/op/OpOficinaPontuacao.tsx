@@ -304,7 +304,18 @@ export default function OpOficinaPontuacao() {
                       if (Number.isFinite(v) && v >= 0 && v !== Number(t.rate_brl)) tiersHook.updateTier(t.id, { rate_brl: v });
                     }}
                   />
-                  <span className="text-xs text-muted-foreground shrink-0">/ponto</span>
+                  <span className="text-xs text-muted-foreground shrink-0">/ponto · bônus R$</span>
+                  <Input
+                    type="number" step="50" min={0}
+                    defaultValue={Number(t.bonus_brl ?? 0)}
+                    key={t.id + "-bonus-" + String(t.bonus_brl)}
+                    className="h-8 w-24 text-right"
+                    onBlur={(e) => {
+                      const v = Number(e.target.value);
+                      if (Number.isFinite(v) && v >= 0 && v !== Number(t.bonus_brl ?? 0)) tiersHook.updateTier(t.id, { bonus_brl: v });
+                    }}
+                  />
+
                   <button
                     type="button"
                     onClick={() => tiersHook.updateTier(t.id, { active: !t.active })}
@@ -360,8 +371,14 @@ export default function OpOficinaPontuacao() {
                     {" "}(faixa {b.tier.from_points}–{b.tier.to_points ?? "∞"})
                   </div>
                 ))}
+                {sim.bonus > 0 && (
+                  <div className="text-emerald-600 font-medium">
+                    Bônus por bater a meta {sim.bonusTier?.label}: R$ {sim.bonus.toFixed(2)}
+                  </div>
+                )}
                 {sim.breakdown.length === 0 && <div>Nenhuma faixa ativa para simular.</div>}
               </div>
+
             </CardContent>
           </Card>
         </TabsContent>
