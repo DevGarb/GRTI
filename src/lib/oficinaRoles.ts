@@ -3,7 +3,7 @@ export type OficinaRole = "mecanico" | "compras" | "admin" | "motoloc";
 export const OFICINA_ROLES: { id: OficinaRole; label: string; short: string; home: string }[] = [
   { id: "mecanico", label: "Mecânico", short: "Mecânico", home: "/op/oficina/minhas" },
   { id: "compras", label: "Compras", short: "Compras", home: "/op/oficina/compras" },
-  { id: "motoloc", label: "Motoloc", short: "Motoloc", home: "/op/oficina/agendar" },
+  { id: "motoloc", label: "Agendar", short: "Agendar", home: "/op/oficina/agendar" },
   { id: "admin", label: "Administrador", short: "Admin", home: "/op/oficina" },
 ];
 
