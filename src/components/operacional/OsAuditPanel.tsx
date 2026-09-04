@@ -216,6 +216,10 @@ export default function OsAuditPanel({
         })}
       </div>
 
+      {!readOnly && onAddService && <AddServiceForm catalog={catalog} onAdd={onAddService} />}
+
+
+
       {showFinalize && !readOnly && (
         <div className="flex justify-end pt-1 border-t">
           <Button size="sm" onClick={onFinalize} disabled={finalizing}>
