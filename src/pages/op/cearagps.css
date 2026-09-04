@@ -47,3 +47,6 @@
   color: hsl(var(--cgps-accent));
   border: 1px solid hsl(var(--cgps-accent) / 0.3);
 }
+
+.cgps-scope .no-scrollbar { scrollbar-width: none; }
+.cgps-scope .no-scrollbar::-webkit-scrollbar { display: none; }
