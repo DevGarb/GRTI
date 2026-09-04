@@ -102,10 +102,10 @@ export default function OpOficinaAgenda() {
   }, [monthCursor]);
 
   const dayCounts = useMemo(() => {
-    const map = new Map<string, { services: number; bookings: number }>();
+    const map = new Map<string, { services: number; bookings: number; free: number }>();
     const bump = (d: string | null, key: "services" | "bookings") => {
       if (!d) return;
-      const cur = map.get(d) || { services: 0, bookings: 0 };
+      const cur = map.get(d) || { services: 0, bookings: 0, free: BOOKING_PERIODS.length };
       cur[key] += 1;
       map.set(d, cur);
     };
@@ -113,6 +113,11 @@ export default function OpOficinaAgenda() {
     bookings
       .filter((b) => b.status === "agendado" && !b.service_order_id)
       .forEach((b) => bump(effectiveDate(b.scheduled_date), "bookings"));
+    // vagas livres: 1 manhã + 1 tarde por dia, descontando períodos já ocupados
+    map.forEach((cur, d) => {
+      const taken = takenPeriods(bookings as any[], d);
+      cur.free = BOOKING_PERIODS.filter((p) => !taken.has(p.id)).length;
+    });
     return map;
   }, [actives, bookings, today]);
 
@@ -203,12 +208,20 @@ export default function OpOficinaAgenda() {
                 >
                   <div className="text-xs font-semibold">{Number(d.slice(8))}</div>
                   <div className="flex flex-wrap gap-0.5 mt-0.5">
-                    {!!c?.services && (
-                      <span className={`text-[9px] px-1 rounded ${selected ? "bg-white/20" : "bg-teal-500/15 text-teal-700"}`}>{c.services} serv.</span>
-                    )}
-                    {!!c?.bookings && (
-                      <span className={`text-[9px] px-1 rounded ${selected ? "bg-white/20" : "bg-amber-500/15 text-amber-700"}`}>{c.bookings} ag.</span>
-                    )}
+                    <span className={`text-[9px] px-1 rounded ${selected ? "bg-white/20" : "bg-teal-500/15 text-teal-700"}`}>
+                      {c?.services || 0} exec.
+                    </span>
+                    <span className={`text-[9px] px-1 rounded ${selected ? "bg-white/20" : "bg-amber-500/15 text-amber-700"}`}>
+                      {c?.bookings || 0} ag.
+                    </span>
+                    {(() => {
+                      const free = c ? c.free : BOOKING_PERIODS.length;
+                      return (
+                        <span className={`text-[9px] px-1 rounded ${selected ? "bg-white/20" : free > 0 ? "bg-emerald-500/15 text-emerald-700" : "bg-rose-500/15 text-rose-700"}`}>
+                          {free} vaga{free === 1 ? "" : "s"}
+                        </span>
+                      );
+                    })()}
                   </div>
                 </button>
               );
