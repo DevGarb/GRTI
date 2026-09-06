@@ -111,7 +111,7 @@ export default function OpOficina() {
       }
       return true;
     });
-  }, [items, dateFrom, dateTo, mechFilter, search]);
+  }, [items, dateFrom, dateTo, mechFilter, companyFilter, search]);
 
   const filtered = useMemo(() => {
     return baseFiltered.filter(o => {
@@ -427,12 +427,11 @@ export default function OpOficina() {
         </div>
       </div>
 
-      <div className="grid grid-cols-2 md:grid-cols-6 gap-3">
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
         <Kpi label="Motos ativas" value={kpis.total} icon={Wrench} active={kpiFilter === "active"} onClick={() => setKpiFilter(f => f === "active" ? "all" : "active")} />
         <Kpi label="Motos fisicamente na oficina" value={kpis.total - kpis.comCliente} icon={Gauge} active={kpiFilter === "in_workshop"} onClick={() => setKpiFilter(f => f === "in_workshop" ? "all" : "in_workshop")} />
         <Kpi label="Em alerta / atrasadas" value={kpis.atrasadas} icon={AlertTriangle} active={kpiFilter === "late"} onClick={() => setKpiFilter(f => f === "late" ? "all" : "late")} />
         <Kpi label="Aguardando peça" value={kpis.aguardPeca} icon={Package} active={kpiFilter === "waiting_part"} onClick={() => setKpiFilter(f => f === "waiting_part" ? "all" : "waiting_part")} />
-        <Kpi label="Entregues no período" value={kpis.entregues} icon={Truck} active={kpiFilter === "delivered"} onClick={() => setKpiFilter(f => f === "delivered" ? "all" : "delivered")} />
         <Kpi label="Com o cliente" value={kpis.comCliente} icon={Home} active={kpiFilter === "with_customer"} onClick={() => setKpiFilter(f => f === "with_customer" ? "all" : "with_customer")} />
       </div>
 
