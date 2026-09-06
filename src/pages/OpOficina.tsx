@@ -90,6 +90,7 @@ export default function OpOficina() {
   const [dateFrom, setDateFrom] = useState(currentMonthStart());
   const [dateTo, setDateTo] = useState(todayStr());
   const [mechFilter, setMechFilter] = useState<string>("all");
+  const [companyFilter, setCompanyFilter] = useState<string>("all");
   const [search, setSearch] = useState("");
   const [kpiFilter, setKpiFilter] = useState<"all" | "active" | "in_workshop" | "late" | "waiting_part" | "delivered" | "with_customer">("all");
   const [openNew, setOpenNew] = useState(false);
