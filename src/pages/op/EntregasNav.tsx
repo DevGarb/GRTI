@@ -1,5 +1,5 @@
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
-import { Truck, Users, Tags, LayoutGrid, LogOut, UserCircle2, ClipboardList, Star } from "lucide-react";
+import { Truck, Users, Tags, LayoutGrid, LogOut, UserCircle2, ClipboardList, Star, BarChart3 } from "lucide-react";
 import { useEntregasProfile } from "@/contexts/EntregasProfileContext";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -20,6 +20,7 @@ export default function EntregasNav() {
         { to: "/op/entregas/solicitantes", label: "Solicitantes", icon: UserCircle2 },
         { to: "/op/entregas/categorias", label: "Categorias", icon: Tags },
         { to: "/op/avaliacoes", label: "Avaliações", icon: Star },
+        { to: "/op/entregas/relatorios", label: "Relatórios", icon: BarChart3 },
       ]
     : isSolicitante
     ? [

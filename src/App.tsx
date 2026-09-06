@@ -79,6 +79,7 @@ import ManutencaoGuard from "@/pages/op/ManutencaoGuard";
 import OpManutencaoMinhas from "@/pages/op/OpManutencaoMinhas";
 import OpManutencaoSolicitar from "@/pages/op/OpManutencaoSolicitar";
 import OpAvaliacoes from "@/pages/op/OpAvaliacoes";
+import OpEntregasRelatorios from "@/pages/op/OpEntregasRelatorios";
 import { ManutencaoProfileProvider, useManutencaoProfile } from "@/contexts/ManutencaoProfileContext";
 import NotFound from "./pages/NotFound";
 import OAuthConsent from "@/pages/OAuthConsent";
@@ -250,6 +251,7 @@ const App = () => (
                       <Route path="/op/entregas/pin" element={<MenuGuard menuKey="op-entregas"><EntregasProfileProvider><EntregasPin /></EntregasProfileProvider></MenuGuard>} />
                       <Route path="/op/entregas" element={<MenuGuard menuKey="op-entregas"><EntregasProfileProvider><EntregasGuard allow={["admin"]}><OpEntregas /></EntregasGuard></EntregasProfileProvider></MenuGuard>} />
                       <Route path="/op/entregas/motoristas" element={<MenuGuard menuKey="op-entregas"><EntregasProfileProvider><EntregasGuard allow={["admin"]}><OpEntregasMotoristas /></EntregasGuard></EntregasProfileProvider></MenuGuard>} />
+                      <Route path="/op/entregas/relatorios" element={<MenuGuard menuKey="op-entregas"><EntregasProfileProvider><EntregasGuard allow={["admin"]}><OpEntregasRelatorios /></EntregasGuard></EntregasProfileProvider></MenuGuard>} />
                       <Route path="/op/entregas/categorias" element={<MenuGuard menuKey="op-entregas"><EntregasProfileProvider><EntregasGuard allow={["admin"]}><OpEntregasCategorias /></EntregasGuard></EntregasProfileProvider></MenuGuard>} />
                       <Route path="/op/entregas/solicitantes" element={<MenuGuard menuKey="op-entregas"><EntregasProfileProvider><EntregasGuard allow={["admin"]}><OpEntregasSolicitantes /></EntregasGuard></EntregasProfileProvider></MenuGuard>} />
                       <Route path="/op/entregas/solicitar" element={<MenuGuard menuKey="op-entregas"><EntregasProfileProvider><EntregasGuard allow={["solicitante"]}><OpEntregasSolicitar /></EntregasGuard></EntregasProfileProvider></MenuGuard>} />
