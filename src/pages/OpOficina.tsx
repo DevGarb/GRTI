@@ -101,6 +101,7 @@ export default function OpOficina() {
     return items.filter(o => {
       if (!inDateRange(o.opened_at, dateFrom, dateTo)) return false;
       if (mechFilter !== "all" && o.mechanic_id !== mechFilter) return false;
+      if (companyFilter !== "all" && o.company_id !== companyFilter) return false;
       if (search) {
         const s = search.toLowerCase();
         if (!(`${o.os_number}`.includes(s) ||
