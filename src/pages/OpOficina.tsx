@@ -437,6 +437,18 @@ export default function OpOficina() {
 
       <div className="bg-card border rounded-lg p-3 flex flex-wrap gap-3 items-end">
         <DateRangeFilter from={dateFrom} to={dateTo} onFromChange={setDateFrom} onToChange={setDateTo} />
+        <div>
+          <Label className="text-xs">Empresa</Label>
+          <Select value={companyFilter} onValueChange={setCompanyFilter}>
+            <SelectTrigger className="w-[180px]"><SelectValue placeholder="Todas" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todas as empresas</SelectItem>
+              {filterOficinaCompanies(companies).map(c => (
+                <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
         <div className="flex-1 min-w-[200px]">
           <Label className="text-xs">Buscar</Label>
           <div className="relative">
