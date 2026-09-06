@@ -90,6 +90,7 @@ export default function OpOficina() {
   const [dateFrom, setDateFrom] = useState(currentMonthStart());
   const [dateTo, setDateTo] = useState(todayStr());
   const [mechFilter, setMechFilter] = useState<string>("all");
+  const [companyFilter, setCompanyFilter] = useState<string>("all");
   const [search, setSearch] = useState("");
   const [kpiFilter, setKpiFilter] = useState<"all" | "active" | "in_workshop" | "late" | "waiting_part" | "delivered" | "with_customer">("all");
   const [openNew, setOpenNew] = useState(false);
@@ -100,6 +101,7 @@ export default function OpOficina() {
     return items.filter(o => {
       if (!inDateRange(o.opened_at, dateFrom, dateTo)) return false;
       if (mechFilter !== "all" && o.mechanic_id !== mechFilter) return false;
+      if (companyFilter !== "all" && o.company_id !== companyFilter) return false;
       if (search) {
         const s = search.toLowerCase();
         if (!(`${o.os_number}`.includes(s) ||
@@ -109,7 +111,7 @@ export default function OpOficina() {
       }
       return true;
     });
-  }, [items, dateFrom, dateTo, mechFilter, search]);
+  }, [items, dateFrom, dateTo, mechFilter, companyFilter, search]);
 
   const filtered = useMemo(() => {
     return baseFiltered.filter(o => {
@@ -425,17 +427,28 @@ export default function OpOficina() {
         </div>
       </div>
 
-      <div className="grid grid-cols-2 md:grid-cols-6 gap-3">
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
         <Kpi label="Motos ativas" value={kpis.total} icon={Wrench} active={kpiFilter === "active"} onClick={() => setKpiFilter(f => f === "active" ? "all" : "active")} />
         <Kpi label="Motos fisicamente na oficina" value={kpis.total - kpis.comCliente} icon={Gauge} active={kpiFilter === "in_workshop"} onClick={() => setKpiFilter(f => f === "in_workshop" ? "all" : "in_workshop")} />
         <Kpi label="Em alerta / atrasadas" value={kpis.atrasadas} icon={AlertTriangle} active={kpiFilter === "late"} onClick={() => setKpiFilter(f => f === "late" ? "all" : "late")} />
         <Kpi label="Aguardando peça" value={kpis.aguardPeca} icon={Package} active={kpiFilter === "waiting_part"} onClick={() => setKpiFilter(f => f === "waiting_part" ? "all" : "waiting_part")} />
-        <Kpi label="Entregues no período" value={kpis.entregues} icon={Truck} active={kpiFilter === "delivered"} onClick={() => setKpiFilter(f => f === "delivered" ? "all" : "delivered")} />
         <Kpi label="Com o cliente" value={kpis.comCliente} icon={Home} active={kpiFilter === "with_customer"} onClick={() => setKpiFilter(f => f === "with_customer" ? "all" : "with_customer")} />
       </div>
 
       <div className="bg-card border rounded-lg p-3 flex flex-wrap gap-3 items-end">
         <DateRangeFilter from={dateFrom} to={dateTo} onFromChange={setDateFrom} onToChange={setDateTo} />
+        <div>
+          <Label className="text-xs">Empresa</Label>
+          <Select value={companyFilter} onValueChange={setCompanyFilter}>
+            <SelectTrigger className="w-[180px]"><SelectValue placeholder="Todas" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todas as empresas</SelectItem>
+              {filterOficinaCompanies(companies).map(c => (
+                <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
         <div className="flex-1 min-w-[200px]">
           <Label className="text-xs">Buscar</Label>
           <div className="relative">
