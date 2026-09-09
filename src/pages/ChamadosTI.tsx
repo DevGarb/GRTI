@@ -380,22 +380,11 @@ export default function ChamadosTI() {
   });
   const closedTicketIds = closedByMe.map((t) => t.id);
 
-  const { data: myEvalScore = 0 } = useQuery({
-    queryKey: ["my-score", user?.id, selectedMonth, closedTicketIds.join(",")],
-    queryFn: async () => {
-      if (!user?.id || closedTicketIds.length === 0) return 0;
-      const { data: evals, error } = await supabase
-        .from("evaluations").select("score").eq("type", "meta").in("ticket_id", closedTicketIds);
-      if (error) throw error;
-      return (evals || []).reduce((sum, e) => sum + (e.score || 0), 0);
-    },
-    enabled: !!user?.id && !isAdmin && closedTicketIds.length > 0,
-  });
-
-  // Chamados de crédito de sprint (tipo "Projeto") não recebem avaliação de pontuação:
-  // usam o story_points, mesma regra das Metas e do MVP.
-  const scoreBreakdown = computeScoreBreakdown(myEvalScore, closedByMe as any);
-  const myScore = scoreBreakdown.total;
+  // Fonte única: mesma RPC das Metas (inclui pontos de sprint e regras oficiais).
+  const { data: myMonth } = useMyMonthPoints(monthFrom.getFullYear(), monthFrom.getMonth() + 1);
+  const scoreBreakdown = computeScoreBreakdown(0, closedByMe as any);
+  const myScore = myMonth?.points ?? 0;
+  const myClosedCount = myMonth?.closed ?? closedByMe.length;
   const [showScoreDetail, setShowScoreDetail] = useState(false);
 
 
