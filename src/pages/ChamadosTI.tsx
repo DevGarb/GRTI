@@ -734,13 +734,13 @@ export default function ChamadosTI() {
                       <p className="font-display text-3xl font-bold leading-tight text-amber-600 dark:text-amber-400">{myScore} <span className="text-base font-semibold">pts</span></p>
                       {scoreBreakdown.sprintPoints > 0 && (
                         <p className="mt-0.5 text-[11px] text-muted-foreground">
-                          {scoreBreakdown.evaluationPoints} pts de chamados + {scoreBreakdown.sprintPoints} pts de sprints
+                          inclui {scoreBreakdown.sprintPoints} pts de sprints
                         </p>
                       )}
                     </div>
                     <div className="text-right">
                       <p className="text-xs text-muted-foreground">Chamados fechados</p>
-                      <p className="font-display text-2xl font-bold text-foreground">{closedByMe.length}</p>
+                      <p className="font-display text-2xl font-bold text-foreground">{myClosedCount}</p>
                     </div>
                   </div>
                   {scoreBreakdown.sprints.length > 0 && (
