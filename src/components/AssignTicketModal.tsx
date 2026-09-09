@@ -12,6 +12,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { dispatchWebhookEvent } from "@/hooks/useWebhooks";
 import { useTechnicianProfiles } from "@/hooks/useTickets";
+import { PersonCombobox } from "@/components/ui/person-combobox";
 
 interface Props {
   ticketId: string;
@@ -107,16 +108,14 @@ export default function AssignTicketModal({ ticketId, currentAssignee, mode = "s
           {mode === "admin" && isAdmin ? (
             <div>
               <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Técnico responsável</label>
-              <select
+              <PersonCombobox
                 value={assigneeId}
-                onChange={(e) => setAssigneeId(e.target.value)}
-                className="mt-1 w-full px-3 py-2 rounded-lg border border-input bg-background text-sm text-foreground"
-              >
-                <option value="">Selecione um técnico…</option>
-                {technicians.map((t: any) => (
-                  <option key={t.user_id} value={t.user_id}>{t.full_name}</option>
-                ))}
-              </select>
+                onValueChange={setAssigneeId}
+                options={technicians.map((t: any) => ({ value: t.user_id, label: t.full_name }))}
+                placeholder="Selecione um técnico…"
+                searchPlaceholder="Buscar técnico pelo nome…"
+                emptyMessage="Nenhum técnico encontrado."
+              />
             </div>
           ) : (
             <div className="text-sm text-foreground">

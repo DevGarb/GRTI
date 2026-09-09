@@ -34,6 +34,7 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { formatDateBR, formatDateTimeFullBR } from "@/lib/dateFormat";
+import { PersonCombobox } from "@/components/ui/person-combobox";
 
 const allStatuses = ["Aberto", "Em Andamento", "Aguardando Aprovação", "Aprovado", "Fechado", "Disponível"];
 
@@ -718,21 +719,21 @@ export default function TicketDetailModal({ ticket, onClose }: Props) {
             <div className="flex items-center gap-3">
               <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider w-24">Solicitante</span>
               {canEditPeople ? (
-                <select
-                  defaultValue={ticket.created_by}
-                  onChange={async (e) => {
-                    const newUserId = e.target.value;
+                <div className="min-w-0 flex-1 max-w-sm">
+                  <PersonCombobox
+                  value={ticket.created_by}
+                  onValueChange={async (newUserId) => {
                     const oldName = ticket.creatorProfile?.full_name || "—";
                     const newProfile = allProfiles.find(p => p.user_id === newUserId);
                     updateTicket.mutate({ id: ticket.id, created_by: newUserId } as any);
                     await addHistory("creator_change", oldName, newProfile?.full_name || "—");
                   }}
-                  className="px-3 py-2 rounded-lg border border-input bg-background text-sm text-foreground"
-                >
-                  {allProfiles.map((p) => (
-                    <option key={p.user_id} value={p.user_id}>{p.full_name}</option>
-                  ))}
-                </select>
+                  options={allProfiles.map((p) => ({ value: p.user_id, label: p.full_name }))}
+                  placeholder="Selecione o solicitante…"
+                  searchPlaceholder="Buscar solicitante pelo nome…"
+                  emptyMessage="Nenhum solicitante encontrado."
+                  />
+                </div>
               ) : (
                 <span className="text-sm font-medium text-foreground">{ticket.creatorProfile?.full_name || "—"}</span>
               )}
