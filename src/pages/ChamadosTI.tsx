@@ -14,6 +14,7 @@ import { StatusBadge, PriorityBadge } from "@/components/StatusBadge";
 import { useTickets, Ticket, useBulkDeleteTickets, useTechnicianProfiles } from "@/hooks/useTickets";
 import { formatTicketNumber, normalizeTicketNumberQuery } from "@/lib/ticketNumber";
 import { buildScoreMap, computeScoreBreakdown } from "@/lib/sprintScoring";
+import { useMyMonthPoints } from "@/hooks/useMyMonthPoints";
 import { useAuth } from "@/contexts/AuthContext";
 import NewTicketWizardModal from "@/components/NewTicketWizardModal";
 import PendingApprovalGateDialog from "@/components/PendingApprovalGateDialog";
