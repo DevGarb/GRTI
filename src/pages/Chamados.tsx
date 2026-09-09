@@ -1,3 +1,4 @@
+import { useMyMonthPoints } from "@/hooks/useMyMonthPoints";
 import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Search, Filter, ChevronDown, ChevronRight, Plus, User, RefreshCw, Inbox, SendHorizonal, HandMetal, AlertTriangle, Clock, TicketCheck, CircleDot, Loader2, CheckCircle2, LayoutGrid, List, Trophy, CheckSquare, Trash2, X, MessageSquare } from "lucide-react";
@@ -714,7 +715,7 @@ function ChamadosLegacy() {
                     </div>
                     <div className="text-right">
                       <p className="text-xs text-muted-foreground">Chamados fechados</p>
-                      <p className="text-2xl font-bold text-foreground">{closedByMe.length}</p>
+                      <p className="text-2xl font-bold text-foreground">{myClosedCount}</p>
                     </div>
                   </div>
                   )}
