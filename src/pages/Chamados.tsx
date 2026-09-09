@@ -1,3 +1,4 @@
+import { useMyMonthPoints } from "@/hooks/useMyMonthPoints";
 import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Search, Filter, ChevronDown, ChevronRight, Plus, User, RefreshCw, Inbox, SendHorizonal, HandMetal, AlertTriangle, Clock, TicketCheck, CircleDot, Loader2, CheckCircle2, LayoutGrid, List, Trophy, CheckSquare, Trash2, X, MessageSquare } from "lucide-react";
@@ -362,21 +363,10 @@ function ChamadosLegacy() {
   });
   const closedTicketIds = closedByMe.map((t) => t.id);
 
-  const { data: myScore = 0 } = useQuery({
-    queryKey: ["my-score", user?.id, selectedMonth, closedTicketIds.join(",")],
-    queryFn: async () => {
-      if (!user?.id || closedTicketIds.length === 0) return 0;
-      // Soma dos pontos atribuídos (type="meta") nos chamados fechados pelo técnico no mês
-      const { data: evals, error } = await supabase
-        .from("evaluations")
-        .select("score")
-        .eq("type", "meta")
-        .in("ticket_id", closedTicketIds);
-      if (error) throw error;
-      return (evals || []).reduce((sum, e) => sum + (e.score || 0), 0);
-    },
-    enabled: !!user?.id && !isAdmin && closedTicketIds.length > 0,
-  });
+  // Fonte única: mesma RPC das Metas (regras oficiais de status, org e fuso).
+  const { data: myMonth } = useMyMonthPoints(monthFrom.getFullYear(), monthFrom.getMonth() + 1);
+  const myScore = myMonth?.points ?? 0;
+  const myClosedCount = myMonth?.closed ?? closedByMe.length;
 
   // Pontuação: apenas chamados FECHADOS que tiveram pontuação atribuída (type="meta")
   const closedFilteredIds = filtered.filter((t) => t.status === "Fechado").map((t) => t.id);
@@ -725,7 +715,7 @@ function ChamadosLegacy() {
                     </div>
                     <div className="text-right">
                       <p className="text-xs text-muted-foreground">Chamados fechados</p>
-                      <p className="text-2xl font-bold text-foreground">{closedByMe.length}</p>
+                      <p className="text-2xl font-bold text-foreground">{myClosedCount}</p>
                     </div>
                   </div>
                   )}
