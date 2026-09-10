@@ -497,6 +497,7 @@ export default function OpOficina() {
               resolveItem={(id) => filtered.find(o => o.id === id)}
               onMove={(item, _from, to) => handleStageChange(item, to)}
               emptyText="— sem motos —"
+              cardClassName={companyCardClass}
             />
           </div>
         </div>
