@@ -75,7 +75,7 @@ export default function OpKanbanBoard<T extends { id: string }>({
                             {...prov.dragHandleProps}
                             className={`rounded-lg border border-border bg-card p-3 cursor-pointer transition-shadow ${
                               snap.isDragging ? "shadow-lg ring-2 ring-primary/30" : "hover:shadow-md"
-                            }`}
+                            } ${cardClassName ? cardClassName(item) : ""}`}
                           >
                             {renderCard(item)}
                           </div>
