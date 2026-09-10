@@ -132,11 +132,27 @@ export default function OpOficina() {
     return {
       total: ativas.length,
       atrasadas: baseFiltered.filter(isOverdue).length,
-      aguardPeca: ativas.filter(o => o.stage === "aguardando_peca").length,
       entregues: baseFiltered.filter(isDelivered).length,
       comCliente: ativas.filter(o => !!o.with_customer).length,
     };
   }, [baseFiltered]);
+
+  // Motos ativas por empresa (independe do filtro de empresa selecionado)
+  const porEmpresa = useMemo(() => {
+    const ativas = items.filter(o => !isDelivered(o));
+    const map = new Map<string, number>();
+    ativas.forEach(o => {
+      const id = o.company_id || "sem";
+      map.set(id, (map.get(id) || 0) + 1);
+    });
+    return Array.from(map.entries())
+      .map(([id, count]) => ({
+        id,
+        name: companies.find(c => c.id === id)?.name || "Sem empresa",
+        count,
+      }))
+      .sort((a, b) => b.count - a.count);
+  }, [items, companies]);
 
   const columns = hideDelivered ? KANBAN_COLUMNS : [...KANBAN_COLUMNS, DELIVERED_COLUMN];
 
