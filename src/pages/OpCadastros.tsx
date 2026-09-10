@@ -4,10 +4,10 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Trash2, Users, Building2, Car, Plus, Wrench, Package, HardHat, UserCheck, Layers } from "lucide-react";
+import { Trash2, Users, Building2, Car, Plus, Wrench, HardHat, UserCheck, Layers } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { useDrivers, useCompanies, useVehicles } from "@/hooks/useOperacional";
-import { useMechanics, useParts } from "@/hooks/useOficina";
+import { useMechanics } from "@/hooks/useOficina";
 import { OFICINA_ROLES, oficinaRoleInfo } from "@/lib/oficinaRoles";
 import { useMaintTechnicians } from "@/hooks/useMaintTechnicians";
 import { useDeliveryRequesters } from "@/hooks/useDeliveryRequesters";
@@ -382,37 +382,6 @@ function MechanicsTab() {
             </div>
           );
         })}
-      </div>
-    </div>
-  );
-}
-
-function PartsTab() {
-  const { items, add, remove } = useParts();
-  const [name, setName] = useState(""); const [code, setCode] = useState(""); const [price, setPrice] = useState("0");
-  return (
-    <div className="space-y-4">
-      <div className="bg-card border rounded-lg p-4 grid gap-3 md:grid-cols-[1fr_180px_140px_auto]">
-        <div><Label>Nome da peça</Label><Input value={name} onChange={e => setName(e.target.value)} placeholder="Ex.: Pastilha de freio" /></div>
-        <div><Label>Código</Label><Input value={code} onChange={e => setCode(e.target.value)} placeholder="Opcional" /></div>
-        <div><Label>Preço padrão</Label><Input type="number" step="0.01" min="0" value={price} onChange={e => setPrice(e.target.value)} /></div>
-        <div className="flex items-end">
-          <Button onClick={() => { if (!name) return; add({ name, code, default_price: Number(price) }); setName(""); setCode(""); setPrice("0"); }}>
-            <Plus className="h-4 w-4 mr-1" /> Adicionar
-          </Button>
-        </div>
-      </div>
-      <div className="bg-card border rounded-lg divide-y">
-        {items.length === 0 && <div className="p-8 text-center text-muted-foreground">Nenhuma peça cadastrada</div>}
-        {items.map(p => (
-          <div key={p.id} className="p-3 flex items-center gap-3">
-            <div className="flex-1">
-              <div className="font-medium">{p.name}</div>
-              <div className="text-xs text-muted-foreground">{p.code || "—"} · R$ {Number(p.default_price).toFixed(2)}</div>
-            </div>
-            <Button variant="ghost" size="icon" onClick={() => remove(p.id)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
-          </div>
-        ))}
       </div>
     </div>
   );
