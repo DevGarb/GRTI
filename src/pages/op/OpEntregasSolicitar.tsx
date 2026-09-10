@@ -10,6 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { useDeliveries } from "@/hooks/useDeliveries";
 import { useDeliveryCategories } from "@/hooks/useDeliveryCategories";
 import { useCompanies } from "@/hooks/useOperacional";
+import { filterEntregasCompanies } from "@/lib/oficinaCompanies";
 import { useEntregasProfile } from "@/contexts/EntregasProfileContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { Bike, Car, HelpCircle, MapPin, Phone, Send, Building2, Star, AlertTriangle } from "lucide-react";
@@ -150,7 +151,7 @@ export default function OpEntregasSolicitar() {
             <Select value={form.company_id} onValueChange={(v) => setForm((p) => ({ ...p, company_id: v }))}>
               <SelectTrigger><SelectValue placeholder="Escolha a empresa" /></SelectTrigger>
               <SelectContent>
-                {companies.map((c) => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
+                {filterEntregasCompanies(companies as any[]).map((c: any) => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
               </SelectContent>
             </Select>
           </div>
