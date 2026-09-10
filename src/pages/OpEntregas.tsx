@@ -798,7 +798,7 @@ function DeliveryModal({ open, onOpenChange, editing, drivers, companies, vehicl
           <div><Label>Empresa</Label>
             <Select value={form.company_id || ""} onValueChange={v => setF("company_id", v)}>
               <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
-              <SelectContent>{filterEntregasCompanies(companies).map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}</SelectContent>
+              <SelectContent>{filterEntregasCompanies(companies as any[]).map((c: any) => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}</SelectContent>
             </Select>
           </div>
           <div><Label>Categoria do serviço</Label>
