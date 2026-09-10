@@ -18,10 +18,11 @@ interface Props<T extends { id: string }> {
   isAllowed?: (item: T, fromCol: string, toCol: string) => boolean;
   emptyText?: string;
   resolveItem: (id: string) => T | undefined;
+  cardClassName?: (item: T) => string;
 }
 
 export default function OpKanbanBoard<T extends { id: string }>({
-  columns, itemsByColumn, renderCard, renderHeader, onMove, onReorder, isAllowed, emptyText = "Vazio", resolveItem,
+  columns, itemsByColumn, renderCard, renderHeader, onMove, onReorder, isAllowed, emptyText = "Vazio", resolveItem, cardClassName,
 }: Props<T>) {
   const handleEnd = (r: DropResult) => {
     const { destination, source, draggableId } = r;
