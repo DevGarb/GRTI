@@ -13,6 +13,7 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from "@/contexts/AuthContext";
 import { useDeliveries, type Delivery } from "@/hooks/useDeliveries";
 import { useDrivers, useCompanies, useVehicles } from "@/hooks/useOperacional";
+import { filterEntregasCompanies } from "@/lib/oficinaCompanies";
 import { useDeliveryCategories, type DeliveryCategory } from "@/hooks/useDeliveryCategories";
 import { cn } from "@/lib/utils";
 import OpKanbanBoard, { type KanbanColumn } from "@/components/operacional/OpKanbanBoard";
