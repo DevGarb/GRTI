@@ -452,13 +452,34 @@ export default function OpOficina() {
         </div>
       </div>
 
-      <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <Kpi label="Motos ativas" value={kpis.total} icon={Wrench} active={kpiFilter === "active"} onClick={() => setKpiFilter(f => f === "active" ? "all" : "active")} />
         <Kpi label="Motos fisicamente na oficina" value={kpis.total - kpis.comCliente} icon={Gauge} active={kpiFilter === "in_workshop"} onClick={() => setKpiFilter(f => f === "in_workshop" ? "all" : "in_workshop")} />
         <Kpi label="Em alerta / atrasadas" value={kpis.atrasadas} icon={AlertTriangle} active={kpiFilter === "late"} onClick={() => setKpiFilter(f => f === "late" ? "all" : "late")} />
-        <Kpi label="Aguardando peça" value={kpis.aguardPeca} icon={Package} active={kpiFilter === "waiting_part"} onClick={() => setKpiFilter(f => f === "waiting_part" ? "all" : "waiting_part")} />
         <Kpi label="Com o cliente" value={kpis.comCliente} icon={Home} active={kpiFilter === "with_customer"} onClick={() => setKpiFilter(f => f === "with_customer" ? "all" : "with_customer")} />
       </div>
+
+      {porEmpresa.length > 0 && (
+        <div className="bg-card border rounded-lg p-3">
+          <div className="text-xs font-medium text-muted-foreground mb-2">Motos na oficina por empresa</div>
+          <div className="flex flex-wrap gap-2">
+            {porEmpresa.map(e => (
+              <button
+                key={e.id}
+                type="button"
+                onClick={() => setCompanyFilter(f => f === e.id ? "all" : e.id)}
+                className={`flex items-center gap-2 rounded-md border px-3 py-1.5 text-sm transition-colors ${
+                  companyFilter === e.id ? "border-primary bg-primary/10" : "hover:bg-muted"
+                }`}
+              >
+                <span className="truncate max-w-[180px]">{e.name}</span>
+                <span className="font-bold">{e.count}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
 
       <div className="bg-card border rounded-lg p-3 flex flex-wrap gap-3 items-end">
         <DateRangeFilter from={dateFrom} to={dateTo} onFromChange={setDateFrom} onToChange={setDateTo} />
