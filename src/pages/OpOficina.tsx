@@ -154,6 +154,15 @@ export default function OpOficina() {
 
   const mechName = (id: string | null) => mechanics.find(m => m.id === id)?.name || "A definir";
   const companyName = (id: string | null) => companies.find(c => c.id === id)?.name || "—";
+
+  // Cor do cartão por empresa: Resolve = vermelho, CearaGPS = laranja, CearaGPS Motoloc = verde.
+  const companyCardClass = (o: ServiceOrder) => {
+    const name = (companies.find(c => c.id === o.company_id)?.name || "").toLowerCase();
+    if (name.includes("motoloc")) return "border-l-4 border-l-emerald-500 bg-emerald-50/70 dark:bg-emerald-950/20";
+    if (name.includes("cearagps") || name.includes("ceara")) return "border-l-4 border-l-orange-500 bg-orange-50/70 dark:bg-orange-950/20";
+    if (name.includes("resolve")) return "border-l-4 border-l-red-500 bg-red-50/70 dark:bg-red-950/20";
+    return "";
+  };
   const companyPhone = (id: string | null) => companies.find(c => c.id === id)?.contact_phone || null;
 
   const handleStageChange = (o: ServiceOrder, newStage: string) => {
