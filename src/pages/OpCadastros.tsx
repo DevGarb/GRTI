@@ -4,10 +4,10 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Trash2, Users, Building2, Car, Plus, Wrench, Package, HardHat, UserCheck, Layers } from "lucide-react";
+import { Trash2, Users, Building2, Car, Plus, Wrench, HardHat, UserCheck, Layers } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { useDrivers, useCompanies, useVehicles } from "@/hooks/useOperacional";
-import { useMechanics, useParts } from "@/hooks/useOficina";
+import { useMechanics } from "@/hooks/useOficina";
 import { OFICINA_ROLES, oficinaRoleInfo } from "@/lib/oficinaRoles";
 import { useMaintTechnicians } from "@/hooks/useMaintTechnicians";
 import { useDeliveryRequesters } from "@/hooks/useDeliveryRequesters";
@@ -34,21 +34,17 @@ export default function OpCadastros() {
           <TabsTrigger value="requesters"><UserCheck className="h-4 w-4 mr-1" /> Solicitantes</TabsTrigger>
           <TabsTrigger value="sectors"><Layers className="h-4 w-4 mr-1" /> Setores</TabsTrigger>
           <TabsTrigger value="companies"><Building2 className="h-4 w-4 mr-1" /> Empresas</TabsTrigger>
-          <TabsTrigger value="workshop_companies"><Building2 className="h-4 w-4 mr-1" /> Empresas (Oficina)</TabsTrigger>
           <TabsTrigger value="vehicles"><Car className="h-4 w-4 mr-1" /> Veículos</TabsTrigger>
           <TabsTrigger value="mechanics"><Wrench className="h-4 w-4 mr-1" /> Mecânicos (Oficina)</TabsTrigger>
           <TabsTrigger value="maint_tech"><HardHat className="h-4 w-4 mr-1" /> Técnicos Manutenção</TabsTrigger>
-          <TabsTrigger value="parts"><Package className="h-4 w-4 mr-1" /> Peças</TabsTrigger>
         </TabsList>
         <TabsContent value="drivers"><DriversTab /></TabsContent>
         <TabsContent value="requesters"><RequestersTab /></TabsContent>
         <TabsContent value="sectors"><SectorsTab /></TabsContent>
         <TabsContent value="companies"><CompaniesTab /></TabsContent>
-        <TabsContent value="workshop_companies"><CompaniesTab workshop /></TabsContent>
         <TabsContent value="vehicles"><VehiclesTab /></TabsContent>
         <TabsContent value="mechanics"><MechanicsTab /></TabsContent>
         <TabsContent value="maint_tech"><MaintTechniciansTab /></TabsContent>
-        <TabsContent value="parts"><PartsTab /></TabsContent>
       </Tabs>
     </div>
   );
@@ -213,41 +209,62 @@ function DriversTab() {
   );
 }
 
-function CompaniesTab({ workshop = false }: { workshop?: boolean }) {
+function CompaniesTab() {
   const { items, add, update, remove } = useCompanies();
   const [name, setName] = useState(""); const [contact, setContact] = useState(""); const [phone, setPhone] = useState("");
-  const list = workshop ? items.filter(c => c.is_workshop) : items;
+  const [mods, setMods] = useState({ is_workshop: false, is_maintenance: true, is_delivery: true });
+  const MODULES: { key: "is_workshop" | "is_maintenance" | "is_delivery"; label: string }[] = [
+    { key: "is_workshop", label: "Oficina" },
+    { key: "is_maintenance", label: "Manutenção Predial" },
+    { key: "is_delivery", label: "Entregas" },
+  ];
   return (
     <div className="space-y-4">
       <div className="rounded-md border bg-sky-50 text-sky-900 px-3 py-2 text-xs">
-        {workshop
-          ? <>Empresas cadastradas aqui aparecem <strong>somente</strong> nas ordens de serviço da <strong>Oficina</strong>.</>
-          : <>Empresas cadastradas aqui aparecem em <strong>Entregas</strong> e <strong>Manutenção Predial</strong>. Para a Oficina, use a aba <strong>Empresas (Oficina)</strong>.</>}
+        Marque em quais módulos cada empresa deve aparecer: <strong>Oficina</strong>, <strong>Manutenção Predial</strong> e/ou <strong>Entregas</strong>.
       </div>
-      <div className="bg-card border rounded-lg p-4 grid gap-3 md:grid-cols-[1fr_1fr_180px_auto]">
-        <div><Label>Empresa</Label><Input value={name} onChange={e => setName(e.target.value)} placeholder="Nome" /></div>
-        <div><Label>Contato</Label><Input value={contact} onChange={e => setContact(e.target.value)} placeholder="Pessoa de contato" /></div>
-        <div><Label>Telefone</Label><Input value={phone} onChange={e => setPhone(e.target.value)} placeholder="(00) 00000-0000" /></div>
-        <div className="flex items-end">
-          <Button onClick={() => { if (!name) return; add({ name, contact_name: contact, contact_phone: phone, is_workshop: workshop }); setName(""); setContact(""); setPhone(""); }}>
-            <Plus className="h-4 w-4 mr-1" /> Adicionar
-          </Button>
+      <div className="bg-card border rounded-lg p-4 space-y-3">
+        <div className="grid gap-3 md:grid-cols-[1fr_1fr_180px_auto]">
+          <div><Label>Empresa</Label><Input value={name} onChange={e => setName(e.target.value)} placeholder="Nome" /></div>
+          <div><Label>Contato</Label><Input value={contact} onChange={e => setContact(e.target.value)} placeholder="Pessoa de contato" /></div>
+          <div><Label>Telefone</Label><Input value={phone} onChange={e => setPhone(e.target.value)} placeholder="(00) 00000-0000" /></div>
+          <div className="flex items-end">
+            <Button onClick={() => {
+              if (!name) return;
+              add({ name, contact_name: contact, contact_phone: phone, ...mods } as any);
+              setName(""); setContact(""); setPhone(""); setMods({ is_workshop: false, is_maintenance: true, is_delivery: true });
+            }}>
+              <Plus className="h-4 w-4 mr-1" /> Adicionar
+            </Button>
+          </div>
+        </div>
+        <div className="flex flex-wrap items-center gap-4 pt-1">
+          <span className="text-xs text-muted-foreground">Aparece em:</span>
+          {MODULES.map(m => (
+            <label key={m.key} className="flex items-center gap-2 text-xs">
+              <Switch checked={mods[m.key]} onCheckedChange={(v) => setMods(p => ({ ...p, [m.key]: v }))} />
+              {m.label}
+            </label>
+          ))}
         </div>
       </div>
       <div className="bg-card border rounded-lg divide-y">
-        {list.length === 0 && <div className="p-8 text-center text-muted-foreground">Nenhuma empresa cadastrada</div>}
-        {list.map(c => (
-          <div key={c.id} className="p-3 flex items-center gap-3">
-            <div className="flex-1">
+        {items.length === 0 && <div className="p-8 text-center text-muted-foreground">Nenhuma empresa cadastrada</div>}
+        {items.map(c => (
+          <div key={c.id} className="p-3 flex items-center gap-4 flex-wrap">
+            <div className="flex-1 min-w-[200px]">
               <div className="font-medium">{c.name}</div>
               <div className="text-xs text-muted-foreground">{c.contact_name || "—"} · {c.contact_phone || "—"}</div>
             </div>
-            {!workshop && (
-              <div className="flex items-center gap-2">
-                <Switch checked={!!c.is_workshop} onCheckedChange={(v) => update(c.id, { is_workshop: v })} />
-                <span className="text-xs text-muted-foreground">Oficina</span>
-              </div>
-            )}
+            {MODULES.map(m => (
+              <label key={m.key} className="flex items-center gap-2 text-xs text-muted-foreground">
+                <Switch
+                  checked={m.key === "is_workshop" ? !!(c as any).is_workshop : (c as any)[m.key] !== false}
+                  onCheckedChange={(v) => update(c.id, { [m.key]: v } as any)}
+                />
+                {m.label}
+              </label>
+            ))}
             <Button variant="ghost" size="icon" onClick={() => remove(c.id)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
           </div>
         ))}
@@ -365,37 +382,6 @@ function MechanicsTab() {
             </div>
           );
         })}
-      </div>
-    </div>
-  );
-}
-
-function PartsTab() {
-  const { items, add, remove } = useParts();
-  const [name, setName] = useState(""); const [code, setCode] = useState(""); const [price, setPrice] = useState("0");
-  return (
-    <div className="space-y-4">
-      <div className="bg-card border rounded-lg p-4 grid gap-3 md:grid-cols-[1fr_180px_140px_auto]">
-        <div><Label>Nome da peça</Label><Input value={name} onChange={e => setName(e.target.value)} placeholder="Ex.: Pastilha de freio" /></div>
-        <div><Label>Código</Label><Input value={code} onChange={e => setCode(e.target.value)} placeholder="Opcional" /></div>
-        <div><Label>Preço padrão</Label><Input type="number" step="0.01" min="0" value={price} onChange={e => setPrice(e.target.value)} /></div>
-        <div className="flex items-end">
-          <Button onClick={() => { if (!name) return; add({ name, code, default_price: Number(price) }); setName(""); setCode(""); setPrice("0"); }}>
-            <Plus className="h-4 w-4 mr-1" /> Adicionar
-          </Button>
-        </div>
-      </div>
-      <div className="bg-card border rounded-lg divide-y">
-        {items.length === 0 && <div className="p-8 text-center text-muted-foreground">Nenhuma peça cadastrada</div>}
-        {items.map(p => (
-          <div key={p.id} className="p-3 flex items-center gap-3">
-            <div className="flex-1">
-              <div className="font-medium">{p.name}</div>
-              <div className="text-xs text-muted-foreground">{p.code || "—"} · R$ {Number(p.default_price).toFixed(2)}</div>
-            </div>
-            <Button variant="ghost" size="icon" onClick={() => remove(p.id)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
-          </div>
-        ))}
       </div>
     </div>
   );

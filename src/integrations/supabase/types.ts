@@ -1413,6 +1413,8 @@ export type Database = {
           created_by: string
           id: string
           is_active: boolean
+          is_delivery: boolean
+          is_maintenance: boolean
           is_workshop: boolean
           name: string
           organization_id: string
@@ -1425,6 +1427,8 @@ export type Database = {
           created_by: string
           id?: string
           is_active?: boolean
+          is_delivery?: boolean
+          is_maintenance?: boolean
           is_workshop?: boolean
           name: string
           organization_id: string
@@ -1437,6 +1441,8 @@ export type Database = {
           created_by?: string
           id?: string
           is_active?: boolean
+          is_delivery?: boolean
+          is_maintenance?: boolean
           is_workshop?: boolean
           name?: string
           organization_id?: string
