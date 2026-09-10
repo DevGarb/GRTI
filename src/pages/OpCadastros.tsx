@@ -34,7 +34,6 @@ export default function OpCadastros() {
           <TabsTrigger value="requesters"><UserCheck className="h-4 w-4 mr-1" /> Solicitantes</TabsTrigger>
           <TabsTrigger value="sectors"><Layers className="h-4 w-4 mr-1" /> Setores</TabsTrigger>
           <TabsTrigger value="companies"><Building2 className="h-4 w-4 mr-1" /> Empresas</TabsTrigger>
-          <TabsTrigger value="vehicles"><Car className="h-4 w-4 mr-1" /> Veículos</TabsTrigger>
           <TabsTrigger value="mechanics"><Wrench className="h-4 w-4 mr-1" /> Mecânicos (Oficina)</TabsTrigger>
           <TabsTrigger value="maint_tech"><HardHat className="h-4 w-4 mr-1" /> Técnicos Manutenção</TabsTrigger>
         </TabsList>
@@ -42,7 +41,7 @@ export default function OpCadastros() {
         <TabsContent value="requesters"><RequestersTab /></TabsContent>
         <TabsContent value="sectors"><SectorsTab /></TabsContent>
         <TabsContent value="companies"><CompaniesTab /></TabsContent>
-        <TabsContent value="vehicles"><VehiclesTab /></TabsContent>
+        
         <TabsContent value="mechanics"><MechanicsTab /></TabsContent>
         <TabsContent value="maint_tech"><MaintTechniciansTab /></TabsContent>
       </Tabs>
@@ -266,42 +265,6 @@ function CompaniesTab() {
               </label>
             ))}
             <Button variant="ghost" size="icon" onClick={() => remove(c.id)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-function VehiclesTab() {
-  const { items, add, remove } = useVehicles();
-  const [plate, setPlate] = useState(""); const [model, setModel] = useState(""); const [type, setType] = useState("Moto");
-  return (
-    <div className="space-y-4">
-      <div className="bg-card border rounded-lg p-4 grid gap-3 md:grid-cols-[180px_1fr_140px_auto]">
-        <div><Label>Placa</Label><Input value={plate} onChange={e => setPlate(e.target.value.toUpperCase())} placeholder="ABC1D23" /></div>
-        <div><Label>Modelo</Label><Input value={model} onChange={e => setModel(e.target.value)} placeholder="CG 160 Titan" /></div>
-        <div><Label>Tipo</Label>
-          <Select value={type} onValueChange={setType}>
-            <SelectTrigger><SelectValue /></SelectTrigger>
-            <SelectContent><SelectItem value="Moto">Moto</SelectItem><SelectItem value="Carro">Carro</SelectItem></SelectContent>
-          </Select>
-        </div>
-        <div className="flex items-end">
-          <Button onClick={() => { if (!plate) return; add({ plate, model, vehicle_type: type }); setPlate(""); setModel(""); }}>
-            <Plus className="h-4 w-4 mr-1" /> Adicionar
-          </Button>
-        </div>
-      </div>
-      <div className="bg-card border rounded-lg divide-y">
-        {items.length === 0 && <div className="p-8 text-center text-muted-foreground">Nenhum veículo cadastrado</div>}
-        {items.map(v => (
-          <div key={v.id} className="p-3 flex items-center gap-3">
-            <div className="flex-1">
-              <div className="font-medium">{v.plate} <span className="text-xs text-muted-foreground font-normal">· {v.vehicle_type}</span></div>
-              <div className="text-xs text-muted-foreground">{v.model || "—"}</div>
-            </div>
-            <Button variant="ghost" size="icon" onClick={() => remove(v.id)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
           </div>
         ))}
       </div>
