@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import { BarChart3, Download } from "lucide-react";
 import { useDeliveries } from "@/hooks/useDeliveries";
 import { useDrivers, useCompanies } from "@/hooks/useOperacional";
+import { filterEntregasCompanies } from "@/lib/oficinaCompanies";
 import { useDeliveryCategories } from "@/hooks/useDeliveryCategories";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
@@ -120,7 +121,7 @@ export default function OpEntregasRelatorios() {
               <SelectTrigger className="w-[200px]"><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Todas as empresas</SelectItem>
-                {companies.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
+                {filterEntregasCompanies(companies as any[]).map((c: any) => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
               </SelectContent>
             </Select>
           </div>

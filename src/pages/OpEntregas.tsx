@@ -13,6 +13,7 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from "@/contexts/AuthContext";
 import { useDeliveries, type Delivery } from "@/hooks/useDeliveries";
 import { useDrivers, useCompanies, useVehicles } from "@/hooks/useOperacional";
+import { filterEntregasCompanies } from "@/lib/oficinaCompanies";
 import { useDeliveryCategories, type DeliveryCategory } from "@/hooks/useDeliveryCategories";
 import { cn } from "@/lib/utils";
 import OpKanbanBoard, { type KanbanColumn } from "@/components/operacional/OpKanbanBoard";
@@ -797,7 +798,7 @@ function DeliveryModal({ open, onOpenChange, editing, drivers, companies, vehicl
           <div><Label>Empresa</Label>
             <Select value={form.company_id || ""} onValueChange={v => setF("company_id", v)}>
               <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
-              <SelectContent>{companies.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}</SelectContent>
+              <SelectContent>{filterEntregasCompanies(companies as any[]).map((c: any) => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}</SelectContent>
             </Select>
           </div>
           <div><Label>Categoria do serviço</Label>
