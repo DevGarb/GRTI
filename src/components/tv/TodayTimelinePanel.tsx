@@ -76,7 +76,7 @@ export function TodayTimelinePanel({ tickets }: Props) {
                 key={t.id}
                 className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2"
                 style={{ left: `${pct}%` }}
-                title={`${t.code} · ${t.title} · ${t.hour}`}
+                title={`Nº ${t.code} · ${t.title} · ${t.hour}`}
               >
                 <div
                   className="h-2.5 w-2.5 rounded-full ring-2"
@@ -103,7 +103,7 @@ export function TodayTimelinePanel({ tickets }: Props) {
               />
               <div className="flex items-center justify-between mb-1">
                 <span className="font-mono-tech text-[13px] text-[hsl(var(--tv-text-dim))]">
-                  #{t.code}
+                  Nº {t.code}
                 </span>
                 <span
                   className="text-[11px] uppercase tracking-wider font-semibold px-1.5 py-0.5 rounded"
