@@ -535,45 +535,6 @@ Deno.serve(async (req) => {
       .sort((a, b) => b.minutes - a.minutes)
       .slice(0, 10);
 
-    // Preventivas do mês
-    const { data: prev } = await supabase
-      .from("preventive_maintenance")
-      .select("id, execution_date")
-      .eq("organization_id", orgId)
-      .gte("execution_date", startMonth.toISOString().slice(0, 10))
-      .lt("execution_date", endMonth.toISOString().slice(0, 10));
-    const prevDone = (prev ?? []).length;
-
-    const { data: intervals } = await supabase
-      .from("maintenance_intervals").select("equipment_type, interval_days");
-    const { data: patrimonio } = await supabase
-      .from("patrimonio").select("id, asset_tag, equipment_type")
-      .eq("organization_id", orgId)
-      .eq("status", "Ativo");
-    const { data: allPrev } = await supabase
-      .from("preventive_maintenance")
-      .select("asset_tag, execution_date")
-      .eq("organization_id", orgId);
-    const lastByTag = new Map<string, string>();
-    for (const p of allPrev ?? []) {
-      const tag = (p as any).asset_tag;
-      const d = (p as any).execution_date;
-      if (!tag || !d) continue;
-      const prev = lastByTag.get(tag);
-      if (!prev || d > prev) lastByTag.set(tag, d);
-    }
-    const intervalMap = new Map((intervals ?? []).map((i: any) => [i.equipment_type, i.interval_days]));
-    let prevTotal = 0, prevOverdue = 0;
-    for (const p of patrimonio ?? []) {
-      const days = intervalMap.get((p as any).equipment_type);
-      if (!days) continue;
-      prevTotal++;
-      const lastStr = lastByTag.get((p as any).asset_tag);
-      const nextDue = lastStr ? new Date(new Date(lastStr).getTime() + days * 86400000) : null;
-      if (!nextDue || nextDue < now) prevOverdue++;
-    }
-    const prevPendente = Math.max(0, prevTotal - prevDone);
-
     // Goals summary (metas dos técnicos + reais do mês)
     const { y, m } = wallPartsInTz(now);
     const { data: goalsSummary } = await supabase.rpc("get_tv_goals_summary", {
@@ -602,7 +563,7 @@ Deno.serve(async (req) => {
       team_status,
       today_tickets: todayTickets,
       sla_alerts: slaAlerts,
-      preventivas_month: { total: prevTotal, feitas: prevDone, pendentes: prevPendente, atrasadas: prevOverdue },
+      preventivas_month: { total: prevTotal, feitas: prevDone, pendentes: prevPendente, atrasadas: prevOverdue, percent: prevPercent },
       goals_summary: goalsSummary ?? null,
     };
 
