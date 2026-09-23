@@ -468,15 +468,15 @@ Deno.serve(async (req) => {
       .eq("status", "Ativo");
     const { data: allPrev } = await supabase
       .from("preventive_maintenance")
-      .select("asset_tag, execution_date, created_by")
+      .select("asset_tag, execution_date")
       .eq("organization_id", orgId);
-    const lastByTag = new Map<string, { d: string; by: string | null }>();
+    const lastByTag = new Map<string, { d: string }>();
     for (const p of allPrev ?? []) {
       const tag = (p as any).asset_tag;
       const d = (p as any).execution_date;
       if (!tag || !d) continue;
       const cur = lastByTag.get(tag);
-      if (!cur || d > cur.d) lastByTag.set(tag, { d, by: (p as any).created_by ?? null });
+      if (!cur || d > cur.d) lastByTag.set(tag, { d });
     }
     const intervalMap = new Map((intervals ?? []).map((i: any) => [i.equipment_type, i.interval_days]));
     let prevTotal = 0, prevOverdue = 0;
@@ -487,11 +487,25 @@ Deno.serve(async (req) => {
       const last = lastByTag.get((p as any).asset_tag);
       const nextDue = last ? new Date(new Date(last.d).getTime() + days * 86400000) : null;
       if (!nextDue || nextDue < now) prevOverdue++;
-      // Planejada por técnico: vencida ou vencendo dentro do mês, atribuída ao último executor
-      if (last?.by && (!nextDue || nextDue < endMonth)) {
-        const agg = teamAgg.get(last.by);
-        if (agg) agg.prev_planejadas++;
-      }
+    }
+
+    // A meta individual cadastrada em Metas é o planejado de cada técnico.
+    // Mantém a TV alinhada à mesma fonte oficial usada pelos cards de desempenho.
+    const monthParts = wallPartsInTz(now);
+    const { data: preventiveGoals } = await supabase
+      .from("performance_goals")
+      .select("target_id, target_value, created_at")
+      .eq("target_type", "individual")
+      .eq("metric", "preventivas_done")
+      .eq("period", "monthly")
+      .eq("reference_month", monthParts.m)
+      .eq("reference_year", monthParts.y)
+      .in("target_id", techIds)
+      .or(`organization_id.eq.${orgId},organization_id.is.null`)
+      .order("created_at", { ascending: true });
+    for (const goal of preventiveGoals ?? []) {
+      const agg = teamAgg.get(String((goal as any).target_id ?? ""));
+      if (agg) agg.prev_planejadas = Number((goal as any).target_value ?? 0);
     }
     for (const p of prev ?? []) {
       const by = (p as any).created_by;
