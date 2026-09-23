@@ -63,6 +63,13 @@ function TitleList({
 
 
 function MemberCardBody({ m }: { m: TeamMemberStatus }) {
+  const preventiveTarget = m.prev_planejadas ?? 0;
+  const preventiveDone = m.prev_feitas ?? 0;
+  const preventivePercent = preventiveTarget > 0 ? (preventiveDone / preventiveTarget) * 100 : 0;
+  const preventiveColor = preventivePercent >= 80
+    ? "hsl(var(--tv-accent-lime))"
+    : "hsl(var(--tv-accent-red))";
+
   return (
     <div
       className={cn(
@@ -138,15 +145,15 @@ function MemberCardBody({ m }: { m: TeamMemberStatus }) {
           {((m.prev_feitas ?? 0) > 0 || (m.prev_planejadas ?? 0) > 0) && (
             <div>
               <div className="flex items-center gap-1.5 text-[hsl(var(--tv-text-dim))]">
-                <Wrench className="h-3.5 w-3.5" style={{ color: `hsl(${accentVar.lime})` }} />
+                <Wrench className="h-3.5 w-3.5" style={{ color: preventiveColor }} />
                 <span className="text-[11px] uppercase tracking-[0.16em]">Preventivas</span>
               </div>
               <div
                 className="font-tv-display font-semibold tabular-nums leading-none mt-1"
-                style={{ fontSize: "1.75rem", color: `hsl(${accentVar.lime})` }}
+                style={{ fontSize: "1.75rem", color: preventiveColor }}
               >
-                {m.prev_feitas ?? 0}
-                <span className="text-[1rem] text-[hsl(var(--tv-text-dim))]">/{m.prev_planejadas ?? 0}</span>
+                {preventiveDone}
+                <span className="text-[1rem]" style={{ color: preventiveColor }}>/{preventiveTarget}</span>
               </div>
             </div>
           )}
