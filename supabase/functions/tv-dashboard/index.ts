@@ -450,6 +450,60 @@ Deno.serve(async (req) => {
       agg.projects_in_dev++;
       if (agg.project_titles.length < 12) agg.project_titles.push(task.title ?? "—");
     }
+
+    // Preventivas do mês (calculado antes do team_status para agregar por técnico)
+    const { data: prev } = await supabase
+      .from("preventive_maintenance")
+      .select("id, execution_date, asset_tag, created_by")
+      .eq("organization_id", orgId)
+      .gte("execution_date", startMonth.toISOString().slice(0, 10))
+      .lt("execution_date", endMonth.toISOString().slice(0, 10));
+    const prevDone = (prev ?? []).length;
+
+    const { data: intervals } = await supabase
+      .from("maintenance_intervals").select("equipment_type, interval_days");
+    const { data: patrimonio } = await supabase
+      .from("patrimonio").select("id, asset_tag, equipment_type")
+      .eq("organization_id", orgId)
+      .eq("status", "Ativo");
+    const { data: allPrev } = await supabase
+      .from("preventive_maintenance")
+      .select("asset_tag, execution_date, created_by")
+      .eq("organization_id", orgId);
+    const lastByTag = new Map<string, { d: string; by: string | null }>();
+    for (const p of allPrev ?? []) {
+      const tag = (p as any).asset_tag;
+      const d = (p as any).execution_date;
+      if (!tag || !d) continue;
+      const cur = lastByTag.get(tag);
+      if (!cur || d > cur.d) lastByTag.set(tag, { d, by: (p as any).created_by ?? null });
+    }
+    const intervalMap = new Map((intervals ?? []).map((i: any) => [i.equipment_type, i.interval_days]));
+    let prevTotal = 0, prevOverdue = 0;
+    for (const p of patrimonio ?? []) {
+      const days = intervalMap.get((p as any).equipment_type);
+      if (!days) continue;
+      prevTotal++;
+      const last = lastByTag.get((p as any).asset_tag);
+      const nextDue = last ? new Date(new Date(last.d).getTime() + days * 86400000) : null;
+      if (!nextDue || nextDue < now) prevOverdue++;
+      // Planejada por técnico: vencida ou vencendo dentro do mês, atribuída ao último executor
+      if (last?.by && (!nextDue || nextDue < endMonth)) {
+        const agg = teamAgg.get(last.by);
+        if (agg) agg.prev_planejadas++;
+      }
+    }
+    for (const p of prev ?? []) {
+      const by = (p as any).created_by;
+      if (!by) continue;
+      const agg = teamAgg.get(by);
+      if (!agg) continue;
+      agg.prev_feitas++;
+      if (agg.prev_titles.length < 12) agg.prev_titles.push((p as any).asset_tag ?? "—");
+    }
+    const prevPendente = Math.max(0, prevTotal - prevDone);
+    const prevPercent = prevTotal > 0 ? Math.round((prevDone / prevTotal) * 100) : 0;
+
     const team_status = techIds
       .map((id) => {
         const a = teamAgg.get(id)!;
