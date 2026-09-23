@@ -495,12 +495,13 @@ Deno.serve(async (req) => {
     const { data: preventiveGoals } = await supabase
       .from("performance_goals")
       .select("target_id, target_value, created_at")
-      .eq("organization_id", orgId)
       .eq("target_type", "individual")
       .eq("metric", "preventivas_done")
       .eq("period", "monthly")
       .eq("reference_month", monthParts.m)
       .eq("reference_year", monthParts.y)
+      .in("target_id", techIds)
+      .or(`organization_id.eq.${orgId},organization_id.is.null`)
       .order("created_at", { ascending: true });
     for (const goal of preventiveGoals ?? []) {
       const agg = teamAgg.get(String((goal as any).target_id ?? ""));
