@@ -412,13 +412,16 @@ Deno.serve(async (req) => {
       in_progress: number;
       unstarted: number;
       projects_in_dev: number;
+      prev_feitas: number;
+      prev_planejadas: number;
       closed_titles: string[];
       in_progress_titles: string[];
       unstarted_titles: string[];
       project_titles: string[];
+      prev_titles: string[];
     };
     const teamAgg = new Map<string, TeamAgg>();
-    for (const id of techIds) teamAgg.set(id, { closed_today: 0, in_progress: 0, unstarted: 0, projects_in_dev: 0, closed_titles: [], in_progress_titles: [], unstarted_titles: [], project_titles: [] });
+    for (const id of techIds) teamAgg.set(id, { closed_today: 0, in_progress: 0, unstarted: 0, projects_in_dev: 0, prev_feitas: 0, prev_planejadas: 0, closed_titles: [], in_progress_titles: [], unstarted_titles: [], project_titles: [], prev_titles: [] });
     for (const t of list) {
       if (!t.assigned_to) continue;
       const agg = teamAgg.get(t.assigned_to);
@@ -447,38 +450,11 @@ Deno.serve(async (req) => {
       agg.projects_in_dev++;
       if (agg.project_titles.length < 12) agg.project_titles.push(task.title ?? "—");
     }
-    const team_status = techIds
-      .map((id) => {
-        const a = teamAgg.get(id)!;
-        return {
-          id,
-          name: techNameOf.get(id) ?? "—",
-          closed_today: a.closed_today,
-          in_progress: a.in_progress,
-          unstarted: a.unstarted,
-          projects_in_dev: a.projects_in_dev,
-          idle: a.in_progress === 0 && a.projects_in_dev === 0,
-          closed_titles: a.closed_titles,
-          in_progress_titles: a.in_progress_titles,
-          unstarted_titles: a.unstarted_titles,
-          project_titles: a.project_titles,
-        };
-      })
-      .sort((a, b) => (a.idle === b.idle ? b.closed_today - a.closed_today : a.idle ? 1 : -1));
 
-
-
-    // SLA alerts
-    const slaAlerts = [...openList, ...progList]
-      .filter(x => x.sla !== "ok")
-      .map(x => ({ id: x.id, title: x.title, priority: x.priority, sla: x.sla, minutes: (x as any).waiting_min ?? (x as any).elapsed_min }))
-      .sort((a, b) => b.minutes - a.minutes)
-      .slice(0, 10);
-
-    // Preventivas do mês
+    // Preventivas do mês (calculado antes do team_status para agregar por técnico)
     const { data: prev } = await supabase
       .from("preventive_maintenance")
-      .select("id, execution_date")
+      .select("id, execution_date, asset_tag, created_by")
       .eq("organization_id", orgId)
       .gte("execution_date", startMonth.toISOString().slice(0, 10))
       .lt("execution_date", endMonth.toISOString().slice(0, 10));
@@ -492,15 +468,15 @@ Deno.serve(async (req) => {
       .eq("status", "Ativo");
     const { data: allPrev } = await supabase
       .from("preventive_maintenance")
-      .select("asset_tag, execution_date")
+      .select("asset_tag, execution_date, created_by")
       .eq("organization_id", orgId);
-    const lastByTag = new Map<string, string>();
+    const lastByTag = new Map<string, { d: string; by: string | null }>();
     for (const p of allPrev ?? []) {
       const tag = (p as any).asset_tag;
       const d = (p as any).execution_date;
       if (!tag || !d) continue;
-      const prev = lastByTag.get(tag);
-      if (!prev || d > prev) lastByTag.set(tag, d);
+      const cur = lastByTag.get(tag);
+      if (!cur || d > cur.d) lastByTag.set(tag, { d, by: (p as any).created_by ?? null });
     }
     const intervalMap = new Map((intervals ?? []).map((i: any) => [i.equipment_type, i.interval_days]));
     let prevTotal = 0, prevOverdue = 0;
@@ -508,11 +484,56 @@ Deno.serve(async (req) => {
       const days = intervalMap.get((p as any).equipment_type);
       if (!days) continue;
       prevTotal++;
-      const lastStr = lastByTag.get((p as any).asset_tag);
-      const nextDue = lastStr ? new Date(new Date(lastStr).getTime() + days * 86400000) : null;
+      const last = lastByTag.get((p as any).asset_tag);
+      const nextDue = last ? new Date(new Date(last.d).getTime() + days * 86400000) : null;
       if (!nextDue || nextDue < now) prevOverdue++;
+      // Planejada por técnico: vencida ou vencendo dentro do mês, atribuída ao último executor
+      if (last?.by && (!nextDue || nextDue < endMonth)) {
+        const agg = teamAgg.get(last.by);
+        if (agg) agg.prev_planejadas++;
+      }
+    }
+    for (const p of prev ?? []) {
+      const by = (p as any).created_by;
+      if (!by) continue;
+      const agg = teamAgg.get(by);
+      if (!agg) continue;
+      agg.prev_feitas++;
+      if (agg.prev_titles.length < 12) agg.prev_titles.push((p as any).asset_tag ?? "—");
     }
     const prevPendente = Math.max(0, prevTotal - prevDone);
+    const prevPercent = prevTotal > 0 ? Math.round((prevDone / prevTotal) * 100) : 0;
+
+    const team_status = techIds
+      .map((id) => {
+        const a = teamAgg.get(id)!;
+        return {
+          id,
+          name: techNameOf.get(id) ?? "—",
+          closed_today: a.closed_today,
+          in_progress: a.in_progress,
+          unstarted: a.unstarted,
+          projects_in_dev: a.projects_in_dev,
+          prev_feitas: a.prev_feitas,
+          prev_planejadas: a.prev_planejadas,
+          idle: a.in_progress === 0 && a.projects_in_dev === 0,
+          closed_titles: a.closed_titles,
+          in_progress_titles: a.in_progress_titles,
+          unstarted_titles: a.unstarted_titles,
+          project_titles: a.project_titles,
+          prev_titles: a.prev_titles,
+        };
+      })
+      .sort((a, b) => (a.idle === b.idle ? b.closed_today - a.closed_today : a.idle ? 1 : -1));
+
+
+
+    // SLA alerts
+    const slaAlerts = [...openList, ...progList]
+      .filter(x => x.sla !== "ok")
+      .map(x => ({ id: x.id, title: x.title, priority: x.priority, sla: x.sla, minutes: (x as any).waiting_min ?? (x as any).elapsed_min }))
+      .sort((a, b) => b.minutes - a.minutes)
+      .slice(0, 10);
 
     // Goals summary (metas dos técnicos + reais do mês)
     const { y, m } = wallPartsInTz(now);
@@ -542,7 +563,7 @@ Deno.serve(async (req) => {
       team_status,
       today_tickets: todayTickets,
       sla_alerts: slaAlerts,
-      preventivas_month: { total: prevTotal, feitas: prevDone, pendentes: prevPendente, atrasadas: prevOverdue },
+      preventivas_month: { total: prevTotal, feitas: prevDone, pendentes: prevPendente, atrasadas: prevOverdue, percent: prevPercent },
       goals_summary: goalsSummary ?? null,
     };
 

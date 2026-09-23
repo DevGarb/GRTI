@@ -1,4 +1,4 @@
-import { Users, CheckCircle2, Activity, AlertTriangle, Code2 } from "lucide-react";
+import { Users, CheckCircle2, Activity, AlertTriangle, Code2, Wrench } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { accentVar } from "./BentoTile";
 import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card";
@@ -11,10 +11,13 @@ export interface TeamMemberStatus {
   unstarted: number;
   idle: boolean;
   projects_in_dev?: number;
+  prev_feitas?: number;
+  prev_planejadas?: number;
   closed_titles?: string[];
   in_progress_titles?: string[];
   unstarted_titles?: string[];
   project_titles?: string[];
+  prev_titles?: string[];
 }
 
 
@@ -132,6 +135,21 @@ function MemberCardBody({ m }: { m: TeamMemberStatus }) {
               </div>
             </div>
           )}
+          {((m.prev_feitas ?? 0) > 0 || (m.prev_planejadas ?? 0) > 0) && (
+            <div>
+              <div className="flex items-center gap-1.5 text-[hsl(var(--tv-text-dim))]">
+                <Wrench className="h-3.5 w-3.5" style={{ color: `hsl(${accentVar.lime})` }} />
+                <span className="text-[11px] uppercase tracking-[0.16em]">Preventivas</span>
+              </div>
+              <div
+                className="font-tv-display font-semibold tabular-nums leading-none mt-1"
+                style={{ fontSize: "1.75rem", color: `hsl(${accentVar.lime})` }}
+              >
+                {m.prev_feitas ?? 0}
+                <span className="text-[1rem] text-[hsl(var(--tv-text-dim))]">/{m.prev_planejadas ?? 0}</span>
+              </div>
+            </div>
+          )}
         </div>
 
         {m.unstarted > 0 && (
@@ -186,6 +204,14 @@ function MemberCard({ m }: { m: TeamMemberStatus }) {
             color={`hsl(${accentVar.violet})`}
             titles={m.project_titles ?? []}
             Icon={Code2}
+          />
+        )}
+        {(m.prev_titles?.length ?? 0) > 0 && (
+          <TitleList
+            label="Preventivas feitas"
+            color={`hsl(${accentVar.lime})`}
+            titles={m.prev_titles ?? []}
+            Icon={Wrench}
           />
         )}
 
