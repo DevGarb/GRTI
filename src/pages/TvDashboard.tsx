@@ -509,11 +509,9 @@ export default function TvDashboard() {
                 <span
                   className="font-mono-tech text-base font-semibold"
                   style={{
-                    color: (d.preventivas_month.percent ?? 0) >= 90
+                    color: (d.preventivas_month.percent ?? 0) >= 80
                       ? "hsl(var(--tv-accent-lime))"
-                      : (d.preventivas_month.percent ?? 0) >= 60
-                        ? "hsl(var(--tv-accent-amber))"
-                        : "hsl(var(--tv-accent-red))",
+                      : "hsl(var(--tv-accent-red))",
                   }}
                 >
                   {d.preventivas_month.percent ?? 0}% realizado

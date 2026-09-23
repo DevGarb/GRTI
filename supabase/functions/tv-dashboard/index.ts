@@ -507,6 +507,10 @@ Deno.serve(async (req) => {
       const agg = teamAgg.get(String((goal as any).target_id ?? ""));
       if (agg) agg.prev_planejadas = Number((goal as any).target_value ?? 0);
     }
+    const prevPlannedTotal = Array.from(teamAgg.values()).reduce(
+      (total, agg) => total + agg.prev_planejadas,
+      0,
+    );
     for (const p of prev ?? []) {
       const by = (p as any).created_by;
       if (!by) continue;
@@ -516,7 +520,6 @@ Deno.serve(async (req) => {
       if (agg.prev_titles.length < 12) agg.prev_titles.push((p as any).asset_tag ?? "—");
     }
     const prevPendente = Math.max(0, prevTotal - prevDone);
-    const prevPercent = prevTotal > 0 ? Math.round((prevDone / prevTotal) * 100) : 0;
 
     const team_status = techIds
       .map((id) => {
@@ -577,7 +580,13 @@ Deno.serve(async (req) => {
       team_status,
       today_tickets: todayTickets,
       sla_alerts: slaAlerts,
-      preventivas_month: { total: prevTotal, feitas: prevDone, pendentes: prevPendente, atrasadas: prevOverdue, percent: prevPercent },
+      preventivas_month: {
+        total: prevPlannedTotal,
+        feitas: prevDone,
+        pendentes: prevPendente,
+        atrasadas: prevOverdue,
+        percent: prevPlannedTotal > 0 ? Math.round((prevDone / prevPlannedTotal) * 100) : 0,
+      },
       goals_summary: goalsSummary ?? null,
     };
 
