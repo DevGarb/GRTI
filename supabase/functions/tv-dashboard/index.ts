@@ -520,7 +520,6 @@ Deno.serve(async (req) => {
       if (agg.prev_titles.length < 12) agg.prev_titles.push((p as any).asset_tag ?? "—");
     }
     const prevPendente = Math.max(0, prevTotal - prevDone);
-    const prevPercent = prevTotal > 0 ? Math.round((prevDone / prevTotal) * 100) : 0;
 
     const team_status = techIds
       .map((id) => {
