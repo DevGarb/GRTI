@@ -412,13 +412,16 @@ Deno.serve(async (req) => {
       in_progress: number;
       unstarted: number;
       projects_in_dev: number;
+      prev_feitas: number;
+      prev_planejadas: number;
       closed_titles: string[];
       in_progress_titles: string[];
       unstarted_titles: string[];
       project_titles: string[];
+      prev_titles: string[];
     };
     const teamAgg = new Map<string, TeamAgg>();
-    for (const id of techIds) teamAgg.set(id, { closed_today: 0, in_progress: 0, unstarted: 0, projects_in_dev: 0, closed_titles: [], in_progress_titles: [], unstarted_titles: [], project_titles: [] });
+    for (const id of techIds) teamAgg.set(id, { closed_today: 0, in_progress: 0, unstarted: 0, projects_in_dev: 0, prev_feitas: 0, prev_planejadas: 0, closed_titles: [], in_progress_titles: [], unstarted_titles: [], project_titles: [], prev_titles: [] });
     for (const t of list) {
       if (!t.assigned_to) continue;
       const agg = teamAgg.get(t.assigned_to);
@@ -457,11 +460,14 @@ Deno.serve(async (req) => {
           in_progress: a.in_progress,
           unstarted: a.unstarted,
           projects_in_dev: a.projects_in_dev,
+          prev_feitas: a.prev_feitas,
+          prev_planejadas: a.prev_planejadas,
           idle: a.in_progress === 0 && a.projects_in_dev === 0,
           closed_titles: a.closed_titles,
           in_progress_titles: a.in_progress_titles,
           unstarted_titles: a.unstarted_titles,
           project_titles: a.project_titles,
+          prev_titles: a.prev_titles,
         };
       })
       .sort((a, b) => (a.idle === b.idle ? b.closed_today - a.closed_today : a.idle ? 1 : -1));
