@@ -142,7 +142,7 @@ Deno.serve(async (req) => {
     // Fetch tickets in two focused queries to avoid PostgREST's 1000-row default
     // truncating results on large orgs. Together they cover every KPI the loop
     // computes: open* uses aging/backlog; recent* uses closed/opened/tma/ranking.
-    const selectCols = "id, title, status, priority, created_at, started_at, closed_at, aguardando_aprovacao_at, assigned_to, created_by, category_id";
+    const selectCols = "id, ticket_number, title, status, priority, created_at, started_at, closed_at, aguardando_aprovacao_at, assigned_to, created_by, category_id";
     const startMonthIso = startMonth.toISOString();
     const fetchFromIso = new Date(Math.min(startMonth.getTime(), agendaStart.getTime())).toISOString();
     const [openRes, recentRes] = await Promise.all([
@@ -273,7 +273,7 @@ Deno.serve(async (req) => {
         const mm = String(wp.mm).padStart(2, "0");
         todayTickets.push({
           id: t.id,
-          code: String(t.id).slice(0, 4).toUpperCase(),
+          code: t.ticket_number == null ? "—" : String(t.ticket_number).padStart(5, "0"),
           title: t.title,
           priority: t.priority,
           status: t.status,

@@ -93,7 +93,7 @@ function TicketChip({ t }: { t: TodayTicket & { date?: string } }) {
         flashing && "tv-flash",
       )}
       style={{ backgroundImage: gradient }}
-      title={`${t.code} · ${t.title} · ${t.hour}`}
+      title={`Nº ${t.code} · ${t.title} · ${t.hour}`}
     >
       <div className="absolute left-0 top-0 h-full w-[3px]" style={{ background: color }} />
       <div className="flex items-center gap-2 leading-none">
@@ -101,7 +101,7 @@ function TicketChip({ t }: { t: TodayTicket & { date?: string } }) {
           {t.hour}
         </span>
         <span className="text-[13px] text-[hsl(var(--tv-text-dim))] font-mono-tech shrink-0">
-          #{t.code}
+          Nº {t.code}
         </span>
         <span
           className="text-[11px] uppercase tracking-wider font-semibold px-1.5 py-0.5 rounded shrink-0"
