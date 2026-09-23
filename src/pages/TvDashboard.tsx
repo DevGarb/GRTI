@@ -3,7 +3,7 @@ import { useParams, useSearchParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import {
   Bell, CheckCircle2, Inbox, Trophy, Timer,
-  Sun, Moon,
+  Sun, Moon, Wrench,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
@@ -52,7 +52,7 @@ interface TvData {
   team_status?: TeamMemberStatus[];
   today_tickets: TodayTicket[];
   sla_alerts: Array<{ id: string; sla: string }>;
-  preventivas_month: { total: number; feitas: number; pendentes: number; atrasadas: number };
+  preventivas_month: { total: number; feitas: number; pendentes: number; atrasadas: number; percent?: number };
   goals_summary: GoalsSummary | null;
 }
 
@@ -455,7 +455,7 @@ export default function TvDashboard() {
       ) : (
         <>
           {/* Row 1: KPIs do dia — full width */}
-          <section className="grid grid-cols-2 xl:grid-cols-4 gap-3">
+          <section className="grid grid-cols-2 xl:grid-cols-5 gap-3">
             <DualKpiTile
               className="col-span-2 xl:col-span-2"
               code="01"
@@ -488,6 +488,38 @@ export default function TvDashboard() {
               code="03"
               sub="Início → Finalização"
             />
+            <DailyKpiTile
+              label="Preventivas do Mês"
+              icon={Wrench}
+              accent="lime"
+              code="04"
+            >
+              <div className="flex flex-col gap-2">
+                <div className="flex items-baseline gap-2">
+                  <span
+                    className="font-tv-display font-semibold tabular-nums leading-none text-[hsl(var(--tv-text))]"
+                    style={{ fontSize: "3.25rem" }}
+                  >
+                    {d.preventivas_month.feitas}
+                  </span>
+                  <span className="font-mono-tech text-xl text-[hsl(var(--tv-text-dim))]">
+                    /{d.preventivas_month.total} planejadas
+                  </span>
+                </div>
+                <span
+                  className="font-mono-tech text-base font-semibold"
+                  style={{
+                    color: (d.preventivas_month.percent ?? 0) >= 90
+                      ? "hsl(var(--tv-accent-lime))"
+                      : (d.preventivas_month.percent ?? 0) >= 60
+                        ? "hsl(var(--tv-accent-amber))"
+                        : "hsl(var(--tv-accent-red))",
+                  }}
+                >
+                  {d.preventivas_month.percent ?? 0}% realizado
+                </span>
+              </div>
+            </DailyKpiTile>
           </section>
 
           {/* Row 1.5: Equipe agora */}
