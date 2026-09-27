@@ -1,6 +1,6 @@
 import DateRangeFilter, { currentMonthStart, todayStr, inDateRange } from "@/components/shared/DateRangeFilter";
 import { useEffect, useMemo, useState } from "react";
-import { Navigate } from "react-router-dom";
+import { Navigate, useSearchParams } from "react-router-dom";
 import { Wrench, Plus, Pencil, Trash2, AlertTriangle, Building2, ListChecks, Image as ImageIcon, X, LayoutGrid, List, Eye, EyeOff, ChevronLeft, ChevronRight, Package, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
