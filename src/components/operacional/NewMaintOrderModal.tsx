@@ -40,12 +40,11 @@ export default function NewMaintOrderModal({ open, onOpenChange, defaultTechnici
     category: "Outros",
     priority: "Média",
     description: "",
-    deadline: "",
   });
 
   const reset = () => { setPhotos([]); setPhotoJustification(""); setForm({
     title: "", site_id: "", sector: "", requester_id: "",
-    category: "Outros", priority: "Média", description: "", deadline: "",
+    category: "Outros", priority: "Média", description: "",
   }); };
 
   const submit = async () => {
@@ -63,7 +62,6 @@ export default function NewMaintOrderModal({ open, onOpenChange, defaultTechnici
       category: form.category,
       priority: form.priority,
       description: form.description,
-      deadline: form.deadline || null,
       opened_at: todayISO(),
       status: "Aberta",
       assigned_technician_id: defaultTechnicianId || null,
@@ -143,11 +141,6 @@ export default function NewMaintOrderModal({ open, onOpenChange, defaultTechnici
                 <SelectContent>{MAINT_PRIORITIES.map((p) => <SelectItem key={p} value={p}>{p}</SelectItem>)}</SelectContent>
               </Select>
             </div>
-          </div>
-
-          <div>
-            <Label>Prazo desejado (opcional)</Label>
-            <Input type="date" value={form.deadline} onChange={(e) => setForm((p) => ({ ...p, deadline: e.target.value }))} />
           </div>
 
           <div>

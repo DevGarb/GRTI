@@ -716,13 +716,13 @@ function OmModal({ open, onOpenChange, editing, sites, mechanics, requesters, mo
               <Input disabled value={openedDisplay} readOnly />
             </div>
           )}
-          {!solicitanteView && (
+          {!solicitanteView && editing && (
             <div>
               <Label>Prazo</Label>
               <Input disabled={readOnly} type="date" value={form.deadline || ""} onChange={e => setForm({ ...form, deadline: e.target.value })} />
             </div>
           )}
-          {mode === "admin" && <div><Label>Dia programado</Label><Input type="date" value={form.scheduled_date || ""} onChange={e => setForm({ ...form, scheduled_date: e.target.value || null })} /></div>}
+          {mode === "admin" && editing && <div><Label>Dia programado</Label><Input type="date" value={form.scheduled_date || ""} onChange={e => setForm({ ...form, scheduled_date: e.target.value || null })} /></div>}
           <div className="col-span-2">
             <Label>Descrição</Label>
             <Textarea disabled={readOnly} rows={3} value={form.description || ""} onChange={e => setForm({ ...form, description: e.target.value })} />

@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Send, Building2, Wrench, AlertTriangle, Calendar, Star } from "lucide-react";
+import { Send, Building2, Wrench, AlertTriangle, Star } from "lucide-react";
 import MaintenanceOpeningEvidence from "@/components/operacional/MaintenanceOpeningEvidence";
 import { useMaintenanceOrders, useSites, MAINT_CATEGORIES, MAINT_PRIORITIES } from "@/hooks/useManutencao";
 import { useSectors } from "@/hooks/useSectors";
@@ -33,7 +33,6 @@ export default function OpManutencaoSolicitar() {
     category: "Outros",
     priority: "Média",
     description: "",
-    deadline: "",
     opened_at: todayISO(),
   });
 
@@ -78,7 +77,6 @@ export default function OpManutencaoSolicitar() {
       ...form,
       status: "Aberta",
       requester_id: maintProfile.requesterId || null,
-      deadline: form.deadline || null,
       sector: form.sector,
       photo_justification: photos.length ? null : photoJustification.trim(),
     });
@@ -182,13 +180,6 @@ export default function OpManutencaoSolicitar() {
                 <SelectContent>{MAINT_PRIORITIES.map((p) => <SelectItem key={p} value={p}>{p}</SelectItem>)}</SelectContent>
               </Select>
             </div>
-          </div>
-
-          <div>
-            <Label className="flex items-center gap-1.5">
-              <Calendar className="h-4 w-4" style={{ color: "hsl(191 74% 20%)" }} /> Prazo desejado (opcional)
-            </Label>
-            <Input type="date" value={form.deadline} onChange={(e) => setForm((p) => ({ ...p, deadline: e.target.value }))} />
           </div>
 
           <div>
