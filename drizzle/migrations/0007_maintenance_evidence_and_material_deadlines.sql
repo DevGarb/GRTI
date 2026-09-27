@@ -1,0 +1,3 @@
+ALTER TABLE public.op_maintenance_orders ADD COLUMN IF NOT EXISTS photo_justification text, ADD COLUMN IF NOT EXISTS material_received_at timestamptz, ADD COLUMN IF NOT EXISTS postponed_until timestamptz, ADD COLUMN IF NOT EXISTS postponement_reason text;
+ALTER TABLE public.op_maintenance_orders ADD CONSTRAINT maintenance_photo_justification_length CHECK (photo_justification IS NULL OR char_length(photo_justification) <= 1000) NOT VALID;
+ALTER TABLE public.op_maintenance_orders ADD CONSTRAINT maintenance_postponement_reason_length CHECK (postponement_reason IS NULL OR char_length(postponement_reason) <= 1000) NOT VALID;
