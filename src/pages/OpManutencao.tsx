@@ -29,7 +29,9 @@ import OpMoveLogPanel from "@/components/operacional/OpMoveLogPanel";
 import { cn } from "@/lib/utils";
 import ManutencaoNav from "@/pages/op/ManutencaoNav";
 import MaintenanceMaterials from "@/components/operacional/MaintenanceMaterials";
-import { readMaterials, TECH_TONES, weekDates, weekStart } from "@/lib/maintenancePlanning";
+import { formatMaintenanceDue, maintenanceDueAt, maintenanceIsOverdue, readMaterials, TECH_TONES, weekDates, weekStart } from "@/lib/maintenancePlanning";
+import MaintenanceOpeningEvidence from "@/components/operacional/MaintenanceOpeningEvidence";
+import { toast } from "sonner";
 
 const STATUS_COLORS: Record<string, string> = {
   "Aberta": "bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300",
@@ -76,6 +78,8 @@ export default function OpManutencao() {
   const [statusFilter, setStatusFilter] = useState<"all" | "Aberta" | "Em execução" | "Concluída" | "atraso">("all");
   const [view, setView] = useState<"lista" | "kanban">("kanban");
   const [hideFinalized, setHideFinalized] = useState(true);
+  const [clockMinute, setClockMinute] = useState(0);
+  useEffect(() => { const timer = window.setInterval(() => setClockMinute(v => v + 1), 60000); return () => window.clearInterval(timer); }, []);
   const [weekOffset, setWeekOffset] = useState(0);
   const week = useMemo(() => {
     const start = weekStart();
@@ -113,15 +117,15 @@ export default function OpManutencao() {
 
   const filtered = useMemo(() => {
     return baseFiltered.filter(o => {
-      const overdue = !!o.deadline && o.deadline < today && !["Concluída", "Cancelada"].includes(o.status);
+      const overdue = maintenanceIsOverdue(o);
       if (statusFilter === "atraso" && !overdue) return false;
       if (statusFilter !== "all" && statusFilter !== "atraso" && o.status !== statusFilter) return false;
       return true;
     });
-  }, [baseFiltered, statusFilter, today]);
+  }, [baseFiltered, statusFilter, today, clockMinute]);
 
   const kpis = useMemo(() => {
-    const overdue = baseFiltered.filter(o => o.deadline && o.deadline < today && !["Concluída", "Cancelada"].includes(o.status)).length;
+    const overdue = baseFiltered.filter(o => maintenanceIsOverdue(o)).length;
     return {
       abertas: baseFiltered.filter(o => o.status === "Aberta").length,
       execucao: baseFiltered.filter(o => o.status === "Em execução").length,
@@ -129,7 +133,7 @@ export default function OpManutencao() {
       total: baseFiltered.length,
       atrasadas: overdue,
     };
-  }, [baseFiltered, today]);
+  }, [baseFiltered, today, clockMinute]);
 
   const toggleStatus = (s: typeof statusFilter) => {
     setStatusFilter(prev => prev === s ? "all" : s);
@@ -231,20 +235,19 @@ export default function OpManutencao() {
 
   const confirmClosure = async (payload: { closure_summary: string; closed_at: string; photos?: File[] }) => {
     if (!closing) return;
-    await orders.update(closing.id, {
+    if (!payload.photos?.length || !payload.closed_at) throw new Error("Foto, data e hora são obrigatórias");
+    for (const f of payload.photos) if (!(await orders.uploadPhoto(closing.id, f, "depois"))) throw new Error("Falha ao enviar foto de finalização");
+    if (!(await orders.update(closing.id, {
       status: TERMINAL,
       closure_summary: payload.closure_summary,
       finished_at: payload.closed_at,
       closed_by: user?.id || null,
-    });
-    if (payload.photos?.length) {
-      for (const f of payload.photos) await orders.uploadPhoto(closing.id, f, "depois");
-    }
+    }))) throw new Error("Não foi possível concluir a OM");
     setClosing(null);
   };
 
   const renderCard = (om: MaintenanceOrder) => {
-    const overdue = om.deadline && om.deadline < today && !["Concluída", "Cancelada"].includes(om.status);
+    const overdue = maintenanceIsOverdue(om);
     const site = siteOf(om.site_id);
     const tech = mechanics.items.find(m => m.id === om.assigned_technician_id);
     const tone = TECH_TONES[Math.max(0, mechanics.items.filter(m => m.is_active !== false).findIndex(m => m.id === tech?.id)) % TECH_TONES.length];
@@ -258,6 +261,7 @@ export default function OpManutencao() {
         </div>
         {tech && <Badge variant="outline" className={cn("text-[10px] mb-2", tone)}>{tech.name}</Badge>}
         {om.scheduled_date && !week.includes(om.scheduled_date) && <span className="block text-xs text-muted-foreground mb-1">Programada: {om.scheduled_date.split("-").reverse().join("/")}</span>}
+        {maintenanceDueAt(om) && om.status !== "Concluída" && <span className="block text-xs text-muted-foreground">Prazo: {formatMaintenanceDue(maintenanceDueAt(om))}</span>}
         <div className="font-semibold text-sm line-clamp-2">{om.title}</div>
         <div className="text-[11px] text-muted-foreground mt-1 flex flex-wrap gap-x-2">
           <span><Building2 className="h-3 w-3 inline mr-0.5" />{siteName(om.site_id)}</span>
@@ -393,7 +397,7 @@ export default function OpManutencao() {
                 <div className="text-center py-12 text-muted-foreground">Nenhuma ordem para os filtros atuais.</div>
               )}
               {filtered.map(om => {
-                const overdue = om.deadline && om.deadline < today && !["Concluída", "Cancelada"].includes(om.status);
+                const overdue = maintenanceIsOverdue(om);
                 const site = siteOf(om.site_id);
                 return (
                   <div key={om.id} className="border rounded-lg p-4 bg-card hover:shadow-md transition">
@@ -488,10 +492,14 @@ export default function OpManutencao() {
         requesters={requesters.items}
         mode={isSolicitante ? "solicitante" : isTecnico ? "tecnico" : "admin"}
         forcedRequesterId={isSolicitante ? maintProfile.requesterId : undefined}
-        onSave={async (input) => {
-          if (editing) await orders.update(editing.id, input);
-          else await orders.add(input);
-          setOmOpen(false);
+         onSave={async (input, photos) => {
+           if (editing) { if (!(await orders.update(editing.id, input))) return; }
+           else {
+             const created = await orders.add(input);
+             if (!created) return;
+             for (const photo of photos) if (!(await orders.uploadPhoto(created.id, photo, "antes"))) { toast.error("OM criada, mas a foto não foi enviada"); return; }
+           }
+           setOmOpen(false);
         }}
       />
 
@@ -513,6 +521,8 @@ export default function OpManutencao() {
         onOpenChange={(o) => !o && setClosing(null)}
         title="Concluir ordem de manutenção"
         allowPhotos
+         requirePhotos
+         requireTime
         onConfirm={confirmClosure}
       />
     </div>
@@ -542,12 +552,14 @@ function OmModal({ open, onOpenChange, editing, sites, mechanics, requesters, mo
   mechanics: MaintTechnician[]; requesters: DeliveryRequester[];
   mode: "admin" | "tecnico" | "solicitante";
   forcedRequesterId?: string;
-  onSave: (input: Partial<MaintenanceOrder>) => Promise<void>;
+   onSave: (input: Partial<MaintenanceOrder>, photos: File[]) => Promise<void>;
 }) {
   const { profile } = useAuth();
   const { data: sectors = [] } = useSectors(profile?.organization_id || null);
   const [form, setForm] = useState<Partial<MaintenanceOrder>>({});
   const [section, setSection] = useState<"dados" | "materiais">("dados");
+   const [openingPhotos, setOpeningPhotos] = useState<File[]>([]);
+   const [photoJustification, setPhotoJustification] = useState("");
   useEffect(() => {
     if (open) {
       const base: Partial<MaintenanceOrder> = editing
@@ -558,6 +570,8 @@ function OmModal({ open, onOpenChange, editing, sites, mechanics, requesters, mo
       }
       setForm(base);
       setSection("dados");
+       setOpeningPhotos([]);
+       setPhotoJustification(editing?.photo_justification || "");
     }
   }, [open, editing, mode, forcedRequesterId]);
 
@@ -668,6 +682,9 @@ function OmModal({ open, onOpenChange, editing, sites, mechanics, requesters, mo
             <Label>Descrição</Label>
             <Textarea disabled={readOnly} rows={3} value={form.description || ""} onChange={e => setForm({ ...form, description: e.target.value })} />
           </div>
+           {!editing && <div className="col-span-2"><MaintenanceOpeningEvidence photos={openingPhotos} onPhotosChange={setOpeningPhotos} justification={photoJustification} onJustificationChange={setPhotoJustification} /></div>}
+           {editing?.photo_justification && <div className="col-span-2 text-sm text-muted-foreground">Sem foto na abertura: {editing.photo_justification}</div>}
+           {editing?.postponement_reason && <div className="col-span-2 text-sm text-muted-foreground">Adiamento: {editing.postponement_reason}</div>}
           <div className="col-span-2">
             <Label>Observações</Label>
             <Textarea rows={2} value={form.notes || ""} onChange={e => setForm({ ...form, notes: e.target.value })} />
@@ -680,7 +697,11 @@ function OmModal({ open, onOpenChange, editing, sites, mechanics, requesters, mo
         </div>}
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>Fechar</Button>
-          <Button onClick={() => onSave(form)} disabled={!form.title || !form.sector}>Salvar</Button>
+           <Button onClick={() => {
+             if (!editing && !openingPhotos.length && photoJustification.trim().length < 10) { toast.error("Adicione uma foto ou justifique sua ausência (mínimo 10 caracteres)"); return; }
+             if (form.status === "Concluída" && editing?.status !== "Concluída") { toast.error("Use Concluir OM para informar foto, data e hora"); return; }
+             onSave({ ...form, photo_justification: editing ? form.photo_justification : openingPhotos.length ? null : photoJustification.trim() }, openingPhotos);
+           }} disabled={!form.title || !form.sector}>Salvar</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

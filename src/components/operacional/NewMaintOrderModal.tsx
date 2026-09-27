@@ -11,6 +11,7 @@ import { useSectors } from "@/hooks/useSectors";
 import { useAuth } from "@/contexts/AuthContext";
 import { Send } from "lucide-react";
 import { toast } from "sonner";
+import MaintenanceOpeningEvidence from "./MaintenanceOpeningEvidence";
 
 interface Props {
   open: boolean;
@@ -29,6 +30,8 @@ export default function NewMaintOrderModal({ open, onOpenChange, defaultTechnici
   const { data: sectors = [] } = useSectors(profile?.organization_id || null);
 
   const [busy, setBusy] = useState(false);
+  const [photos, setPhotos] = useState<File[]>([]);
+  const [photoJustification, setPhotoJustification] = useState("");
   const [form, setForm] = useState({
     title: "",
     site_id: "",
@@ -40,16 +43,17 @@ export default function NewMaintOrderModal({ open, onOpenChange, defaultTechnici
     deadline: "",
   });
 
-  const reset = () => setForm({
+  const reset = () => { setPhotos([]); setPhotoJustification(""); setForm({
     title: "", site_id: "", sector: "", requester_id: "",
     category: "Outros", priority: "Média", description: "", deadline: "",
-  });
+  }); };
 
   const submit = async () => {
     if (!form.title.trim()) return toast.error("Informe o título");
     if (!form.site_id) return toast.error("Escolha a sede");
     if (!form.requester_id) return toast.error("Selecione o solicitante");
     if (!form.sector) return toast.error("Escolha o setor solicitante");
+    if (!photos.length && photoJustification.trim().length < 10) return toast.error("Adicione uma foto ou justifique sua ausência (mínimo 10 caracteres)");
     setBusy(true);
     const res = await orders.add({
       title: form.title,
@@ -63,13 +67,16 @@ export default function NewMaintOrderModal({ open, onOpenChange, defaultTechnici
       opened_at: todayISO(),
       status: "Aberta",
       assigned_technician_id: defaultTechnicianId || null,
+      photo_justification: photos.length ? null : photoJustification.trim(),
     });
-    setBusy(false);
     if (res) {
+      const uploaded = await Promise.all(photos.map(file => orders.uploadPhoto(res.id, file, "antes")));
+      if (!uploaded.every(Boolean)) toast.error("OM criada; confira as fotos que não foram enviadas.");
       reset();
       onOpenChange(false);
       onCreated?.();
     }
+    setBusy(false);
   };
 
   return (
@@ -147,6 +154,7 @@ export default function NewMaintOrderModal({ open, onOpenChange, defaultTechnici
             <Label>Descrição / detalhes</Label>
             <Textarea rows={3} value={form.description} onChange={(e) => setForm((p) => ({ ...p, description: e.target.value }))} placeholder="Descreva o problema..." />
           </div>
+          <MaintenanceOpeningEvidence photos={photos} onPhotosChange={setPhotos} justification={photoJustification} onJustificationChange={setPhotoJustification} />
         </div>
 
         <DialogFooter>

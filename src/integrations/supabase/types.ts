@@ -1863,17 +1863,22 @@ export type Database = {
           finished_at: string | null
           id: string
           kanban_position: number | null
+          material_received_at: string | null
           materials: Json
           notes: string | null
           om_number: number
           opened_at: string
           organization_id: string
+          photo_justification: string | null
+          postponed_until: string | null
+          postponement_reason: string | null
           priority: string
           requester_id: string | null
           responsible: string | null
           scheduled_date: string | null
           sector: string | null
           site_id: string | null
+          sla_started_at: string | null
           status: string
           title: string
           updated_at: string
@@ -1892,17 +1897,22 @@ export type Database = {
           finished_at?: string | null
           id?: string
           kanban_position?: number | null
+          material_received_at?: string | null
           materials?: Json
           notes?: string | null
           om_number?: number
           opened_at?: string
           organization_id: string
+          photo_justification?: string | null
+          postponed_until?: string | null
+          postponement_reason?: string | null
           priority?: string
           requester_id?: string | null
           responsible?: string | null
           scheduled_date?: string | null
           sector?: string | null
           site_id?: string | null
+          sla_started_at?: string | null
           status?: string
           title: string
           updated_at?: string
@@ -1921,17 +1931,22 @@ export type Database = {
           finished_at?: string | null
           id?: string
           kanban_position?: number | null
+          material_received_at?: string | null
           materials?: Json
           notes?: string | null
           om_number?: number
           opened_at?: string
           organization_id?: string
+          photo_justification?: string | null
+          postponed_until?: string | null
+          postponement_reason?: string | null
           priority?: string
           requester_id?: string | null
           responsible?: string | null
           scheduled_date?: string | null
           sector?: string | null
           site_id?: string | null
+          sla_started_at?: string | null
           status?: string
           title?: string
           updated_at?: string

@@ -39,6 +39,11 @@ export interface MaintenanceOrder {
   scheduled_date?: string | null;
   materials?: Json;
   awaiting_material?: boolean;
+  photo_justification?: string | null;
+  material_received_at?: string | null;
+  postponed_until?: string | null;
+  postponement_reason?: string | null;
+  sla_started_at?: string | null;
 }
 
 export interface MaintenancePhoto {
@@ -138,9 +143,11 @@ export function useMaintenanceOrders() {
     toast.success("OM criada"); fetch();
     return data;
   };
-  const update = async (id: string, patch: Partial<MaintenanceOrder>) => {
+  const update = async (id: string, patch: Partial<MaintenanceOrder>): Promise<boolean> => {
     const { error } = await supabase.from("op_maintenance_orders").update(patch).eq("id", id);
-    if (error) toast.error(error.message); else fetch();
+    if (error) { toast.error(error.message); return false; }
+    await fetch();
+    return true;
   };
   const remove = async (id: string) => {
     const { error } = await supabase.from("op_maintenance_orders").delete().eq("id", id);
@@ -152,16 +159,18 @@ export function useMaintenanceOrders() {
       .eq("maintenance_order_id", omId).order("created_at");
     return (data || []) as MaintenancePhoto[];
   };
-  const uploadPhoto = async (omId: string, file: File, type: "antes" | "depois") => {
-    if (!user) return;
-    const path = `maint/${omId}/${Date.now()}_${file.name}`;
+  const uploadPhoto = async (omId: string, file: File, type: "antes" | "depois"): Promise<boolean> => {
+    if (!user || !file.type.startsWith("image/") || file.size > 10 * 1024 * 1024) { toast.error("Selecione uma imagem de até 10 MB"); return false; }
+    const path = `maint/${omId}/${crypto.randomUUID()}_${file.name.replace(/[^a-zA-Z0-9._-]/g, "_")}`;
     const { error: upErr } = await supabase.storage.from("op-service-orders").upload(path, file);
-    if (upErr) { toast.error(upErr.message); return; }
+    if (upErr) { toast.error(upErr.message); return false; }
     const { data: pub } = supabase.storage.from("op-service-orders").getPublicUrl(path);
     const { error } = await supabase.from("op_maintenance_photos").insert({
       maintenance_order_id: omId, photo_url: pub.publicUrl, photo_type: type, uploaded_by: user.id,
     });
-    if (error) toast.error(error.message); else toast.success("Foto enviada");
+    if (error) { toast.error(error.message); return false; }
+    toast.success("Foto enviada");
+    return true;
   };
   const removePhoto = async (id: string) => {
     const { error } = await supabase.from("op_maintenance_photos").delete().eq("id", id);

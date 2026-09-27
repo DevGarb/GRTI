@@ -5,6 +5,7 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Camera, X } from "lucide-react";
+import { toast } from "sonner";
 
 export interface ClosurePayload {
   closure_summary: string;
@@ -20,6 +21,8 @@ interface Props {
   showCost?: boolean;
   hideDate?: boolean;
   allowPhotos?: boolean;
+  requirePhotos?: boolean;
+  requireTime?: boolean;
   confirmLabel?: string;
   placeholder?: string;
   initialCost?: number;
@@ -27,12 +30,12 @@ interface Props {
 }
 
 export default function OpClosureDialog({
-  open, onOpenChange, title = "Concluir", showCost, hideDate, allowPhotos,
+  open, onOpenChange, title = "Concluir", showCost, hideDate, allowPhotos, requirePhotos = false, requireTime = false,
   confirmLabel = "Concluir", placeholder = "Descreva brevemente a conclusão...",
   initialCost, onConfirm,
 }: Props) {
   const [summary, setSummary] = useState("");
-  const [date, setDate] = useState(() => new Date().toISOString().slice(0, 10));
+  const [date, setDate] = useState(() => new Date().toISOString().slice(0, 16));
   const [cost, setCost] = useState<string>("");
   const [photos, setPhotos] = useState<File[]>([]);
   const [busy, setBusy] = useState(false);
@@ -41,23 +44,26 @@ export default function OpClosureDialog({
   useEffect(() => {
     if (open) {
       setSummary("");
-      setDate(new Date().toISOString().slice(0, 10));
+      const now = new Date();
+      setDate(requireTime ? new Date(now.getTime() - now.getTimezoneOffset() * 60000).toISOString().slice(0, 16) : now.toISOString().slice(0, 10));
       setCost(initialCost != null ? String(initialCost) : "");
       setPhotos([]);
     }
-  }, [open, initialCost]);
+  }, [open, initialCost, requireTime]);
 
   const submit = async () => {
-    if (!summary.trim()) return;
+    if (!summary.trim() || (requireTime && !date) || (requirePhotos && photos.length === 0)) return;
     setBusy(true);
     try {
       await onConfirm({
         closure_summary: summary.trim(),
-        closed_at: date,
+        closed_at: requireTime ? new Date(date).toISOString() : date,
         total_cost: showCost ? Number(cost || 0) : undefined,
         photos: allowPhotos ? photos : undefined,
       });
-      onOpenChange(false);
+       onOpenChange(false);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Não foi possível concluir");
     } finally {
       setBusy(false);
     }
@@ -70,8 +76,8 @@ export default function OpClosureDialog({
         <div className="space-y-3">
           {!hideDate && (
             <div>
-              <Label>Data de conclusão</Label>
-              <Input type="date" value={date} onChange={e => setDate(e.target.value)} />
+               <Label>Data e hora de conclusão {requireTime ? "*" : ""}</Label>
+               <Input type={requireTime ? "datetime-local" : "date"} value={date} onChange={e => setDate(e.target.value)} />
             </div>
           )}
           <div>
@@ -86,7 +92,7 @@ export default function OpClosureDialog({
           )}
           {allowPhotos && (
             <div>
-              <Label>Fotos (opcional)</Label>
+               <Label>Fotos da finalização {requirePhotos ? "*" : "(opcional)"}</Label>
               <input
                 ref={fileRef}
                 type="file"
@@ -123,7 +129,7 @@ export default function OpClosureDialog({
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)} disabled={busy}>Cancelar</Button>
-          <Button onClick={submit} disabled={!summary.trim() || busy}>{busy ? "Salvando..." : confirmLabel}</Button>
+           <Button onClick={submit} disabled={!summary.trim() || busy || (requireTime && !date) || (requirePhotos && !photos.length)}>{busy ? "Salvando..." : confirmLabel}</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

@@ -50,6 +50,34 @@
       "when": 1790472088621,
       "tag": "0006_allow_assigned_maintenance_technicians_to_update",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1790472365166,
+      "tag": "0007_maintenance_evidence_and_material_deadlines",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1790472402310,
+      "tag": "0008_maintenance_new_order_sla_start",
+      "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1790472420170,
+      "tag": "0009_maintenance_closure_photo_guard",
+      "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1790472539116,
+      "tag": "0010_maintenance_requester_photo_upload",
+      "breakpoints": true
     }
   ]
 }
