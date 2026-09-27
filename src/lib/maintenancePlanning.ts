@@ -26,6 +26,10 @@ export function maintenanceIsOverdue(order: { status: string; sla_started_at?: s
   return due ? now.getTime() > due.getTime() : Boolean(order.deadline && order.deadline < now.toISOString().slice(0, 10));
 }
 
+export function formatMaintenanceDue(due: Date | null) {
+  return due?.toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo", dateStyle: "short", timeStyle: "short" }) || "";
+}
+
 export function weekStart(date = new Date()) {
   const day = new Date(date.getFullYear(), date.getMonth(), date.getDate());
   day.setDate(day.getDate() - (day.getDay() + 6) % 7);

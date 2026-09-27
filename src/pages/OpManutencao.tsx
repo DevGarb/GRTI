@@ -29,7 +29,7 @@ import OpMoveLogPanel from "@/components/operacional/OpMoveLogPanel";
 import { cn } from "@/lib/utils";
 import ManutencaoNav from "@/pages/op/ManutencaoNav";
 import MaintenanceMaterials from "@/components/operacional/MaintenanceMaterials";
-import { maintenanceDueAt, maintenanceIsOverdue, readMaterials, TECH_TONES, weekDates, weekStart } from "@/lib/maintenancePlanning";
+import { formatMaintenanceDue, maintenanceDueAt, maintenanceIsOverdue, readMaterials, TECH_TONES, weekDates, weekStart } from "@/lib/maintenancePlanning";
 import MaintenanceOpeningEvidence from "@/components/operacional/MaintenanceOpeningEvidence";
 import { toast } from "sonner";
 
@@ -259,7 +259,7 @@ export default function OpManutencao() {
         </div>
         {tech && <Badge variant="outline" className={cn("text-[10px] mb-2", tone)}>{tech.name}</Badge>}
         {om.scheduled_date && !week.includes(om.scheduled_date) && <span className="block text-xs text-muted-foreground mb-1">Programada: {om.scheduled_date.split("-").reverse().join("/")}</span>}
-        {maintenanceDueAt(om) && om.status !== "Concluída" && <span className="block text-xs text-muted-foreground">Prazo: {maintenanceDueAt(om)?.toLocaleString("pt-BR")}</span>}
+        {maintenanceDueAt(om) && om.status !== "Concluída" && <span className="block text-xs text-muted-foreground">Prazo: {formatMaintenanceDue(maintenanceDueAt(om))}</span>}
         <div className="font-semibold text-sm line-clamp-2">{om.title}</div>
         <div className="text-[11px] text-muted-foreground mt-1 flex flex-wrap gap-x-2">
           <span><Building2 className="h-3 w-3 inline mr-0.5" />{siteName(om.site_id)}</span>

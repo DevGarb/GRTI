@@ -15,7 +15,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import OpClosureDialog from "@/components/operacional/OpClosureDialog";
 import NewMaintOrderModal from "@/components/operacional/NewMaintOrderModal";
 import MaintenanceMaterials from "@/components/operacional/MaintenanceMaterials";
-import { maintenanceDueAt, maintenanceIsOverdue, readMaterials, TECH_TONES } from "@/lib/maintenancePlanning";
+import { formatMaintenanceDue, maintenanceDueAt, maintenanceIsOverdue, readMaterials, TECH_TONES } from "@/lib/maintenancePlanning";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
@@ -415,7 +415,7 @@ export default function OpManutencaoMinhas() {
                                   </div>
                                 )}
                                 {om.photo_justification && <div className="text-sm">Sem foto na abertura: {om.photo_justification}</div>}
-                                {maintenanceDueAt(om) && !isFinished && <div className="text-sm">Prazo de execução: {maintenanceDueAt(om)?.toLocaleString("pt-BR")}</div>}
+                                {maintenanceDueAt(om) && !isFinished && <div className="text-sm">Prazo de execução: {formatMaintenanceDue(maintenanceDueAt(om))}</div>}
                                 {om.postponement_reason && <div className="text-sm">Adiamento: {om.postponement_reason}</div>}
                                 {om.closure_summary && isFinished && (
                                   <div className="flex items-start gap-2 text-sm pt-1 mt-1 border-t" style={{ borderColor: highContrast ? "#2a2a2a" : "hsl(210 15% 90%)" }}>
@@ -538,7 +538,7 @@ export default function OpManutencaoMinhas() {
          <DialogFooter><Button variant="outline" onClick={() => setReceiving(null)}>Cancelar</Button><Button disabled={planningBusy || !receivedAt || !receivedPlannedDate} onClick={async () => {
            if (!receiving || new Date(receivedAt).getTime() > Date.now() || receivedPlannedDate < receivedAt.slice(0, 10)) { toast.error("Confira as datas de recebimento e execução"); return; }
            setPlanningBusy(true);
-           const ok = await orders.update(receiving.id, { material_received_at: new Date(receivedAt).toISOString(), awaiting_material: false, scheduled_date: receivedPlannedDate });
+           const ok = await orders.update(receiving.id, { material_received_at: new Date(receivedAt).toISOString(), awaiting_material: false, scheduled_date: receivedPlannedDate, postponed_until: null, postponement_reason: null });
            setPlanningBusy(false);
            if (ok) { toast.success("Recebimento registrado. Prazo de 24 horas iniciado."); setReceiving(null); }
          }}>Confirmar recebimento</Button></DialogFooter>
