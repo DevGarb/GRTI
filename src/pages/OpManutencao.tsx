@@ -13,9 +13,9 @@ import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useAuth } from "@/contexts/AuthContext";
 import {
-  useSites, useMaintenanceOrders, useChecklistTemplates,
+  useSites, useMaintenanceOrders,
   MAINT_CATEGORIES, MAINT_PRIORITIES, MAINT_STATUSES,
-  type MaintenanceOrder, type Site, type ChecklistTemplate, type ChecklistItem, type MaintenancePhoto,
+  type MaintenanceOrder, type Site, type MaintenancePhoto,
 } from "@/hooks/useManutencao";
 import { useMaintTechnicians, type MaintTechnician } from "@/hooks/useMaintTechnicians";
 import { useDeliveryRequesters, type DeliveryRequester } from "@/hooks/useDeliveryRequesters";
@@ -67,11 +67,10 @@ export default function OpManutencao() {
 
   const [searchParams] = useSearchParams();
   const rawTab = searchParams.get("tab");
-  const tab = isAdmin && (rawTab === "sedes" || rawTab === "checklists") ? rawTab : "ordens";
+  const tab = isAdmin && rawTab === "sedes" ? rawTab : "ordens";
 
   const sites = useSites();
   const orders = useMaintenanceOrders();
-  const tpls = useChecklistTemplates();
   const mechanics = useMaintTechnicians();
   const requesters = useDeliveryRequesters();
 
@@ -100,11 +99,6 @@ export default function OpManutencao() {
   const [siteOpen, setSiteOpen] = useState(false);
   const [editingSite, setEditingSite] = useState<Site | null>(null);
 
-  const [tplOpen, setTplOpen] = useState(false);
-  const [editingTpl, setEditingTpl] = useState<ChecklistTemplate | null>(null);
-
-  const [execOpen, setExecOpen] = useState(false);
-  const [execTpl, setExecTpl] = useState<ChecklistTemplate | null>(null);
 
   const today = todayISO();
 
@@ -349,7 +343,7 @@ export default function OpManutencao() {
           <Wrench className="h-7 w-7 text-primary" />
           <div>
             <h1 className="text-2xl font-bold">Manutenção Predial</h1>
-            <p className="text-sm text-muted-foreground">Ordens, sedes e checklists de inspeção</p>
+            <p className="text-sm text-muted-foreground">Ordens e sedes de manutenção</p>
           </div>
         </div>
         <div className="flex gap-2 items-center flex-wrap">
@@ -513,29 +507,6 @@ export default function OpManutencao() {
         </div>
         )}
 
-        {/* CHECKLISTS */}
-        {tab === "checklists" && (
-        <div className="space-y-3">
-          <div className="flex justify-end">
-            <Button onClick={() => { setEditingTpl(null); setTplOpen(true); }}><Plus className="h-4 w-4 mr-1" /> Novo Modelo</Button>
-          </div>
-          {tpls.items.map(t => (
-            <div key={t.id} className="border rounded-lg p-3 bg-card flex items-center justify-between flex-wrap gap-2">
-              <div>
-                <div className="font-semibold">{t.name}</div>
-                <div className="text-xs text-muted-foreground">{siteName(t.site_id)} {t.description && `• ${t.description}`}</div>
-              </div>
-              <div className="flex gap-1">
-                <Button size="sm" variant="outline" onClick={() => { setExecTpl(t); setExecOpen(true); }}>Executar</Button>
-                <Button size="icon" variant="ghost" onClick={() => { setEditingTpl(t); setTplOpen(true); }}><Pencil className="h-4 w-4" /></Button>
-                <Button size="icon" variant="ghost" onClick={() => { if (confirm("Excluir modelo?")) tpls.remove(t.id); }}><Trash2 className="h-4 w-4 text-destructive" /></Button>
-              </div>
-            </div>
-          ))}
-          {tpls.items.length === 0 && <div className="text-center py-8 text-muted-foreground">Nenhum modelo de checklist.</div>}
-        </div>
-        )}
-
 
       <OmModal
         open={omOpen}
@@ -563,10 +534,6 @@ export default function OpManutencao() {
         else await sites.add(input);
         setSiteOpen(false);
       }} />
-
-      <TemplateModal open={tplOpen} onOpenChange={setTplOpen} editing={editingTpl} sites={sites.items} hook={tpls} />
-
-      <ExecuteModal open={execOpen} onOpenChange={setExecOpen} template={execTpl} sites={sites.items} hook={tpls} />
 
       <PhotosModal open={!!photoOmId} onClose={() => setPhotoOmId(null)} omId={photoOmId} hook={orders} />
 
@@ -789,130 +756,6 @@ function SiteModal({ open, onOpenChange, editing, onSave }: {
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>Cancelar</Button>
           <Button onClick={() => onSave(form)} disabled={!form.name}>Salvar</Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
-  );
-}
-
-function TemplateModal({ open, onOpenChange, editing, sites, hook }: {
-  open: boolean; onOpenChange: (b: boolean) => void; editing: ChecklistTemplate | null;
-  sites: Site[]; hook: ReturnType<typeof useChecklistTemplates>;
-}) {
-  const [form, setForm] = useState<Partial<ChecklistTemplate>>({});
-  const [items, setItems] = useState<ChecklistItem[]>([]);
-  const [newItem, setNewItem] = useState("");
-
-  useEffect(() => {
-    if (open) {
-      setForm(editing || { is_active: true });
-      if (editing) hook.listItems(editing.id).then(setItems); else setItems([]);
-    }
-  }, [open, editing]);
-
-  const handleSave = async () => {
-    let tplId = editing?.id;
-    if (editing) {
-      await hook.update(editing.id, form);
-    } else {
-      const created = await hook.add(form);
-      tplId = (created as any)?.id;
-    }
-    onOpenChange(false);
-  };
-
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-xl">
-        <DialogHeader><DialogTitle>{editing ? "Editar Modelo" : "Novo Modelo de Checklist"}</DialogTitle></DialogHeader>
-        <div className="space-y-3">
-          <div><Label>Nome *</Label><Input value={form.name || ""} onChange={e => setForm({ ...form, name: e.target.value })} /></div>
-          <div>
-            <Label>Sede</Label>
-            <Select value={form.site_id || ""} onValueChange={v => setForm({ ...form, site_id: v })}>
-              <SelectTrigger><SelectValue placeholder="Geral / sem sede específica" /></SelectTrigger>
-              <SelectContent>{sites.map(s => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}</SelectContent>
-            </Select>
-          </div>
-          <div><Label>Descrição</Label><Textarea rows={2} value={form.description || ""} onChange={e => setForm({ ...form, description: e.target.value })} /></div>
-
-          {editing && (
-            <div className="border rounded p-3 space-y-2">
-              <Label>Itens do Checklist</Label>
-              {items.map(it => (
-                <div key={it.id} className="flex items-center justify-between text-sm bg-muted/30 rounded px-2 py-1">
-                  <span>{it.label}</span>
-                  <Button size="icon" variant="ghost" className="h-7 w-7" onClick={async () => { await hook.removeItem(it.id); setItems(items.filter(i => i.id !== it.id)); }}><X className="h-3 w-3" /></Button>
-                </div>
-              ))}
-              <div className="flex gap-2">
-                <Input placeholder="Novo item..." value={newItem} onChange={e => setNewItem(e.target.value)} />
-                <Button size="sm" onClick={async () => {
-                  if (!newItem.trim() || !editing) return;
-                  await hook.addItem(editing.id, newItem.trim(), items.length);
-                  const updated = await hook.listItems(editing.id);
-                  setItems(updated); setNewItem("");
-                }}>Adicionar</Button>
-              </div>
-            </div>
-          )}
-          {!editing && <div className="text-xs text-muted-foreground">Salve o modelo primeiro para adicionar itens.</div>}
-        </div>
-        <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>Fechar</Button>
-          <Button onClick={handleSave} disabled={!form.name}>Salvar</Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
-  );
-}
-
-function ExecuteModal({ open, onOpenChange, template, sites, hook }: {
-  open: boolean; onOpenChange: (b: boolean) => void; template: ChecklistTemplate | null;
-  sites: Site[]; hook: ReturnType<typeof useChecklistTemplates>;
-}) {
-  const [items, setItems] = useState<ChecklistItem[]>([]);
-  const [responses, setResponses] = useState<Record<string, boolean>>({});
-  const [notes, setNotes] = useState("");
-  const [siteId, setSiteId] = useState<string>("");
-
-  useEffect(() => {
-    if (open && template) {
-      hook.listItems(template.id).then(setItems);
-      setResponses({}); setNotes(""); setSiteId(template.site_id || "");
-    }
-  }, [open, template]);
-
-  if (!template) return null;
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader><DialogTitle>Executar: {template.name}</DialogTitle></DialogHeader>
-        <div className="space-y-3">
-          <div>
-            <Label>Sede</Label>
-            <Select value={siteId} onValueChange={setSiteId}>
-              <SelectTrigger><SelectValue placeholder="Selecione..." /></SelectTrigger>
-              <SelectContent>{sites.map(s => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}</SelectContent>
-            </Select>
-          </div>
-          <div className="border rounded p-3 space-y-2">
-            {items.length === 0 && <div className="text-sm text-muted-foreground">Nenhum item neste modelo.</div>}
-            {items.map(it => (
-              <label key={it.id} className="flex items-center gap-2 text-sm cursor-pointer">
-                <Checkbox checked={!!responses[it.id]} onCheckedChange={v => setResponses({ ...responses, [it.id]: !!v })} />
-                {it.label}
-              </label>
-            ))}
-          </div>
-          <div><Label>Observações</Label><Textarea rows={2} value={notes} onChange={e => setNotes(e.target.value)} /></div>
-        </div>
-        <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>Cancelar</Button>
-          <Button onClick={async () => {
-            await hook.saveExecution({ template_id: template.id, site_id: siteId || null, responses, notes });
-            onOpenChange(false);
-          }}>Salvar Execução</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

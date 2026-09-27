@@ -1,5 +1,5 @@
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
-import { Wrench, LogOut, ClipboardList, LayoutGrid, Star, Building2, ListChecks, Download } from "lucide-react";
+import { Wrench, LogOut, ClipboardList, LayoutGrid, Star, Building2, Download } from "lucide-react";
 import { useManutencaoProfile } from "@/contexts/ManutencaoProfileContext";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -26,7 +26,6 @@ export default function ManutencaoNav({ onReport }: { onReport?: () => void }) {
     : [
         { to: "/op/manutencao", label: "Ordens de Manutenção", icon: LayoutGrid, tab: "ordens" },
         { to: "/op/manutencao?tab=sedes", label: "Sedes", icon: Building2, tab: "sedes" },
-        { to: "/op/manutencao?tab=checklists", label: "Checklists", icon: ListChecks, tab: "checklists" },
         { to: "/op/avaliacoes", label: "Avaliações", icon: Star },
       ];
 
