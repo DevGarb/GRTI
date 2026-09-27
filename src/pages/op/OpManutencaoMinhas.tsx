@@ -464,6 +464,12 @@ export default function OpManutencaoMinhas() {
 
                               {/* Ações do técnico */}
                                {isTecnico && !isFinished && <div className="flex flex-wrap gap-2">
+                                 {!om.material_received_at && (
+                                   <Button variant="outline" onClick={async () => {
+                                     const ok = await orders.update(om.id, { material_received_at: new Date().toISOString(), awaiting_material: false, materials: readMaterials(om.materials).map(m => ({ ...m, purchased: true })) });
+                                     if (ok) toast.success("Peças recebidas. Prazo de 24 horas iniciado.");
+                                   }}>Peças recebidas · iniciar prazo de 24h</Button>
+                                 )}
                                  {om.awaiting_material && !om.material_received_at && <Button variant="outline" onClick={() => { setReceiving(om); setReceivedAt(new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 16)); setReceivedPlannedDate(""); setReceiptDelayReason(""); }}>Informar recebimento do material</Button>}
                                  <Button variant="outline" onClick={() => { setPlanning(om); setPlannedAt(""); setReason(""); }}>Adiar com justificativa</Button>
                                </div>}
@@ -559,6 +565,14 @@ export default function OpManutencaoMinhas() {
           <DialogHeader><DialogTitle>Materiais da OM #{materialsOpen?.om_number}</DialogTitle></DialogHeader>
           <MaintenanceMaterials items={readMaterials(materialsOpen?.materials)} onChange={items => setMaterialsOpen(prev => prev ? { ...prev, materials: items } : null)} />
           <label className="flex items-center gap-2 text-sm"><Checkbox checked={!!materialsOpen?.awaiting_material} onCheckedChange={checked => setMaterialsOpen(prev => prev ? { ...prev, awaiting_material: checked === true } : null)} /> Aguardando compra</label>
+          {!materialsOpen?.material_received_at && (
+            <Button type="button" variant="outline" onClick={async () => {
+              if (!materialsOpen) return;
+              const ok = await orders.update(materialsOpen.id, { material_received_at: new Date().toISOString(), awaiting_material: false, materials: readMaterials(materialsOpen.materials).map(m => ({ ...m, purchased: true })) });
+              if (ok) { toast.success("Peças recebidas. Prazo de 24 horas iniciado."); setMaterialsOpen(null); }
+            }}>Peças recebidas · iniciar prazo de 24h</Button>
+          )}
+          {materialsOpen?.material_received_at && <p className="text-sm text-muted-foreground">Peças recebidas em {new Date(materialsOpen.material_received_at).toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" })} — prazo de 24h em andamento.</p>}
           <DialogFooter><Button variant="outline" onClick={() => setMaterialsOpen(null)}>Cancelar</Button><Button onClick={async () => { if (!materialsOpen) return; await orders.update(materialsOpen.id, { materials: readMaterials(materialsOpen.materials).filter(m => m.name.trim()), awaiting_material: materialsOpen.awaiting_material }); setMaterialsOpen(null); }}>Salvar</Button></DialogFooter>
         </DialogContent>
       </Dialog>
