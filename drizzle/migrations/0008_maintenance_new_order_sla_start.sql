@@ -1,0 +1,4 @@
+ALTER TABLE public.op_maintenance_orders ADD COLUMN IF NOT EXISTS sla_started_at timestamptz;
+CREATE OR REPLACE FUNCTION public.set_maintenance_sla_start() RETURNS trigger LANGUAGE plpgsql SET search_path = public AS $$ BEGIN IF NEW.sla_started_at IS NULL THEN NEW.sla_started_at := now(); END IF; RETURN NEW; END $$;
+CREATE TRIGGER maintenance_sla_start_on_insert BEFORE INSERT ON public.op_maintenance_orders FOR EACH ROW EXECUTE FUNCTION public.set_maintenance_sla_start();
+ALTER TABLE public.op_maintenance_orders ADD CONSTRAINT maintenance_postponement_requires_reason CHECK (postponed_until IS NULL OR (postponement_reason IS NOT NULL AND length(btrim(postponement_reason)) >= 10)) NOT VALID;

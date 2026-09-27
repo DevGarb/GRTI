@@ -1878,6 +1878,7 @@ export type Database = {
           scheduled_date: string | null
           sector: string | null
           site_id: string | null
+          sla_started_at: string | null
           status: string
           title: string
           updated_at: string
@@ -1911,6 +1912,7 @@ export type Database = {
           scheduled_date?: string | null
           sector?: string | null
           site_id?: string | null
+          sla_started_at?: string | null
           status?: string
           title: string
           updated_at?: string
@@ -1944,6 +1946,7 @@ export type Database = {
           scheduled_date?: string | null
           sector?: string | null
           site_id?: string | null
+          sla_started_at?: string | null
           status?: string
           title?: string
           updated_at?: string
