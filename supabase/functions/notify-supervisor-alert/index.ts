@@ -6,7 +6,7 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-const TO_EMAIL = "joelmirfranklin92@gmail.com";
+const TO_EMAIL = "notificacaoapoiocearagps@gmail.com";
 const FROM_EMAIL = "GRTI Oficina <onboarding@resend.dev>";
 
 function esc(v: unknown) {
