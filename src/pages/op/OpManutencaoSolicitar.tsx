@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Send, Building2, Wrench, AlertTriangle, Calendar, Star } from "lucide-react";
+import { Send, Building2, Wrench, AlertTriangle, Star } from "lucide-react";
 import MaintenanceOpeningEvidence from "@/components/operacional/MaintenanceOpeningEvidence";
 import { useMaintenanceOrders, useSites, MAINT_CATEGORIES, MAINT_PRIORITIES } from "@/hooks/useManutencao";
 import { useSectors } from "@/hooks/useSectors";
