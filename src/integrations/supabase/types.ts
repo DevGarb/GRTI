@@ -1852,6 +1852,7 @@ export type Database = {
         Row: {
           assigned_mechanic_id: string | null
           assigned_technician_id: string | null
+          awaiting_material: boolean
           category: string
           closed_by: string | null
           closure_summary: string | null
@@ -1862,6 +1863,7 @@ export type Database = {
           finished_at: string | null
           id: string
           kanban_position: number | null
+          materials: Json
           notes: string | null
           om_number: number
           opened_at: string
@@ -1869,6 +1871,7 @@ export type Database = {
           priority: string
           requester_id: string | null
           responsible: string | null
+          scheduled_date: string | null
           sector: string | null
           site_id: string | null
           status: string
@@ -1878,6 +1881,7 @@ export type Database = {
         Insert: {
           assigned_mechanic_id?: string | null
           assigned_technician_id?: string | null
+          awaiting_material?: boolean
           category?: string
           closed_by?: string | null
           closure_summary?: string | null
@@ -1888,6 +1892,7 @@ export type Database = {
           finished_at?: string | null
           id?: string
           kanban_position?: number | null
+          materials?: Json
           notes?: string | null
           om_number?: number
           opened_at?: string
@@ -1895,6 +1900,7 @@ export type Database = {
           priority?: string
           requester_id?: string | null
           responsible?: string | null
+          scheduled_date?: string | null
           sector?: string | null
           site_id?: string | null
           status?: string
@@ -1904,6 +1910,7 @@ export type Database = {
         Update: {
           assigned_mechanic_id?: string | null
           assigned_technician_id?: string | null
+          awaiting_material?: boolean
           category?: string
           closed_by?: string | null
           closure_summary?: string | null
@@ -1914,6 +1921,7 @@ export type Database = {
           finished_at?: string | null
           id?: string
           kanban_position?: number | null
+          materials?: Json
           notes?: string | null
           om_number?: number
           opened_at?: string
@@ -1921,6 +1929,7 @@ export type Database = {
           priority?: string
           requester_id?: string | null
           responsible?: string | null
+          scheduled_date?: string | null
           sector?: string | null
           site_id?: string | null
           status?: string

@@ -14,6 +14,12 @@ import { useManutencaoProfile } from "@/contexts/ManutencaoProfileContext";
 import { useAuth } from "@/contexts/AuthContext";
 import OpClosureDialog from "@/components/operacional/OpClosureDialog";
 import NewMaintOrderModal from "@/components/operacional/NewMaintOrderModal";
+import MaintenanceMaterials from "@/components/operacional/MaintenanceMaterials";
+import { readMaterials, TECH_TONES } from "@/lib/maintenancePlanning";
+import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import "./cearagps.css";
 
@@ -69,6 +75,7 @@ export default function OpManutencaoMinhas() {
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [closing, setClosing] = useState<MaintenanceOrder | null>(null);
   const [newOMOpen, setNewOMOpen] = useState(false);
+  const [materialsOpen, setMaterialsOpen] = useState<MaintenanceOrder | null>(null);
 
   const isTecnico = maintProfile.role === "tecnico";
   const isSolicitante = maintProfile.role === "solicitante";
@@ -128,6 +135,7 @@ export default function OpManutencaoMinhas() {
   const siteOf = (id: string | null) => sites.items.find((s) => s.id === id);
   const requesterOf = (om: MaintenanceOrder) => requesters.items.find((r) => r.id === om.requester_id);
   const technicianOf = (om: MaintenanceOrder) => technicians.items.find((t) => t.id === om.assigned_technician_id);
+  const toneOf = (om: MaintenanceOrder) => TECH_TONES[Math.max(0, technicians.items.findIndex(t => t.id === om.assigned_technician_id)) % TECH_TONES.length];
 
   const contactRequester = (om: MaintenanceOrder) => {
     const req = requesterOf(om);
@@ -281,7 +289,7 @@ export default function OpManutencaoMinhas() {
                       className="rounded-2xl overflow-hidden"
                       style={{
                         background: cardBg,
-                        border: `1px solid ${isExpanded ? ORANGE : "hsl(210 15% 88%)"}`,
+                         border: `1px solid ${isExpanded ? ORANGE : "hsl(210 15% 88%)"}`,
                         boxShadow: highContrast ? "none" : isExpanded
                           ? "0 12px 32px -12px hsl(14 82% 51% / 0.35)"
                           : "0 2px 8px -4px rgba(0,0,0,0.08)",
@@ -303,8 +311,10 @@ export default function OpManutencaoMinhas() {
                                   <AlertTriangle className="h-3 w-3" /> Atrasada
                                 </span>
                               )}
+                               {om.awaiting_material && <Badge className="maintenance-material-tag text-[10px]">Aguardando compra</Badge>}
                             </div>
-                            <div className="text-lg font-extrabold leading-tight" style={{ color: textMain }}>{om.title}</div>
+                             {tech && <Badge variant="outline" className={`${toneOf(om)} mb-1 text-[10px]`}>{tech.name}</Badge>}
+                             <div className="text-lg font-extrabold leading-tight" style={{ color: textMain }}>{om.title}</div>
                             <div className="flex items-center gap-2 mt-1 flex-wrap">
                               <span className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: textMuted }}>{om.category}</span>
                               {isFinished && om.finished_at && (
@@ -357,7 +367,9 @@ export default function OpManutencaoMinhas() {
                               <span className="font-medium"><span style={{ color: textMuted }}>Prazo: </span>{formatDate(om.deadline)}</span>
                             </div>
                           )}
+                           {om.scheduled_date && <div className="flex items-center gap-2 text-sm"><Calendar className="h-4 w-4 flex-shrink-0" /><span>Programada: {formatDate(om.scheduled_date)}</span></div>}
                         </div>
+
                       </button>
 
                       <AnimatePresence initial={false}>
@@ -365,6 +377,10 @@ export default function OpManutencaoMinhas() {
                           <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }}
                             transition={{ duration: 0.25, ease: "easeOut" }} className="overflow-hidden">
                             <div className="px-4 pb-4 space-y-3">
+                              {isTecnico && <div className="rounded-lg border border-border bg-card p-3 space-y-2">
+                                <div className="flex items-center justify-between gap-2"><span className="text-sm font-semibold">Materiais necessários</span><Button size="sm" variant="outline" onClick={() => setMaterialsOpen(om)}>Editar</Button></div>
+                                {readMaterials(om.materials).length ? readMaterials(om.materials).map((m, i) => <p key={i} className="text-sm">{m.quantity} × {m.name} {m.purchased ? "· Comprado" : "· Pendente"}</p>) : <p className="text-xs text-muted-foreground">Nenhum material informado.</p>}
+                              </div>}
                               <div className="rounded-lg p-3 space-y-2" style={{ background: highContrast ? "#161616" : "hsl(210 20% 97%)" }}>
                                 <div className="text-[10px] font-bold uppercase tracking-wider mb-1" style={{ color: textMuted }}>Detalhes</div>
                                 {site?.address && (
@@ -494,6 +510,14 @@ export default function OpManutencaoMinhas() {
         defaultTechnicianId={maintProfile.mechanicId || null}
         onCreated={() => orders.refetch()}
       />
+      <Dialog open={!!materialsOpen} onOpenChange={open => !open && setMaterialsOpen(null)}>
+        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+          <DialogHeader><DialogTitle>Materiais da OM #{materialsOpen?.om_number}</DialogTitle></DialogHeader>
+          <MaintenanceMaterials items={readMaterials(materialsOpen?.materials)} onChange={items => setMaterialsOpen(prev => prev ? { ...prev, materials: items } : null)} />
+          <label className="flex items-center gap-2 text-sm"><Checkbox checked={!!materialsOpen?.awaiting_material} onCheckedChange={checked => setMaterialsOpen(prev => prev ? { ...prev, awaiting_material: checked === true } : null)} /> Aguardando compra</label>
+          <DialogFooter><Button variant="outline" onClick={() => setMaterialsOpen(null)}>Cancelar</Button><Button onClick={async () => { if (!materialsOpen) return; await orders.update(materialsOpen.id, { materials: readMaterials(materialsOpen.materials).filter(m => m.name.trim()), awaiting_material: materialsOpen.awaiting_material }); setMaterialsOpen(null); }}>Salvar</Button></DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
