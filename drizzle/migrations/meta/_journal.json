@@ -29,6 +29,13 @@
       "when": 1789037173263,
       "tag": "0003_op_companies_module_flags",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1790471170435,
+      "tag": "0004_notify_entregas_request_trigger",
+      "breakpoints": true
     }
   ]
 }
