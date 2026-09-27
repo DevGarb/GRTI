@@ -379,17 +379,10 @@ export default function OpManutencao() {
         </div>
       )}
 
-      <Tabs defaultValue="ordens">
-        <TabsList>
-          <TabsTrigger value="ordens">{isSolicitante ? "Minhas solicitações" : "Ordens de Manutenção"}</TabsTrigger>
-          {isAdmin && <TabsTrigger value="sedes"><Building2 className="h-4 w-4 mr-1 inline" />Sedes</TabsTrigger>}
-          {isAdmin && <TabsTrigger value="checklists"><ListChecks className="h-4 w-4 mr-1 inline" />Checklists</TabsTrigger>}
-        </TabsList>
-
-
         {/* ORDENS */}
-        <TabsContent value="ordens" className="space-y-4">
-          <div className="rounded-lg border bg-card p-3 space-y-3">
+        {tab === "ordens" && (
+        <div className="space-y-4">
+          <div className="rounded-lg border bg-card p-3">
             <div className="flex flex-wrap items-center gap-2">
               <Select value={categoryFilter} onValueChange={setCategoryFilter}>
                 <SelectTrigger className="w-48 h-9"><SelectValue /></SelectTrigger>
@@ -408,31 +401,28 @@ export default function OpManutencao() {
                   </SelectContent>
                 </Select>
               )}
-              {view === "kanban" && (
-                <div className="flex items-center gap-1 rounded-md border px-1 h-9">
-                  <Button size="icon" variant="ghost" className="h-7 w-7" aria-label="Semana anterior" onClick={() => setWeekOffset(v => v - 1)}><ChevronLeft className="h-4 w-4" /></Button>
-                  <span className="text-sm font-medium whitespace-nowrap px-1">{week[0].split("-").reverse().join("/")} – {week[6].split("-").reverse().join("/")}</span>
-                  <Button size="icon" variant="ghost" className="h-7 w-7" aria-label="Próxima semana" onClick={() => setWeekOffset(v => v + 1)}><ChevronRight className="h-4 w-4" /></Button>
-                  {weekOffset !== 0 && <Button size="sm" variant="ghost" className="h-7" onClick={() => setWeekOffset(0)}>Hoje</Button>}
-                </div>
-              )}
-              {view === "lista" && <DateRangeFilter from={dateFrom} to={dateTo} onFromChange={setDateFrom} onToChange={setDateTo} showLabels={false} />}
-              {isAdmin && (
-                <Button variant="outline" size="sm" className="h-9 ml-auto" onClick={exportReport}>
-                  <Download className="h-4 w-4 mr-1" />Exportar relatório
-                </Button>
-              )}
+              <Select value={activeSite} onValueChange={setActiveSite}>
+                <SelectTrigger className="w-56 h-9"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todas as sedes ({orders.items.filter(o => inDateRange(o.opened_at, dateFrom, dateTo)).length})</SelectItem>
+                  {sites.items.filter(s => s.is_active).map(s => {
+                    const c = orders.items.filter(o => o.site_id === s.id && inDateRange(o.opened_at, dateFrom, dateTo)).length;
+                    return <SelectItem key={s.id} value={s.id}>{s.name} ({c})</SelectItem>;
+                  })}
+                </SelectContent>
+              </Select>
+              <div className="flex flex-wrap items-center gap-2 ml-auto">
+                {view === "kanban" && (
+                  <div className="flex items-center gap-1 rounded-md border px-1 h-9">
+                    <Button size="icon" variant="ghost" className="h-7 w-7" aria-label="Semana anterior" onClick={() => setWeekOffset(v => v - 1)}><ChevronLeft className="h-4 w-4" /></Button>
+                    <span className="text-sm font-medium whitespace-nowrap px-1">{week[0].split("-").reverse().join("/")} – {week[6].split("-").reverse().join("/")}</span>
+                    <Button size="icon" variant="ghost" className="h-7 w-7" aria-label="Próxima semana" onClick={() => setWeekOffset(v => v + 1)}><ChevronRight className="h-4 w-4" /></Button>
+                    {weekOffset !== 0 && <Button size="sm" variant="ghost" className="h-7" onClick={() => setWeekOffset(0)}>Hoje</Button>}
+                  </div>
+                )}
+                {view === "lista" && <DateRangeFilter from={dateFrom} to={dateTo} onFromChange={setDateFrom} onToChange={setDateTo} showLabels={false} />}
+              </div>
             </div>
-
-            <Tabs value={activeSite} onValueChange={setActiveSite}>
-              <TabsList className="flex-wrap h-auto">
-                <TabsTrigger value="all">Todas as sedes ({orders.items.filter(o => inDateRange(o.opened_at, dateFrom, dateTo)).length})</TabsTrigger>
-                {sites.items.filter(s => s.is_active).map(s => {
-                  const c = orders.items.filter(o => o.site_id === s.id && inDateRange(o.opened_at, dateFrom, dateTo)).length;
-                  return <TabsTrigger key={s.id} value={s.id}>{s.name} ({c})</TabsTrigger>;
-                })}
-              </TabsList>
-            </Tabs>
           </div>
 
           {orders.loading ? (
