@@ -66,6 +66,14 @@
     --chart-3: 142 70% 40%;
     --chart-4: 35 92% 50%;
     --chart-5: 0 72% 51%;
+    --maintenance-material: 35 88% 42%;
+    --maintenance-material-bg: 35 95% 92%;
+    --maintenance-tech-1: 190 72% 32%;
+    --maintenance-tech-2: 258 50% 48%;
+    --maintenance-tech-3: 148 58% 32%;
+    --maintenance-tech-4: 15 76% 43%;
+    --maintenance-tech-5: 212 76% 40%;
+    --maintenance-tech-6: 335 63% 42%;
   }
 
   .dark {
@@ -113,6 +121,14 @@
     --status-waiting-bg: 35 80% 15%;
     --status-closed: 142 60% 40%;
     --status-closed-bg: 142 60% 15%;
+    --maintenance-material: 35 90% 70%;
+    --maintenance-material-bg: 35 45% 20%;
+    --maintenance-tech-1: 190 68% 70%;
+    --maintenance-tech-2: 258 65% 75%;
+    --maintenance-tech-3: 148 55% 66%;
+    --maintenance-tech-4: 15 85% 72%;
+    --maintenance-tech-5: 212 80% 72%;
+    --maintenance-tech-6: 335 70% 75%;
   }
 
   /* TV Dashboard — Bento Tech tokens (always on, independent of light/dark) */
@@ -155,6 +171,15 @@
     --tv-accent-red: 0 75% 48%;
   }
 }
+
+.maintenance-material-card { background: hsl(var(--maintenance-material-bg) / 0.55); border-color: hsl(var(--maintenance-material) / 0.75); }
+.maintenance-material-tag { background: hsl(var(--maintenance-material-bg)); color: hsl(var(--maintenance-material)); border: 1px solid hsl(var(--maintenance-material) / 0.4); }
+.maintenance-tech-a { color: hsl(var(--maintenance-tech-1)); border-color: hsl(var(--maintenance-tech-1) / 0.6); background: hsl(var(--maintenance-tech-1) / 0.1); }
+.maintenance-tech-b { color: hsl(var(--maintenance-tech-2)); border-color: hsl(var(--maintenance-tech-2) / 0.6); background: hsl(var(--maintenance-tech-2) / 0.1); }
+.maintenance-tech-c { color: hsl(var(--maintenance-tech-3)); border-color: hsl(var(--maintenance-tech-3) / 0.6); background: hsl(var(--maintenance-tech-3) / 0.1); }
+.maintenance-tech-d { color: hsl(var(--maintenance-tech-4)); border-color: hsl(var(--maintenance-tech-4) / 0.6); background: hsl(var(--maintenance-tech-4) / 0.1); }
+.maintenance-tech-e { color: hsl(var(--maintenance-tech-5)); border-color: hsl(var(--maintenance-tech-5) / 0.6); background: hsl(var(--maintenance-tech-5) / 0.1); }
+.maintenance-tech-f { color: hsl(var(--maintenance-tech-6)); border-color: hsl(var(--maintenance-tech-6) / 0.6); background: hsl(var(--maintenance-tech-6) / 0.1); }
 
 @layer utilities {
   .font-display { font-family: 'Space Grotesk', system-ui, sans-serif; letter-spacing: -0.02em; }
