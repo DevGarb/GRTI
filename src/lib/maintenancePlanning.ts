@@ -11,7 +11,8 @@ export function pendingMaterials(value: unknown) {
   return readMaterials(value).filter(item => item.name.trim() && !item.purchased).length;
 }
 
-export function maintenanceDueAt(order: { sla_started_at?: string | null; material_received_at?: string | null; postponed_until?: string | null }) {
+export function maintenanceDueAt(order: { sla_started_at?: string | null; material_received_at?: string | null; postponed_until?: string | null; awaiting_material?: boolean }) {
+  if (order.awaiting_material && !order.material_received_at) return null;
   const start = order.material_received_at || order.sla_started_at;
   if (!start) return null;
   const base = new Date(start).getTime() + 24 * 60 * 60 * 1000;

@@ -491,7 +491,7 @@ export default function OpManutencao() {
         mode={isSolicitante ? "solicitante" : isTecnico ? "tecnico" : "admin"}
         forcedRequesterId={isSolicitante ? maintProfile.requesterId : undefined}
          onSave={async (input, photos) => {
-          if (editing) await orders.update(editing.id, input);
+           if (editing) { if (!(await orders.update(editing.id, input))) return; }
            else {
              const created = await orders.add(input);
              if (!created) return;
