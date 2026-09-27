@@ -85,6 +85,7 @@ export default function OpManutencaoMinhas() {
   const [receiving, setReceiving] = useState<MaintenanceOrder | null>(null);
   const [receivedAt, setReceivedAt] = useState("");
   const [receivedPlannedDate, setReceivedPlannedDate] = useState("");
+  const [receiptDelayReason, setReceiptDelayReason] = useState("");
 
   const isTecnico = maintProfile.role === "tecnico";
   const isSolicitante = maintProfile.role === "solicitante";
@@ -463,7 +464,7 @@ export default function OpManutencaoMinhas() {
 
                               {/* Ações do técnico */}
                                {isTecnico && !isFinished && <div className="flex flex-wrap gap-2">
-                                 {om.awaiting_material && !om.material_received_at && <Button variant="outline" onClick={() => { setReceiving(om); setReceivedAt(new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 16)); setReceivedPlannedDate(""); }}>Informar recebimento do material</Button>}
+                                 {om.awaiting_material && !om.material_received_at && <Button variant="outline" onClick={() => { setReceiving(om); setReceivedAt(new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 16)); setReceivedPlannedDate(""); setReceiptDelayReason(""); }}>Informar recebimento do material</Button>}
                                  <Button variant="outline" onClick={() => { setPlanning(om); setPlannedAt(""); setReason(""); }}>Adiar com justificativa</Button>
                                </div>}
                               {isTecnico && om.status === "Aberta" && (
@@ -534,11 +535,14 @@ export default function OpManutencaoMinhas() {
        <Dialog open={!!receiving} onOpenChange={open => !open && setReceiving(null)}><DialogContent><DialogHeader><DialogTitle>Material recebido · OM #{receiving?.om_number}</DialogTitle></DialogHeader>
          <label className="text-sm font-medium">Data e hora do recebimento *<Input type="datetime-local" value={receivedAt} max={new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 16)} onChange={e => setReceivedAt(e.target.value)} /></label>
          <label className="text-sm font-medium">Data prevista para realizar a manutenção *<Input type="date" value={receivedPlannedDate} onChange={e => setReceivedPlannedDate(e.target.value)} /></label>
+         {receivedAt && receivedPlannedDate && new Date(`${receivedPlannedDate}T00:00:00`).getTime() > new Date(receivedAt).getTime() + 86400000 && <label className="text-sm font-medium">Justificativa para realizar após 24 horas *<Textarea maxLength={1000} value={receiptDelayReason} onChange={e => setReceiptDelayReason(e.target.value)} /></label>}
          <p className="text-sm text-muted-foreground">O prazo de 24 horas começa no momento do recebimento. Para realizar depois do prazo, informe um adiamento com justificativa.</p>
          <DialogFooter><Button variant="outline" onClick={() => setReceiving(null)}>Cancelar</Button><Button disabled={planningBusy || !receivedAt || !receivedPlannedDate} onClick={async () => {
            if (!receiving || new Date(receivedAt).getTime() > Date.now() || receivedPlannedDate < receivedAt.slice(0, 10)) { toast.error("Confira as datas de recebimento e execução"); return; }
+           const delayed = new Date(`${receivedPlannedDate}T00:00:00`).getTime() > new Date(receivedAt).getTime() + 86400000;
+           if (delayed && receiptDelayReason.trim().length < 10) { toast.error("Justifique o adiamento (mínimo 10 caracteres)"); return; }
            setPlanningBusy(true);
-           const ok = await orders.update(receiving.id, { material_received_at: new Date(receivedAt).toISOString(), awaiting_material: false, scheduled_date: receivedPlannedDate, postponed_until: null, postponement_reason: null });
+           const ok = await orders.update(receiving.id, { material_received_at: new Date(receivedAt).toISOString(), awaiting_material: false, scheduled_date: receivedPlannedDate, postponed_until: delayed ? new Date(`${receivedPlannedDate}T18:00:00`).toISOString() : null, postponement_reason: delayed ? receiptDelayReason.trim() : null });
            setPlanningBusy(false);
            if (ok) { toast.success("Recebimento registrado. Prazo de 24 horas iniciado."); setReceiving(null); }
          }}>Confirmar recebimento</Button></DialogFooter>
