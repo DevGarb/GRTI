@@ -341,7 +341,7 @@ export default function OpManutencao() {
 
   return (
     <div>
-      <ManutencaoNav />
+      <ManutencaoNav onReport={isAdmin ? exportReport : undefined} />
     <div className="space-y-6 p-6">
 
       <div className="flex items-center justify-between flex-wrap gap-3">
