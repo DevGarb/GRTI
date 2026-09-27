@@ -440,7 +440,7 @@ export default function OpManutencao() {
               isAllowed={() => true}
               onMove={handleKanbanMove}
               onReorder={isAdmin ? handleKanbanReorder : undefined}
-              cardClassName={om => om.awaiting_material ? "maintenance-material-card" : ""}
+              cardClassName={techCardClass}
               emptyText="Sem ordens"
             />
           ) : (
