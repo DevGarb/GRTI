@@ -324,6 +324,13 @@ export default function OpManutencao() {
     );
   };
 
+  const techCardClass = (om: MaintenanceOrder) => {
+    const tech = mechanics.items.find(m => m.id === om.assigned_technician_id);
+    const idx = mechanics.items.filter(m => m.is_active !== false).findIndex(m => m.id === tech?.id);
+    if (idx >= 0) return `maintenance-tech-card-${TECH_TONES[idx % TECH_TONES.length].slice(-1)}`;
+    return om.awaiting_material ? "maintenance-material-card" : "";
+  };
+
   // Non-admins get their own mobile-first screens (after all hooks to preserve hook order)
   if (!maintProfile.loading && isTecnico) return <Navigate to="/op/manutencao/minhas" replace />;
   if (!maintProfile.loading && isSolicitante) return <Navigate to="/op/manutencao/solicitar" replace />;
@@ -433,7 +440,7 @@ export default function OpManutencao() {
               isAllowed={() => true}
               onMove={handleKanbanMove}
               onReorder={isAdmin ? handleKanbanReorder : undefined}
-              cardClassName={om => om.awaiting_material ? "maintenance-material-card" : ""}
+              cardClassName={techCardClass}
               emptyText="Sem ordens"
             />
           ) : (
