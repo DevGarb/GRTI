@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   MapPin, Phone, MessageCircle, LogOut, Sun, Moon, CheckCircle2, PlayCircle,
@@ -6,7 +6,7 @@ import {
   FileText, AlertTriangle, Wrench, User,
 } from "lucide-react";
 import { motion, AnimatePresence, LayoutGroup } from "framer-motion";
-import { useMaintenanceOrders, useSites, type MaintenanceOrder } from "@/hooks/useManutencao";
+import { useMaintenanceOrders, useSites, type MaintenanceOrder, type MaintenancePhoto } from "@/hooks/useManutencao";
 import { useDeliveryRequesters } from "@/hooks/useDeliveryRequesters";
 import { useMaintTechnicians } from "@/hooks/useMaintTechnicians";
 import { useMaintProfile } from "@/hooks/useMaintProfile";
