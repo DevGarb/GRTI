@@ -1,7 +1,7 @@
 import DateRangeFilter, { currentMonthStart, todayStr, inDateRange } from "@/components/shared/DateRangeFilter";
 import { useEffect, useMemo, useState } from "react";
 import { Navigate } from "react-router-dom";
-import { Wrench, Plus, Pencil, Trash2, AlertTriangle, Building2, ListChecks, Image as ImageIcon, X, LayoutGrid, List, Eye, EyeOff } from "lucide-react";
+import { Wrench, Plus, Pencil, Trash2, AlertTriangle, Building2, ListChecks, Image as ImageIcon, X, LayoutGrid, List, Eye, EyeOff, ChevronLeft, ChevronRight, Package } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -28,6 +28,8 @@ import OpNotesPanel from "@/components/operacional/OpNotesPanel";
 import OpMoveLogPanel from "@/components/operacional/OpMoveLogPanel";
 import { cn } from "@/lib/utils";
 import ManutencaoNav from "@/pages/op/ManutencaoNav";
+import MaintenanceMaterials from "@/components/operacional/MaintenanceMaterials";
+import { dateKey, pendingMaterials, readMaterials, TECH_TONES, weekDates, weekStart } from "@/lib/maintenancePlanning";
 
 const STATUS_COLORS: Record<string, string> = {
   "Aberta": "bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300",
@@ -74,6 +76,12 @@ export default function OpManutencao() {
   const [statusFilter, setStatusFilter] = useState<"all" | "Aberta" | "Em execução" | "Concluída" | "atraso">("all");
   const [view, setView] = useState<"lista" | "kanban">("kanban");
   const [hideFinalized, setHideFinalized] = useState(true);
+  const [weekOffset, setWeekOffset] = useState(0);
+  const week = useMemo(() => {
+    const start = weekStart();
+    start.setDate(start.getDate() + weekOffset * 7);
+    return weekDates(start);
+  }, [weekOffset]);
   const [closing, setClosing] = useState<MaintenanceOrder | null>(null);
 
   const [omOpen, setOmOpen] = useState(false);
@@ -96,12 +104,12 @@ export default function OpManutencao() {
       // Profile scoping (only affects operacional org via useMaintProfile)
       if (isTecnico && o.assigned_technician_id !== maintProfile.mechanicId) return false;
       if (isSolicitante && o.requester_id !== maintProfile.requesterId) return false;
-      if (!inDateRange(o.opened_at, dateFrom, dateTo)) return false;
+       if (view === "lista" && !inDateRange(o.opened_at, dateFrom, dateTo)) return false;
       if (activeSite !== "all" && o.site_id !== activeSite) return false;
       if (categoryFilter !== "all" && o.category !== categoryFilter) return false;
       return true;
     });
-  }, [orders.items, dateFrom, dateTo, activeSite, categoryFilter, isTecnico, isSolicitante, maintProfile.mechanicId, maintProfile.requesterId]);
+  }, [orders.items, dateFrom, dateTo, activeSite, categoryFilter, isTecnico, isSolicitante, maintProfile.mechanicId, maintProfile.requesterId, view]);
 
   const filtered = useMemo(() => {
     return baseFiltered.filter(o => {
@@ -135,14 +143,16 @@ export default function OpManutencao() {
     filtered.filter(o => !(hideFinalized && statusFilter !== "Concluída" && o.status === "Concluída")),
   [filtered, hideFinalized, statusFilter]);
 
-  // Admin: columns per técnico (like Entregas). Others: columns per status.
+  // The intake column remains visible; planned work is grouped by day of this week.
   const kanbanColumns = useMemo(() => {
     if (!isAdmin) return STATUS_KANBAN_COLUMNS.map(c => ({ id: c.id, label: c.label, color: c.color }));
-    const cols: { id: string; label: string; color?: string }[] = [{ id: PENDING_COL, label: "SEM ATRIBUIÇÃO" }];
-    mechanics.items.filter(m => m.is_active !== false).forEach(m => cols.push({ id: `mech:${m.id}`, label: m.name }));
+    const labels = ["Segunda", "Terça", "Quarta", "Quinta", "Sexta"];
+    const cols: { id: string; label: string; color?: string }[] = [{ id: PENDING_COL, label: "ENTRADA / DISTRIBUIÇÃO" }];
+    week.slice(0, 5).forEach((date, index) => cols.push({ id: date, label: `${labels[index]} · ${date.slice(8)}/${date.slice(5, 7)}` }));
+    cols.push({ id: "__weekend__", label: `Final de semana · ${week[5].slice(8)}/${week[6].slice(8)}` });
     if (!hideFinalized) cols.push({ id: FINALIZED_COL, label: "FINALIZADAS", color: "bg-emerald-600" });
     return cols;
-  }, [isAdmin, mechanics.items, hideFinalized]);
+  }, [isAdmin, hideFinalized, week]);
 
   const itemsByCol = useMemo(() => {
     const map: Record<string, MaintenanceOrder[]> = {};
@@ -150,8 +160,10 @@ export default function OpManutencao() {
     filteredKanban.forEach(o => {
       if (!isAdmin) { (map[o.status] ||= []).push(o); return; }
       if (o.status === "Concluída") { map[FINALIZED_COL]?.push(o); return; }
-      if (o.assigned_technician_id && map[`mech:${o.assigned_technician_id}`]) map[`mech:${o.assigned_technician_id}`].push(o);
-      else map[PENDING_COL]?.push(o);
+      if (o.scheduled_date && week.includes(o.scheduled_date)) {
+        const col = o.scheduled_date === week[5] || o.scheduled_date === week[6] ? "__weekend__" : o.scheduled_date;
+        map[col]?.push(o);
+      } else map[PENDING_COL]?.push(o);
     });
     // Sort each column by kanban_position (nulls last), then newest first
     Object.keys(map).forEach(k => {
@@ -163,7 +175,7 @@ export default function OpManutencao() {
       });
     });
     return map;
-  }, [filteredKanban, kanbanColumns, isAdmin]);
+  }, [filteredKanban, kanbanColumns, isAdmin, week]);
 
   const handleKanbanReorder = async (colId: string, orderedIds: string[]) => {
     if (!isAdmin) return;
@@ -179,13 +191,9 @@ export default function OpManutencao() {
   const handleKanbanMove = (om: MaintenanceOrder, _from: string, to: string) => {
     if (!isAdmin) return handleStatusChange(om, to);
     if (to === FINALIZED_COL) { setClosing(om); return; }
-    if (to === PENDING_COL) { orders.update(om.id, { assigned_technician_id: null }); return; }
-    if (to.startsWith("mech:")) {
-      const mechId = to.slice(5);
-      const patch: Partial<MaintenanceOrder> = { assigned_technician_id: mechId };
-      if (om.status === "Aberta") patch.status = "Em execução";
-      orders.update(om.id, patch);
-    }
+    if (to === PENDING_COL) { orders.update(om.id, { scheduled_date: null }); return; }
+    if (to === "__weekend__") { orders.update(om.id, { scheduled_date: week[5] }); return; }
+    if (week.includes(to)) orders.update(om.id, { scheduled_date: to });
   };
 
   const renderKanbanHeader = (col: { id: string; label: string; color?: string }, count: number) => {
@@ -200,7 +208,7 @@ export default function OpManutencao() {
     if (col.id === PENDING_COL) {
       return (
         <div className="bg-white border rounded-t-lg px-3 py-2.5 flex items-center justify-between">
-          <span className="text-[11px] font-bold tracking-wide text-muted-foreground">SEM ATRIBUIÇÃO</span>
+          <span className="text-[11px] font-bold tracking-wide text-muted-foreground">ENTRADA / DISTRIBUIÇÃO</span>
           <span className="text-[11px] font-bold bg-muted rounded-full px-2 py-0.5">{count}</span>
         </div>
       );
@@ -213,17 +221,10 @@ export default function OpManutencao() {
         </div>
       );
     }
-    const mechId = col.id.slice(5);
-    const mech = mechanics.items.find(x => x.id === mechId);
-    const initials = (mech?.name || "?").split(" ").filter(Boolean).slice(0, 2).map(s => s[0]).join("").toUpperCase();
     return (
-      <div className="bg-white border rounded-t-lg px-3 py-2 flex items-center gap-2">
-        <div className="h-9 w-9 rounded-full bg-slate-800 text-white text-[12px] font-bold flex items-center justify-center flex-shrink-0">{initials}</div>
-        <div className="flex-1 min-w-0">
-          <div className="font-semibold text-[13px] truncate">{mech?.name || col.label}</div>
-          {mech?.specialty && <div className="text-[10px] text-muted-foreground truncate">{mech.specialty}</div>}
-        </div>
-        <span className="text-[11px] font-bold bg-slate-800 text-white rounded-full h-6 min-w-6 px-1.5 flex items-center justify-center">{count}</span>
+      <div className="bg-card border rounded-t-lg px-3 py-3 flex items-center justify-between gap-2">
+        <span className="font-semibold text-xs">{col.label}</span>
+        <span className="text-xs font-bold bg-muted rounded-full px-2 py-0.5">{count}</span>
       </div>
     );
   };
@@ -245,18 +246,24 @@ export default function OpManutencao() {
   const renderCard = (om: MaintenanceOrder) => {
     const overdue = om.deadline && om.deadline < today && !["Concluída", "Cancelada"].includes(om.status);
     const site = siteOf(om.site_id);
+    const tech = mechanics.items.find(m => m.id === om.assigned_technician_id);
+    const tone = TECH_TONES[Math.max(0, mechanics.items.filter(m => m.is_active !== false).findIndex(m => m.id === tech?.id)) % TECH_TONES.length];
     return (
       <div onClick={() => { setEditing(om); setOmOpen(true); }}>
         <div className="flex items-center gap-1 flex-wrap mb-2">
           <span className="font-mono text-[10px] px-1.5 py-0.5 bg-muted rounded">#{om.om_number}</span>
           <Badge variant="outline" className={cn("text-[10px]", PRIORITY_COLORS[om.priority])}>{om.priority}</Badge>
           {overdue && <Badge variant="destructive" className="text-[10px]"><AlertTriangle className="h-3 w-3 mr-0.5" />Atrasada</Badge>}
+          {om.awaiting_material && <Badge className="maintenance-material-tag text-[10px]"><Package className="h-3 w-3 mr-1" />Aguardando compra</Badge>}
         </div>
+        {tech && <Badge variant="outline" className={cn("text-[10px] mb-2", tone)}>{tech.name}</Badge>}
+        {om.scheduled_date && !week.includes(om.scheduled_date) && <span className="block text-xs text-muted-foreground mb-1">Programada: {om.scheduled_date.split("-").reverse().join("/")}</span>}
         <div className="font-semibold text-sm line-clamp-2">{om.title}</div>
         <div className="text-[11px] text-muted-foreground mt-1 flex flex-wrap gap-x-2">
           <span><Building2 className="h-3 w-3 inline mr-0.5" />{siteName(om.site_id)}</span>
           {om.deadline && <span className={cn(overdue && "text-rose-600 font-medium")}>📅 {om.deadline}</span>}
         </div>
+        {readMaterials(om.materials).length > 0 && <p className="text-[11px] text-muted-foreground mt-2"><Package className="h-3 w-3 inline mr-1" />{readMaterials(om.materials).map(m => `${m.name} (${m.quantity})`).join(", ")}</p>}
         <div className="flex items-center justify-between mt-2">
           <Badge variant="secondary" className="text-[10px]">{om.category}</Badge>
           <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
@@ -304,7 +311,7 @@ export default function OpManutencao() {
               {hideFinalized ? <><EyeOff className="h-3 w-3 mr-1" />Ocultos</> : <><Eye className="h-3 w-3 mr-1" />Todos</>}
             </Button>
           )}
-          <DateRangeFilter from={dateFrom} to={dateTo} onFromChange={setDateFrom} onToChange={setDateTo} showLabels={false} />
+          {view === "lista" && <DateRangeFilter from={dateFrom} to={dateTo} onFromChange={setDateFrom} onToChange={setDateTo} showLabels={false} />}
           {!isTecnico && (
             <Button onClick={() => { setEditing(null); setOmOpen(true); }}>
               <Plus className="h-4 w-4 mr-1" /> {isSolicitante ? "Nova solicitação" : "Nova OM"}
@@ -358,6 +365,13 @@ export default function OpManutencao() {
             </TabsList>
           </Tabs>
 
+          {view === "kanban" && <div className="flex items-center gap-2">
+            <Button size="icon" variant="outline" aria-label="Semana anterior" onClick={() => setWeekOffset(v => v - 1)}><ChevronLeft className="h-4 w-4" /></Button>
+            <span className="text-sm font-medium">{week[0].split("-").reverse().join("/")} – {week[6].split("-").reverse().join("/")}</span>
+            <Button size="icon" variant="outline" aria-label="Próxima semana" onClick={() => setWeekOffset(v => v + 1)}><ChevronRight className="h-4 w-4" /></Button>
+            {weekOffset !== 0 && <Button size="sm" variant="ghost" onClick={() => setWeekOffset(0)}>Hoje</Button>}
+          </div>}
+
           {orders.loading ? (
             <div className="text-center py-8 text-muted-foreground">Carregando...</div>
           ) : view === "kanban" ? (
@@ -370,6 +384,7 @@ export default function OpManutencao() {
               isAllowed={() => true}
               onMove={handleKanbanMove}
               onReorder={isAdmin ? handleKanbanReorder : undefined}
+              cardClassName={om => om.awaiting_material ? "maintenance-material-card" : ""}
               emptyText="Sem ordens"
             />
           ) : (
@@ -390,6 +405,8 @@ export default function OpManutencao() {
                           <Badge variant="outline" className={cn(PRIORITY_COLORS[om.priority])}>{om.priority}</Badge>
                           <Badge variant="secondary">{om.category}</Badge>
                           {overdue && <Badge variant="destructive"><AlertTriangle className="h-3 w-3 mr-1" />Atrasada</Badge>}
+                          {om.awaiting_material && <Badge className="maintenance-material-tag">Aguardando compra</Badge>}
+                          {om.assigned_technician_id && <Badge variant="outline" className={TECH_TONES[Math.max(0, mechanics.items.findIndex(m => m.id === om.assigned_technician_id)) % TECH_TONES.length]}>{mechanics.items.find(m => m.id === om.assigned_technician_id)?.name}</Badge>}
                         </div>
                         <div className="font-semibold mt-2">{om.title}</div>
                         {om.description && <div className="text-sm text-muted-foreground mt-1 line-clamp-2">{om.description}</div>}
@@ -530,6 +547,7 @@ function OmModal({ open, onOpenChange, editing, sites, mechanics, requesters, mo
   const { profile } = useAuth();
   const { data: sectors = [] } = useSectors(profile?.organization_id || null);
   const [form, setForm] = useState<Partial<MaintenanceOrder>>({});
+  const [section, setSection] = useState<"dados" | "materiais">("dados");
   useEffect(() => {
     if (open) {
       const base: Partial<MaintenanceOrder> = editing
@@ -539,6 +557,7 @@ function OmModal({ open, onOpenChange, editing, sites, mechanics, requesters, mo
         base.requester_id = forcedRequesterId;
       }
       setForm(base);
+      setSection("dados");
     }
   }, [open, editing, mode, forcedRequesterId]);
 
@@ -556,7 +575,13 @@ function OmModal({ open, onOpenChange, editing, sites, mechanics, requesters, mo
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader><DialogTitle>{title}</DialogTitle></DialogHeader>
-        <div className="grid grid-cols-2 gap-3">
+        <Tabs value={section} onValueChange={v => setSection(v as "dados" | "materiais")}>
+          <TabsList><TabsTrigger value="dados">Dados da OM</TabsTrigger><TabsTrigger value="materiais">Materiais {readMaterials(form.materials).length ? `(${readMaterials(form.materials).length})` : ""}</TabsTrigger></TabsList>
+        </Tabs>
+        {section === "materiais" ? <div className="space-y-4">
+          <MaintenanceMaterials items={readMaterials(form.materials)} onChange={materials => setForm({ ...form, materials })} readOnly={solicitanteView} />
+          {!solicitanteView && <label className="flex items-center gap-2 text-sm"><Checkbox checked={!!form.awaiting_material} onCheckedChange={checked => setForm({ ...form, awaiting_material: checked === true })} /> Aguardando compra de material</label>}
+        </div> : <div className="grid grid-cols-2 gap-3">
           <div className="col-span-2">
             <Label>Título *</Label>
             <Input disabled={readOnly} value={form.title || ""} onChange={e => setForm({ ...form, title: e.target.value })} />
@@ -638,6 +663,7 @@ function OmModal({ open, onOpenChange, editing, sites, mechanics, requesters, mo
               <Input disabled={readOnly} type="date" value={form.deadline || ""} onChange={e => setForm({ ...form, deadline: e.target.value })} />
             </div>
           )}
+          {mode === "admin" && <div><Label>Dia programado</Label><Input type="date" value={form.scheduled_date || ""} onChange={e => setForm({ ...form, scheduled_date: e.target.value || null })} /></div>}
           <div className="col-span-2">
             <Label>Descrição</Label>
             <Textarea disabled={readOnly} rows={3} value={form.description || ""} onChange={e => setForm({ ...form, description: e.target.value })} />
@@ -651,7 +677,7 @@ function OmModal({ open, onOpenChange, editing, sites, mechanics, requesters, mo
               <OpMoveLogPanel module="maintenance" cardId={editing.id} />
             </div>
           )}
-        </div>
+        </div>}
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>Fechar</Button>
           <Button onClick={() => onSave(form)} disabled={!form.title || !form.sector}>Salvar</Button>
