@@ -80,7 +80,7 @@ export interface ChecklistExecution {
   created_at: string;
 }
 
-export const MAINT_CATEGORIES = ["Elétrica", "Hidráulica", "Civil", "Ar-condicionado", "Outros"];
+export const MAINT_CATEGORIES = ["Elétrica", "Hidráulica", "Civil", "Ar-condicionado", "Pintura", "Alarmes", "Câmeras", "Móveis", "Outros"];
 export const MAINT_PRIORITIES = ["Baixa", "Média", "Alta", "Urgente"];
 export const MAINT_STATUSES = ["Aberta", "Em execução", "Concluída", "Cancelada"];
 
