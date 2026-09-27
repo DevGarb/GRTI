@@ -15,11 +15,13 @@ import { useAuth } from "@/contexts/AuthContext";
 import OpClosureDialog from "@/components/operacional/OpClosureDialog";
 import NewMaintOrderModal from "@/components/operacional/NewMaintOrderModal";
 import MaintenanceMaterials from "@/components/operacional/MaintenanceMaterials";
-import { readMaterials, TECH_TONES } from "@/lib/maintenancePlanning";
+import { maintenanceDueAt, maintenanceIsOverdue, readMaterials, TECH_TONES } from "@/lib/maintenancePlanning";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import "./cearagps.css";
 
@@ -76,6 +78,10 @@ export default function OpManutencaoMinhas() {
   const [closing, setClosing] = useState<MaintenanceOrder | null>(null);
   const [newOMOpen, setNewOMOpen] = useState(false);
   const [materialsOpen, setMaterialsOpen] = useState<MaintenanceOrder | null>(null);
+  const [planning, setPlanning] = useState<MaintenanceOrder | null>(null);
+  const [plannedAt, setPlannedAt] = useState("");
+  const [reason, setReason] = useState("");
+  const [planningBusy, setPlanningBusy] = useState(false);
 
   const isTecnico = maintProfile.role === "tecnico";
   const isSolicitante = maintProfile.role === "solicitante";
@@ -118,15 +124,14 @@ export default function OpManutencaoMinhas() {
 
   const confirmClosure = async (payload: { closure_summary: string; closed_at: string; photos?: File[] }) => {
     if (!closing) return;
-    await orders.update(closing.id, {
+    if (!payload.photos?.length || !payload.closed_at) throw new Error("Foto, data e hora são obrigatórias");
+    for (const f of payload.photos) if (!(await orders.uploadPhoto(closing.id, f, "depois"))) throw new Error("Não foi possível enviar a foto de finalização");
+    if (!(await orders.update(closing.id, {
       status: "Concluída",
       closure_summary: payload.closure_summary,
       finished_at: payload.closed_at,
       closed_by: user?.id || null,
-    });
-    if (payload.photos?.length) {
-      for (const f of payload.photos) await orders.uploadPhoto(closing.id, f, "depois");
-    }
+    }))) throw new Error("Não foi possível concluir a OM");
     setClosing(null);
     setExpandedId(null);
     toast.success("✅ OM concluída!");
@@ -277,7 +282,7 @@ export default function OpManutencaoMinhas() {
                   const tech = technicianOf(om);
                   const isExpanded = expandedId === om.id;
                   const isFinished = om.status === "Concluída" || om.status === "Cancelada";
-                  const overdue = om.deadline && om.deadline < todayISO && !isFinished;
+                   const overdue = maintenanceIsOverdue(om);
                   const pColor = PRIORITY_COLORS[om.priority] || "hsl(210 10% 55%)";
                   const mapsUrl = site?.address ? `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(site.address)}` : null;
 
@@ -406,6 +411,9 @@ export default function OpManutencaoMinhas() {
                                     </div>
                                   </div>
                                 )}
+                                {om.photo_justification && <div className="text-sm">Sem foto na abertura: {om.photo_justification}</div>}
+                                {maintenanceDueAt(om) && !isFinished && <div className="text-sm">Prazo de execução: {maintenanceDueAt(om)?.toLocaleString("pt-BR")}</div>}
+                                {om.postponement_reason && <div className="text-sm">Adiamento: {om.postponement_reason}</div>}
                                 {om.closure_summary && isFinished && (
                                   <div className="flex items-start gap-2 text-sm pt-1 mt-1 border-t" style={{ borderColor: highContrast ? "#2a2a2a" : "hsl(210 15% 90%)" }}>
                                     <CheckCircle2 className="h-4 w-4 mt-0.5 flex-shrink-0" style={{ color: "hsl(160 65% 38%)" }} />
@@ -451,6 +459,10 @@ export default function OpManutencaoMinhas() {
                               )}
 
                               {/* Ações do técnico */}
+                               {isTecnico && !isFinished && <div className="flex flex-wrap gap-2">
+                                 {om.awaiting_material && !om.material_received_at && <Button variant="outline" onClick={async () => { if (await orders.update(om.id, { material_received_at: new Date().toISOString(), awaiting_material: false })) toast.success("Material recebido. Prazo de 24 horas iniciado."); }}>Material recebido hoje</Button>}
+                                 <Button variant="outline" onClick={() => { setPlanning(om); setPlannedAt(""); setReason(""); }}>Adiar com justificativa</Button>
+                               </div>}
                               {isTecnico && om.status === "Aberta" && (
                                 <motion.button whileTap={{ scale: 0.97 }} onClick={() => startExec(om)}
                                   className="w-full rounded-xl py-3.5 flex items-center justify-center gap-2 text-sm font-extrabold uppercase tracking-wide"
@@ -501,8 +513,21 @@ export default function OpManutencaoMinhas() {
         onOpenChange={(o) => !o && setClosing(null)}
         title="Concluir ordem de manutenção"
         allowPhotos
+         requirePhotos
+         requireTime
         onConfirm={confirmClosure}
       />
+       <Dialog open={!!planning} onOpenChange={open => !open && setPlanning(null)}><DialogContent><DialogHeader><DialogTitle>Adiar manutenção #{planning?.om_number}</DialogTitle></DialogHeader>
+         <label className="text-sm font-medium">Nova data e hora prevista *<Input type="datetime-local" value={plannedAt} onChange={e => setPlannedAt(e.target.value)} /></label>
+         <label className="text-sm font-medium">Justificativa do adiamento *<Textarea maxLength={1000} value={reason} onChange={e => setReason(e.target.value)} /></label>
+         <DialogFooter><Button variant="outline" onClick={() => setPlanning(null)}>Cancelar</Button><Button disabled={planningBusy || !plannedAt || reason.trim().length < 10} onClick={async () => {
+           if (!planning || new Date(plannedAt).getTime() <= Date.now()) { toast.error("Escolha uma data futura"); return; }
+           setPlanningBusy(true);
+           const ok = await orders.update(planning.id, { postponed_until: new Date(plannedAt).toISOString(), postponement_reason: reason.trim(), scheduled_date: plannedAt.slice(0, 10) });
+           setPlanningBusy(false);
+           if (ok) { toast.success("Manutenção adiada"); setPlanning(null); }
+         }}>Salvar adiamento</Button></DialogFooter>
+       </DialogContent></Dialog>
 
       <NewMaintOrderModal
         open={newOMOpen}
