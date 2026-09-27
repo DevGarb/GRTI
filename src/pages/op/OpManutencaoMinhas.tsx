@@ -370,10 +370,6 @@ export default function OpManutencaoMinhas() {
                            {om.scheduled_date && <div className="flex items-center gap-2 text-sm"><Calendar className="h-4 w-4 flex-shrink-0" /><span>Programada: {formatDate(om.scheduled_date)}</span></div>}
                         </div>
 
-                               {isTecnico && <div className="rounded-lg border border-border bg-card p-3 space-y-2">
-                                 <div className="flex items-center justify-between gap-2"><span className="text-sm font-semibold">Materiais necessários</span><button className="text-xs font-semibold text-primary" onClick={() => setMaterialsOpen(om)}>Editar</button></div>
-                                 {readMaterials(om.materials).length ? readMaterials(om.materials).map((m, i) => <p key={i} className="text-sm">{m.quantity} × {m.name} {m.purchased ? "· Comprado" : "· Pendente"}</p>) : <p className="text-xs text-muted-foreground">Nenhum material informado.</p>}
-                               </div>}
                       </button>
 
                       <AnimatePresence initial={false}>
@@ -381,6 +377,10 @@ export default function OpManutencaoMinhas() {
                           <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }}
                             transition={{ duration: 0.25, ease: "easeOut" }} className="overflow-hidden">
                             <div className="px-4 pb-4 space-y-3">
+                              {isTecnico && <div className="rounded-lg border border-border bg-card p-3 space-y-2">
+                                <div className="flex items-center justify-between gap-2"><span className="text-sm font-semibold">Materiais necessários</span><Button size="sm" variant="outline" onClick={() => setMaterialsOpen(om)}>Editar</Button></div>
+                                {readMaterials(om.materials).length ? readMaterials(om.materials).map((m, i) => <p key={i} className="text-sm">{m.quantity} × {m.name} {m.purchased ? "· Comprado" : "· Pendente"}</p>) : <p className="text-xs text-muted-foreground">Nenhum material informado.</p>}
+                              </div>}
                               <div className="rounded-lg p-3 space-y-2" style={{ background: highContrast ? "#161616" : "hsl(210 20% 97%)" }}>
                                 <div className="text-[10px] font-bold uppercase tracking-wider mb-1" style={{ color: textMuted }}>Detalhes</div>
                                 {site?.address && (
