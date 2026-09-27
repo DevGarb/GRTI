@@ -27,15 +27,8 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Só notifica quando não há responsável atribuído
-    const hasResponsible =
-      !!record.assigned_technician_id || (typeof record.responsible === "string" && record.responsible.trim() !== "");
-    if (hasResponsible) {
-      return new Response(JSON.stringify({ skipped: true, reason: "OM já possui responsável" }), {
-        status: 200,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
+    const event = body?.event === "new_material" ? "new_material" : "new_order";
+    const newMaterials: Array<{ name?: string; quantity?: unknown }> = Array.isArray(body?.new_materials) ? body.new_materials : [];
 
     const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
     if (!RESEND_API_KEY) {
@@ -63,10 +56,12 @@ Deno.serve(async (req) => {
     const html = `
 <div style="font-family:Arial,Helvetica,sans-serif;max-width:600px;margin:0 auto;border:1px solid #e5e7eb;border-radius:12px;overflow:hidden">
   <div style="background:#0d4a56;color:#fff;padding:16px 20px">
-    <h1 style="margin:0;font-size:18px">Nova ordem de manutenção sem atribuição</h1>
+    <h1 style="margin:0;font-size:18px">${event === "new_material" ? "Material adicionado para compra" : "Nova ordem de manutenção"}</h1>
   </div>
   <div style="padding:20px;color:#111827">
-    <p style="margin:0 0 16px">Uma nova ordem foi criada e está na coluna <strong>Sem atribuição</strong>.</p>
+    ${event === "new_material"
+      ? `<p style="margin:0 0 8px">Novo(s) material(is) para compra:</p><ul style="margin:0 0 16px;font-size:14px">${newMaterials.map((m) => `<li>${esc(m.name)} — qtd: ${esc(m.quantity)}</li>`).join("")}</ul>`
+      : `<p style="margin:0 0 16px">Uma nova ordem de manutenção foi aberta.</p>`}
     <table style="width:100%;border-collapse:collapse;font-size:14px">
       <tr><td style="padding:6px 0;color:#6b7280">Número</td><td style="padding:6px 0;font-weight:bold">${esc(omNumber)}</td></tr>
       <tr><td style="padding:6px 0;color:#6b7280">Título</td><td style="padding:6px 0">${esc(record.title)}</td></tr>
@@ -91,7 +86,9 @@ Deno.serve(async (req) => {
       body: JSON.stringify({
         from: FROM_EMAIL,
         to: [TO_EMAIL],
-        subject: `[Manutenção Predial] ${omNumber} sem atribuição - ${record.title ?? ""}`.trim(),
+        subject: (event === "new_material"
+          ? `[Manutenção Predial] Material para compra - ${omNumber} - ${record.title ?? ""}`
+          : `[Manutenção Predial] Nova ${omNumber} - ${record.title ?? ""}`).trim(),
         html,
       }),
     });
