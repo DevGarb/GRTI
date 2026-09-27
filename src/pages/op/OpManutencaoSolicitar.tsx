@@ -183,13 +183,6 @@ export default function OpManutencaoSolicitar() {
           </div>
 
           <div>
-            <Label className="flex items-center gap-1.5">
-              <Calendar className="h-4 w-4" style={{ color: "hsl(191 74% 20%)" }} /> Prazo desejado (opcional)
-            </Label>
-            <Input type="date" value={form.deadline} onChange={(e) => setForm((p) => ({ ...p, deadline: e.target.value }))} />
-          </div>
-
-          <div>
             <Label>Descrição / detalhes</Label>
             <Textarea rows={4} value={form.description} onChange={(e) => setForm((p) => ({ ...p, description: e.target.value }))} placeholder="Descreva o problema, local exato, quando começou..." />
           </div>
