@@ -1,19 +1,22 @@
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
-import { Wrench, LogOut, ClipboardList, LayoutGrid, Star } from "lucide-react";
+import { Wrench, LogOut, ClipboardList, LayoutGrid, Star, Building2, ListChecks, Download } from "lucide-react";
 import { useManutencaoProfile } from "@/contexts/ManutencaoProfileContext";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import "./cearagps.css";
 
-export default function ManutencaoNav() {
-  const { pathname } = useLocation();
+type NavTab = { to: string; label: string; icon: typeof LayoutGrid; tab?: string };
+
+export default function ManutencaoNav({ onReport }: { onReport?: () => void }) {
+  const { pathname, search } = useLocation();
   const navigate = useNavigate();
   const { profile, clear } = useManutencaoProfile();
 
   const isSolicitante = profile?.type === "solicitante";
   const isTecnico = profile?.type === "tecnico";
+  const activeTab = new URLSearchParams(search).get("tab") || "ordens";
 
-  const TABS = isSolicitante
+  const TABS: NavTab[] = isSolicitante
     ? [
         { to: "/op/manutencao/solicitar", label: "Nova solicitação", icon: ClipboardList },
         { to: "/op/manutencao/minhas", label: "Status da solicitação", icon: LayoutGrid },
@@ -21,7 +24,9 @@ export default function ManutencaoNav() {
     : isTecnico
     ? [{ to: "/op/manutencao/minhas", label: "Minhas OMs", icon: LayoutGrid }]
     : [
-        { to: "/op/manutencao", label: "Kanban", icon: LayoutGrid },
+        { to: "/op/manutencao", label: "Ordens de Manutenção", icon: LayoutGrid, tab: "ordens" },
+        { to: "/op/manutencao?tab=sedes", label: "Sedes", icon: Building2, tab: "sedes" },
+        { to: "/op/manutencao?tab=checklists", label: "Checklists", icon: ListChecks, tab: "checklists" },
         { to: "/op/avaliacoes", label: "Avaliações", icon: Star },
       ];
 
@@ -31,6 +36,12 @@ export default function ManutencaoNav() {
     : "bg-emerald-600 text-white";
 
   const logout = () => { clear(); navigate("/op/manutencao/pin"); };
+
+  const isActive = (t: NavTab) => {
+    const base = t.to.split("?")[0];
+    if (t.tab) return pathname === base && activeTab === t.tab;
+    return pathname === t.to;
+  };
 
   return (
     <div className="cgps-scope border-b bg-white">
@@ -42,11 +53,29 @@ export default function ManutencaoNav() {
           <span className="font-bold text-sm" style={{ color: "hsl(191 74% 20%)" }}>Manutenção Predial</span>
         </div>
         <nav className="flex items-center flex-1 flex-wrap">
-          {TABS.map((t) => {
-            const active = pathname === t.to;
+          {TABS.map((t, i) => {
+            const active = isActive(t);
             const Icon = t.icon;
+            if (i === TABS.length - 1 && onReport && pathname === "/op/manutencao" && !isSolicitante && !isTecnico) {
+              return (
+                <div key={t.to + t.label} className="flex items-center">
+                  <button
+                    className="cgps-tab flex items-center gap-1.5"
+                    onClick={onReport}
+                    title="Exportar relatório do período filtrado"
+                  >
+                    <Download className="h-4 w-4" />
+                    Relatório
+                  </button>
+                  <NavLink to={t.to} className="cgps-tab flex items-center gap-1.5" data-active={active}>
+                    <Icon className="h-4 w-4" />
+                    {t.label}
+                  </NavLink>
+                </div>
+              );
+            }
             return (
-              <NavLink key={t.to} to={t.to} className="cgps-tab flex items-center gap-1.5" data-active={active}>
+              <NavLink key={t.to + t.label} to={t.to} className="cgps-tab flex items-center gap-1.5" data-active={active}>
                 <Icon className="h-4 w-4" />
                 {t.label}
               </NavLink>

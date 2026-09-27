@@ -1,14 +1,14 @@
 import DateRangeFilter, { currentMonthStart, todayStr, inDateRange } from "@/components/shared/DateRangeFilter";
 import { useEffect, useMemo, useState } from "react";
-import { Navigate } from "react-router-dom";
-import { Wrench, Plus, Pencil, Trash2, AlertTriangle, Building2, ListChecks, Image as ImageIcon, X, LayoutGrid, List, Eye, EyeOff, ChevronLeft, ChevronRight, Package, Download } from "lucide-react";
+import { Navigate, useSearchParams } from "react-router-dom";
+import { Wrench, Plus, Pencil, Trash2, AlertTriangle, Building2, Image as ImageIcon, X, LayoutGrid, List, Eye, EyeOff, ChevronLeft, ChevronRight, Package } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useAuth } from "@/contexts/AuthContext";
@@ -64,6 +64,10 @@ export default function OpManutencao() {
   const isAdmin = maintProfile.role === "admin";
   const isTecnico = maintProfile.role === "tecnico";
   const isSolicitante = maintProfile.role === "solicitante";
+
+  const [searchParams] = useSearchParams();
+  const rawTab = searchParams.get("tab");
+  const tab = isAdmin && (rawTab === "sedes" || rawTab === "checklists") ? rawTab : "ordens";
 
   const sites = useSites();
   const orders = useMaintenanceOrders();
@@ -337,7 +341,7 @@ export default function OpManutencao() {
 
   return (
     <div>
-      <ManutencaoNav />
+      <ManutencaoNav onReport={isAdmin ? exportReport : undefined} />
     <div className="space-y-6 p-6">
 
       <div className="flex items-center justify-between flex-wrap gap-3">
@@ -375,17 +379,10 @@ export default function OpManutencao() {
         </div>
       )}
 
-      <Tabs defaultValue="ordens">
-        <TabsList>
-          <TabsTrigger value="ordens">{isSolicitante ? "Minhas solicitações" : "Ordens de Manutenção"}</TabsTrigger>
-          {isAdmin && <TabsTrigger value="sedes"><Building2 className="h-4 w-4 mr-1 inline" />Sedes</TabsTrigger>}
-          {isAdmin && <TabsTrigger value="checklists"><ListChecks className="h-4 w-4 mr-1 inline" />Checklists</TabsTrigger>}
-        </TabsList>
-
-
         {/* ORDENS */}
-        <TabsContent value="ordens" className="space-y-4">
-          <div className="rounded-lg border bg-card p-3 space-y-3">
+        {tab === "ordens" && (
+        <div className="space-y-4">
+          <div className="rounded-lg border bg-card p-3">
             <div className="flex flex-wrap items-center gap-2">
               <Select value={categoryFilter} onValueChange={setCategoryFilter}>
                 <SelectTrigger className="w-48 h-9"><SelectValue /></SelectTrigger>
@@ -404,31 +401,28 @@ export default function OpManutencao() {
                   </SelectContent>
                 </Select>
               )}
-              {view === "kanban" && (
-                <div className="flex items-center gap-1 rounded-md border px-1 h-9">
-                  <Button size="icon" variant="ghost" className="h-7 w-7" aria-label="Semana anterior" onClick={() => setWeekOffset(v => v - 1)}><ChevronLeft className="h-4 w-4" /></Button>
-                  <span className="text-sm font-medium whitespace-nowrap px-1">{week[0].split("-").reverse().join("/")} – {week[6].split("-").reverse().join("/")}</span>
-                  <Button size="icon" variant="ghost" className="h-7 w-7" aria-label="Próxima semana" onClick={() => setWeekOffset(v => v + 1)}><ChevronRight className="h-4 w-4" /></Button>
-                  {weekOffset !== 0 && <Button size="sm" variant="ghost" className="h-7" onClick={() => setWeekOffset(0)}>Hoje</Button>}
-                </div>
-              )}
-              {view === "lista" && <DateRangeFilter from={dateFrom} to={dateTo} onFromChange={setDateFrom} onToChange={setDateTo} showLabels={false} />}
-              {isAdmin && (
-                <Button variant="outline" size="sm" className="h-9 ml-auto" onClick={exportReport}>
-                  <Download className="h-4 w-4 mr-1" />Exportar relatório
-                </Button>
-              )}
+              <Select value={activeSite} onValueChange={setActiveSite}>
+                <SelectTrigger className="w-56 h-9"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todas as sedes ({orders.items.filter(o => inDateRange(o.opened_at, dateFrom, dateTo)).length})</SelectItem>
+                  {sites.items.filter(s => s.is_active).map(s => {
+                    const c = orders.items.filter(o => o.site_id === s.id && inDateRange(o.opened_at, dateFrom, dateTo)).length;
+                    return <SelectItem key={s.id} value={s.id}>{s.name} ({c})</SelectItem>;
+                  })}
+                </SelectContent>
+              </Select>
+              <div className="flex flex-wrap items-center gap-2 ml-auto">
+                {view === "kanban" && (
+                  <div className="flex items-center gap-1 rounded-md border px-1 h-9">
+                    <Button size="icon" variant="ghost" className="h-7 w-7" aria-label="Semana anterior" onClick={() => setWeekOffset(v => v - 1)}><ChevronLeft className="h-4 w-4" /></Button>
+                    <span className="text-sm font-medium whitespace-nowrap px-1">{week[0].split("-").reverse().join("/")} – {week[6].split("-").reverse().join("/")}</span>
+                    <Button size="icon" variant="ghost" className="h-7 w-7" aria-label="Próxima semana" onClick={() => setWeekOffset(v => v + 1)}><ChevronRight className="h-4 w-4" /></Button>
+                    {weekOffset !== 0 && <Button size="sm" variant="ghost" className="h-7" onClick={() => setWeekOffset(0)}>Hoje</Button>}
+                  </div>
+                )}
+                {view === "lista" && <DateRangeFilter from={dateFrom} to={dateTo} onFromChange={setDateFrom} onToChange={setDateTo} showLabels={false} />}
+              </div>
             </div>
-
-            <Tabs value={activeSite} onValueChange={setActiveSite}>
-              <TabsList className="flex-wrap h-auto">
-                <TabsTrigger value="all">Todas as sedes ({orders.items.filter(o => inDateRange(o.opened_at, dateFrom, dateTo)).length})</TabsTrigger>
-                {sites.items.filter(s => s.is_active).map(s => {
-                  const c = orders.items.filter(o => o.site_id === s.id && inDateRange(o.opened_at, dateFrom, dateTo)).length;
-                  return <TabsTrigger key={s.id} value={s.id}>{s.name} ({c})</TabsTrigger>;
-                })}
-              </TabsList>
-            </Tabs>
           </div>
 
           {orders.loading ? (
@@ -493,10 +487,12 @@ export default function OpManutencao() {
               })}
             </div>
           )}
-        </TabsContent>
+        </div>
+        )}
 
         {/* SEDES */}
-        <TabsContent value="sedes" className="space-y-3">
+        {tab === "sedes" && (
+        <div className="space-y-3">
           <div className="flex justify-end">
             <Button onClick={() => { setEditingSite(null); setSiteOpen(true); }}><Plus className="h-4 w-4 mr-1" /> Nova Sede</Button>
           </div>
@@ -514,10 +510,12 @@ export default function OpManutencao() {
             </div>
           ))}
           {sites.items.length === 0 && <div className="text-center py-8 text-muted-foreground">Nenhuma sede cadastrada.</div>}
-        </TabsContent>
+        </div>
+        )}
 
         {/* CHECKLISTS */}
-        <TabsContent value="checklists" className="space-y-3">
+        {tab === "checklists" && (
+        <div className="space-y-3">
           <div className="flex justify-end">
             <Button onClick={() => { setEditingTpl(null); setTplOpen(true); }}><Plus className="h-4 w-4 mr-1" /> Novo Modelo</Button>
           </div>
@@ -535,8 +533,9 @@ export default function OpManutencao() {
             </div>
           ))}
           {tpls.items.length === 0 && <div className="text-center py-8 text-muted-foreground">Nenhum modelo de checklist.</div>}
-        </TabsContent>
-      </Tabs>
+        </div>
+        )}
+
 
       <OmModal
         open={omOpen}
