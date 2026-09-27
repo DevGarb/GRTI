@@ -490,12 +490,11 @@ export default function OpManutencao() {
         requesters={requesters.items}
         mode={isSolicitante ? "solicitante" : isTecnico ? "tecnico" : "admin"}
         forcedRequesterId={isSolicitante ? maintProfile.requesterId : undefined}
-        onSave={async (input) => {
+         onSave={async (input, photos) => {
           if (editing) await orders.update(editing.id, input);
            else {
              const created = await orders.add(input);
              if (!created) return;
-             const photos = openingPhotos.current;
              for (const photo of photos) if (!(await orders.uploadPhoto(created.id, photo, "antes"))) { toast.error("OM criada, mas a foto não foi enviada"); return; }
            }
            setOmOpen(false);
@@ -551,12 +550,14 @@ function OmModal({ open, onOpenChange, editing, sites, mechanics, requesters, mo
   mechanics: MaintTechnician[]; requesters: DeliveryRequester[];
   mode: "admin" | "tecnico" | "solicitante";
   forcedRequesterId?: string;
-  onSave: (input: Partial<MaintenanceOrder>) => Promise<void>;
+   onSave: (input: Partial<MaintenanceOrder>, photos: File[]) => Promise<void>;
 }) {
   const { profile } = useAuth();
   const { data: sectors = [] } = useSectors(profile?.organization_id || null);
   const [form, setForm] = useState<Partial<MaintenanceOrder>>({});
   const [section, setSection] = useState<"dados" | "materiais">("dados");
+   const [openingPhotos, setOpeningPhotos] = useState<File[]>([]);
+   const [photoJustification, setPhotoJustification] = useState("");
   useEffect(() => {
     if (open) {
       const base: Partial<MaintenanceOrder> = editing
@@ -567,6 +568,8 @@ function OmModal({ open, onOpenChange, editing, sites, mechanics, requesters, mo
       }
       setForm(base);
       setSection("dados");
+       setOpeningPhotos([]);
+       setPhotoJustification(editing?.photo_justification || "");
     }
   }, [open, editing, mode, forcedRequesterId]);
 
@@ -677,6 +680,9 @@ function OmModal({ open, onOpenChange, editing, sites, mechanics, requesters, mo
             <Label>Descrição</Label>
             <Textarea disabled={readOnly} rows={3} value={form.description || ""} onChange={e => setForm({ ...form, description: e.target.value })} />
           </div>
+           {!editing && <div className="col-span-2"><MaintenanceOpeningEvidence photos={openingPhotos} onPhotosChange={setOpeningPhotos} justification={photoJustification} onJustificationChange={setPhotoJustification} /></div>}
+           {editing?.photo_justification && <div className="col-span-2 text-sm text-muted-foreground">Sem foto na abertura: {editing.photo_justification}</div>}
+           {editing?.postponement_reason && <div className="col-span-2 text-sm text-muted-foreground">Adiamento: {editing.postponement_reason}</div>}
           <div className="col-span-2">
             <Label>Observações</Label>
             <Textarea rows={2} value={form.notes || ""} onChange={e => setForm({ ...form, notes: e.target.value })} />
@@ -689,7 +695,11 @@ function OmModal({ open, onOpenChange, editing, sites, mechanics, requesters, mo
         </div>}
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>Fechar</Button>
-          <Button onClick={() => onSave(form)} disabled={!form.title || !form.sector}>Salvar</Button>
+           <Button onClick={() => {
+             if (!editing && !openingPhotos.length && photoJustification.trim().length < 10) { toast.error("Adicione uma foto ou justifique sua ausência (mínimo 10 caracteres)"); return; }
+             if (form.status === "Concluída" && editing?.status !== "Concluída") { toast.error("Use Concluir OM para informar foto, data e hora"); return; }
+             onSave({ ...form, photo_justification: editing ? form.photo_justification : openingPhotos.length ? null : photoJustification.trim() }, openingPhotos);
+           }} disabled={!form.title || !form.sector}>Salvar</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
