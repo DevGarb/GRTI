@@ -180,6 +180,12 @@
 .maintenance-tech-d { color: hsl(var(--maintenance-tech-4)); border-color: hsl(var(--maintenance-tech-4) / 0.6); background: hsl(var(--maintenance-tech-4) / 0.1); }
 .maintenance-tech-e { color: hsl(var(--maintenance-tech-5)); border-color: hsl(var(--maintenance-tech-5) / 0.6); background: hsl(var(--maintenance-tech-5) / 0.1); }
 .maintenance-tech-f { color: hsl(var(--maintenance-tech-6)); border-color: hsl(var(--maintenance-tech-6) / 0.6); background: hsl(var(--maintenance-tech-6) / 0.1); }
+.maintenance-tech-card-a { border-color: hsl(var(--maintenance-tech-1) / 0.55); background: hsl(var(--maintenance-tech-1) / 0.07); border-left: 4px solid hsl(var(--maintenance-tech-1)); }
+.maintenance-tech-card-b { border-color: hsl(var(--maintenance-tech-2) / 0.55); background: hsl(var(--maintenance-tech-2) / 0.07); border-left: 4px solid hsl(var(--maintenance-tech-2)); }
+.maintenance-tech-card-c { border-color: hsl(var(--maintenance-tech-3) / 0.55); background: hsl(var(--maintenance-tech-3) / 0.07); border-left: 4px solid hsl(var(--maintenance-tech-3)); }
+.maintenance-tech-card-d { border-color: hsl(var(--maintenance-tech-4) / 0.55); background: hsl(var(--maintenance-tech-4) / 0.07); border-left: 4px solid hsl(var(--maintenance-tech-4)); }
+.maintenance-tech-card-e { border-color: hsl(var(--maintenance-tech-5) / 0.55); background: hsl(var(--maintenance-tech-5) / 0.07); border-left: 4px solid hsl(var(--maintenance-tech-5)); }
+.maintenance-tech-card-f { border-color: hsl(var(--maintenance-tech-6) / 0.55); background: hsl(var(--maintenance-tech-6) / 0.07); border-left: 4px solid hsl(var(--maintenance-tech-6)); }
 
 @layer utilities {
   .font-display { font-family: 'Space Grotesk', system-ui, sans-serif; letter-spacing: -0.02em; }
