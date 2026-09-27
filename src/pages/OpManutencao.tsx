@@ -1,7 +1,7 @@
 import DateRangeFilter, { currentMonthStart, todayStr, inDateRange } from "@/components/shared/DateRangeFilter";
 import { useEffect, useMemo, useState } from "react";
 import { Navigate } from "react-router-dom";
-import { Wrench, Plus, Pencil, Trash2, AlertTriangle, Building2, ListChecks, Image as ImageIcon, X, LayoutGrid, List, Eye, EyeOff, ChevronLeft, ChevronRight, Package } from "lucide-react";
+import { Wrench, Plus, Pencil, Trash2, AlertTriangle, Building2, ListChecks, Image as ImageIcon, X, LayoutGrid, List, Eye, EyeOff, ChevronLeft, ChevronRight, Package, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -75,6 +75,7 @@ export default function OpManutencao() {
   const [dateTo, setDateTo] = useState(() => todayStr());
   const [activeSite, setActiveSite] = useState<string>("all");
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
+  const [techFilter, setTechFilter] = useState<string>("all");
   const [statusFilter, setStatusFilter] = useState<"all" | "Aberta" | "Em execução" | "Concluída" | "atraso">("all");
   const [view, setView] = useState<"lista" | "kanban">("kanban");
   const [hideFinalized, setHideFinalized] = useState(true);
@@ -111,9 +112,44 @@ export default function OpManutencao() {
        if (view === "lista" && !inDateRange(o.opened_at, dateFrom, dateTo)) return false;
       if (activeSite !== "all" && o.site_id !== activeSite) return false;
       if (categoryFilter !== "all" && o.category !== categoryFilter) return false;
+      if (techFilter === "none" && o.assigned_technician_id) return false;
+      if (techFilter !== "all" && techFilter !== "none" && o.assigned_technician_id !== techFilter) return false;
       return true;
     });
-  }, [orders.items, dateFrom, dateTo, activeSite, categoryFilter, isTecnico, isSolicitante, maintProfile.mechanicId, maintProfile.requesterId, view]);
+  }, [orders.items, dateFrom, dateTo, activeSite, categoryFilter, techFilter, isTecnico, isSolicitante, maintProfile.mechanicId, maintProfile.requesterId, view]);
+
+  const exportReport = () => {
+    const techName = (id: string | null) => mechanics.items.find(m => m.id === id)?.name || "Sem técnico";
+    const siteName = (id: string | null) => sites.items.find(s => s.id === id)?.name || "";
+    const rows = baseFiltered.filter(o => inDateRange(o.opened_at, dateFrom, dateTo));
+    const hours = (o: MaintenanceOrder) => o.finished_at ? (new Date(o.finished_at).getTime() - new Date(o.opened_at).getTime()) / 3600000 : null;
+    const fmtD = (s: string | null) => s ? new Date(s).toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" }) : "";
+    const num = (n: number | null) => n == null ? "" : n.toFixed(1).replace(".", ",");
+    const esc = (v: unknown) => `"${String(v ?? "").replace(/"/g, '""')}"`;
+    const lines: string[] = [];
+    const group = (title: string, key: (o: MaintenanceOrder) => string) => {
+      lines.push("", esc(title), ["Grupo", "Total", "Concluídas", "Tempo médio de reparo (h)"].map(esc).join(";"));
+      const map = new Map<string, MaintenanceOrder[]>();
+      rows.forEach(o => { const k = key(o) || "—"; map.set(k, [...(map.get(k) || []), o]); });
+      [...map.entries()].sort((a, b) => a[0].localeCompare(b[0], "pt-BR")).forEach(([k, list]) => {
+        const done = list.map(hours).filter((h): h is number => h != null && h >= 0);
+        const avg = done.length ? done.reduce((a, b) => a + b, 0) / done.length : null;
+        lines.push([k, list.length, done.length, num(avg)].map(esc).join(";"));
+      });
+    };
+    lines.push(esc(`Relatório Manutenção Predial - ${dateFrom} a ${dateTo}`));
+    group("Por técnico", o => techName(o.assigned_technician_id));
+    group("Por categoria", o => o.category);
+    group("Por setor", o => o.sector || "");
+    lines.push("", esc("Detalhado"), ["OM", "Abertura", "Fechamento", "Tempo de reparo (h)", "Técnico", "Categoria", "Setor", "Sede", "Status"].map(esc).join(";"));
+    rows.forEach(o => lines.push([o.om_number, fmtD(o.opened_at), fmtD(o.finished_at), num(hours(o)), techName(o.assigned_technician_id), o.category, o.sector || "", siteName(o.site_id), o.status].map(esc).join(";")));
+    const blob = new Blob(["\uFEFF" + lines.join("\n")], { type: "text/csv;charset=utf-8" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = `relatorio-manutencao-${dateFrom}_${dateTo}.csv`;
+    a.click();
+    URL.revokeObjectURL(a.href);
+  };
 
   const filtered = useMemo(() => {
     return baseFiltered.filter(o => {
@@ -343,14 +379,6 @@ export default function OpManutencao() {
 
         {/* ORDENS */}
         <TabsContent value="ordens" className="space-y-4">
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
-            <KpiCard label="Abertas" value={kpis.abertas} color="text-amber-600" active={statusFilter === "Aberta"} onClick={() => toggleStatus("Aberta")} />
-            <KpiCard label="Em execução" value={kpis.execucao} color="text-blue-600" active={statusFilter === "Em execução"} onClick={() => toggleStatus("Em execução")} />
-            <KpiCard label="Concluídas" value={kpis.concluidas} color="text-emerald-600" active={statusFilter === "Concluída"} onClick={() => toggleStatus("Concluída")} />
-            <KpiCard label="Total no período" value={kpis.total} active={statusFilter === "all"} onClick={() => setStatusFilter("all")} />
-            <KpiCard label="Atrasadas" value={kpis.atrasadas} color="text-rose-600" icon={<AlertTriangle className="h-4 w-4" />} active={statusFilter === "atraso"} onClick={() => toggleStatus("atraso")} />
-          </div>
-
           <div className="flex flex-wrap gap-2 items-center">
             <Select value={categoryFilter} onValueChange={setCategoryFilter}>
               <SelectTrigger className="w-48"><SelectValue /></SelectTrigger>
@@ -359,6 +387,21 @@ export default function OpManutencao() {
                 {MAINT_CATEGORIES.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
               </SelectContent>
             </Select>
+            {!isTecnico && (
+              <Select value={techFilter} onValueChange={setTechFilter}>
+                <SelectTrigger className="w-56"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos os técnicos</SelectItem>
+                  <SelectItem value="none">Sem técnico</SelectItem>
+                  {[...mechanics.items].sort((a, b) => a.name.localeCompare(b.name, "pt-BR")).map(m => <SelectItem key={m.id} value={m.id}>{m.name}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            )}
+            {isAdmin && (
+              <Button variant="outline" size="sm" onClick={exportReport}>
+                <Download className="h-4 w-4 mr-1" />Exportar relatório
+              </Button>
+            )}
           </div>
 
           <Tabs value={activeSite} onValueChange={setActiveSite}>
