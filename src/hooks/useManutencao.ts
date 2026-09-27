@@ -2,7 +2,7 @@ import { useEffect, useState, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
-import { type MaintenanceMaterial } from "@/lib/maintenancePlanning";
+import { type Json } from "@/integrations/supabase/types";
 
 export interface Site {
   id: string;
@@ -37,7 +37,7 @@ export interface MaintenanceOrder {
   sector?: string | null;
   kanban_position?: number | null;
   scheduled_date?: string | null;
-  materials?: MaintenanceMaterial[];
+  materials?: Json;
   awaiting_material?: boolean;
 }
 
