@@ -71,7 +71,6 @@ export default function OpManutencao() {
 
   const sites = useSites();
   const orders = useMaintenanceOrders();
-  const tpls = useChecklistTemplates();
   const mechanics = useMaintTechnicians();
   const requesters = useDeliveryRequesters();
 
@@ -100,8 +99,6 @@ export default function OpManutencao() {
   const [siteOpen, setSiteOpen] = useState(false);
   const [editingSite, setEditingSite] = useState<Site | null>(null);
 
-  const [execOpen, setExecOpen] = useState(false);
-  const [execTpl, setExecTpl] = useState<ChecklistTemplate | null>(null);
 
   const today = todayISO();
 
@@ -507,29 +504,6 @@ export default function OpManutencao() {
             </div>
           ))}
           {sites.items.length === 0 && <div className="text-center py-8 text-muted-foreground">Nenhuma sede cadastrada.</div>}
-        </div>
-        )}
-
-        {/* CHECKLISTS */}
-        {tab === "checklists" && (
-        <div className="space-y-3">
-          <div className="flex justify-end">
-            <Button onClick={() => { setEditingTpl(null); setTplOpen(true); }}><Plus className="h-4 w-4 mr-1" /> Novo Modelo</Button>
-          </div>
-          {tpls.items.map(t => (
-            <div key={t.id} className="border rounded-lg p-3 bg-card flex items-center justify-between flex-wrap gap-2">
-              <div>
-                <div className="font-semibold">{t.name}</div>
-                <div className="text-xs text-muted-foreground">{siteName(t.site_id)} {t.description && `• ${t.description}`}</div>
-              </div>
-              <div className="flex gap-1">
-                <Button size="sm" variant="outline" onClick={() => { setExecTpl(t); setExecOpen(true); }}>Executar</Button>
-                <Button size="icon" variant="ghost" onClick={() => { setEditingTpl(t); setTplOpen(true); }}><Pencil className="h-4 w-4" /></Button>
-                <Button size="icon" variant="ghost" onClick={() => { if (confirm("Excluir modelo?")) tpls.remove(t.id); }}><Trash2 className="h-4 w-4 text-destructive" /></Button>
-              </div>
-            </div>
-          ))}
-          {tpls.items.length === 0 && <div className="text-center py-8 text-muted-foreground">Nenhum modelo de checklist.</div>}
         </div>
         )}
 
