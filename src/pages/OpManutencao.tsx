@@ -65,6 +65,10 @@ export default function OpManutencao() {
   const isTecnico = maintProfile.role === "tecnico";
   const isSolicitante = maintProfile.role === "solicitante";
 
+  const [searchParams] = useSearchParams();
+  const rawTab = searchParams.get("tab");
+  const tab = isAdmin && (rawTab === "sedes" || rawTab === "checklists") ? rawTab : "ordens";
+
   const sites = useSites();
   const orders = useMaintenanceOrders();
   const tpls = useChecklistTemplates();
