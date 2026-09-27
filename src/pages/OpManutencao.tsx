@@ -13,9 +13,9 @@ import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useAuth } from "@/contexts/AuthContext";
 import {
-  useSites, useMaintenanceOrders, useChecklistTemplates,
+  useSites, useMaintenanceOrders,
   MAINT_CATEGORIES, MAINT_PRIORITIES, MAINT_STATUSES,
-  type MaintenanceOrder, type Site, type ChecklistTemplate, type ChecklistItem, type MaintenancePhoto,
+  type MaintenanceOrder, type Site, type MaintenancePhoto,
 } from "@/hooks/useManutencao";
 import { useMaintTechnicians, type MaintTechnician } from "@/hooks/useMaintTechnicians";
 import { useDeliveryRequesters, type DeliveryRequester } from "@/hooks/useDeliveryRequesters";
@@ -67,7 +67,7 @@ export default function OpManutencao() {
 
   const [searchParams] = useSearchParams();
   const rawTab = searchParams.get("tab");
-  const tab = isAdmin && (rawTab === "sedes" || rawTab === "checklists") ? rawTab : "ordens";
+  const tab = isAdmin && rawTab === "sedes" ? rawTab : "ordens";
 
   const sites = useSites();
   const orders = useMaintenanceOrders();
@@ -343,7 +343,7 @@ export default function OpManutencao() {
           <Wrench className="h-7 w-7 text-primary" />
           <div>
             <h1 className="text-2xl font-bold">Manutenção Predial</h1>
-            <p className="text-sm text-muted-foreground">Ordens, sedes e checklists de inspeção</p>
+            <p className="text-sm text-muted-foreground">Ordens e sedes de manutenção</p>
           </div>
         </div>
         <div className="flex gap-2 items-center flex-wrap">
@@ -534,10 +534,6 @@ export default function OpManutencao() {
         else await sites.add(input);
         setSiteOpen(false);
       }} />
-
-      <TemplateModal open={tplOpen} onOpenChange={setTplOpen} editing={editingTpl} sites={sites.items} hook={tpls} />
-
-      <ExecuteModal open={execOpen} onOpenChange={setExecOpen} template={execTpl} sites={sites.items} hook={tpls} />
 
       <PhotosModal open={!!photoOmId} onClose={() => setPhotoOmId(null)} omId={photoOmId} hook={orders} />
 
