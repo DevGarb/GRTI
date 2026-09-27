@@ -43,6 +43,13 @@
       "when": 1790472008654,
       "tag": "0005_maintenance_week_and_materials",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1790472088621,
+      "tag": "0006_allow_assigned_maintenance_technicians_to_update",
+      "breakpoints": true
     }
   ]
 }
