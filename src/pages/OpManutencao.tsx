@@ -267,7 +267,11 @@ export default function OpManutencao() {
         </div>
         {readMaterials(om.materials).length > 0 && <p className="text-[11px] text-muted-foreground mt-2"><Package className="h-3 w-3 inline mr-1" />{readMaterials(om.materials).map(m => `${m.name} (${m.quantity})`).join(", ")}</p>}
         <div className="flex items-center justify-between mt-2">
-          <Badge variant="secondary" className="text-[10px]">{om.category}</Badge>
+          <div className="flex items-center gap-1 flex-wrap">
+            <Badge variant="secondary" className="text-[10px]">{om.category}</Badge>
+            {om.awaiting_material && <Badge className="maintenance-material-tag text-[10px]"><Package className="h-3 w-3 mr-1" />Aguardando compra</Badge>}
+          </div>
+
           <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
             <Button size="icon" variant="ghost" className="h-7 w-7" onClick={(e) => { e.stopPropagation(); setPhotoOmId(om.id); }} title="Fotos">
               <ImageIcon className="h-4 w-4" />
