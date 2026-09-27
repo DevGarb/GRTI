@@ -82,6 +82,8 @@ export default function OpManutencaoMinhas() {
   const [plannedAt, setPlannedAt] = useState("");
   const [reason, setReason] = useState("");
   const [planningBusy, setPlanningBusy] = useState(false);
+  const [receiving, setReceiving] = useState<MaintenanceOrder | null>(null);
+  const [receivedPlannedDate, setReceivedPlannedDate] = useState("");
 
   const isTecnico = maintProfile.role === "tecnico";
   const isSolicitante = maintProfile.role === "solicitante";
@@ -460,7 +462,7 @@ export default function OpManutencaoMinhas() {
 
                               {/* Ações do técnico */}
                                {isTecnico && !isFinished && <div className="flex flex-wrap gap-2">
-                                 {om.awaiting_material && !om.material_received_at && <Button variant="outline" onClick={async () => { if (await orders.update(om.id, { material_received_at: new Date().toISOString(), awaiting_material: false })) toast.success("Material recebido. Prazo de 24 horas iniciado."); }}>Material recebido hoje</Button>}
+                                 {om.awaiting_material && !om.material_received_at && <Button variant="outline" onClick={() => { setReceiving(om); setReceivedPlannedDate(""); }}>Informar recebimento do material</Button>}
                                  <Button variant="outline" onClick={() => { setPlanning(om); setPlannedAt(""); setReason(""); }}>Adiar com justificativa</Button>
                                </div>}
                               {isTecnico && om.status === "Aberta" && (
@@ -527,6 +529,17 @@ export default function OpManutencaoMinhas() {
            setPlanningBusy(false);
            if (ok) { toast.success("Manutenção adiada"); setPlanning(null); }
          }}>Salvar adiamento</Button></DialogFooter>
+       </DialogContent></Dialog>
+       <Dialog open={!!receiving} onOpenChange={open => !open && setReceiving(null)}><DialogContent><DialogHeader><DialogTitle>Material recebido · OM #{receiving?.om_number}</DialogTitle></DialogHeader>
+         <label className="text-sm font-medium">Data prevista para realizar a manutenção *<Input type="date" value={receivedPlannedDate} onChange={e => setReceivedPlannedDate(e.target.value)} /></label>
+         <p className="text-sm text-muted-foreground">O prazo de 24 horas começa no momento do recebimento. Para realizar depois do prazo, informe um adiamento com justificativa.</p>
+         <DialogFooter><Button variant="outline" onClick={() => setReceiving(null)}>Cancelar</Button><Button disabled={planningBusy || !receivedPlannedDate} onClick={async () => {
+           if (!receiving || receivedPlannedDate < new Date().toLocaleDateString("en-CA")) { toast.error("Escolha hoje ou uma data futura"); return; }
+           setPlanningBusy(true);
+           const ok = await orders.update(receiving.id, { material_received_at: new Date().toISOString(), awaiting_material: false, scheduled_date: receivedPlannedDate });
+           setPlanningBusy(false);
+           if (ok) { toast.success("Recebimento registrado. Prazo de 24 horas iniciado."); setReceiving(null); }
+         }}>Confirmar recebimento</Button></DialogFooter>
        </DialogContent></Dialog>
 
       <NewMaintOrderModal
