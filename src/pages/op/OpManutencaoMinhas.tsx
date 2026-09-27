@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   MapPin, Phone, MessageCircle, LogOut, Sun, Moon, CheckCircle2, PlayCircle,
@@ -6,7 +6,7 @@ import {
   FileText, AlertTriangle, Wrench, User,
 } from "lucide-react";
 import { motion, AnimatePresence, LayoutGroup } from "framer-motion";
-import { useMaintenanceOrders, useSites, type MaintenanceOrder } from "@/hooks/useManutencao";
+import { useMaintenanceOrders, useSites, type MaintenanceOrder, type MaintenancePhoto } from "@/hooks/useManutencao";
 import { useDeliveryRequesters } from "@/hooks/useDeliveryRequesters";
 import { useMaintTechnicians } from "@/hooks/useMaintTechnicians";
 import { useMaintProfile } from "@/hooks/useMaintProfile";
@@ -431,6 +431,8 @@ export default function OpManutencaoMinhas() {
                                 )}
                               </div>
 
+                              {isTecnico && <OpeningPhotos omId={om.id} hook={orders} labelColor={textMuted} />}
+
                               {/* Ações de contato + navegação */}
                               {isTecnico && !isFinished && req?.phone && (
                                 <div className="grid grid-cols-2 gap-2">
@@ -579,3 +581,31 @@ export default function OpManutencaoMinhas() {
     </div>
   );
 }
+
+function OpeningPhotos({ omId, hook, labelColor }: { omId: string; hook: ReturnType<typeof useMaintenanceOrders>; labelColor: string }) {
+  const [photos, setPhotos] = useState<MaintenancePhoto[]>([]);
+
+  useEffect(() => {
+    let live = true;
+    hook.listPhotos(omId).then((all) => {
+      if (live) setPhotos((all || []).filter((p) => p.photo_type === "antes"));
+    });
+    return () => { live = false; };
+  }, [omId]);
+
+  if (!photos.length) return null;
+
+  return (
+    <div className="rounded-lg p-3" style={{ background: "hsl(210 20% 97%)" }}>
+      <div className="text-[10px] font-bold uppercase tracking-wider mb-2" style={{ color: labelColor }}>Foto da abertura</div>
+      <div className="flex gap-2 overflow-x-auto">
+        {photos.map((p) => (
+          <a key={p.id} href={p.photo_url} target="_blank" rel="noreferrer" className="flex-shrink-0">
+            <img src={p.photo_url} alt="Foto da abertura" className="h-24 w-24 object-cover rounded-lg border" />
+          </a>
+        ))}
+      </div>
+    </div>
+  );
+}
+
