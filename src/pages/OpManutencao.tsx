@@ -78,7 +78,7 @@ export default function OpManutencao() {
   const [statusFilter, setStatusFilter] = useState<"all" | "Aberta" | "Em execução" | "Concluída" | "atraso">("all");
   const [view, setView] = useState<"lista" | "kanban">("kanban");
   const [hideFinalized, setHideFinalized] = useState(true);
-  const [, setClockMinute] = useState(0);
+  const [clockMinute, setClockMinute] = useState(0);
   useEffect(() => { const timer = window.setInterval(() => setClockMinute(v => v + 1), 60000); return () => window.clearInterval(timer); }, []);
   const [weekOffset, setWeekOffset] = useState(0);
   const week = useMemo(() => {
@@ -122,7 +122,7 @@ export default function OpManutencao() {
       if (statusFilter !== "all" && statusFilter !== "atraso" && o.status !== statusFilter) return false;
       return true;
     });
-  }, [baseFiltered, statusFilter, today, /* recalculate time-based SLA every minute */ setClockMinute]);
+  }, [baseFiltered, statusFilter, today, clockMinute]);
 
   const kpis = useMemo(() => {
     const overdue = baseFiltered.filter(o => maintenanceIsOverdue(o)).length;
@@ -133,7 +133,7 @@ export default function OpManutencao() {
       total: baseFiltered.length,
       atrasadas: overdue,
     };
-  }, [baseFiltered, today]);
+  }, [baseFiltered, today, clockMinute]);
 
   const toggleStatus = (s: typeof statusFilter) => {
     setStatusFilter(prev => prev === s ? "all" : s);
