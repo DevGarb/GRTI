@@ -487,10 +487,12 @@ export default function OpManutencao() {
               })}
             </div>
           )}
-        </TabsContent>
+        </div>
+        )}
 
         {/* SEDES */}
-        <TabsContent value="sedes" className="space-y-3">
+        {tab === "sedes" && (
+        <div className="space-y-3">
           <div className="flex justify-end">
             <Button onClick={() => { setEditingSite(null); setSiteOpen(true); }}><Plus className="h-4 w-4 mr-1" /> Nova Sede</Button>
           </div>
@@ -508,10 +510,12 @@ export default function OpManutencao() {
             </div>
           ))}
           {sites.items.length === 0 && <div className="text-center py-8 text-muted-foreground">Nenhuma sede cadastrada.</div>}
-        </TabsContent>
+        </div>
+        )}
 
         {/* CHECKLISTS */}
-        <TabsContent value="checklists" className="space-y-3">
+        {tab === "checklists" && (
+        <div className="space-y-3">
           <div className="flex justify-end">
             <Button onClick={() => { setEditingTpl(null); setTplOpen(true); }}><Plus className="h-4 w-4 mr-1" /> Novo Modelo</Button>
           </div>
@@ -529,8 +533,9 @@ export default function OpManutencao() {
             </div>
           ))}
           {tpls.items.length === 0 && <div className="text-center py-8 text-muted-foreground">Nenhum modelo de checklist.</div>}
-        </TabsContent>
-      </Tabs>
+        </div>
+        )}
+
 
       <OmModal
         open={omOpen}
