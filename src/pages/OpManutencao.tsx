@@ -640,6 +640,9 @@ function OmModal({ open, onOpenChange, editing, sites, mechanics, requesters, mo
         {section === "materiais" ? <div className="space-y-4">
           <MaintenanceMaterials items={readMaterials(form.materials)} onChange={materials => setForm({ ...form, materials })} readOnly={solicitanteView} />
           {!solicitanteView && <label className="flex items-center gap-2 text-sm"><Checkbox checked={!!form.awaiting_material} onCheckedChange={checked => setForm({ ...form, awaiting_material: checked === true })} /> Aguardando compra de material</label>}
+          {!solicitanteView && editing && (form.material_received_at
+            ? <p className="text-sm text-muted-foreground">Peças recebidas em {new Date(form.material_received_at).toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" })} — prazo de 24h em andamento.</p>
+            : <Button type="button" variant="outline" onClick={() => { setForm({ ...form, material_received_at: new Date().toISOString(), awaiting_material: false, materials: readMaterials(form.materials).map(m => ({ ...m, purchased: true })) }); toast.success("Recebimento marcado. Clique em Salvar para iniciar o prazo de 24h."); }}>Peças recebidas · iniciar prazo de 24h</Button>)}
         </div> : <div className="grid grid-cols-2 gap-3">
           <div className="col-span-2">
             <Label>Título *</Label>
