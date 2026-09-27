@@ -100,9 +100,6 @@ export default function OpManutencao() {
   const [siteOpen, setSiteOpen] = useState(false);
   const [editingSite, setEditingSite] = useState<Site | null>(null);
 
-  const [tplOpen, setTplOpen] = useState(false);
-  const [editingTpl, setEditingTpl] = useState<ChecklistTemplate | null>(null);
-
   const [execOpen, setExecOpen] = useState(false);
   const [execTpl, setExecTpl] = useState<ChecklistTemplate | null>(null);
 
