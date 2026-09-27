@@ -33,7 +33,6 @@ export default function OpManutencaoSolicitar() {
     category: "Outros",
     priority: "Média",
     description: "",
-    deadline: "",
     opened_at: todayISO(),
   });
 
@@ -78,7 +77,6 @@ export default function OpManutencaoSolicitar() {
       ...form,
       status: "Aberta",
       requester_id: maintProfile.requesterId || null,
-      deadline: form.deadline || null,
       sector: form.sector,
       photo_justification: photos.length ? null : photoJustification.trim(),
     });
