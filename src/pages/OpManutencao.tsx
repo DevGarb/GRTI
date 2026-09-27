@@ -253,13 +253,11 @@ export default function OpManutencao() {
     const tone = TECH_TONES[Math.max(0, mechanics.items.filter(m => m.is_active !== false).findIndex(m => m.id === tech?.id)) % TECH_TONES.length];
     return (
       <div onClick={() => { setEditing(om); setOmOpen(true); }}>
-        <div className="flex items-center gap-1 flex-wrap mb-2">
+        <div className="flex items-center gap-1.5 flex-wrap mb-2">
           <span className="font-mono text-[10px] px-1.5 py-0.5 bg-muted rounded">#{om.om_number}</span>
-          <Badge variant="outline" className={cn("text-[10px]", PRIORITY_COLORS[om.priority])}>{om.priority}</Badge>
-          {overdue && <Badge variant="destructive" className="text-[10px]"><AlertTriangle className="h-3 w-3 mr-0.5" />Atrasada</Badge>}
-          {om.awaiting_material && <Badge className="maintenance-material-tag text-[10px]"><Package className="h-3 w-3 mr-1" />Aguardando compra</Badge>}
+          {tech && <Badge variant="outline" className={cn("text-[10px]", tone)}>{tech.name}</Badge>}
         </div>
-        {tech && <Badge variant="outline" className={cn("text-[10px] mb-2", tone)}>{tech.name}</Badge>}
+
         {om.scheduled_date && !week.includes(om.scheduled_date) && <span className="block text-xs text-muted-foreground mb-1">Programada: {om.scheduled_date.split("-").reverse().join("/")}</span>}
         {maintenanceDueAt(om) && om.status !== "Concluída" && <span className="block text-xs text-muted-foreground">Prazo: {formatMaintenanceDue(maintenanceDueAt(om))}</span>}
         <div className="font-semibold text-sm line-clamp-2">{om.title}</div>
