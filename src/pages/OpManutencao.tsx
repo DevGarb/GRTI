@@ -29,7 +29,9 @@ import OpMoveLogPanel from "@/components/operacional/OpMoveLogPanel";
 import { cn } from "@/lib/utils";
 import ManutencaoNav from "@/pages/op/ManutencaoNav";
 import MaintenanceMaterials from "@/components/operacional/MaintenanceMaterials";
-import { readMaterials, TECH_TONES, weekDates, weekStart } from "@/lib/maintenancePlanning";
+import { maintenanceDueAt, maintenanceIsOverdue, readMaterials, TECH_TONES, weekDates, weekStart } from "@/lib/maintenancePlanning";
+import MaintenanceOpeningEvidence from "@/components/operacional/MaintenanceOpeningEvidence";
+import { toast } from "sonner";
 
 const STATUS_COLORS: Record<string, string> = {
   "Aberta": "bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300",
@@ -113,7 +115,7 @@ export default function OpManutencao() {
 
   const filtered = useMemo(() => {
     return baseFiltered.filter(o => {
-      const overdue = !!o.deadline && o.deadline < today && !["Concluída", "Cancelada"].includes(o.status);
+      const overdue = maintenanceIsOverdue(o);
       if (statusFilter === "atraso" && !overdue) return false;
       if (statusFilter !== "all" && statusFilter !== "atraso" && o.status !== statusFilter) return false;
       return true;
@@ -121,7 +123,7 @@ export default function OpManutencao() {
   }, [baseFiltered, statusFilter, today]);
 
   const kpis = useMemo(() => {
-    const overdue = baseFiltered.filter(o => o.deadline && o.deadline < today && !["Concluída", "Cancelada"].includes(o.status)).length;
+    const overdue = baseFiltered.filter(o => maintenanceIsOverdue(o)).length;
     return {
       abertas: baseFiltered.filter(o => o.status === "Aberta").length,
       execucao: baseFiltered.filter(o => o.status === "Em execução").length,
@@ -231,20 +233,19 @@ export default function OpManutencao() {
 
   const confirmClosure = async (payload: { closure_summary: string; closed_at: string; photos?: File[] }) => {
     if (!closing) return;
-    await orders.update(closing.id, {
+    if (!payload.photos?.length || !payload.closed_at) throw new Error("Foto, data e hora são obrigatórias");
+    for (const f of payload.photos) if (!(await orders.uploadPhoto(closing.id, f, "depois"))) throw new Error("Falha ao enviar foto de finalização");
+    if (!(await orders.update(closing.id, {
       status: TERMINAL,
       closure_summary: payload.closure_summary,
       finished_at: payload.closed_at,
       closed_by: user?.id || null,
-    });
-    if (payload.photos?.length) {
-      for (const f of payload.photos) await orders.uploadPhoto(closing.id, f, "depois");
-    }
+    }))) throw new Error("Não foi possível concluir a OM");
     setClosing(null);
   };
 
   const renderCard = (om: MaintenanceOrder) => {
-    const overdue = om.deadline && om.deadline < today && !["Concluída", "Cancelada"].includes(om.status);
+    const overdue = maintenanceIsOverdue(om);
     const site = siteOf(om.site_id);
     const tech = mechanics.items.find(m => m.id === om.assigned_technician_id);
     const tone = TECH_TONES[Math.max(0, mechanics.items.filter(m => m.is_active !== false).findIndex(m => m.id === tech?.id)) % TECH_TONES.length];
@@ -258,6 +259,7 @@ export default function OpManutencao() {
         </div>
         {tech && <Badge variant="outline" className={cn("text-[10px] mb-2", tone)}>{tech.name}</Badge>}
         {om.scheduled_date && !week.includes(om.scheduled_date) && <span className="block text-xs text-muted-foreground mb-1">Programada: {om.scheduled_date.split("-").reverse().join("/")}</span>}
+        {maintenanceDueAt(om) && om.status !== "Concluída" && <span className="block text-xs text-muted-foreground">Prazo: {maintenanceDueAt(om)?.toLocaleString("pt-BR")}</span>}
         <div className="font-semibold text-sm line-clamp-2">{om.title}</div>
         <div className="text-[11px] text-muted-foreground mt-1 flex flex-wrap gap-x-2">
           <span><Building2 className="h-3 w-3 inline mr-0.5" />{siteName(om.site_id)}</span>
@@ -393,7 +395,7 @@ export default function OpManutencao() {
                 <div className="text-center py-12 text-muted-foreground">Nenhuma ordem para os filtros atuais.</div>
               )}
               {filtered.map(om => {
-                const overdue = om.deadline && om.deadline < today && !["Concluída", "Cancelada"].includes(om.status);
+                const overdue = maintenanceIsOverdue(om);
                 const site = siteOf(om.site_id);
                 return (
                   <div key={om.id} className="border rounded-lg p-4 bg-card hover:shadow-md transition">
@@ -490,8 +492,13 @@ export default function OpManutencao() {
         forcedRequesterId={isSolicitante ? maintProfile.requesterId : undefined}
         onSave={async (input) => {
           if (editing) await orders.update(editing.id, input);
-          else await orders.add(input);
-          setOmOpen(false);
+           else {
+             const created = await orders.add(input);
+             if (!created) return;
+             const photos = openingPhotos.current;
+             for (const photo of photos) if (!(await orders.uploadPhoto(created.id, photo, "antes"))) { toast.error("OM criada, mas a foto não foi enviada"); return; }
+           }
+           setOmOpen(false);
         }}
       />
 
@@ -513,6 +520,8 @@ export default function OpManutencao() {
         onOpenChange={(o) => !o && setClosing(null)}
         title="Concluir ordem de manutenção"
         allowPhotos
+         requirePhotos
+         requireTime
         onConfirm={confirmClosure}
       />
     </div>

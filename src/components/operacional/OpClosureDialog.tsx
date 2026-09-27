@@ -5,6 +5,7 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Camera, X } from "lucide-react";
+import { toast } from "sonner";
 
 export interface ClosurePayload {
   closure_summary: string;
@@ -60,7 +61,9 @@ export default function OpClosureDialog({
         total_cost: showCost ? Number(cost || 0) : undefined,
         photos: allowPhotos ? photos : undefined,
       });
-      onOpenChange(false);
+       onOpenChange(false);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Não foi possível concluir");
     } finally {
       setBusy(false);
     }
