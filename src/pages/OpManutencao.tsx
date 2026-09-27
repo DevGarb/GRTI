@@ -29,7 +29,7 @@ import OpMoveLogPanel from "@/components/operacional/OpMoveLogPanel";
 import { cn } from "@/lib/utils";
 import ManutencaoNav from "@/pages/op/ManutencaoNav";
 import MaintenanceMaterials from "@/components/operacional/MaintenanceMaterials";
-import { dateKey, pendingMaterials, readMaterials, TECH_TONES, weekDates, weekStart } from "@/lib/maintenancePlanning";
+import { readMaterials, TECH_TONES, weekDates, weekStart } from "@/lib/maintenancePlanning";
 
 const STATUS_COLORS: Record<string, string> = {
   "Aberta": "bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300",

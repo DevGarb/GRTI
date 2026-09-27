@@ -15,9 +15,11 @@ import { useAuth } from "@/contexts/AuthContext";
 import OpClosureDialog from "@/components/operacional/OpClosureDialog";
 import NewMaintOrderModal from "@/components/operacional/NewMaintOrderModal";
 import MaintenanceMaterials from "@/components/operacional/MaintenanceMaterials";
-import { pendingMaterials, readMaterials, TECH_TONES } from "@/lib/maintenancePlanning";
+import { readMaterials, TECH_TONES } from "@/lib/maintenancePlanning";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import "./cearagps.css";
 
