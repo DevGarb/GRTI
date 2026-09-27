@@ -64,6 +64,13 @@
       "when": 1790472402310,
       "tag": "0008_maintenance_new_order_sla_start",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1790472420170,
+      "tag": "0009_maintenance_closure_photo_guard",
+      "breakpoints": true
     }
   ]
 }
