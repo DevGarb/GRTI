@@ -485,6 +485,7 @@ export default function OpManutencaoMinhas() {
                                   </div>
                                 )}
                                 {om.photo_justification && <div className="text-sm">Sem foto na abertura: {om.photo_justification}</div>}
+                                {om.awaiting_sector_release && !isFinished && <div className="text-sm font-semibold text-amber-700">Aguardando liberação do setor — prazo pausado</div>}
                                 {maintenanceDueAt(om) && !isFinished && <div className="text-sm">Prazo de execução: {formatMaintenanceDue(maintenanceDueAt(om))}</div>}
                                 {om.postponement_reason && <div className="text-sm">Adiamento: {om.postponement_reason}</div>}
                                 {om.closure_summary && isFinished && (
@@ -542,6 +543,15 @@ export default function OpManutencaoMinhas() {
                                    }}>Peças recebidas · iniciar prazo de 24h</Button>
                                  )}
                                  {om.awaiting_material && !om.material_received_at && <Button variant="outline" onClick={() => { setReceiving(om); setReceivedAt(new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 16)); setReceivedPlannedDate(""); setReceiptDelayReason(""); }}>Informar recebimento do material</Button>}
+                                 {om.awaiting_sector_release
+                                   ? <Button variant="outline" onClick={async () => {
+                                       const ok = await orders.update(om.id, { awaiting_sector_release: false, sector_released_at: new Date().toISOString() });
+                                       if (ok) toast.success("Setor liberado. Prazo contado a partir de agora.");
+                                     }}>Setor liberou · iniciar prazo</Button>
+                                   : <Button variant="outline" onClick={async () => {
+                                       const ok = await orders.update(om.id, { awaiting_sector_release: true });
+                                       if (ok) toast.success("Aguardando liberação do setor. Prazo pausado.");
+                                     }}>Aguardando liberação do setor</Button>}
                                  <Button variant="outline" onClick={() => { setPlanning(om); setPlannedAt(""); setReason(""); }}>Adiar com justificativa</Button>
                                </div>}
                               {isTecnico && om.status === "Aberta" && (

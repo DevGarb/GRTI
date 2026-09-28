@@ -44,6 +44,8 @@ export interface MaintenanceOrder {
   postponed_until?: string | null;
   postponement_reason?: string | null;
   sla_started_at?: string | null;
+  awaiting_sector_release?: boolean;
+  sector_released_at?: string | null;
 }
 
 export interface MaintenancePhoto {

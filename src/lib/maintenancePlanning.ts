@@ -11,16 +11,19 @@ export function pendingMaterials(value: unknown) {
   return readMaterials(value).filter(item => item.name.trim() && !item.purchased).length;
 }
 
-export function maintenanceDueAt(order: { sla_started_at?: string | null; material_received_at?: string | null; postponed_until?: string | null; awaiting_material?: boolean }) {
-  if (!order.material_received_at) return null;
-  const start = order.material_received_at;
-  const base = new Date(start).getTime() + 24 * 60 * 60 * 1000;
+type DueInput = { sla_started_at?: string | null; material_received_at?: string | null; postponed_until?: string | null; awaiting_material?: boolean; awaiting_sector_release?: boolean | null; sector_released_at?: string | null };
+
+export function maintenanceDueAt(order: DueInput) {
+  if (!order.material_received_at || order.awaiting_sector_release) return null;
+  const received = new Date(order.material_received_at).getTime();
+  const released = order.sector_released_at ? new Date(order.sector_released_at).getTime() : 0;
+  const base = Math.max(received, released) + 24 * 60 * 60 * 1000;
   const postponed = order.postponed_until ? new Date(order.postponed_until).getTime() : 0;
   return new Date(Math.max(base, postponed));
 }
 
-export function maintenanceIsOverdue(order: { status: string; sla_started_at?: string | null; material_received_at?: string | null; postponed_until?: string | null; awaiting_material?: boolean; deadline?: string | null }, now = new Date()) {
-  if (["Concluída", "Cancelada"].includes(order.status) || !order.material_received_at) return false;
+export function maintenanceIsOverdue(order: DueInput & { status: string; deadline?: string | null }, now = new Date()) {
+  if (["Concluída", "Cancelada"].includes(order.status) || !order.material_received_at || order.awaiting_sector_release) return false;
   const due = maintenanceDueAt(order);
   return due ? now.getTime() > due.getTime() : Boolean(order.deadline && order.deadline < now.toISOString().slice(0, 10));
 }
