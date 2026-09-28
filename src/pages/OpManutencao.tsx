@@ -294,6 +294,16 @@ export default function OpManutencao() {
 
         {om.scheduled_date && !week.includes(om.scheduled_date) && <span className="block text-xs text-muted-foreground mb-1">Programada: {om.scheduled_date.split("-").reverse().join("/")}</span>}
         {maintenanceDueAt(om) && om.status !== "Concluída" && <span className="block text-xs text-muted-foreground">Prazo: {formatMaintenanceDue(maintenanceDueAt(om))}</span>}
+        {!["Concluída", "Cancelada"].includes(om.status) && (
+          <button type="button" className={cn("text-[10px] mb-1 px-1.5 py-0.5 rounded border", om.awaiting_sector_release ? "border-amber-500 text-amber-700 bg-amber-50" : "border-border text-muted-foreground")}
+            onClick={async (e) => {
+              e.stopPropagation();
+              const patch = om.awaiting_sector_release ? { awaiting_sector_release: false, sector_released_at: new Date().toISOString() } : { awaiting_sector_release: true };
+              if (await orders.update(om.id, patch)) toast.success(om.awaiting_sector_release ? "Setor liberado. Prazo contado a partir de agora." : "Aguardando liberação do setor. Prazo pausado.");
+            }}>
+            {om.awaiting_sector_release ? "Aguardando setor · liberar" : "Aguardar liberação do setor"}
+          </button>
+        )}
         <div className="font-semibold text-sm line-clamp-2">{om.title}</div>
         <div className="text-[11px] text-muted-foreground mt-1 flex flex-wrap gap-x-2">
           <span><Building2 className="h-3 w-3 inline mr-0.5" />{siteName(om.site_id)}</span>
