@@ -1,0 +1,1 @@
+ALTER TABLE public.op_maintenance_orders ADD COLUMN IF NOT EXISTS awaiting_sector_release boolean NOT NULL DEFAULT false, ADD COLUMN IF NOT EXISTS sector_released_at timestamptz;

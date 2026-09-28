@@ -1853,6 +1853,7 @@ export type Database = {
           assigned_mechanic_id: string | null
           assigned_technician_id: string | null
           awaiting_material: boolean
+          awaiting_sector_release: boolean
           category: string
           closed_by: string | null
           closure_summary: string | null
@@ -1877,6 +1878,7 @@ export type Database = {
           responsible: string | null
           scheduled_date: string | null
           sector: string | null
+          sector_released_at: string | null
           site_id: string | null
           sla_started_at: string | null
           status: string
@@ -1887,6 +1889,7 @@ export type Database = {
           assigned_mechanic_id?: string | null
           assigned_technician_id?: string | null
           awaiting_material?: boolean
+          awaiting_sector_release?: boolean
           category?: string
           closed_by?: string | null
           closure_summary?: string | null
@@ -1911,6 +1914,7 @@ export type Database = {
           responsible?: string | null
           scheduled_date?: string | null
           sector?: string | null
+          sector_released_at?: string | null
           site_id?: string | null
           sla_started_at?: string | null
           status?: string
@@ -1921,6 +1925,7 @@ export type Database = {
           assigned_mechanic_id?: string | null
           assigned_technician_id?: string | null
           awaiting_material?: boolean
+          awaiting_sector_release?: boolean
           category?: string
           closed_by?: string | null
           closure_summary?: string | null
@@ -1945,6 +1950,7 @@ export type Database = {
           responsible?: string | null
           scheduled_date?: string | null
           sector?: string | null
+          sector_released_at?: string | null
           site_id?: string | null
           sla_started_at?: string | null
           status?: string
