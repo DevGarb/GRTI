@@ -221,9 +221,24 @@ export function useDashboardMetrics(dateFrom?: Date, dateTo?: Date) {
           nameMap = new Map((profs || []).map(p => [p.user_id, p.full_name]));
         }
 
+        // Pontuação atribuída (avaliação "meta") prevalece sobre a da categoria
+        const metaMap = new Map<string, number>();
+        const scoredIds = scoredTickets.map((t: any) => t.id).filter(Boolean) as string[];
+        for (let i = 0; i < scoredIds.length; i += 200) {
+          const { data: metas } = await supabase
+            .from("evaluations")
+            .select("ticket_id, score")
+            .eq("type", "meta")
+            .in("ticket_id", scoredIds.slice(i, i + 200));
+          (metas || []).forEach((m: any) => metaMap.set(m.ticket_id, Number(m.score) || 0));
+        }
+
         scoredTickets.forEach((t: any) => {
           const catScore = t.category_id ? categoryScoreMap.get(t.category_id) : undefined;
-          const points = catScore != null
+          const metaScore = metaMap.get(t.id);
+          const points = metaScore != null
+            ? metaScore
+            : catScore != null
             ? catScore
             : (t.type === "Projeto" ? Number(t.story_points) || 0 : 0);
           if (!points) return;
