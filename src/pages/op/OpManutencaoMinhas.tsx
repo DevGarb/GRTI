@@ -218,7 +218,7 @@ export default function OpManutencaoMinhas() {
   const textMain = highContrast ? "#ffffff" : "hsl(222 20% 18%)";
   const textMuted = highContrast ? "#c4c4c4" : "hsl(215 15% 45%)";
 
-  const listToShow = tab === "tarefas" ? active : finished;
+  const listToShow = tab === "tarefas" ? groupedActive : finished;
 
   return (
     <div className="cgps-scope min-h-screen pb-24" style={{ background: bg, color: textMain }}>
@@ -329,7 +329,12 @@ export default function OpManutencaoMinhas() {
           <LayoutGroup>
             <AnimatePresence mode="popLayout">
               <div className="space-y-3">
-                {listToShow.map((om) => {
+                {listToShow.map((om, idx) => {
+                  const showGroups = tab === "tarefas";
+                  const gk = showGroups ? groupKeyOf(om) : null;
+                  const prevGk = showGroups && idx > 0 ? groupKeyOf(listToShow[idx - 1]) : null;
+                  const groupMeta = gk ? activeGroupMap.get(gk) : null;
+                  const isTodayGroup = !!gk && gk === activeTodayKey;
                   const site = siteOf(om.site_id);
                   const req = requesterOf(om);
                   const tech = technicianOf(om);
@@ -340,7 +345,22 @@ export default function OpManutencaoMinhas() {
                   const mapsUrl = site?.address ? `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(site.address)}` : null;
 
                   return (
-                    <motion.article layout key={om.id}
+                    <Fragment key={om.id}>
+                      {showGroups && gk !== prevGk && groupMeta && (
+                        <div className="flex items-center justify-between rounded-lg px-3 py-2"
+                          style={isTodayGroup
+                            ? { background: ORANGE, color: "#fff" }
+                            : { background: highContrast ? "#161616" : "hsl(210 20% 93%)", color: textMuted }}>
+                          <span className="text-[11px] font-extrabold uppercase tracking-wider flex items-center gap-1.5">
+                            <Calendar className="h-3.5 w-3.5" />
+                            {groupMeta.label}{isTodayGroup ? " · HOJE" : ""}
+                          </span>
+                          <span className="text-[11px] font-bold">
+                            {groupMeta.orders.length} OM{groupMeta.orders.length > 1 ? "s" : ""}
+                          </span>
+                        </div>
+                      )}
+                      <motion.article layout
                       initial={{ opacity: 0, y: 12, scale: 0.98 }} animate={{ opacity: 1, y: 0, scale: 1 }}
                       exit={{ opacity: 0, x: -60, scale: 0.9 }}
                       transition={{ type: "spring", stiffness: 260, damping: 24 }}
@@ -543,6 +563,7 @@ export default function OpManutencaoMinhas() {
                         )}
                       </AnimatePresence>
                     </motion.article>
+                    </Fragment>
                   );
                 })}
               </div>
