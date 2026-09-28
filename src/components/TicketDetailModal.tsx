@@ -443,15 +443,17 @@ export default function TicketDetailModal({ ticket, onClose }: Props) {
 
       // Pontuação (meta): UPDATE se já existe, INSERT se não existe
       if (existingEvaluation) {
-        const { error } = await supabase
+        const { data: updRows, error } = await supabase
           .from("evaluations")
           .update({
             evaluator_id: user!.id,
             score: selectedCategoryScore ?? 0,
             comment: evalComment || null,
           })
-          .eq("id", existingEvaluation.id);
+          .eq("id", existingEvaluation.id)
+          .select("id");
         if (error) throw error;
+        if (!updRows || updRows.length === 0) throw new Error("Sem permissão para alterar a pontuação.");
       } else {
         const { error } = await supabase.from("evaluations").insert({
           ticket_id: ticket.id,
@@ -472,6 +474,10 @@ export default function TicketDetailModal({ ticket, onClose }: Props) {
       updateTicketStatusInCache("Fechado");
       queryClient.invalidateQueries({ queryKey: ["ticket-evaluation", ticket.id] });
       queryClient.invalidateQueries({ queryKey: ["tickets"] });
+      queryClient.invalidateQueries({ queryKey: ["metas-tecnicos"] });
+      queryClient.invalidateQueries({ queryKey: ["my-month-points"] });
+      queryClient.invalidateQueries({ queryKey: ["dashboard-metrics"] });
+      queryClient.invalidateQueries({ queryKey: ["mvp-chamados-metrics"] });
       toast.success("Pontuação enviada e chamado fechado!");
       dispatchWebhookEvent(ticket.id, "ticket_closed");
       setShowEvaluation(false);
