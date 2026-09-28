@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { Fragment, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   MapPin, Phone, MessageCircle, LogOut, Sun, Moon, CheckCircle2, PlayCircle,
@@ -15,7 +15,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import OpClosureDialog from "@/components/operacional/OpClosureDialog";
 import NewMaintOrderModal from "@/components/operacional/NewMaintOrderModal";
 import MaintenanceMaterials from "@/components/operacional/MaintenanceMaterials";
-import { formatMaintenanceDue, maintenanceDueAt, maintenanceIsOverdue, readMaterials, TECH_TONES } from "@/lib/maintenancePlanning";
+import { formatMaintenanceDue, maintenanceDueAt, maintenanceIsOverdue, readMaterials, TECH_TONES, weekStart, weekDates, dateKey } from "@/lib/maintenancePlanning";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
@@ -107,6 +107,55 @@ export default function OpManutencaoMinhas() {
         return (b.created_at || "").localeCompare(a.created_at || "");
       }),
     [mine]
+  );
+
+  // Agrupamento por data programada, na mesma sequência de colunas do Kanban do admin.
+  // Hoje vem primeiro e destacado; dentro de cada grupo a ordem é a mesma do admin.
+  const week = useMemo(() => weekDates(weekStart()), []);
+
+  const groupKeyOf = useCallback((o: MaintenanceOrder) => {
+    if (!o.scheduled_date) return "__nodate__";
+    if (week.includes(o.scheduled_date)) {
+      return o.scheduled_date === week[5] || o.scheduled_date === week[6] ? "__weekend__" : o.scheduled_date;
+    }
+    return `out:${o.scheduled_date}`;
+  }, [week]);
+
+  const { activeGroupMap, activeTodayKey } = useMemo(() => {
+    const today = dateKey(new Date());
+    const todayKey = week.includes(today)
+      ? (today === week[5] || today === week[6] ? "__weekend__" : today)
+      : `out:${today}`;
+    const buckets = new Map<string, MaintenanceOrder[]>();
+    for (const o of active) {
+      const k = groupKeyOf(o);
+      const arr = buckets.get(k);
+      if (arr) arr.push(o); else buckets.set(k, [o]);
+    }
+    const order: string[] = [];
+    const push = (k: string) => { if (buckets.has(k) && !order.includes(k)) order.push(k); };
+    push(todayKey);
+    week.slice(0, 5).forEach((d) => push(d));
+    push("__weekend__");
+    Array.from(buckets.keys()).filter((k) => k.startsWith("out:")).sort().forEach(push);
+    push("__nodate__");
+    const labels = ["Segunda", "Terça", "Quarta", "Quinta", "Sexta"];
+    const map = new Map<string, { label: string; orders: MaintenanceOrder[] }>();
+    for (const k of order) {
+      const arr = buckets.get(k)!;
+      let label: string;
+      if (k === "__nodate__") label = "Sem data programada";
+      else if (k === "__weekend__") label = `Final de semana · ${week[5].slice(8)}/${week[5].slice(5, 7)} e ${week[6].slice(8)}/${week[6].slice(5, 7)}`;
+      else if (k.startsWith("out:")) { const d = k.slice(4); label = `Programada · ${d.slice(8)}/${d.slice(5, 7)}/${d.slice(0, 4)}`; }
+      else label = `${labels[week.indexOf(k)]} · ${k.slice(8)}/${k.slice(5, 7)}`;
+      map.set(k, { label, orders: arr });
+    }
+    return { activeGroupMap: map, activeTodayKey: todayKey };
+  }, [active, week, groupKeyOf]);
+
+  const groupedActive = useMemo(
+    () => Array.from(activeGroupMap.values()).flatMap((g) => g.orders),
+    [activeGroupMap]
   );
 
   const finished = useMemo(
