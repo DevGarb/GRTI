@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { Fragment, useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   MapPin, Phone, MessageCircle, LogOut, Sun, Moon, CheckCircle2, PlayCircle,
@@ -15,7 +15,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import OpClosureDialog from "@/components/operacional/OpClosureDialog";
 import NewMaintOrderModal from "@/components/operacional/NewMaintOrderModal";
 import MaintenanceMaterials from "@/components/operacional/MaintenanceMaterials";
-import { formatMaintenanceDue, maintenanceDueAt, maintenanceIsOverdue, readMaterials, TECH_TONES } from "@/lib/maintenancePlanning";
+import { formatMaintenanceDue, maintenanceDueAt, maintenanceIsOverdue, readMaterials, TECH_TONES, weekStart, weekDates, dateKey } from "@/lib/maintenancePlanning";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
@@ -109,6 +109,55 @@ export default function OpManutencaoMinhas() {
     [mine]
   );
 
+  // Agrupamento por data programada, na mesma sequência de colunas do Kanban do admin.
+  // Hoje vem primeiro e destacado; dentro de cada grupo a ordem é a mesma do admin.
+  const week = useMemo(() => weekDates(weekStart()), []);
+
+  const groupKeyOf = useCallback((o: MaintenanceOrder) => {
+    if (!o.scheduled_date) return "__nodate__";
+    if (week.includes(o.scheduled_date)) {
+      return o.scheduled_date === week[5] || o.scheduled_date === week[6] ? "__weekend__" : o.scheduled_date;
+    }
+    return `out:${o.scheduled_date}`;
+  }, [week]);
+
+  const { activeGroupMap, activeTodayKey } = useMemo(() => {
+    const today = dateKey(new Date());
+    const todayKey = week.includes(today)
+      ? (today === week[5] || today === week[6] ? "__weekend__" : today)
+      : `out:${today}`;
+    const buckets = new Map<string, MaintenanceOrder[]>();
+    for (const o of active) {
+      const k = groupKeyOf(o);
+      const arr = buckets.get(k);
+      if (arr) arr.push(o); else buckets.set(k, [o]);
+    }
+    const order: string[] = [];
+    const push = (k: string) => { if (buckets.has(k) && !order.includes(k)) order.push(k); };
+    push(todayKey);
+    week.slice(0, 5).forEach((d) => push(d));
+    push("__weekend__");
+    Array.from(buckets.keys()).filter((k) => k.startsWith("out:")).sort().forEach(push);
+    push("__nodate__");
+    const labels = ["Segunda", "Terça", "Quarta", "Quinta", "Sexta"];
+    const map = new Map<string, { label: string; orders: MaintenanceOrder[] }>();
+    for (const k of order) {
+      const arr = buckets.get(k)!;
+      let label: string;
+      if (k === "__nodate__") label = "Sem data programada";
+      else if (k === "__weekend__") label = `Final de semana · ${week[5].slice(8)}/${week[5].slice(5, 7)} e ${week[6].slice(8)}/${week[6].slice(5, 7)}`;
+      else if (k.startsWith("out:")) { const d = k.slice(4); label = `Programada · ${d.slice(8)}/${d.slice(5, 7)}/${d.slice(0, 4)}`; }
+      else label = `${labels[week.indexOf(k)]} · ${k.slice(8)}/${k.slice(5, 7)}`;
+      map.set(k, { label, orders: arr });
+    }
+    return { activeGroupMap: map, activeTodayKey: todayKey };
+  }, [active, week, groupKeyOf]);
+
+  const groupedActive = useMemo(
+    () => Array.from(activeGroupMap.values()).flatMap((g) => g.orders),
+    [activeGroupMap]
+  );
+
   const finished = useMemo(
     () => mine.filter((o) => o.status === "Concluída" || o.status === "Cancelada")
       .sort((a, b) => (b.finished_at || b.opened_at).localeCompare(a.finished_at || a.opened_at)),
@@ -169,7 +218,7 @@ export default function OpManutencaoMinhas() {
   const textMain = highContrast ? "#ffffff" : "hsl(222 20% 18%)";
   const textMuted = highContrast ? "#c4c4c4" : "hsl(215 15% 45%)";
 
-  const listToShow = tab === "tarefas" ? active : finished;
+  const listToShow = tab === "tarefas" ? groupedActive : finished;
 
   return (
     <div className="cgps-scope min-h-screen pb-24" style={{ background: bg, color: textMain }}>
@@ -280,7 +329,12 @@ export default function OpManutencaoMinhas() {
           <LayoutGroup>
             <AnimatePresence mode="popLayout">
               <div className="space-y-3">
-                {listToShow.map((om) => {
+                {listToShow.map((om, idx) => {
+                  const showGroups = tab === "tarefas";
+                  const gk = showGroups ? groupKeyOf(om) : null;
+                  const prevGk = showGroups && idx > 0 ? groupKeyOf(listToShow[idx - 1]) : null;
+                  const groupMeta = gk ? activeGroupMap.get(gk) : null;
+                  const isTodayGroup = !!gk && gk === activeTodayKey;
                   const site = siteOf(om.site_id);
                   const req = requesterOf(om);
                   const tech = technicianOf(om);
@@ -291,7 +345,22 @@ export default function OpManutencaoMinhas() {
                   const mapsUrl = site?.address ? `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(site.address)}` : null;
 
                   return (
-                    <motion.article layout key={om.id}
+                    <Fragment key={om.id}>
+                      {showGroups && gk !== prevGk && groupMeta && (
+                        <div className="flex items-center justify-between rounded-lg px-3 py-2"
+                          style={isTodayGroup
+                            ? { background: ORANGE, color: "#fff" }
+                            : { background: highContrast ? "#161616" : "hsl(210 20% 93%)", color: textMuted }}>
+                          <span className="text-[11px] font-extrabold uppercase tracking-wider flex items-center gap-1.5">
+                            <Calendar className="h-3.5 w-3.5" />
+                            {groupMeta.label}{isTodayGroup ? " · HOJE" : ""}
+                          </span>
+                          <span className="text-[11px] font-bold">
+                            {groupMeta.orders.length} OM{groupMeta.orders.length > 1 ? "s" : ""}
+                          </span>
+                        </div>
+                      )}
+                      <motion.article layout
                       initial={{ opacity: 0, y: 12, scale: 0.98 }} animate={{ opacity: 1, y: 0, scale: 1 }}
                       exit={{ opacity: 0, x: -60, scale: 0.9 }}
                       transition={{ type: "spring", stiffness: 260, damping: 24 }}
@@ -494,6 +563,7 @@ export default function OpManutencaoMinhas() {
                         )}
                       </AnimatePresence>
                     </motion.article>
+                    </Fragment>
                   );
                 })}
               </div>
