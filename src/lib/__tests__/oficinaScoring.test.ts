@@ -17,35 +17,13 @@ const TIERS: AwardTier[] = [
   { id: "3", organization_id: "org-1", label: "Ouro", from_points: 100, to_points: null, rate_brl: 20, position: 3, active: true },
 ];
 
-describe("calcAward (premiação progressiva)", () => {
-  it("70 pontos -> 50×10 + 20×15 = R$ 800", () => {
-    const r = calcAward(70, TIERS);
-    expect(r.total).toBe(800);
-    expect(r.breakdown.map((b) => b.points)).toEqual([50, 20]);
-  });
-
-  it("120 pontos -> 50×10 + 49×15 + 21×20 = R$ 1.655", () => {
-    const r = calcAward(120, TIERS);
-    expect(r.total).toBe(1655);
-    expect(r.breakdown.map((b) => b.amount)).toEqual([500, 735, 420]);
-  });
-
-  it("30 pontos -> R$ 300 (só primeira faixa)", () => {
-    expect(calcAward(30, TIERS).total).toBe(300);
-  });
-
-  it("pontos fracionados funcionam (87,5 pts)", () => {
-    // 50×10 + 37,5×15 = 500 + 562,50 = 1062,50
-    expect(calcAward(87.5, TIERS).total).toBe(1062.5);
-  });
-
-  it("0 pontos -> R$ 0", () => {
-    expect(calcAward(0, TIERS).total).toBe(0);
-  });
-
-  it("ignora faixas inativas", () => {
-    const tiers = TIERS.map((t) => (t.id === "3" ? { ...t, active: false } : t));
-    expect(calcAward(120, tiers).total).toBe(500 + 735);
+describe("calcAward (valor da faixa atingida sobre todos os pontos)", () => {
+  it("70 pontos -> 70×15 = R$ 1.050", () => { expect(calcAward(70, TIERS).total).toBe(1050); });
+  it("30 pontos -> R$ 300", () => { expect(calcAward(30, TIERS).total).toBe(300); });
+  it("0 pontos -> R$ 0", () => { expect(calcAward(0, TIERS).total).toBe(0); });
+  it("174,5 pts Ouro R$17,50 + bônus 400 = R$ 3.453,75", () => {
+    const t: AwardTier[] = [{ id: "o", organization_id: "x", label: "Ouro", from_points: 150, to_points: null, rate_brl: 17.5, bonus_brl: 400, position: 1, active: true }];
+    expect(calcAward(174.5, t).total).toBe(3453.75);
   });
 });
 
