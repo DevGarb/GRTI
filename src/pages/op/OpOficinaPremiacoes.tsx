@@ -423,15 +423,30 @@ export default function OpOficinaPremiacoes() {
                         </div>
                       </div>
                       <div className="space-y-1">
-                        <div className="flex items-center justify-between text-xs">
-                          <span className="text-muted-foreground">Premiação</span>
-                          {award.total > 0
-                            ? <span className="font-bold text-emerald-600">{formatBRL(award.total)}</span>
-                            : <span className="text-muted-foreground">Sem premiação</span>}
-                        </div>
+                        {award.total > 0 ? (
+                          <div className="grid grid-cols-3 gap-2 text-center">
+                            <div className="bg-muted/40 rounded p-2">
+                              <div className="text-sm font-bold tabular-nums text-emerald-600">{formatBRL(award.variable)}</div>
+                              <div className="text-[10px] text-muted-foreground uppercase tracking-wide">Prêmio</div>
+                            </div>
+                            <div className="bg-muted/40 rounded p-2">
+                              <div className="text-sm font-bold tabular-nums text-amber-600">{formatBRL(award.bonus)}</div>
+                              <div className="text-[10px] text-muted-foreground uppercase tracking-wide">Bônus</div>
+                            </div>
+                            <div className="bg-emerald-500/10 rounded p-2">
+                              <div className="text-sm font-bold tabular-nums text-emerald-600">{formatBRL(award.total)}</div>
+                              <div className="text-[10px] text-muted-foreground uppercase tracking-wide">Total</div>
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="flex items-center justify-between text-xs">
+                            <span className="text-muted-foreground">Premiação</span>
+                            <span className="text-muted-foreground">Sem premiação</span>
+                          </div>
+                        )}
                         {award.bonus > 0 && (
                           <div className="text-[10px] text-amber-600">
-                            Inclui bônus de {formatBRL(award.bonus)} pela meta {award.bonusTier?.label}
+                            Bônus pela meta {award.bonusTier?.label} · {formatPoints(row.approved)} pts × {formatBRL(Number(award.breakdown[0]?.tier.rate_brl))}/pt
                           </div>
                         )}
 
