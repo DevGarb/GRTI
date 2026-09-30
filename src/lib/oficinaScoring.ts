@@ -101,25 +101,17 @@ export function reachedTier(points: number, tiers: AwardTier[]): AwardTier | nul
 }
 
 /**
- * Cálculo progressivo: cada faixa cobre do fim da anterior até `to_points`.
- * Ex.: 70 pts com faixas (1-50 @10 · 51-99 @15) = 50×10 + 20×15 = R$ 800.
- * Ao atingir uma faixa com bônus (batimento de meta), o bônus fixo é somado.
+ * Cálculo por faixa atingida: TODOS os pontos aprovados são pagos pelo valor
+ * da faixa alcançada, somando o bônus fixo dessa faixa (batimento de meta).
+ * Ex.: 174,5 pts na faixa Ouro (R$ 17,50/pt + R$ 400) = 3.053,75 + 400 = R$ 3.453,75.
  */
 export function calcAward(points: number, tiers: AwardTier[]): { total: number; variable: number; bonus: number; bonusTier: AwardTier | null; breakdown: AwardBreakdownRow[] } {
-  const sorted = [...tiers].filter((t) => t.active).sort((a, b) => Number(a.from_points) - Number(b.from_points));
   const p = Math.max(0, points);
-  const breakdown: AwardBreakdownRow[] = [];
-  let lower = 0;
-  for (const tier of sorted) {
-    const upper = tier.to_points == null ? Infinity : Number(tier.to_points);
-    const span = Math.max(0, Math.min(p, upper) - lower);
-    if (span > 0) breakdown.push({ tier, points: round2(span), amount: round2(span * Number(tier.rate_brl)) });
-    lower = upper;
-  }
-  const variable = round2(breakdown.reduce((s, b) => s + b.amount, 0));
-  const hit = reachedTier(p, sorted);
-  const bonus = round2(Number(hit?.bonus_brl || 0));
-  return { total: round2(variable + bonus), variable, bonus, bonusTier: bonus > 0 ? hit : null, breakdown };
+  const hit = reachedTier(p, tiers);
+  if (!hit || p <= 0) return { total: 0, variable: 0, bonus: 0, bonusTier: null, breakdown: [] };
+  const variable = round2(p * Number(hit.rate_brl));
+  const bonus = round2(Number(hit.bonus_brl || 0));
+  return { total: round2(variable + bonus), variable, bonus, bonusTier: bonus > 0 ? hit : null, breakdown: [{ tier: hit, points: round2(p), amount: variable }] };
 }
 
 /** Situação do mecânico nas faixas: faixa atual, próxima e quanto falta. */

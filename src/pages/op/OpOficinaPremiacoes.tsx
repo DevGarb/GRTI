@@ -459,7 +459,7 @@ export default function OpOficinaPremiacoes() {
               <div>
                 <h3 className="font-semibold">Faixas de premiação</h3>
                 <p className="text-xs text-muted-foreground">
-                  Premiação progressiva: cada faixa paga um valor por ponto dentro do seu intervalo de pontos aprovados.
+                  Todos os pontos aprovados são pagos pelo valor da faixa atingida, mais o bônus da meta quando houver.
                 </p>
               </div>
               <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
