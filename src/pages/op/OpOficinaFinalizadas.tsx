@@ -1,14 +1,14 @@
 import { useEffect, useMemo, useState } from "react";
-import { CheckCircle2, Bike, Search, Wrench, Camera, ListChecks, MessageSquare, ShieldAlert } from "lucide-react";
+import { CheckCircle2, Bike, Search, Wrench, Camera, ListChecks, MessageSquare, ShieldAlert, Download } from "lucide-react";
 import OficinaNav from "./OficinaNav";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { useServiceOrders, useServiceOrderDetails, useServiceChecklists, type ServiceOrder } from "@/hooks/useOficina";
+import { useServiceOrders, useServiceOrderDetails, useServiceChecklists, useMechanics, type ServiceOrder } from "@/hooks/useOficina";
 import { useOsServiceItems } from "@/hooks/useOficinaScoring";
-import { formatPoints } from "@/lib/oficinaScoring";
+import { formatPoints, requestedPoints, approvedPoints } from "@/lib/oficinaScoring";
 import { useCompanies } from "@/hooks/useOperacional";
 import { filterOficinaCompanies } from "@/lib/oficinaCompanies";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
