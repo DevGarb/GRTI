@@ -128,14 +128,10 @@ export default function OpOficinaMeusPontos() {
           </div>
         </div>
 
-        <div className="grid gap-3 sm:grid-cols-3">
+        <div className="grid gap-3 sm:grid-cols-2">
           <Card><CardContent className="p-4">
             <p className="text-xs text-muted-foreground flex items-center gap-1"><TrendingUp className="h-3.5 w-3.5" /> Pontos aprovados</p>
             <p className="text-2xl font-bold text-emerald-600">{formatPoints(approvedPts)}</p>
-          </CardContent></Card>
-          <Card><CardContent className="p-4">
-            <p className="text-xs text-muted-foreground">Em auditoria</p>
-            <p className="text-2xl font-bold text-amber-600">{formatPoints(pendingPts)}</p>
           </CardContent></Card>
           <Card><CardContent className="p-4">
             <p className="text-xs text-muted-foreground flex items-center gap-1"><ClipboardList className="h-3.5 w-3.5" /> OS finalizadas</p>
