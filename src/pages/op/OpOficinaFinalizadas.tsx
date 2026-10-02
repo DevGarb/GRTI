@@ -173,6 +173,9 @@ function OsDetailsDialog({ order, onClose }: { order: ServiceOrder | null; onClo
 
 export default function OpOficinaFinalizadas() {
   const { items } = useServiceOrders();
+  const { items: mechanics } = useMechanics();
+  const osItems = useOsServiceItems();
+  const mechanicName = useMemo(() => Object.fromEntries(mechanics.map((m) => [m.id, m.name])), [mechanics]);
   const { items: allCompanies } = useCompanies();
   const companies = useMemo(() => filterOficinaCompanies(allCompanies), [allCompanies]);
   const companyName = useMemo(() => Object.fromEntries(companies.map((c) => [c.id, c.name])), [companies]);
@@ -197,6 +200,42 @@ export default function OpOficinaFinalizadas() {
       })
       .sort((a, b) => (b.finished_at || "").localeCompare(a.finished_at || ""));
   }, [items, q, from, to, company]);
+
+  const exportCsv = () => {
+    const esc = (v: unknown) => {
+      const s = String(v ?? "");
+      return /[;"\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+    };
+    const num = (n: number) => n.toLocaleString("pt-BR", { minimumFractionDigits: 0, maximumFractionDigits: 2 });
+    const header = ["OS", "Placa", "Modelo", "Empresa", "Mecânico", "Abertura", "Finalização", "Serviços executados", "Pontos solicitados", "Pontos aprovados"];
+    const rows = list.map((o) => {
+      const scored = osItems.byOs[o.id] || [];
+      const done = scored.filter((i) => i.done);
+      return [
+        o.os_number,
+        o.vehicle_plate || "",
+        o.vehicle_model || "",
+        (o.company_id && companyName[o.company_id]) || "",
+        (o.mechanic_id && mechanicName[o.mechanic_id]) || "A definir",
+        formatDateBRShort(o.opened_at),
+        o.finished_at ? formatDateBRShort(o.finished_at) : "",
+        done.map((i) => `${i.label} (${num(Number(i.points_approved ?? i.points ?? 0))} pts)`).join(" | "),
+        num(requestedPoints(scored)),
+        num(approvedPoints(scored)),
+      ];
+    });
+    const totalReq = list.reduce((s, o) => s + requestedPoints(osItems.byOs[o.id] || []), 0);
+    const totalApr = list.reduce((s, o) => s + approvedPoints(osItems.byOs[o.id] || []), 0);
+    rows.push(["", "", "", "", "", "", "TOTAIS", `${list.length} OS`, num(totalReq), num(totalApr)]);
+    const csv = "\uFEFF" + [header, ...rows].map((r) => r.map(esc).join(";")).join("\r\n");
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `os-finalizadas_${from || "inicio"}_a_${to || "hoje"}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
 
   return (
     <div className="cgps-scope min-h-screen bg-slate-50">
