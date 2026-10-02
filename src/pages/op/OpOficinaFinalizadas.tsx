@@ -1,14 +1,15 @@
 import { useEffect, useMemo, useState } from "react";
-import { CheckCircle2, Bike, Search, Wrench, Camera, ListChecks, MessageSquare, ShieldAlert } from "lucide-react";
+import { CheckCircle2, Bike, Search, Wrench, Camera, ListChecks, MessageSquare, ShieldAlert, Download } from "lucide-react";
 import OficinaNav from "./OficinaNav";
 import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { useServiceOrders, useServiceOrderDetails, useServiceChecklists, type ServiceOrder } from "@/hooks/useOficina";
+import { useServiceOrders, useServiceOrderDetails, useServiceChecklists, useMechanics, type ServiceOrder } from "@/hooks/useOficina";
 import { useOsServiceItems } from "@/hooks/useOficinaScoring";
-import { formatPoints } from "@/lib/oficinaScoring";
+import { formatPoints, requestedPoints, approvedPoints } from "@/lib/oficinaScoring";
 import { useCompanies } from "@/hooks/useOperacional";
 import { filterOficinaCompanies } from "@/lib/oficinaCompanies";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -173,6 +174,9 @@ function OsDetailsDialog({ order, onClose }: { order: ServiceOrder | null; onClo
 
 export default function OpOficinaFinalizadas() {
   const { items } = useServiceOrders();
+  const { items: mechanics } = useMechanics();
+  const osItems = useOsServiceItems();
+  const mechanicName = useMemo(() => Object.fromEntries(mechanics.map((m) => [m.id, m.name])), [mechanics]);
   const { items: allCompanies } = useCompanies();
   const companies = useMemo(() => filterOficinaCompanies(allCompanies), [allCompanies]);
   const companyName = useMemo(() => Object.fromEntries(companies.map((c) => [c.id, c.name])), [companies]);
@@ -197,6 +201,42 @@ export default function OpOficinaFinalizadas() {
       })
       .sort((a, b) => (b.finished_at || "").localeCompare(a.finished_at || ""));
   }, [items, q, from, to, company]);
+
+  const exportCsv = () => {
+    const esc = (v: unknown) => {
+      const s = String(v ?? "");
+      return /[;"\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+    };
+    const num = (n: number) => n.toLocaleString("pt-BR", { minimumFractionDigits: 0, maximumFractionDigits: 2 });
+    const header = ["OS", "Placa", "Modelo", "Empresa", "Mecânico", "Abertura", "Finalização", "Serviços executados", "Pontos solicitados", "Pontos aprovados"];
+    const rows = list.map((o) => {
+      const scored = osItems.byOs[o.id] || [];
+      const done = scored.filter((i) => i.done);
+      return [
+        o.os_number,
+        o.vehicle_plate || "",
+        o.vehicle_model || "",
+        (o.company_id && companyName[o.company_id]) || "",
+        (o.mechanic_id && mechanicName[o.mechanic_id]) || "A definir",
+        formatDateBRShort(o.opened_at),
+        o.finished_at ? formatDateBRShort(o.finished_at) : "",
+        done.map((i) => `${i.label} (${num(Number(i.points_approved ?? i.points ?? 0))} pts)`).join(" | "),
+        num(requestedPoints(scored)),
+        num(approvedPoints(scored)),
+      ];
+    });
+    const totalReq = list.reduce((s, o) => s + requestedPoints(osItems.byOs[o.id] || []), 0);
+    const totalApr = list.reduce((s, o) => s + approvedPoints(osItems.byOs[o.id] || []), 0);
+    rows.push(["", "", "", "", "", "", "TOTAIS", `${list.length} OS`, num(totalReq), num(totalApr)]);
+    const csv = "\uFEFF" + [header, ...rows].map((r) => r.map(esc).join(";")).join("\r\n");
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `os-finalizadas_${from || "inicio"}_a_${to || "hoje"}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
 
   return (
     <div className="cgps-scope min-h-screen bg-slate-50">
@@ -236,6 +276,11 @@ export default function OpOficinaFinalizadas() {
           <div>
             <Label>Até</Label>
             <Input type="date" value={to} onChange={(e) => setTo(e.target.value)} />
+          </div>
+          <div className="md:col-span-4 flex justify-end">
+            <Button variant="outline" onClick={exportCsv} disabled={list.length === 0} className="gap-2">
+              <Download className="h-4 w-4" /> Exportar relatório ({list.length} OS)
+            </Button>
           </div>
         </Card>
 
