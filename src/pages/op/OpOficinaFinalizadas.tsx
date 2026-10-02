@@ -276,6 +276,11 @@ export default function OpOficinaFinalizadas() {
             <Label>Até</Label>
             <Input type="date" value={to} onChange={(e) => setTo(e.target.value)} />
           </div>
+          <div className="md:col-span-4 flex justify-end">
+            <Button variant="outline" onClick={exportCsv} disabled={list.length === 0} className="gap-2">
+              <Download className="h-4 w-4" /> Exportar relatório ({list.length} OS)
+            </Button>
+          </div>
         </Card>
 
         <div className="grid md:grid-cols-2 gap-3">
