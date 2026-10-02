@@ -250,7 +250,7 @@ export default function OpOficinaPremiacoes() {
           <div>
             <h1 className="text-xl font-bold">Premiações por pontos</h1>
             <p className="text-sm text-muted-foreground">
-              Pontos vêm do checklist da OS (solicitados pelo mecânico). Clique em uma OS para conferir os serviços e confirmar os pontos.
+              Pontos vêm do checklist da OS. Clique em uma OS para conferir os serviços e confirmar os pontos aprovados.
             </p>
           </div>
         </div>
@@ -313,13 +313,12 @@ export default function OpOficinaPremiacoes() {
                         <th className="px-3 py-2">Finalizada em</th>
                         <th className="px-3 py-2">Mecânico</th>
                         <th className="px-3 py-2">Empresa</th>
-                        <th className="px-3 py-2 text-right">Pts solicitados</th>
                         <th className="px-3 py-2 text-right">Pts aprovados</th>
                         <th className="px-3 py-2">Auditoria</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y">
-                      {rows.map(({ os, requested, approved }) => {
+                      {rows.map(({ os, approved }) => {
                         const st = POINTS_STATUS_INFO[os.points_status || "pendente"] || POINTS_STATUS_INFO.pendente;
                         const audited = isAudited(os) && !reopened.has(os.id);
                         const isReopened = isAudited(os) && reopened.has(os.id);
@@ -334,7 +333,6 @@ export default function OpOficinaPremiacoes() {
                               <td className="px-3 py-2">{formatDateBR(os.finished_at)}</td>
                               <td className="px-3 py-2">{mechName(os.mechanic_id)}</td>
                               <td className="px-3 py-2">{compName(os.company_id)}</td>
-                              <td className="px-3 py-2 text-right tabular-nums">{formatPoints(requested)}</td>
                               <td className="px-3 py-2 text-right tabular-nums font-semibold text-emerald-600">
                                 {isAudited(os) ? formatPoints(approved) : "—"}
                               </td>
@@ -412,11 +410,7 @@ export default function OpOficinaPremiacoes() {
                         )}
                       </div>
                       <div className="text-xs text-muted-foreground">{row.osCount} OS finalizada(s) no mês</div>
-                      <div className="grid grid-cols-2 gap-2 text-center">
-                        <div className="bg-muted/40 rounded p-2">
-                          <div className="text-lg font-bold tabular-nums">{formatPoints(row.requested)}</div>
-                          <div className="text-[10px] text-muted-foreground uppercase tracking-wide">Solicitados</div>
-                        </div>
+                      <div className="grid grid-cols-1 gap-2 text-center">
                         <div className="bg-emerald-500/10 rounded p-2">
                           <div className="text-lg font-bold tabular-nums text-emerald-600">{formatPoints(row.approved)}</div>
                           <div className="text-[10px] text-muted-foreground uppercase tracking-wide">Aprovados</div>

@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import {
-  requestedPoints, approvedPoints, formatPoints,
+  approvedPoints, formatPoints,
   type OsServiceItem,
 } from "@/lib/oficinaScoring";
 
@@ -106,7 +106,6 @@ export default function OsAuditPanel({
   items, readOnly, onApprove, onAdjust, onFinalize, finalizing, showFinalize, catalog, onAddService, className,
 }: Props) {
   const done = items.filter((i) => i.done);
-  const requested = requestedPoints(items);
   const approved = approvedPoints(items);
   const pendingCount = done.filter((i) => i.approved === null || i.approved === undefined).length;
 
@@ -134,7 +133,7 @@ export default function OsAuditPanel({
           <ShieldCheck className="h-4 w-4" /> Auditoria de serviços
         </span>
         <span className="text-xs text-muted-foreground">
-          {formatPoints(requested)} pts solicitados · <span className="font-semibold text-emerald-600">{formatPoints(approved)} aprovados</span>
+          <span className="font-semibold text-emerald-600">{formatPoints(approved)} pts aprovados</span>
           {pendingCount > 0 && ` · ${pendingCount} pendente(s)`}
         </span>
       </div>
@@ -160,8 +159,7 @@ export default function OsAuditPanel({
                   {it.label}
                 </p>
                 <p className="text-[10px] text-muted-foreground">
-                  solicitado {formatPoints(it.points)}
-                  {it.item_type === "nao_cadastrado" && " · serviço não cadastrado"}
+                  {it.item_type === "nao_cadastrado" && "serviço não cadastrado"}
                   {state === "ok" && effPoints !== Number(it.points) && ` · ajustado para ${formatPoints(effPoints)}`}
                 </p>
               </div>
