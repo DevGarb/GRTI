@@ -85,13 +85,9 @@ export default function OpOficinaMeusPontos() {
   const monthOrders = useMemo(() => orders.filter((o) => o.finished_at && monthKey(o.finished_at) === month), [orders, month]);
 
   const approvedPts = useMemo(() => monthOrders.reduce((s, o) => s + Number(o.points_approved || 0), 0), [monthOrders]);
-  const pendingPts = useMemo(
-    () => monthOrders.filter((o) => o.points_status === "pendente").reduce((s, o) => s + Number(o.points_requested || 0), 0),
-    [monthOrders],
-  );
 
-  // Pontuação acumulada conforme as OS vão sendo fechadas (aprovadas + em auditoria)
-  const totalPts = approvedPts + pendingPts;
+  // Apenas pontos aprovados contam para a meta
+  const totalPts = approvedPts;
 
   const sortedTiers = useMemo(
     () => [...tiers].filter((t) => t.active).sort((a, b) => Number(a.from_points) - Number(b.from_points)),
@@ -166,10 +162,6 @@ export default function OpOficinaMeusPontos() {
               <div className="relative pt-8 pb-2">
                 <div className="relative h-3 w-full rounded-full bg-black/10 overflow-hidden">
                   <div
-                    className="absolute inset-y-0 left-0 rounded-full transition-all opacity-50"
-                    style={{ width: `${progress.progress}%`, background: "hsl(var(--cgps-accent))" }}
-                  />
-                  <div
                     className="absolute inset-y-0 left-0 rounded-full transition-all"
                     style={{ width: `${progress.approvedProgress}%`, background: "hsl(var(--cgps-accent))" }}
                   />
@@ -183,9 +175,6 @@ export default function OpOficinaMeusPontos() {
                   style={{ left: `${progress.progress}%`, transform: "translateX(-50%)" }}
                 >
                   {formatPoints(totalPts)} pts
-                  {pendingPts > 0 && (
-                    <span className="ml-1 font-normal text-muted-foreground">({formatPoints(approvedPts)} aprov.)</span>
-                  )}
                 </div>
 
 
@@ -233,9 +222,6 @@ export default function OpOficinaMeusPontos() {
                           {" · "}{o.finished_at ? new Date(o.finished_at).toLocaleDateString("pt-BR") : "—"}
                         </p>
                       </div>
-                      <span className="text-xs text-muted-foreground tabular-nums">
-                        {formatPoints(Number(o.points_requested || 0))} solicitados
-                      </span>
                       <span className="text-sm font-bold text-emerald-600 tabular-nums">
                         {formatPoints(Number(o.points_approved || 0))} pts
                       </span>
