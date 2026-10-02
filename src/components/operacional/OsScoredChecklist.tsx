@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import {
-  requestedPoints, maxOsPoints, isDuplicateLabel, formatPoints,
+  isDuplicateLabel, formatPoints,
   type OsServiceItem,
 } from "@/lib/oficinaScoring";
 import type { ExtraService } from "@/hooks/useOficinaScoring";
@@ -39,8 +39,6 @@ export default function OsScoredChecklist({
   const done = items.filter((i) => i.done).length;
   const pending = items.filter((i) => !i.done);
   const concluded = items.filter((i) => i.done);
-  const requested = requestedPoints(items);
-  const max = maxOsPoints(items);
 
   // Extras disponíveis excluindo os que já estão na OS (anti-duplicidade)
   const selectableExtras = useMemo(

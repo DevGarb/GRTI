@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import {
-  requestedPoints, approvedPoints, formatPoints,
+  approvedPoints, formatPoints,
   type OsServiceItem,
 } from "@/lib/oficinaScoring";
 
@@ -106,7 +106,6 @@ export default function OsAuditPanel({
   items, readOnly, onApprove, onAdjust, onFinalize, finalizing, showFinalize, catalog, onAddService, className,
 }: Props) {
   const done = items.filter((i) => i.done);
-  const requested = requestedPoints(items);
   const approved = approvedPoints(items);
   const pendingCount = done.filter((i) => i.approved === null || i.approved === undefined).length;
 
