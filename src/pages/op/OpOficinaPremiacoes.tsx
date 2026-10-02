@@ -318,7 +318,7 @@ export default function OpOficinaPremiacoes() {
                       </tr>
                     </thead>
                     <tbody className="divide-y">
-                      {rows.map(({ os, requested, approved }) => {
+                      {rows.map(({ os, approved }) => {
                         const st = POINTS_STATUS_INFO[os.points_status || "pendente"] || POINTS_STATUS_INFO.pendente;
                         const audited = isAudited(os) && !reopened.has(os.id);
                         const isReopened = isAudited(os) && reopened.has(os.id);

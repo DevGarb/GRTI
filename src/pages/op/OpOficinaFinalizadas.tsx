@@ -9,7 +9,7 @@ import { Card } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useServiceOrders, useServiceOrderDetails, useServiceChecklists, useMechanics, type ServiceOrder } from "@/hooks/useOficina";
 import { useOsServiceItems } from "@/hooks/useOficinaScoring";
-import { formatPoints, requestedPoints, approvedPoints } from "@/lib/oficinaScoring";
+import { formatPoints, approvedPoints } from "@/lib/oficinaScoring";
 import { useCompanies } from "@/hooks/useOperacional";
 import { filterOficinaCompanies } from "@/lib/oficinaCompanies";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -208,7 +208,7 @@ export default function OpOficinaFinalizadas() {
       return /[;"\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
     };
     const num = (n: number) => n.toLocaleString("pt-BR", { minimumFractionDigits: 0, maximumFractionDigits: 2 });
-    const header = ["OS", "Placa", "Modelo", "Empresa", "Mecânico", "Abertura", "Finalização", "Serviços executados", "Pontos solicitados", "Pontos aprovados"];
+    const header = ["OS", "Placa", "Modelo", "Empresa", "Mecânico", "Abertura", "Finalização", "Serviços executados", "Pontos aprovados"];
     const rows = list.map((o) => {
       const scored = osItems.byOs[o.id] || [];
       const done = scored.filter((i) => i.done);
@@ -221,13 +221,11 @@ export default function OpOficinaFinalizadas() {
         formatDateBRShort(o.opened_at),
         o.finished_at ? formatDateBRShort(o.finished_at) : "",
         done.map((i) => `${i.label} (${num(Number(i.points_approved ?? i.points ?? 0))} pts)`).join(" | "),
-        num(requestedPoints(scored)),
         num(approvedPoints(scored)),
       ];
     });
-    const totalReq = list.reduce((s, o) => s + requestedPoints(osItems.byOs[o.id] || []), 0);
     const totalApr = list.reduce((s, o) => s + approvedPoints(osItems.byOs[o.id] || []), 0);
-    rows.push(["", "", "", "", "", "", "TOTAIS", `${list.length} OS`, num(totalReq), num(totalApr)]);
+    rows.push(["", "", "", "", "", "", "TOTAIS", `${list.length} OS`, num(totalApr)]);
     const csv = "\uFEFF" + [header, ...rows].map((r) => r.map(esc).join(";")).join("\r\n");
     const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
     const url = URL.createObjectURL(blob);

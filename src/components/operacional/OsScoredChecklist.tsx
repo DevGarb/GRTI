@@ -55,7 +55,7 @@ export default function OsScoredChecklist({
           <ListChecks className="h-4 w-4" /> Serviços executados
         </span>
         <span className="text-xs text-muted-foreground">
-          {done}/{items.length} · {formatPoints(requested)} pts solicitados de {formatPoints(max)}
+          {done}/{items.length} serviços concluídos
         </span>
       </div>
 

@@ -134,7 +134,7 @@ export default function OsAuditPanel({
           <ShieldCheck className="h-4 w-4" /> Auditoria de serviços
         </span>
         <span className="text-xs text-muted-foreground">
-          {formatPoints(requested)} pts solicitados · <span className="font-semibold text-emerald-600">{formatPoints(approved)} aprovados</span>
+          <span className="font-semibold text-emerald-600">{formatPoints(approved)} pts aprovados</span>
           {pendingCount > 0 && ` · ${pendingCount} pendente(s)`}
         </span>
       </div>
@@ -160,8 +160,7 @@ export default function OsAuditPanel({
                   {it.label}
                 </p>
                 <p className="text-[10px] text-muted-foreground">
-                  solicitado {formatPoints(it.points)}
-                  {it.item_type === "nao_cadastrado" && " · serviço não cadastrado"}
+                  {it.item_type === "nao_cadastrado" && "serviço não cadastrado"}
                   {state === "ok" && effPoints !== Number(it.points) && ` · ajustado para ${formatPoints(effPoints)}`}
                 </p>
               </div>
