@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { CheckCircle2, Bike, Search, Wrench, Camera, ListChecks, MessageSquare, ShieldAlert, Download } from "lucide-react";
 import OficinaNav from "./OficinaNav";
 import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
