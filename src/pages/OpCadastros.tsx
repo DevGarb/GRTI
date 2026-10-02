@@ -173,11 +173,11 @@ function RequestersTab() {
 }
 
 function DriversTab() {
-  const { items, add, remove } = useDrivers();
-  const [name, setName] = useState(""); const [phone, setPhone] = useState(""); const [type, setType] = useState("Moto");
+  const { items, add, update, remove } = useDrivers();
+  const [name, setName] = useState(""); const [phone, setPhone] = useState(""); const [type, setType] = useState("Moto"); const [pin, setPin] = useState("");
   return (
     <div className="space-y-4">
-      <div className="bg-card border rounded-lg p-4 grid gap-3 md:grid-cols-[1fr_200px_140px_auto]">
+      <div className="bg-card border rounded-lg p-4 grid gap-3 md:grid-cols-[1fr_200px_140px_140px_auto]">
         <div><Label>Nome</Label><Input value={name} onChange={e => setName(e.target.value)} placeholder="Nome do motorista" /></div>
         <div><Label>Telefone</Label><Input value={phone} onChange={e => setPhone(e.target.value)} placeholder="(00) 00000-0000" /></div>
         <div><Label>Veículo</Label>
@@ -186,8 +186,14 @@ function DriversTab() {
             <SelectContent><SelectItem value="Moto">Moto</SelectItem><SelectItem value="Carro">Carro</SelectItem></SelectContent>
           </Select>
         </div>
+        <div><Label>PIN (Entregas)</Label><Input inputMode="numeric" maxLength={6} value={pin} onChange={e => setPin(e.target.value.replace(/\D/g, ""))} placeholder="ex.: 1234" /></div>
         <div className="flex items-end">
-          <Button onClick={() => { if (!name) return; add({ name, phone, default_vehicle_type: type }); setName(""); setPhone(""); }}>
+          <Button onClick={() => {
+            if (!name) return;
+            if (pin && !/^[0-9]{4,6}$/.test(pin)) return alert("PIN deve ter 4 a 6 dígitos");
+            add({ name, phone, default_vehicle_type: type, pin: pin || null });
+            setName(""); setPhone(""); setPin("");
+          }}>
             <Plus className="h-4 w-4 mr-1" /> Adicionar
           </Button>
         </div>
@@ -197,9 +203,20 @@ function DriversTab() {
         {items.map(d => (
           <div key={d.id} className="p-3 flex items-center gap-3">
             <div className="flex-1">
-              <div className="font-medium">{d.name}</div>
+              <div className="font-medium">{d.name} {d.pin && <span className="ml-1 text-[10px] font-mono px-1.5 py-0.5 bg-muted rounded">PIN {d.pin}</span>}</div>
               <div className="text-xs text-muted-foreground">{d.phone || "—"} · {d.default_vehicle_type}</div>
             </div>
+            <Input
+              className="w-24 h-8 text-center font-mono"
+              inputMode="numeric"
+              maxLength={6}
+              defaultValue={d.pin || ""}
+              placeholder="PIN"
+              onBlur={e => {
+                const v = e.target.value.replace(/\D/g, "");
+                if ((v || null) !== (d.pin || null)) update(d.id, { pin: v || null });
+              }}
+            />
             <Button variant="ghost" size="icon" onClick={() => remove(d.id)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
           </div>
         ))}
