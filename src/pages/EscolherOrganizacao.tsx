@@ -42,6 +42,7 @@ export default function EscolherOrganizacao() {
   const navigate = useNavigate();
   const { signOut, profile } = useAuth();
   const { orgs, loading, switchToOrg } = useUserOrganizations();
+  const [showModules, setShowModules] = useState(false);
 
   // Ordem fixa solicitada: T.I → Operacional → GRCheck → Gestão de Processos
   const sortedOrgs = [...orgs].sort((a, b) => {
@@ -134,7 +135,7 @@ export default function EscolherOrganizacao() {
         >
           <motion.div variants={rise} className="text-center mb-4">
             <p className="font-mono-tech text-[11px] uppercase tracking-[0.3em] text-cyan-300/70">
-              Selecione o ambiente
+              {showModules ? "Ambiente Operacional" : "Selecione o ambiente"}
             </p>
           </motion.div>
 
@@ -142,17 +143,30 @@ export default function EscolherOrganizacao() {
             variants={rise}
             className="font-display text-center text-3xl sm:text-4xl font-semibold tracking-tight mb-3"
           >
-            Escolha a{" "}
-            <span className="bg-gradient-to-r from-sky-400 via-cyan-300 to-violet-400 bg-clip-text text-transparent">
-              organização
-            </span>
+            {showModules ? (
+              <>
+                Escolha o{" "}
+                <span className="bg-gradient-to-r from-sky-400 via-cyan-300 to-violet-400 bg-clip-text text-transparent">
+                  módulo
+                </span>
+              </>
+            ) : (
+              <>
+                Escolha a{" "}
+                <span className="bg-gradient-to-r from-sky-400 via-cyan-300 to-violet-400 bg-clip-text text-transparent">
+                  organização
+                </span>
+              </>
+            )}
           </motion.h1>
 
           <motion.p
             variants={rise}
             className="text-center text-base font-light text-slate-300/90 mb-12"
           >
-            Para qual demanda você quer abrir um chamado hoje?
+            {showModules
+              ? "Qual módulo você quer acessar no ambiente Operacional?"
+              : "Para qual demanda você quer abrir um chamado hoje?"}
           </motion.p>
 
           <div className="grid gap-6 sm:grid-cols-2">
@@ -162,6 +176,8 @@ export default function EscolherOrganizacao() {
               const CardTag: any = isExternal ? motion.a : motion.button;
               const cardProps = isExternal
                 ? { href: org.external_url as string, target: "_blank", rel: "noopener noreferrer" }
+                : org.slug === "cgps-operacional"
+                ? { onClick: () => chooseOperacional(org.id) }
                 : { onClick: () => choose(org.id) };
               return (
                 <CardTag
