@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Navigate, useNavigate } from "react-router-dom";
 import { Truck, Bike, User, Shield, ArrowRight } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
@@ -18,11 +18,20 @@ export default function EntregasPin() {
   const isAdmin = isSuperAdmin || hasRole("admin");
   const { items: drivers } = useDrivers();
   const { items: requesters } = useDeliveryRequesters();
-  const { setProfile } = useEntregasProfile();
+  const { profile: currentProfile, setProfile } = useEntregasProfile();
 
   const [driverPin, setDriverPin] = useState("");
   const [reqPin, setReqPin] = useState("");
   const [adminPin, setAdminPin] = useState("");
+
+  // Already identified (e.g. after a reload): go straight to the profile's home.
+  if (currentProfile) {
+    const home =
+      currentProfile.type === "admin" ? "/op/entregas"
+      : currentProfile.type === "solicitante" ? "/op/entregas/solicitar"
+      : "/op/entregas/minhas";
+    return <Navigate to={home} replace />;
+  }
 
   const activeDrivers = drivers.filter((d) => d.is_active);
   const activeRequesters = requesters.filter((r) => r.is_active);

@@ -20,7 +20,7 @@ export const OficinaProfileCtx = createContext<Ctx | undefined>(undefined);
 export function OficinaProfileProvider({ children }: { children: ReactNode }) {
   const [profile, setProfileState] = useState<OficinaProfile | null>(() => {
     try {
-      const raw = sessionStorage.getItem(STORAGE_KEY);
+      const raw = localStorage.getItem(STORAGE_KEY);
       return raw ? (JSON.parse(raw) as OficinaProfile) : null;
     } catch { return null; }
   });
@@ -28,8 +28,8 @@ export function OficinaProfileProvider({ children }: { children: ReactNode }) {
   const setProfile = useCallback((p: OficinaProfile | null) => {
     setProfileState(p);
     try {
-      if (p) sessionStorage.setItem(STORAGE_KEY, JSON.stringify(p));
-      else sessionStorage.removeItem(STORAGE_KEY);
+      if (p) localStorage.setItem(STORAGE_KEY, JSON.stringify(p));
+      else localStorage.removeItem(STORAGE_KEY);
     } catch {}
   }, []);
 
