@@ -1,6 +1,6 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Building2, LogOut, ArrowRight, ExternalLink } from "lucide-react";
+import { Building2, LogOut, ArrowRight, ArrowLeft, ExternalLink, Truck, Building, Wrench } from "lucide-react";
 import { motion } from "framer-motion";
 import { useAuth } from "@/contexts/AuthContext";
 import { useUserOrganizations } from "@/hooks/useUserOrganizations";
@@ -15,6 +15,12 @@ const ORG_DESCRIPTIONS: Record<string, { subtitle: string; sector: string }> = {
   "grcheck": { subtitle: "Checklists e Auditoria de Setores", sector: "Gestão de Qualidade" },
   "gestao-processos": { subtitle: "Mapeamento e Gestão de Processos", sector: "Ambiente externo" },
 };
+
+const OP_MODULES = [
+  { label: "Entregas", description: "Pedidos, motoristas e solicitações", icon: Truck, path: "/op/entregas/pin" },
+  { label: "Manutenção Predial", description: "Ordens de manutenção das sedes", icon: Building, path: "/op/manutencao/pin" },
+  { label: "Oficina", description: "Motos, peças e mecânicos", icon: Wrench, path: "/op/oficina/pin" },
+];
 
 const ORG_ORDER: Record<string, number> = {
   "grupo-ramos": 1,
@@ -71,6 +77,15 @@ export default function EscolherOrganizacao() {
     persistActiveOrgSlug(target?.slug ?? null);
     window.location.replace("/");
   };
+
+  const chooseOperacional = async (orgId: string) => {
+    const { error } = await switchToOrg(orgId);
+    if (error) { toast.error("Erro ao selecionar organização"); return; }
+    const target = orgs.find((o) => o.id === orgId);
+    persistActiveOrgSlug(target?.slug ?? null);
+    setShowModules(true);
+  };
+
 
   if (loading) {
     return (
