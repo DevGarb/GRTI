@@ -20,6 +20,10 @@ export default function EntregasPin() {
   const { items: requesters } = useDeliveryRequesters();
   const { profile: currentProfile, setProfile } = useEntregasProfile();
 
+  const [driverPin, setDriverPin] = useState("");
+  const [reqPin, setReqPin] = useState("");
+  const [adminPin, setAdminPin] = useState("");
+
   // Already identified (e.g. after a reload): go straight to the profile's home.
   if (currentProfile) {
     const home =
@@ -28,10 +32,6 @@ export default function EntregasPin() {
       : "/op/entregas/minhas";
     return <Navigate to={home} replace />;
   }
-
-  const [driverPin, setDriverPin] = useState("");
-  const [reqPin, setReqPin] = useState("");
-  const [adminPin, setAdminPin] = useState("");
 
   const activeDrivers = drivers.filter((d) => d.is_active);
   const activeRequesters = requesters.filter((r) => r.is_active);
