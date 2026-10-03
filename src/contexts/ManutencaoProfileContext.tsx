@@ -21,7 +21,7 @@ export const ManutencaoProfileCtx = createContext<Ctx | undefined>(undefined);
 export function ManutencaoProfileProvider({ children }: { children: ReactNode }) {
   const [profile, setProfileState] = useState<ManutencaoProfile | null>(() => {
     try {
-      const raw = sessionStorage.getItem(STORAGE_KEY);
+      const raw = localStorage.getItem(STORAGE_KEY);
       return raw ? (JSON.parse(raw) as ManutencaoProfile) : null;
     } catch { return null; }
   });
@@ -29,8 +29,8 @@ export function ManutencaoProfileProvider({ children }: { children: ReactNode })
   const setProfile = useCallback((p: ManutencaoProfile | null) => {
     setProfileState(p);
     try {
-      if (p) sessionStorage.setItem(STORAGE_KEY, JSON.stringify(p));
-      else sessionStorage.removeItem(STORAGE_KEY);
+      if (p) localStorage.setItem(STORAGE_KEY, JSON.stringify(p));
+      else localStorage.removeItem(STORAGE_KEY);
     } catch {}
   }, []);
 
