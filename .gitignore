@@ -22,3 +22,7 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Projeto usa bun (bun.lock). npm/yarn lockfiles não devem ser commitados.
+package-lock.json
+yarn.lock
