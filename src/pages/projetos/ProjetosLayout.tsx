@@ -1,5 +1,6 @@
 import { NavLink, Outlet } from "react-router-dom";
 import { LayoutDashboard, FolderKanban, ListTodo, Zap, Calendar, Tags } from "lucide-react";
+import { RouteBoundary } from "@/components/PageLoader";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -38,7 +39,9 @@ export default function ProjetosLayout() {
           </NavLink>
         ))}
       </nav>
-      <Outlet />
+      <RouteBoundary>
+        <Outlet />
+      </RouteBoundary>
     </div>
   );
 }

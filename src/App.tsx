@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { lazy, useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
@@ -9,92 +9,95 @@ import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { TicketModalProvider } from "@/contexts/TicketModalContext";
 import { useMenuAccess } from "@/hooks/useMenuAccess";
 import AppLayout from "@/components/AppLayout";
-import MetricasGerenciais from "@/pages/MetricasGerenciais";
-import Dashboard from "@/pages/Dashboard";
-import Chamados from "@/pages/Chamados";
-import ChamadosAbertos from "@/pages/ChamadosAbertos";
-import Preventivas from "@/pages/Preventivas";
-import Patrimonio from "@/pages/Patrimonio";
-import Projetos from "@/pages/Projetos";
-import ProjetoDetalhe from "@/pages/ProjetoDetalhe";
-import ProjetosLayout from "@/pages/projetos/ProjetosLayout";
-import ProjetosDashboard from "@/pages/projetos/ProjetosDashboard";
-import ProjetosBacklog from "@/pages/projetos/ProjetosBacklog";
-import ProjetosSprints from "@/pages/projetos/ProjetosSprints";
-import ProjetosCalendario from "@/pages/projetos/ProjetosCalendario";
-import ProjetosMVP from "@/pages/projetos/ProjetosMVP";
-import ProjetosMeuMVP from "@/pages/projetos/ProjetosMeuMVP";
-import ProjetosPenalidades from "@/pages/projetos/ProjetosPenalidades";
-import ProjetosCategoriasEncerramento from "@/pages/projetos/ProjetosCategoriasEncerramento";
-import ChamadosCalendario from "@/pages/chamados/ChamadosCalendario";
-import Configuracoes from "@/pages/Configuracoes";
-import Login from "@/pages/Login";
-import WhiteLabel from "@/pages/WhiteLabel";
-import Usuarios from "@/pages/Usuarios";
-import Categorias from "@/pages/Categorias";
-import Historico from "@/pages/Historico";
-import Auditoria from "@/pages/Auditoria";
+import { FullScreenLoader, RouteBoundary } from "@/components/PageLoader";
 
-import Avaliacoes from "@/pages/Avaliacoes";
-import MetasLayout from "@/pages/metas/MetasLayout";
-import MetasTecnicos from "@/pages/MetasTecnicos";
-import MetasRevisaoTMA from "@/pages/metas/MetasRevisaoTMA";
-import WebhookLogs from "@/pages/WebhookLogs";
-import Planos from "@/pages/Planos";
-import Integracoes from "@/pages/Integracoes";
-import SuperAdmin from "@/pages/SuperAdmin";
-import Migracao from "@/pages/Migracao";
-import Documentacao from "@/pages/Documentacao";
-import Setores from "@/pages/Setores";
-import AssetPublicView from "@/pages/AssetPublicView";
-import TvDashboard from "@/pages/TvDashboard";
-import Todos from "@/pages/Todos";
-import EscolherOrganizacao from "@/pages/EscolherOrganizacao";
-import OpCadastros from "@/pages/OpCadastros";
-import OpEntregas from "@/pages/OpEntregas";
-import OpEntregasMotoristas from "@/pages/op/OpEntregasMotoristas";
-import OpEntregasCategorias from "@/pages/op/OpEntregasCategorias";
-import OpEntregasSolicitantes from "@/pages/op/OpEntregasSolicitantes";
-import OpEntregasSolicitar from "@/pages/op/OpEntregasSolicitar";
-import OpEntregasMinhas from "@/pages/op/OpEntregasMinhas";
-import EntregasPin from "@/pages/op/EntregasPin";
 import EntregasGuard from "@/pages/op/EntregasGuard";
 import { EntregasProfileProvider, useEntregasProfile } from "@/contexts/EntregasProfileContext";
-import OpOficina from "@/pages/OpOficina";
-import OficinaPin from "@/pages/op/OficinaPin";
 import OficinaGuard from "@/pages/op/OficinaGuard";
-import OpOficinaMinhas from "@/pages/op/OpOficinaMinhas";
-import OpOficinaAgenda from "@/pages/op/OpOficinaAgenda";
-import OpOficinaAgendar from "@/pages/op/OpOficinaAgendar";
-import OpOficinaFinalizadas from "@/pages/op/OpOficinaFinalizadas";
-import OpOficinaCompras from "@/pages/op/OpOficinaCompras";
-import OpOficinaPremiacoes from "@/pages/op/OpOficinaPremiacoes";
-import OpOficinaAlertas from "@/pages/op/OpOficinaAlertas";
-import OpOficinaPontuacao from "@/pages/op/OpOficinaPontuacao";
-import OpOficinaMeusPontos from "@/pages/op/OpOficinaMeusPontos";
 import { OficinaProfileProvider } from "@/contexts/OficinaProfileContext";
-import OpManutencao from "@/pages/OpManutencao";
-import ManutencaoPin from "@/pages/op/ManutencaoPin";
 import ManutencaoGuard from "@/pages/op/ManutencaoGuard";
-import OpManutencaoMinhas from "@/pages/op/OpManutencaoMinhas";
-import OpManutencaoSolicitar from "@/pages/op/OpManutencaoSolicitar";
-import OpAvaliacoes from "@/pages/op/OpAvaliacoes";
-import OpEntregasRelatorios from "@/pages/op/OpEntregasRelatorios";
 import { ManutencaoProfileProvider, useManutencaoProfile } from "@/contexts/ManutencaoProfileContext";
-import NotFound from "./pages/NotFound";
-import OAuthConsent from "@/pages/OAuthConsent";
-import Connect from "@/pages/Connect";
-import ChkDashboard from "@/pages/checklists/ChkDashboard";
-import ChkSetores from "@/pages/checklists/ChkSetores";
-import ChkEmpresas from "@/pages/checklists/ChkEmpresas";
-import ChkModelos from "@/pages/checklists/ChkModelos";
-import ChkAtribuicoes from "@/pages/checklists/ChkAtribuicoes";
-import ChkExecucoes from "@/pages/checklists/ChkExecucoes";
-import ChkMinhas from "@/pages/checklists/ChkMinhas";
-import ChkExecutar from "@/pages/checklists/ChkExecutar";
-import ChkRelatorios from "@/pages/checklists/ChkRelatorios";
-import ChkImportar from "@/pages/checklists/ChkImportar";
-import ChkComoFunciona from "@/pages/checklists/ChkComoFunciona";
+
+// Páginas carregadas sob demanda (um chunk por rota).
+const MetricasGerenciais = lazy(() => import("@/pages/MetricasGerenciais"));
+const Dashboard = lazy(() => import("@/pages/Dashboard"));
+const Chamados = lazy(() => import("@/pages/Chamados"));
+const ChamadosAbertos = lazy(() => import("@/pages/ChamadosAbertos"));
+const Preventivas = lazy(() => import("@/pages/Preventivas"));
+const Patrimonio = lazy(() => import("@/pages/Patrimonio"));
+const Projetos = lazy(() => import("@/pages/Projetos"));
+const ProjetoDetalhe = lazy(() => import("@/pages/ProjetoDetalhe"));
+const ProjetosLayout = lazy(() => import("@/pages/projetos/ProjetosLayout"));
+const ProjetosDashboard = lazy(() => import("@/pages/projetos/ProjetosDashboard"));
+const ProjetosBacklog = lazy(() => import("@/pages/projetos/ProjetosBacklog"));
+const ProjetosSprints = lazy(() => import("@/pages/projetos/ProjetosSprints"));
+const ProjetosCalendario = lazy(() => import("@/pages/projetos/ProjetosCalendario"));
+const ProjetosMVP = lazy(() => import("@/pages/projetos/ProjetosMVP"));
+const ProjetosMeuMVP = lazy(() => import("@/pages/projetos/ProjetosMeuMVP"));
+const ProjetosPenalidades = lazy(() => import("@/pages/projetos/ProjetosPenalidades"));
+const ProjetosCategoriasEncerramento = lazy(() => import("@/pages/projetos/ProjetosCategoriasEncerramento"));
+const ChamadosCalendario = lazy(() => import("@/pages/chamados/ChamadosCalendario"));
+const Configuracoes = lazy(() => import("@/pages/Configuracoes"));
+const Login = lazy(() => import("@/pages/Login"));
+const WhiteLabel = lazy(() => import("@/pages/WhiteLabel"));
+const Usuarios = lazy(() => import("@/pages/Usuarios"));
+const Categorias = lazy(() => import("@/pages/Categorias"));
+const Historico = lazy(() => import("@/pages/Historico"));
+const Auditoria = lazy(() => import("@/pages/Auditoria"));
+const Avaliacoes = lazy(() => import("@/pages/Avaliacoes"));
+const MetasLayout = lazy(() => import("@/pages/metas/MetasLayout"));
+const MetasTecnicos = lazy(() => import("@/pages/MetasTecnicos"));
+const MetasRevisaoTMA = lazy(() => import("@/pages/metas/MetasRevisaoTMA"));
+const WebhookLogs = lazy(() => import("@/pages/WebhookLogs"));
+const Planos = lazy(() => import("@/pages/Planos"));
+const Integracoes = lazy(() => import("@/pages/Integracoes"));
+const SuperAdmin = lazy(() => import("@/pages/SuperAdmin"));
+const Migracao = lazy(() => import("@/pages/Migracao"));
+const Documentacao = lazy(() => import("@/pages/Documentacao"));
+const Setores = lazy(() => import("@/pages/Setores"));
+const AssetPublicView = lazy(() => import("@/pages/AssetPublicView"));
+const TvDashboard = lazy(() => import("@/pages/TvDashboard"));
+const Todos = lazy(() => import("@/pages/Todos"));
+const EscolherOrganizacao = lazy(() => import("@/pages/EscolherOrganizacao"));
+const OpCadastros = lazy(() => import("@/pages/OpCadastros"));
+const OpEntregas = lazy(() => import("@/pages/OpEntregas"));
+const OpEntregasMotoristas = lazy(() => import("@/pages/op/OpEntregasMotoristas"));
+const OpEntregasCategorias = lazy(() => import("@/pages/op/OpEntregasCategorias"));
+const OpEntregasSolicitantes = lazy(() => import("@/pages/op/OpEntregasSolicitantes"));
+const OpEntregasSolicitar = lazy(() => import("@/pages/op/OpEntregasSolicitar"));
+const OpEntregasMinhas = lazy(() => import("@/pages/op/OpEntregasMinhas"));
+const EntregasPin = lazy(() => import("@/pages/op/EntregasPin"));
+const OpOficina = lazy(() => import("@/pages/OpOficina"));
+const OficinaPin = lazy(() => import("@/pages/op/OficinaPin"));
+const OpOficinaMinhas = lazy(() => import("@/pages/op/OpOficinaMinhas"));
+const OpOficinaAgenda = lazy(() => import("@/pages/op/OpOficinaAgenda"));
+const OpOficinaAgendar = lazy(() => import("@/pages/op/OpOficinaAgendar"));
+const OpOficinaFinalizadas = lazy(() => import("@/pages/op/OpOficinaFinalizadas"));
+const OpOficinaCompras = lazy(() => import("@/pages/op/OpOficinaCompras"));
+const OpOficinaPremiacoes = lazy(() => import("@/pages/op/OpOficinaPremiacoes"));
+const OpOficinaAlertas = lazy(() => import("@/pages/op/OpOficinaAlertas"));
+const OpOficinaPontuacao = lazy(() => import("@/pages/op/OpOficinaPontuacao"));
+const OpOficinaMeusPontos = lazy(() => import("@/pages/op/OpOficinaMeusPontos"));
+const OpManutencao = lazy(() => import("@/pages/OpManutencao"));
+const ManutencaoPin = lazy(() => import("@/pages/op/ManutencaoPin"));
+const OpManutencaoMinhas = lazy(() => import("@/pages/op/OpManutencaoMinhas"));
+const OpManutencaoSolicitar = lazy(() => import("@/pages/op/OpManutencaoSolicitar"));
+const OpAvaliacoes = lazy(() => import("@/pages/op/OpAvaliacoes"));
+const OpEntregasRelatorios = lazy(() => import("@/pages/op/OpEntregasRelatorios"));
+const NotFound = lazy(() => import("./pages/NotFound"));
+const OAuthConsent = lazy(() => import("@/pages/OAuthConsent"));
+const Connect = lazy(() => import("@/pages/Connect"));
+const ChkDashboard = lazy(() => import("@/pages/checklists/ChkDashboard"));
+const ChkSetores = lazy(() => import("@/pages/checklists/ChkSetores"));
+const ChkEmpresas = lazy(() => import("@/pages/checklists/ChkEmpresas"));
+const ChkModelos = lazy(() => import("@/pages/checklists/ChkModelos"));
+const ChkAtribuicoes = lazy(() => import("@/pages/checklists/ChkAtribuicoes"));
+const ChkExecucoes = lazy(() => import("@/pages/checklists/ChkExecucoes"));
+const ChkMinhas = lazy(() => import("@/pages/checklists/ChkMinhas"));
+const ChkExecutar = lazy(() => import("@/pages/checklists/ChkExecutar"));
+const ChkRelatorios = lazy(() => import("@/pages/checklists/ChkRelatorios"));
+const ChkImportar = lazy(() => import("@/pages/checklists/ChkImportar"));
+const ChkComoFunciona = lazy(() => import("@/pages/checklists/ChkComoFunciona"));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -109,11 +112,7 @@ const queryClient = new QueryClient({
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
   if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <div className="h-8 w-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-      </div>
-    );
+    return <FullScreenLoader />;
   }
   if (!user) return <Navigate to="/login" replace />;
   return <>{children}</>;
@@ -122,11 +121,7 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 function AdminRoute({ children }: { children: React.ReactNode }) {
   const { hasRole, loading } = useAuth();
   if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <div className="h-8 w-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-      </div>
-    );
+    return <FullScreenLoader />;
   }
   if (!hasRole("admin")) return <Navigate to="/chamados" replace />;
   return <>{children}</>;
@@ -196,6 +191,7 @@ const App = () => (
       <BrowserRouter>
         <AuthProvider>
           <TicketModalProvider>
+          <RouteBoundary fallback={<FullScreenLoader />}>
           <Routes>
             <Route path="/login" element={<AuthRoute><Login /></AuthRoute>} />
             <Route path="/.lovable/oauth/consent" element={<OAuthConsent />} />
@@ -207,6 +203,7 @@ const App = () => (
               element={
                 <ProtectedRoute>
                   <AppLayout>
+                    <RouteBoundary>
                     <Routes>
                       <Route path="/" element={<HomeRedirect><MenuGuard menuKey="dashboard"><AdminRoute><Dashboard /></AdminRoute></MenuGuard></HomeRedirect>} />
                       <Route path="/metricas-gerenciais" element={<MenuGuard menuKey="metricas-gerenciais"><AdminRoute><MetricasGerenciais /></AdminRoute></MenuGuard>} />
@@ -288,11 +285,13 @@ const App = () => (
                       <Route path="/connect" element={<Connect />} />
                       <Route path="*" element={<NotFound />} />
                     </Routes>
+                    </RouteBoundary>
                   </AppLayout>
                 </ProtectedRoute>
               }
             />
           </Routes>
+          </RouteBoundary>
           </TicketModalProvider>
         </AuthProvider>
       </BrowserRouter>

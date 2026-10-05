@@ -1,5 +1,6 @@
 import { NavLink, Outlet } from "react-router-dom";
 import { Target, User, Trophy, ShieldAlert, Activity } from "lucide-react";
+import { RouteBoundary } from "@/components/PageLoader";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTmaAnomalies } from "@/hooks/useTmaAnomalies";
@@ -45,7 +46,9 @@ export default function MetasLayout() {
           </NavLink>
         ))}
       </nav>
-      <Outlet />
+      <RouteBoundary>
+        <Outlet />
+      </RouteBoundary>
     </div>
   );
 }
