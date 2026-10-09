@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
 import { CheckCircle2, Bike, Search, Wrench, Camera, ListChecks, MessageSquare, ShieldAlert, Download } from "lucide-react";
 import OficinaNav from "./OficinaNav";
 import { Input } from "@/components/ui/input";
@@ -186,6 +187,25 @@ export default function OpOficinaFinalizadas() {
   const [to, setTo] = useState("");
   const [sel, setSel] = useState<ServiceOrder | null>(null);
 
+  // Data de entrada em execução / recebimento das peças (1º movimento relevante do card)
+  const [execDate, setExecDate] = useState<Record<string, string>>({});
+  useEffect(() => {
+    supabase
+      .from("op_card_moves")
+      .select("card_id, created_at, from_column, to_column")
+      .eq("module", "service_order")
+      .or("to_column.eq.execucao,from_column.eq.aguardando_peca")
+      .order("created_at", { ascending: true })
+      .then(({ data }) => {
+        const map: Record<string, string> = {};
+        for (const m of data || []) {
+          const relevant = (m as any).to_column === "execucao" || (m as any).from_column === "aguardando_peca";
+          if (relevant && !map[(m as any).card_id]) map[(m as any).card_id] = (m as any).created_at;
+        }
+        setExecDate(map);
+      });
+  }, []);
+
   const list = useMemo(() => {
     const term = q.trim().toLowerCase();
     return items
@@ -208,7 +228,7 @@ export default function OpOficinaFinalizadas() {
       return /[;"\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
     };
     const num = (n: number) => n.toLocaleString("pt-BR", { minimumFractionDigits: 0, maximumFractionDigits: 2 });
-    const header = ["OS", "Placa", "Modelo", "Empresa", "Mecânico", "Abertura", "Finalização", "Serviços executados", "Pontos aprovados"];
+    const header = ["OS", "Placa", "Modelo", "Empresa", "Mecânico", "Abertura", "Finalização", "Receb. peças / Execução", "Serviços executados", "Pontos aprovados"];
     const rows = list.map((o) => {
       const scored = osItems.byOs[o.id] || [];
       const done = scored.filter((i) => i.done);
@@ -220,12 +240,13 @@ export default function OpOficinaFinalizadas() {
         (o.mechanic_id && mechanicName[o.mechanic_id]) || "A definir",
         formatDateBRShort(o.opened_at),
         o.finished_at ? formatDateBRShort(o.finished_at) : "",
+        execDate[o.id] ? formatDateBRShort(execDate[o.id]) : "—",
         done.map((i) => `${i.label} (${num(Number(i.points_approved ?? i.points ?? 0))} pts)`).join(" | "),
         num(approvedPoints(scored)),
       ];
     });
     const totalApr = list.reduce((s, o) => s + approvedPoints(osItems.byOs[o.id] || []), 0);
-    rows.push(["", "", "", "", "", "", "TOTAIS", `${list.length} OS`, num(totalApr)]);
+    rows.push(["", "", "", "", "", "", "", "TOTAIS", `${list.length} OS`, num(totalApr)]);
     const csv = "\uFEFF" + [header, ...rows].map((r) => r.map(esc).join(";")).join("\r\n");
     const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
     const url = URL.createObjectURL(blob);
