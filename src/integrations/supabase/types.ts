@@ -142,6 +142,131 @@ export type Database = {
           },
         ]
       }
+      chat_messages: {
+        Row: {
+          attachment_name: string | null
+          attachment_path: string | null
+          attachment_size: number | null
+          attachment_type: string | null
+          audio_duration: number | null
+          body: string
+          created_at: string
+          id: string
+          kind: string
+          sender_id: string | null
+          session_id: string
+        }
+        Insert: {
+          attachment_name?: string | null
+          attachment_path?: string | null
+          attachment_size?: number | null
+          attachment_type?: string | null
+          audio_duration?: number | null
+          body?: string
+          created_at?: string
+          id?: string
+          kind?: string
+          sender_id?: string | null
+          session_id: string
+        }
+        Update: {
+          attachment_name?: string | null
+          attachment_path?: string | null
+          attachment_size?: number | null
+          attachment_type?: string | null
+          audio_duration?: number | null
+          body?: string
+          created_at?: string
+          id?: string
+          kind?: string
+          sender_id?: string | null
+          session_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chat_messages_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "chat_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      chat_sessions: {
+        Row: {
+          assigned_to: string | null
+          closed_at: string | null
+          closed_by: string | null
+          created_at: string
+          id: string
+          last_message_at: string
+          number: number
+          organization_id: string
+          picked_at: string | null
+          rated_at: string | null
+          rating: number | null
+          rating_comment: string | null
+          requester_id: string
+          status: string
+          subject: string
+          ticket_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          assigned_to?: string | null
+          closed_at?: string | null
+          closed_by?: string | null
+          created_at?: string
+          id?: string
+          last_message_at?: string
+          number?: never
+          organization_id: string
+          picked_at?: string | null
+          rated_at?: string | null
+          rating?: number | null
+          rating_comment?: string | null
+          requester_id: string
+          status?: string
+          subject: string
+          ticket_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          assigned_to?: string | null
+          closed_at?: string | null
+          closed_by?: string | null
+          created_at?: string
+          id?: string
+          last_message_at?: string
+          number?: never
+          organization_id?: string
+          picked_at?: string | null
+          rated_at?: string | null
+          rating?: number | null
+          rating_comment?: string | null
+          requester_id?: string
+          status?: string
+          subject?: string
+          ticket_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chat_sessions_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "chat_sessions_ticket_id_fkey"
+            columns: ["ticket_id"]
+            isOneToOne: false
+            referencedRelation: "tickets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       chk_assignments: {
         Row: {
           assigned_user_id: string
@@ -3937,6 +4062,7 @@ export type Database = {
           picked_at: string | null
           priority: string
           project_id: string | null
+          requested_date: string | null
           rework_count: number
           sector: string | null
           sla_deadline: string | null
@@ -3967,6 +4093,7 @@ export type Database = {
           picked_at?: string | null
           priority?: string
           project_id?: string | null
+          requested_date?: string | null
           rework_count?: number
           sector?: string | null
           sla_deadline?: string | null
@@ -3997,6 +4124,7 @@ export type Database = {
           picked_at?: string | null
           priority?: string
           project_id?: string | null
+          requested_date?: string | null
           rework_count?: number
           sector?: string | null
           sla_deadline?: string | null
@@ -4336,6 +4464,234 @@ export type Database = {
         Args: { _end: string; _start: string }
         Returns: number
       }
+      chat_attachment_path_ok: {
+        Args: { _kind: string; _path: string; _session: string }
+        Returns: boolean
+      }
+      chat_can_handle: {
+        Args: { _session: Database["public"]["Tables"]["chat_sessions"]["Row"] }
+        Returns: boolean
+      }
+      chat_can_read_object: { Args: { _name: string }; Returns: boolean }
+      chat_can_upload_object: { Args: { _name: string }; Returns: boolean }
+      chat_cancel: {
+        Args: { p_session: string }
+        Returns: {
+          assigned_to: string | null
+          closed_at: string | null
+          closed_by: string | null
+          created_at: string
+          id: string
+          last_message_at: string
+          number: number
+          organization_id: string
+          picked_at: string | null
+          rated_at: string | null
+          rating: number | null
+          rating_comment: string | null
+          requester_id: string
+          status: string
+          subject: string
+          ticket_id: string | null
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "chat_sessions"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      chat_close: {
+        Args: { p_session: string }
+        Returns: {
+          assigned_to: string | null
+          closed_at: string | null
+          closed_by: string | null
+          created_at: string
+          id: string
+          last_message_at: string
+          number: number
+          organization_id: string
+          picked_at: string | null
+          rated_at: string | null
+          rating: number | null
+          rating_comment: string | null
+          requester_id: string
+          status: string
+          subject: string
+          ticket_id: string | null
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "chat_sessions"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      chat_convert_to_ticket: {
+        Args: {
+          p_priority?: string
+          p_session: string
+          p_title: string
+          p_type?: string
+        }
+        Returns: string
+      }
+      chat_is_staff: { Args: { _org: string }; Returns: boolean }
+      chat_object_session: { Args: { _name: string }; Returns: string }
+      chat_open: {
+        Args: { p_message: string; p_subject: string }
+        Returns: {
+          assigned_to: string | null
+          closed_at: string | null
+          closed_by: string | null
+          created_at: string
+          id: string
+          last_message_at: string
+          number: number
+          organization_id: string
+          picked_at: string | null
+          rated_at: string | null
+          rating: number | null
+          rating_comment: string | null
+          requester_id: string
+          status: string
+          subject: string
+          ticket_id: string | null
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "chat_sessions"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      chat_queue_length: { Args: never; Returns: number }
+      chat_queue_position: { Args: { p_session: string }; Returns: number }
+      chat_rate: {
+        Args: { p_comment?: string; p_rating: number; p_session: string }
+        Returns: {
+          assigned_to: string | null
+          closed_at: string | null
+          closed_by: string | null
+          created_at: string
+          id: string
+          last_message_at: string
+          number: number
+          organization_id: string
+          picked_at: string | null
+          rated_at: string | null
+          rating: number | null
+          rating_comment: string | null
+          requester_id: string
+          status: string
+          subject: string
+          ticket_id: string | null
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "chat_sessions"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      chat_resolve: {
+        Args: { p_session: string }
+        Returns: {
+          assigned_to: string | null
+          closed_at: string | null
+          closed_by: string | null
+          created_at: string
+          id: string
+          last_message_at: string
+          number: number
+          organization_id: string
+          picked_at: string | null
+          rated_at: string | null
+          rating: number | null
+          rating_comment: string | null
+          requester_id: string
+          status: string
+          subject: string
+          ticket_id: string | null
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "chat_sessions"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      chat_staff_members: {
+        Args: never
+        Returns: {
+          avatar_url: string
+          full_name: string
+          user_id: string
+        }[]
+      }
+      chat_take: {
+        Args: { p_session: string }
+        Returns: {
+          assigned_to: string | null
+          closed_at: string | null
+          closed_by: string | null
+          created_at: string
+          id: string
+          last_message_at: string
+          number: number
+          organization_id: string
+          picked_at: string | null
+          rated_at: string | null
+          rating: number | null
+          rating_comment: string | null
+          requester_id: string
+          status: string
+          subject: string
+          ticket_id: string | null
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "chat_sessions"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      chat_transfer: {
+        Args: { p_session: string; p_to: string }
+        Returns: {
+          assigned_to: string | null
+          closed_at: string | null
+          closed_by: string | null
+          created_at: string
+          id: string
+          last_message_at: string
+          number: number
+          organization_id: string
+          picked_at: string | null
+          rated_at: string | null
+          rating: number | null
+          rating_comment: string | null
+          requester_id: string
+          status: string
+          subject: string
+          ticket_id: string | null
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "chat_sessions"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      chat_user_name: { Args: { _user: string }; Returns: string }
       chk_import_generate_templates: {
         Args: { _organization_id: string }
         Returns: number
